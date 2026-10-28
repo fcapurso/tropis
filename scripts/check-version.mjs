@@ -115,8 +115,8 @@ function dropStaleAdditions(clone, target) {
 }
 
 function dependencyLink(project, clone) {
-  const folder = ['.tropis', '.framework'].find((name) => existsSync(join(project, name, 'node_modules')));
-  if (!folder) return { linked: false };
+  const folder = '.tropis';
+  if (!existsSync(join(project, folder, 'node_modules'))) return { linked: false };
   const projectPackage = join(project, folder, 'package.json');
   const clonePackage = join(clone, '.tropis/package.json');
   if (!existsSync(projectPackage) || !existsSync(clonePackage)) return { linked: false };

@@ -45,23 +45,11 @@ if [ ! -x "$NM/.bin/jest" ]; then
 fi
 
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/blueprint-check-XXXXXX")"
-# v0.1.0 is the layout take-version moves off. Tests that build that layout read
-# TROPIS_V010; a shallow checkout has no tags, so the self-check fetches them in CI.
-# Only the folder this script made is removed — never one an inherited TROPIS_V010 names.
-V010=""
 cleanup() {
   rm -rf "$STAGE"
   if [ -n "${FULL:-}" ]; then rm -rf "$FULL" "$FULL.index"; fi
-  if [ -n "$V010" ]; then rm -rf "$V010"; fi
 }
 trap cleanup EXIT
-if ! git -C "$BP" rev-parse --verify --quiet 'v0.1.0^{commit}' >/dev/null; then
-  echo "The self-check needs the tag v0.1.0: git fetch --tags." >&2
-  exit 2
-fi
-V010="$(mktemp -d "${TMPDIR:-/tmp}/blueprint-v010-XXXXXX")"
-git -C "$BP" archive v0.1.0 | tar -x -C "$V010"
-export TROPIS_V010="$V010"
 
 git -C "$BP" archive HEAD | tar -x -C "$STAGE"
 # A second copy of HEAD with the export-ignored paths kept, for guards that must see what

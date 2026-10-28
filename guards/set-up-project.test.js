@@ -360,8 +360,8 @@ describe('set-up-project.sh', () => {
       const project = realpathSync(dir);
       expect(r.status).toBe(1);
       expect(r.stderr).toBe(
-        `set-up-project: ${project} already holds the framework in .framework/. `
-        + `Take this release with node scripts/take-version.mjs ${project} from this checkout instead.\n`,
+        `set-up-project: ${project} holds the framework in .framework/, a layout this release no longer takes. `
+        + `Remove .framework/, commit, and run this again.\n`,
       );
       expect(existsSync(join(dir, '.tropis'))).toBe(false);
       expect(existsSync(join(dir, '.claude'))).toBe(false);

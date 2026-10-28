@@ -16,7 +16,8 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+A project which still holds the framework in `.framework/` can no longer update and must
+be set up again. Projects in `.tropis/` are unaffected.
 
 ## [0.5.1] — 2026-10-28
 
