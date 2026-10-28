@@ -356,9 +356,9 @@ Task 5, on this branch at `695d548`, before this report was finished:
 
 ```
  AGENTS.md                                          |  11 +
- .../plans/2026-10-28-tropis-is-public.md           | 235 +++++++++++++++++++++
+ .../plans/2026-10-28-tropis-is-public.md           | 252 +++++++++++++++++++++
  feature-catalog.yaml                               |   9 +-
- 3 files changed, 252 insertions(+), 3 deletions(-)
+ 3 files changed, 269 insertions(+), 3 deletions(-)
 ```
 
 Every file is in the File Structure table except the export-ignore plan it lists for a
@@ -399,6 +399,15 @@ from the public `main`.
   exemptions", but the guard exempts `.tropis/` and the installed paths by design, and
   that is where the hit was. The executor ran the guard's `scanLine` over every tracked
   file instead.
+- **Task 4's self-check could not fail on the one thing that differs in public.** It was
+  run in a checkout holding the archive's tags, and `scripts/check-blueprint.sh` needs
+  the tag `v0.1.0`, whose tree every test in `guards/take-version.test.js` builds its
+  scratch releases from (`worldV010`). The public repository cannot have that tag: its
+  commit is in the private history, and its tree carries 187 private-material hits by
+  the Gate 1 scan, so it cannot be published as a fixture either. The first run of the
+  public pipeline, run 1 on `21b855f`, failed in its unit stage before any test ran:
+  `The self-check needs the tag v0.1.0: git fetch --tags.` Task 4 should have run the
+  self-check in a clone of the `public` branch alone.
 - The gate checks assume `gh` can read repository settings. From a cloud session it
   cannot (see Gate 2), so Gates 2, 3 and 5 rest on output the developer runs and sends,
   which is their word rather than a check the executor ran.
@@ -411,9 +420,17 @@ from the public `main`.
 
 ### Outstanding
 
-- **The review and the merge.** The pull request on `fcapurso/tropis` waits for the
+- **The public pipeline is red, and so is this pull request's**, until the self-check no
+  longer needs the private `v0.1.0` tag (see *What the plan got wrong*). The developer
+  decided support for projects on the v0.1.0 layout is not needed. The fix rebuilds the
+  take-version test world from the current tree and retires the `.framework/` migration:
+  that is a design change across `scripts/take-version.mjs`, its test file and the
+  self-check, so it is its own plan,
+  docs/superpowers/plans/2026-10-28-the-self-check-needs-no-private-tag.md, for a separate
+  executor.
+- **The review and the merge.** This pull request waits for that fix, then for the
   specifying session's review and its review record, which goes on this branch before
-  the squash-merge. Its CI is the first run of this repository's workflows in public.
+  the squash-merge.
 - **The spec's step 13.** Every local clone should point at the right repository: the
   archive for the private history, the public repository for new work. The developer's
   own clone and this session's checkouts now push to `tropis-archive`. The first adopter
