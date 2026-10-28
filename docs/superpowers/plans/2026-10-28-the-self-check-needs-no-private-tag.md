@@ -347,3 +347,76 @@ The sentence in `templates/README.md` after the one the plan deletes still says 
 The specifying session reviews and merges. This branch is not merged.
 
 The installed release under `.claude/`, `.tropis/` and `.cursor/` still describes the migration. This plan forbids editing those directories; they change when a release is taken.
+
+## Review record
+
+### Checks re-run
+
+By the specifying session, with git 2.43.0 and Node v22.22.0 on Linux x86_64:
+
+- A clone of the pushed branch at `0f6c324`, made with `git clone --no-tags
+  --single-branch` from `https://github.com/fcapurso/tropis.git`: `git tag | wc -l`
+  printed `0`; after `npm --prefix .tropis ci`, `bash scripts/check-blueprint.sh` exited
+  0 with `Self-check passed: every guard caught its defect, the clean baseline passed,
+  and the framework repository's own guards passed.`
+- The re-break, in that same tagless clone: a throwaway commit restoring
+  `scripts/check-blueprint.sh` from the public `main`, then the self-check, which exited
+  2 with `The self-check needs the tag v0.1.0: git fetch --tags.` The commit was then
+  dropped.
+- `npm --prefix .tropis test` on the branch with the review fixes: `Tests: 33 passed, 33 total`.
+- The public pipeline on `d059d7e`, the first run of the unit stage from a shallow,
+  tagless checkout: the result is in the pull request's checks.
+- Scope: `git diff --stat` against the public `main` names 12 files, each in the File
+  Structure table.
+- Code: the current-layout path of `takeVersion` and `apply` receives the same baseline,
+  settings and areas as before, which `relocate` used to pass through unchanged for that
+  layout; the `.framework/` refusal comes before any write; `mdNames`, `legacyFiles`,
+  `relocate` and their helpers have no remaining caller.
+
+### Found
+
+Public exposure: the diff and both executor commits were read for private material.
+The diff holds none. **Both executor commits were authored with the developer's
+personal email address** rather than the noreply address the first public commit used,
+because that is the git default on the executor's computer. They were already pushed to
+the pull request branch. The squash-merge makes a new commit under the developer's
+GitHub identity, so the address does not enter `main`'s history; the branch is deleted
+after the merge. The developer was told how to set the noreply address in that clone
+and how to have GitHub refuse such a push.
+
+Fixed on the branch by the reviewer, in `d059d7e`, both mechanical:
+
+- `templates/README.md` still told operators that edited rule text is left in
+  `.claude/rule-additions/<n>.md.old`. Only the removed `v0.1.0` path wrote those files,
+  so the sentence is deleted. The executor reported it and rightly left it, because the
+  plan said to change nothing else on that paragraph; that instruction was the plan's
+  error.
+- Two double blank lines left where code was removed, in `scripts/take-version.mjs` and
+  `guards/take-version.test.js`.
+
+### Outstanding disposition
+
+- The installed release under `.claude/`, `.tropis/` and `.cursor/` still describes the
+  migration: dropped as an item, since it changes when this repository next takes a
+  release, which `/release` and `/update` do.
+- The executor's note that `guards/set-up-project.test.js` fails in a checkout that has
+  tags (`records every shipped file at version unknown`): dropped, because the source
+  tests run only inside the self-check's export, which has no `.git`, and pass there.
+
+### Learnings routed
+
+- **A self-check proved only in the checkout that wrote it cannot fail on what that
+  checkout has and the published copy lacks.** That is how this defect reached the
+  public repository. Not routed as a rule: the cause, a tag that existed only in the
+  private history, is removed by this plan, and nothing else in the self-check reads one
+  (Task 3's evidence). Recorded in the handover of
+  docs/superpowers/plans/2026-10-28-tropis-is-public.md, under *What the plan got wrong*.
+- An executor commits as whatever its computer's git says: the developer sets the
+  noreply address in the public clone. No rule change: the private-material guard checks
+  files, not commit metadata, and GitHub's own push setting covers it.
+
+### Merged because
+
+The self-check passes in a clone with no tags and stops when the old code is restored,
+nothing a `.tropis/` project relies on changed, and the public pipeline is green on the
+head.
