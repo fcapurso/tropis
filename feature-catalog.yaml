@@ -3388,3 +3388,18 @@
     - guards/take-version.test.js
   refs:
     - docs/superpowers/plans/2026-10-28-the-self-check-needs-no-private-tag.md
+# 2026-10-28, raised by the developer. RELEASES.md is 471 lines after eight releases in
+# two weeks, and /release and the release pipeline only ever add to it. How to bound it
+# (archive old versions, a file per release, trimming at promotion) is for shaping.
+- id: release-notes-stay-a-readable-size
+  title: The release notes file stays a readable size as releases accumulate
+  status: idea
+  value: Someone opening the release notes finds the recent releases without scrolling
+    past every release there has ever been, and an agent drafting the next notes does not
+    read the whole history to do it. Today every release adds to one file and nothing ever
+    takes anything out, so it grows without limit.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
