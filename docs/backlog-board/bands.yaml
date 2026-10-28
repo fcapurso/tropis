@@ -130,6 +130,13 @@ integrity-guard-is-green-on-a-fresh-checkout:
   seen:
     status: idea
     blockers: []
+kept-findings-go-to-the-catalog:
+  band: C
+  verdict: "Two sentences added to one section of the catalog rule, plus the fresh-agent check a rule change owes. Cheap, and it moves into the repository a correction that so far lived only in one tool's memory; batch with the other rule-text fixes."
+  evidence: "2026-10-28 — rules/catalogs.md, What does not become an entry, says when a finding becomes an entry but not that it must not go to a task card or side session instead, nor that a self-proposed fix starts as an idea."
+  seen:
+    status: shaped
+    blockers: []
 learnings-can-be-declined:
   band: E
   verdict: "Shelved on 2026-08-16: the existing outs already let a learning be declined."
@@ -139,13 +146,6 @@ learnings-can-be-declined:
 living-documents-stay-current:
   band: D
   verdict: "The second half of the README arc, but still an idea with no criteria: which documents count as living, and what refreshes each, are undecided. Shape it before anyone builds; finishing the arc does not lift it while that is open."
-  seen:
-    status: idea
-    blockers: []
-measurements-record-the-platform-not-the-machine:
-  band: C
-  verdict: "A wording change in three framework documents, from machine to operating system and architecture. Cheap; batch it with the private-material guard it follows."
-  evidence: "2026-10-27 — framework/workflow.md:137, rules/planning.md:154 and rules/catalogs.md:23 each ask for the machine."
   seen:
     status: idea
     blockers: []
@@ -170,13 +170,6 @@ next-names-the-flush-when-due:
 next-shows-which-work-is-planned:
   band: C
   verdict: "Small improvement to the backlog report; useful the moment several shaped entries have plans waiting, as now."
-  seen:
-    status: idea
-    blockers: []
-own-files-refuse-private-material:
-  band: A
-  verdict: "The repository is about to be public and the only defence today is someone noticing; three other entries wait on this one. Criteria are concrete and the guard is self-contained."
-  evidence: "2026-10-27 — no guard under guards/ or scripts/ checks for home paths, hostnames or private names."
   seen:
     status: idea
     blockers: []
@@ -212,13 +205,6 @@ project-chooses-its-repository-host:
   seen:
     status: shaped
     blockers: []
-project-chooses-the-name-it-flushes-under:
-  band: B
-  verdict: "Blocks first-adopter from flushing to the public repository at all, so it matters as soon as the repository is published. Needs criteria before it can be planned."
-  evidence: "2026-10-27 — commands/flush-upstream.md:67 names the branch upstream/<project-folder>/<flush-date>-<entry-slug>."
-  seen:
-    status: idea
-    blockers: []
 project-has-one-display-name:
   band: B
   verdict: "Confirmed: setup asks for a display name and nothing uses it — the board is titled after the folder. Small and plannable once criteria are firmed up; it would also settle update-keeps-the-package-name, so plan the two together."
@@ -226,9 +212,10 @@ project-has-one-display-name:
   seen:
     status: idea
     blockers: []
-public-project-is-checked-for-private-material:
-  band: B
-  verdict: "Worth having, but it is three features in one (setup question, commit-time prompt, review and release checks) and the hashed-name guard covers this repository first. Do next after the guard, splitting it if planning shows the moments are separable."
+release-notes-stay-a-readable-size:
+  band: E
+  verdict: "Real but slow-growing: ten releases is about 550 lines today, which is still readable. Leave it until the file is a nuisance; it has no criteria yet and needs a decision on archiving versus splitting before anyone builds."
+  evidence: "2026-10-28 — RELEASES.md is 549 lines with 10 second-level headings."
   seen:
     status: idea
     blockers: []
@@ -327,13 +314,6 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
-tropis-is-public:
-  band: B
-  verdict: "The goal of the go-public arc, and it waits on own-files-refuse-private-material, which is band A. Most of it is the developer's own steps on GitHub and hard to undo, so it follows the guard and a release from the cleaned source, which the spec names v0.4.3: the next release after v0.4.2."
-  evidence: "2026-10-27 — the last release tag is v0.4.2; docs/superpowers/specs/2026-10-27-tropis-goes-public-design.md lists the steps under Going public."
-  seen:
-    status: idea
-    blockers: [own-files-refuse-private-material]
 update-check-runs-the-projects-own-checks:
   band: D
   verdict: "Valuable, since no release yet says its candidate was checked, but it carries an open question: the check refuses anything not on a release tag, and the candidate is untagged main. Decide how a candidate is checked before building."
