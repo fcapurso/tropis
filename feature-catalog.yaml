@@ -3358,3 +3358,27 @@
   refs:
     - docs/superpowers/specs/2026-10-27-tropis-goes-public-design.md
     - docs/superpowers/plans/2026-10-28-public-project-is-checked-for-private-material.md
+# Raised 2026-10-28 by the first run of the public pipeline, which stopped before any test
+# ran because the self-check needs the v0.1.0 tag and the public history has none. The
+# developer decided the same day that no project needs to move off the .framework/ layout.
+# Plan: docs/superpowers/plans/2026-10-28-the-self-check-needs-no-private-tag.md
+- id: the-self-check-needs-no-private-tag
+  title: The self-check runs in the public repository, needing nothing from the private history
+  status: shaped
+  value: Anyone who clones Tropis can run its self-check and get a true answer, and the
+    public pipeline checks every pull request. Today the self-check stops before any test
+    runs, because it needs a tag only the private archive has.
+  acceptanceCriteria:
+    - The self-check passes in a clone of the public repository that has no tags.
+    - A project that holds the framework in .framework/ is refused by setup and by
+      take-version with a message saying to remove the folder and set the project up
+      again, and nothing in it changes.
+    - No test of taking a release for a .tropis/ project is removed or weakened.
+  type: chore
+  layer: framework
+  modules:
+    - scripts/take-version.mjs
+    - scripts/check-blueprint.sh
+    - guards/take-version.test.js
+  refs:
+    - docs/superpowers/plans/2026-10-28-the-self-check-needs-no-private-tag.md
