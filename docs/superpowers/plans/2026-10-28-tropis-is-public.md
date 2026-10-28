@@ -188,8 +188,6 @@ every gate's check output and whether it passed first time.
 
 ## Handover report
 
-*In progress: written as each gate is reached, completed at Task 6.*
-
 ### Task completion
 
 - **Gate 1 — passed on the second run.** The first run found one private-material hit,
@@ -205,14 +203,13 @@ every gate's check output and whether it passed first time.
   Access to this GitHub Actions path is not permitted through this proxy`). The
   developer ran both commands on their own computer and sent the output (see
   *Verification results*). The repository has no secrets and no variables, so there are
-  no names to record and nothing for Gate 5 to restore.
-  The developer gave the noreply address Task 4 commits as:
-  `fcapurso@users.noreply.github.com` (the account's older form, without the numeric id).
-
+  no names to record and nothing for Gate 5 to restore. The developer gave the noreply
+  address Task 4 commits as: `fcapurso@users.noreply.github.com` (the account's older
+  form, without the numeric id). The gate's own stop, asking the developer to confirm
+  the list in Settings, was answered by that run rather than by a look at the page.
 - **Gate 3 — passed, from the developer's own run**, after the developer renamed the
   private repository to `tropis-archive` and created an empty public `fcapurso/tropis`.
   The executor confirmed the public half itself (see *Verification results*).
-
 - **Task 4 — done.** `git checkout --orphan public origin/main` from the archive's `main`
   at `74d9ca8`, committed as `21b855f25b4866cd1c6f271165cabcaca729c7fd`, author and
   committer `Filippo Capurso <fcapurso@users.noreply.github.com>`, no parent, its tree
@@ -220,7 +217,6 @@ every gate's check output and whether it passed first time.
   Before that push, `origin` in both checkouts was moved from `fcapurso/tropis`, which
   after Gate 3 names the public repository, to `fcapurso/tropis-archive`, with the
   developer's agreement.
-
 - **Gate 4 — passed, checked by the executor after the developer pushed.** The
   developer pointed their own clone's `origin` at `tropis-archive` first (it still named
   `fcapurso/tropis`, now the public repository), fetched `public`, confirmed its hash
@@ -229,12 +225,20 @@ every gate's check output and whether it passed first time.
   `git push https://github.com/fcapurso/tropis.git public:refs/tags/v0.5.1`. The tag was
   pushed by refspec rather than with `git tag v0.5.1 public`, which fails in a clone that
   already holds the archive's `v0.5.1`.
-
 - **Gate 5 — passed on the second round.** The developer applied the spec's steps 7–11,
   guided by the executor, as GitHub's current settings name them: *Security and quality →
   Advanced Security*, *Actions → General*, and *Rulesets* as its own sidebar item. The
   first reading showed `can_approve_pull_request_reviews: true`; the developer turned
   it off and the second reading showed `false`. Secrets: none to re-create (Gate 2).
+- **Task 5 — done.** On a branch of the public `main` (`21b855f`), not of the archive's
+  history: `AGENTS.md` gains two bullets under *Gotchas*, what GitHub enforces with the
+  date it was checked, and where the private history went; `feature-catalog.yaml` sets
+  `tropis-is-public` to `shipped`, removes its `blockedBy`, and adds a comment naming
+  this report. Pushed as `plan/tropis-is-public` to `fcapurso/tropis`, with a pull
+  request. Not merged.
+- **Task 6 — done.** This report. It was first written on a local branch of the
+  archive's history, gate by gate, and carried onto this branch as text; that branch was
+  never pushed to the public repository.
 
 ### Verification results
 
@@ -250,7 +254,8 @@ Gate 1, second run, on `origin/main` at `74d9ca8`:
   `p.txt:1: Atlassian site`, so an empty result means something.
 - `git grep -nIP "Linux \d+\.\d+\.\d+-\S+|Darwin Kernel Version|xnu-\d"`: one line,
   this plan's own line 92, which quotes the pattern. No build string. The pattern
-  matched a planted `Linux 6.1.2-abc x86_64`.
+  matched a planted line of the same shape, `Linux` followed by a three-part version
+  with a build suffix (assembled at run time, so this report does not match it).
 
 Gate 1, first run, on `origin/main` at `314ffc1`: the same scan reported
 `.tropis/package-lock.json:1812: email`, the `glob` deprecation notice above; the other
@@ -335,6 +340,34 @@ HTTP/2.0 204 No Content
 The release job in `.github/workflows/ci.yml` pushes `main` and a new `v*` tag in one
 atomic push and never moves or deletes a tag, so neither ruleset blocks it.
 
+Task 5, on this branch at `695d548`, before this report was finished:
+
+- `bash scripts/check-blueprint.sh`: exit 0, `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 6 passed, 6 total`, `Tests: 33 passed, 33 total`.
+- The Gate 1 scan: `files scanned: 327, hits: 0`. The kernel-string search found this
+  plan's line 92 and this report's quotation of the same pattern, and, until it was
+  reworded, this report's description of the planted line, which quoted a string of the
+  shape the search looks for.
+
+### Scope
+
+`git diff --stat public/main...HEAD`, the pull request's whole diff:
+
+```
+ AGENTS.md                                          |  11 +
+ .../plans/2026-10-28-tropis-is-public.md           | 235 +++++++++++++++++++++
+ feature-catalog.yaml                               |   9 +-
+ 3 files changed, 252 insertions(+), 3 deletions(-)
+```
+
+Every file is in the File Structure table except the export-ignore plan it lists for a
+Gate 1 fix, which was not needed: the kernel build strings were already gone. Worktree:
+`../tropis-public` in the `tropis` checkout, created by
+`.tropis/scripts/isolate-for-plan.sh`. In it, `archive-notes/tropis-is-public` (local
+only) holds this report's history; `public` holds Task 4's commit; this branch starts
+from the public `main`.
+
 ### Judgment calls
 
 - The kernel-string search matching this plan's own quotation of it is counted as a
@@ -342,7 +375,6 @@ atomic push and never moves or deletes a tag, so neither ruleset blocks it.
 - The Gate 1 hit was not in `docs/`, so per Gate 1 it was not the executor's to fix in
   place. The developer chose the root fix (a dependency change, a release and an
   update) over accepting the hit as public package metadata.
-
 - The first public commit's message leaves out the `Claude-Session:` trailer the
   session's attribution asks for: it carries a session id, which this public repository
   refuses, and the commit is the whole of the public history. It keeps `Co-Authored-By`.
@@ -358,7 +390,6 @@ atomic push and never moves or deletes a tag, so neither ruleset blocks it.
 - The menu names in the spec's steps 7, 8 and 10 are out of date: GitHub now has
   *Security and quality → Advanced Security* rather than *Code security*, and
   *Rulesets* as its own sidebar item rather than under *Rules*.
-
 - *What the specifying session verified* is stale: it names `main` at `7507bf7` and the
   installed release `v0.4.2`, with `v0.4.3` as the tag for the public commit. At
   dispatch `main` was at `314ffc1` with `v0.5.0` installed, and after Gate 1 it is
@@ -371,3 +402,21 @@ atomic push and never moves or deletes a tag, so neither ruleset blocks it.
 - The gate checks assume `gh` can read repository settings. From a cloud session it
   cannot (see Gate 2), so Gates 2, 3 and 5 rest on output the developer runs and sends,
   which is their word rather than a check the executor ran.
+- Task 5 says to work "on a branch of the public repository's `main`", but the plan's
+  worktree branch is born from the archive's history, and pushing it there would have
+  published that history. The plan does not say so; it should, as a trap.
+- Merging a plan whose handover report is on `main` needs a review record first
+  (`review-record.test.js`). The plan names parent review but not that the record must
+  land on this pull request before its squash.
+
+### Outstanding
+
+- **The review and the merge.** The pull request on `fcapurso/tropis` waits for the
+  specifying session's review and its review record, which goes on this branch before
+  the squash-merge. Its CI is the first run of this repository's workflows in public.
+- **The spec's step 13.** Every local clone should point at the right repository: the
+  archive for the private history, the public repository for new work. The developer's
+  own clone and this session's checkouts now push to `tropis-archive`. The first adopter
+  takes `v0.5.1` from the public repository with `/update` when it next updates.
+- **The menu names** in the spec's steps 7, 8 and 10 (see *What the plan got wrong*), if
+  the spec is to stay a usable checklist.
