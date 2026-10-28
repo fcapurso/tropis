@@ -847,6 +847,4 @@ describe('take-version.mjs', () => {
     expect(read(worktree, '.tropis/package.json')).toBe(committed);
     expect(JSON.parse(read(worktree, '.tropis/package.json.new')).name).toBe('example-project-update-framework');
   }), SLOW);
-
-
 });

@@ -259,7 +259,6 @@ export function appendMissingLines(projectText, nextText, { attributes = false }
   return `${base}${lead}${missing.join('\n')}\n`;
 }
 
-
 /**
  * The name the project was set up under. Setup names the framework package
  * `<slug>-framework` after the folder it ran in, so the slug is read back from that
