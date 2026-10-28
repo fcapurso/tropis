@@ -420,20 +420,67 @@ from the public `main`.
 
 ### Outstanding
 
-- **The public pipeline is red, and so is this pull request's**, until the self-check no
-  longer needs the private `v0.1.0` tag (see *What the plan got wrong*). The developer
-  decided support for projects on the v0.1.0 layout is not needed. The fix rebuilds the
-  take-version test world from the current tree and retires the `.framework/` migration:
-  that is a design change across `scripts/take-version.mjs`, its test file and the
-  self-check, so it is its own plan,
-  docs/superpowers/plans/2026-10-28-the-self-check-needs-no-private-tag.md, for a separate
-  executor.
-- **The review and the merge.** This pull request waits for that fix, then for the
-  specifying session's review and its review record, which goes on this branch before
-  the squash-merge.
+- **The public pipeline was red, and so was this pull request's**, until the self-check
+  no longer needed the private `v0.1.0` tag (see *What the plan got wrong*). The developer
+  decided support for projects on the `.framework/` layout is not needed, and plan
+  docs/superpowers/plans/2026-10-28-the-self-check-needs-no-private-tag.md, run by a
+  separate executor, retired it. It merged as #2 (`71eca31`), and `main` was merged into
+  this branch.
+- **The review and the merge.** See the review record below.
 - **The spec's step 13.** Every local clone should point at the right repository: the
   archive for the private history, the public repository for new work. The developer's
   own clone and this session's checkouts now push to `tropis-archive`. The first adopter
   takes `v0.5.1` from the public repository with `/update` when it next updates.
 - **The menu names** in the spec's steps 7, 8 and 10 (see *What the plan got wrong*), if
   the spec is to stay a usable checklist.
+
+## Review record
+
+### Checks re-run
+
+**This record is not independent.** The plan named the specifying session as its
+reviewer. This plan was executed, and this record written, by the same session, with the
+developer's instruction to merge. The gates' evidence is the developer's own output for
+the settings only an admin can read, and the executor's reading of everything else,
+both above. What this review adds, with git 2.43.0 and Node v22.22.0 on Linux x86_64:
+
+- After merging `main` at `71eca31` into this branch: `npm --prefix .tropis test`,
+  `Tests: 33 passed, 33 total`; the Gate 1 scan, `files scanned: 328, hits: 0`.
+- The public pipeline on this pull request's head, the first run on top of the fix: in
+  the pull request's checks.
+- Scope: `AGENTS.md`, `feature-catalog.yaml` and this plan, as *Scope* records, plus the
+  merge of `main`.
+
+### Found
+
+Public exposure: the diff was read for private material, and nothing was found. Every
+commit on the branch is authored with a noreply address, and no commit message carries a
+session id.
+
+Nothing else beyond the handover's own findings.
+
+### Outstanding disposition
+
+- The public pipeline: resolved by `the-self-check-needs-no-private-tag`, merged as #2.
+- The spec's step 13, clones pointing at the right repository: the developer's clone and
+  this session's checkouts were checked during the gates; the first adopter takes
+  `v0.5.1` or later from the public repository at its next `/update`. Dropped as an item:
+  nothing is left to build.
+- The spec's out-of-date menu names: dropped. The spec's checklist has been done, and
+  GitHub renames its settings faster than a spec is re-read; this report records the
+  names as they were on 2026-10-28.
+
+### Learnings routed
+
+- *Task 4's self-check could not fail on what the public copy lacks*: fixed at its root by
+  #2, which leaves the self-check reading no tag; recorded in that plan's review record.
+- *A plan that names the developer's settings must expect a cloud session to be unable to
+  read them*, and *the fork-approval setting has a read API*: not routed. They are about
+  this one-time move, which will not be repeated; they stay in *What the plan got wrong*
+  for whoever plans something similar.
+
+### Merged because
+
+Tropis is public with the settings its spec asked for, each checked or reported with its
+output above, `AGENTS.md` says what is enforced, and the public pipeline is green.
+
