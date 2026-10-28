@@ -8,8 +8,8 @@
 # last step writes .tropis/installed.json.
 #
 # Refuses, changing nothing, when anything it would write is already there — a second
-# run, or a project with its own CLAUDE.md — and when an earlier release left the
-# framework in .framework/. Never commits.
+# run, or a project with its own CLAUDE.md — and when the project holds the framework
+# in the layout this release no longer takes. Never commits.
 #
 # Usage: bash <framework>/scripts/set-up-project.sh <project-root>
 
@@ -25,7 +25,7 @@ if [ -z "$top" ] || [ "$(cd "$top" && pwd -P)" != "$PROJECT" ]; then
 fi
 
 if [ -e "$PROJECT/.framework" ]; then
-  echo "set-up-project: $PROJECT already holds the framework in .framework/. Take this release with node scripts/take-version.mjs $PROJECT from this checkout instead." >&2
+  echo "set-up-project: $PROJECT holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and run this again." >&2
   exit 1
 fi
 

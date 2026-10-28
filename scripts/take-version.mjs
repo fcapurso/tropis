@@ -7,11 +7,10 @@
  * The tag is the target version. This file is not installed into projects.
  *
  * What the project was given (the baseline) is the fingerprints in its
- * `.tropis/installed.json`, or `.framework/installed.json` when an earlier install has
- * not moved yet. A project with no usable record names the version it holds with
- * `--from`, and that version is set up in a scratch folder to take them from. The first
- * run on an earlier install renames `.framework/` to `.tropis/` before anything else
- * is written.
+ * `.tropis/installed.json`. A project with no usable record names the version it holds
+ * with `--from`, and that version is set up in a scratch folder to take them from.
+ * A project that holds the framework in the layout this release no longer takes is
+ * refused before any write.
  * A shipped file the project left alone is replaced; one it changed is kept and the new
  * text lands beside it as `<path>.new`. A shipped file the project lacks is listed as
  * removed by the project when a record says it was given it, and written when the
@@ -27,8 +26,8 @@
  */
 import { spawnSync } from 'node:child_process';
 import {
-  chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync,
-  renameSync, rmSync, statSync, unlinkSync, writeFileSync,
+  chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync,
+  rmSync, statSync, unlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -36,7 +35,6 @@ import { fileURLToPath } from 'node:url';
 import {
   blocks, carryBlocks, fingerprint, recordOf,
 } from './installed-files.js';
-import { checkStamp, parseRule } from './rule-areas.js';
 
 const tropis = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -161,11 +159,11 @@ const sameJson = (a, b) => {
   return JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 };
 
-/** File names of hooks the baseline or the new version shipped, from either folder. */
+/** File names of hooks the baseline or the new version shipped. */
 function shippedHookNames(paths) {
   const names = new Set();
   for (const rel of paths) {
-    const match = /^\.(?:tropis|framework)\/hooks\/([^/]+)$/.exec(rel);
+    const match = /^\.tropis\/hooks\/([^/]+)$/.exec(rel);
     if (match) names.add(match[1]);
   }
   return names;
@@ -173,14 +171,12 @@ function shippedHookNames(paths) {
 
 /**
  * A hook is shipped when its command names a hook file the baseline or the new version
- * shipped, in either folder. A script the framework never shipped is the project's own.
+ * shipped. A script the framework never shipped is the project's own.
  */
 function isShippedHook(hook, names) {
   if (typeof hook?.command !== 'string') return false;
   for (const name of names) {
-    if (hook.command.includes(`.tropis/hooks/${name}`) || hook.command.includes(`.framework/hooks/${name}`)) {
-      return true;
-    }
+    if (hook.command.includes(`.tropis/hooks/${name}`)) return true;
   }
   return false;
 }
@@ -263,217 +259,6 @@ export function appendMissingLines(projectText, nextText, { attributes = false }
   return `${base}${lead}${missing.join('\n')}\n`;
 }
 
-const mapFrameworkPrefix = (rel) => (
-  rel.startsWith('.framework/') ? `.tropis/${rel.slice('.framework/'.length)}` : rel
-);
-
-/** `.framework/` globs become `.tropis/`; other globs stay. */
-function rewriteGlobs(paths) {
-  if (!Array.isArray(paths)) return { paths, changed: false };
-  let changed = false;
-  const next = paths.map((glob) => {
-    if (typeof glob === 'string' && glob.startsWith('.framework/')) {
-      changed = true;
-      return mapFrameworkPrefix(glob);
-    }
-    return glob;
-  });
-  return { paths: next, changed };
-}
-
-/** Every string value, at any depth. Keys are left as they are. */
-function rewriteStringValues(value) {
-  if (typeof value === 'string') return value.replaceAll('.framework/', '.tropis/');
-  if (Array.isArray(value)) return value.map(rewriteStringValues);
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, rewriteStringValues(item)]));
-  }
-  return value;
-}
-
-/**
- * Fingerprints of an old-folder scratch. The same exclusions as the current layout,
- * under `.framework/`, because that is where the held version's setup wrote them.
- */
-function legacyFiles(root) {
-  const excluded = [
-    '.framework/node_modules',
-    '.framework/package-lock.json',
-    '.framework/installed.json',
-    '.framework/README.md',
-  ];
-  const skip = (rel) => excluded.some((item) => rel === item || rel.startsWith(`${item}/`));
-  const out = [];
-  const walk = (absDir, relDir) => {
-    let entries;
-    try {
-      entries = readdirSync(absDir, { withFileTypes: true });
-    } catch (e) {
-      if (e.code === 'ENOENT' || e.code === 'ENOTDIR') return;
-      throw e;
-    }
-    for (const entry of entries) {
-      const rel = `${relDir}/${entry.name}`;
-      if (skip(rel)) continue;
-      if (entry.isDirectory()) walk(join(absDir, entry.name), rel);
-      else if (entry.isFile()) out.push(rel);
-    }
-  };
-  for (const relRoot of ['.framework', '.claude/framework', '.claude/commands']) {
-    walk(join(root, ...relRoot.split('/')), relRoot);
-  }
-  const files = {};
-  for (const rel of out.sort()) {
-    files[rel] = fingerprint(readFileSync(join(root, ...rel.split('/')), 'utf8'));
-  }
-  return files;
-}
-
-/** The scratch's shipped paths: `.tropis/` for a current setup, `.framework/` for an earlier one. */
-function scratchFiles(root) {
-  if (existsSync(join(root, '.framework')) && !existsSync(join(root, '.tropis'))) return legacyFiles(root);
-  return recordOf(root, 'scratch').files;
-}
-
-function mdNames(dir) {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir).filter((name) => name.endsWith('.md')).map((name) => name.slice(0, -3)).sort();
-}
-
-/**
- * A v0.1.0 install keeps its areas, read from the rules' headers, and its edited rule
- * text. Shipped rule files are removed so the generator can write the new layout.
- * @returns {{ areas: object, fromHeaders: string[], editedRules: string[], rewroteAreas: boolean }}
- */
-function migrateV010Rules(project, baselineRoot, nextAreas) {
-  const shipped = new Set(mdNames(join(baselineRoot, '.claude/rules')));
-  const rulesDir = join(project, '.claude/rules');
-  const presentBefore = new Set(mdNames(rulesDir));
-  const areas = {};
-  const fromHeaders = [];
-  let rewroteAreas = false;
-  for (const [key, value] of Object.entries(nextAreas)) {
-    const rulePath = join(rulesDir, `${key}.md`);
-    if (shipped.has(key) && existsSync(rulePath)) {
-      const { paths, changed } = rewriteGlobs(parseRule(readFileSync(rulePath, 'utf8')).paths);
-      if (changed) rewroteAreas = true;
-      areas[key] = Array.isArray(paths) ? paths : value;
-      if (Array.isArray(paths)) fromHeaders.push(key);
-    } else {
-      areas[key] = value;
-    }
-  }
-
-  const editedRules = [];
-  const additions = join(project, '.claude/rule-additions');
-  for (const name of shipped) {
-    const rulePath = join(rulesDir, `${name}.md`);
-    if (!existsSync(rulePath)) continue;
-    const projectRule = parseRule(readFileSync(rulePath, 'utf8'));
-    const baselinePath = join(baselineRoot, '.claude/rules', `${name}.md`);
-    const baselineRule = existsSync(baselinePath) ? parseRule(readFileSync(baselinePath, 'utf8')) : null;
-    if (baselineRule && projectRule.body !== baselineRule.body) {
-      mkdirSync(additions, { recursive: true });
-      writeFileSync(join(additions, `${name}.md.old`), readFileSync(rulePath, 'utf8'));
-      editedRules.push(name);
-    }
-    unlinkSync(rulePath);
-  }
-
-  const cursorDir = join(project, '.cursor/rules');
-  if (existsSync(cursorDir)) {
-    for (const file of readdirSync(cursorDir)) {
-      if (!file.endsWith('.mdc')) continue;
-      const name = file.slice(0, -4);
-      if (!presentBefore.has(name)) continue;
-      const text = readFileSync(join(cursorDir, file), 'utf8');
-      if (!checkStamp(text).generated) unlinkSync(join(cursorDir, file));
-    }
-  }
-
-  writeFileSync(join(project, '.claude/rule-areas.json'), areasText(areas));
-  return { areas, fromHeaders, editedRules, rewroteAreas };
-}
-
-/** In-place `.framework/` → `.tropis/` on lines that name the old folder. */
-function rewriteLines(path) {
-  const text = readText(path);
-  if (text === null || !text.includes('.framework/')) return false;
-  const next = text.split('\n').map((line) => (
-    line.includes('.framework/') ? line.replaceAll('.framework/', '.tropis/') : line
-  )).join('\n');
-  if (next === text) return false;
-  writeFileSync(path, next);
-  return true;
-}
-
-/**
- * Rename `.framework/` to `.tropis/` and rewrite the strings that name it.
- * The per-path pass has not written anything yet.
- */
-function relocate(input) {
-  const report = { moved: false, rewrote: [], fromHeaders: [], editedRules: [] };
-  if (input.layout === 'current') {
-    return { ...input, projectAreas: input.projectAreas ?? {}, report };
-  }
-
-  renameSync(join(input.project, '.framework'), join(input.project, '.tropis'));
-  const baseline = {};
-  for (const [rel, hash] of Object.entries(input.baseline)) baseline[mapFrameworkPrefix(rel)] = hash;
-  report.moved = true;
-
-  const projectSettings = rewriteStringValues(input.projectSettings);
-  if (JSON.stringify(projectSettings) !== JSON.stringify(input.projectSettings)) {
-    report.rewrote.push('.claude/settings.json');
-  }
-  for (const file of ['.gitignore', '.gitattributes']) {
-    if (rewriteLines(join(input.project, file))) report.rewrote.push(file);
-  }
-
-  let projectAreas = input.projectAreas;
-  if (input.layout === 'v010') {
-    const nextAreas = JSON.parse(readFileSync(join(input.next, '.claude/rule-areas.json'), 'utf8'));
-    const migrated = migrateV010Rules(input.project, input.baselineRoot, nextAreas);
-    projectAreas = migrated.areas;
-    report.fromHeaders = migrated.fromHeaders;
-    report.editedRules = migrated.editedRules;
-    if (migrated.rewroteAreas) report.rewrote.push('.claude/rule-areas.json');
-  } else if (projectAreas) {
-    const areas = {};
-    let changed = false;
-    for (const [key, value] of Object.entries(projectAreas)) {
-      const rewritten = rewriteGlobs(value);
-      areas[key] = rewritten.paths;
-      if (rewritten.changed) changed = true;
-    }
-    projectAreas = areas;
-    if (changed) {
-      writeFileSync(join(input.project, '.claude/rule-areas.json'), areasText(areas));
-      report.rewrote.push('.claude/rule-areas.json');
-    }
-  }
-
-  return { ...input, baseline, projectSettings, projectAreas: projectAreas ?? {}, report };
-}
-
-/**
- * Files the command does not own that still name the old folder. Shipped files are left
- * out: the command just wrote them, and a shipped decision record names the old folder
- * as history.
- */
-function stillNamesFramework(project, shipped) {
-  const listed = git(project, 'ls-files', '-co', '--exclude-standard').stdout.split('\n').filter(Boolean);
-  const hits = [];
-  for (const rel of listed) {
-    if (rel.endsWith('.new') || rel.endsWith('.old') || rel in shipped) continue;
-    const inScope = rel.startsWith('.claude/') || rel.startsWith('.cursor/')
-      || rel.startsWith('.tropis/') || !rel.includes('/');
-    if (!inScope) continue;
-    const text = readText(abs(project, rel));
-    if (text !== null && text.includes('.framework/')) hits.push(rel);
-  }
-  return hits.sort();
-}
 
 /**
  * The name the project was set up under. Setup names the framework package
@@ -520,18 +305,15 @@ export function takeVersion({ project, from = null, acceptBreaking = false }) {
   }
 
   const hasTropis = existsSync(join(project, '.tropis'));
-  const hasFramework = existsSync(join(project, '.framework'));
-  if (hasTropis && hasFramework) {
-    refuse(`${project} has both .framework/ and .tropis/. Remove the one that is not in use, commit, and run again.`);
+  if (existsSync(join(project, '.framework'))) {
+    refuse(`${project} holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and set the project up again with scripts/set-up-project.sh.`);
   }
-  if (!hasTropis && !hasFramework) {
-    refuse(`${project} has no .tropis/ or .framework/. Set it up with scripts/set-up-project.sh first.`);
+  if (!hasTropis) {
+    refuse(`${project} has no .tropis/. Set it up with scripts/set-up-project.sh first.`);
   }
-  const layout = hasTropis ? 'current' : (existsSync(join(project, '.claude/rule-areas.json')) ? 'areas-old' : 'v010');
-  const folder = layout === 'current' ? '.tropis' : '.framework';
 
-  const recordPath = join(project, folder, 'installed.json');
-  const record = existsSync(recordPath) ? readJson(recordPath, `${project}/${folder}/installed.json`) : null;
+  const recordPath = join(project, '.tropis', 'installed.json');
+  const record = existsSync(recordPath) ? readJson(recordPath, `${project}/.tropis/installed.json`) : null;
   let held;
   let heldParts = parseVersion(record?.version);
   const fromRecord = heldParts !== null;
@@ -540,8 +322,8 @@ export function takeVersion({ project, from = null, acceptBreaking = false }) {
   } else {
     if (from === null) {
       refuse(record === null
-        ? `${project} has no ${folder}/installed.json. Say which version it holds: --from vX.Y.Z.`
-        : `${project}'s ${folder}/installed.json holds no usable version (${JSON.stringify(record.version)}). Say which version it holds: --from vX.Y.Z.`);
+        ? `${project} has no .tropis/installed.json. Say which version it holds: --from vX.Y.Z.`
+        : `${project}'s .tropis/installed.json holds no usable version (${JSON.stringify(record.version)}). Say which version it holds: --from vX.Y.Z.`);
     }
     heldParts = parseVersion(from);
     if (!heldParts) refuse(`--from ${from} is not a version like vX.Y.Z.`);
@@ -566,15 +348,14 @@ export function takeVersion({ project, from = null, acceptBreaking = false }) {
 
   const tmp = mkdtempSync(join(tmpdir(), 'take-version-'));
   try {
-    const name = setupName(project, folder);
-    let baselineRoot = null;
+    const name = setupName(project, '.tropis');
     const baseline = fromRecord
       ? record.files
-      : scratchFiles(baselineRoot = buildVersion(from, tmp, 'from', name));
+      : recordOf(buildVersion(from, tmp, 'from', name), 'scratch').files;
     const next = buildVersion(target, tmp, 'to', name);
     const nextFiles = recordOf(next, target).files;
     const applied = apply({
-      project, target, held, fromRecord, baseline, baselineRoot, layout, next, nextFiles, projectSettings,
+      project, target, held, fromRecord, baseline, next, nextFiles, projectSettings,
       projectAreas,
     });
     return {
@@ -647,8 +428,9 @@ function entryFiles(project) {
 
 function apply(input) {
   const {
-    project, target, held, fromRecord, baseline, next, nextFiles, projectSettings, projectAreas, report,
-  } = relocate(input);
+    project, target, held, fromRecord, baseline, next, nextFiles, projectSettings,
+  } = input;
+  const projectAreas = input.projectAreas ?? {};
   const replaced = [];
   const added = [];
   const deleted = [];
@@ -769,7 +551,6 @@ function apply(input) {
     areasRemoved,
     packageChanged,
     entry,
-    report,
   };
 
   const generated = run('node', ['.tropis/scripts/generate-rules.mjs'], { cwd: project });
@@ -804,27 +585,9 @@ function apply(input) {
     ...keptButGone.map((p) => `${p} — no longer shipped, kept because you changed it`),
     ...(entry.decision ? [entry.decision] : []),
   ]);
-  if (report.moved) lines.push('Moved .framework/ to .tropis/', '');
-  if (report.rewrote.length > 0) {
-    lines.push(`Rewrote .framework/ to .tropis/ in: ${report.rewrote.join(', ')}`, '');
-  }
-  if (report.fromHeaders.length > 0) {
-    lines.push(`Rule areas taken from your rules' headers: ${report.fromHeaders.join(', ')}`, '');
-  }
-  if (report.editedRules.length > 0) {
-    lines.push(
-      `You had edited these shipped rules; your text is in .claude/rule-additions/<n>.md.old: ${report.editedRules.join(', ')}`,
-      'Move the lines you added into .claude/rule-additions/<n>.md, then delete the .old file.',
-      '',
-    );
-  }
-  if (report.moved) {
-    const stale = stillNamesFramework(project, nextFiles);
-    if (stale.length > 0) lines.push('Still names .framework/:', ...stale.map((rel) => `  ${rel}`), '');
-  }
   if (entry.report) lines.push(entry.report, '');
   lines.push('Next:');
-  if (report.moved || packageChanged) lines.push('  npm --prefix .tropis install');
+  if (packageChanged) lines.push('  npm --prefix .tropis install');
   lines.push('  npm --prefix .tropis test');
   if (newFiles.length > 0) {
     lines.push(

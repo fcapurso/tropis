@@ -569,7 +569,7 @@ moved or merged. Updating needs a Tropis clone until the package install exists
 
 ## FW-015: The framework folder is `.tropis/`, and an earlier install moves there
 
-**Date:** 2026-10-16 · **Status:** Accepted
+**Date:** 2026-10-16 · **Status:** Accepted; its migration superseded by FW-033
 
 **Decision:** Decisions 1 and 3–7 of
 docs/superpowers/plans/2026-10-16-framework-moves-to-tropis.md. A project set up from
@@ -1037,3 +1037,22 @@ has no use for; one concern per hook keeps each silent where it does not apply.
 agent reads the outgoing diff at every commit and push; the hook asks for a reading, so
 what it catches depends on the reader, and the review record and `/release` are the
 second and third readings.
+
+---
+
+## FW-033: A project in `.framework/` is set up afresh, not moved
+
+**Date:** 2026-10-28 · **Status:** Accepted
+
+**Decision:** `take-version` and setup refuse a project holding `.framework/`, and the
+migration FW-015 described is removed.
+
+**Evidence:** The public repository cannot carry the `v0.1.0` tag its tests needed (the
+Why of the plan dated 2026-10-28 whose slug is the-self-check-needs-no-private-tag), and
+no adopting project is on that layout.
+
+**Rejected:** A fixture built from the `v0.1.0` tree, since that tree holds private
+material. Skipping the tests when the tag is absent, since the public pipeline would
+then check less than it claims.
+
+**Consequences:** A project still in `.framework/` must set up again.

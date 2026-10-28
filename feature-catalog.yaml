@@ -3362,9 +3362,12 @@
 # ran because the self-check needs the v0.1.0 tag and the public history has none. The
 # developer decided the same day that no project needs to move off the .framework/ layout.
 # Plan: docs/superpowers/plans/2026-10-28-the-self-check-needs-no-private-tag.md
+# Task 4 meets the tagless self-check. Tasks 1 and 2 meet the refusal, and that nothing
+# in the project changes. Task 2 meets the tests of taking a release for a .tropis/
+# project, which stay.
 - id: the-self-check-needs-no-private-tag
   title: The self-check runs in the public repository, needing nothing from the private history
-  status: shaped
+  status: shipped
   value: Anyone who clones Tropis can run its self-check and get a true answer, and the
     public pipeline checks every pull request. Today the self-check stops before any test
     runs, because it needs a tag only the private archive has.
