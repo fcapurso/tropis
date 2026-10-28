@@ -1,0 +1,26 @@
+name: Framework checks
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version for the framework checks
+        type: string
+        default: '22'
+      ref:
+        description: Commit, branch or tag to check out. Empty checks out the event's ref.
+        type: string
+        default: ''
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: npm --prefix .tropis ci
+      - run: node .tropis/scripts/pipeline.mjs run framework

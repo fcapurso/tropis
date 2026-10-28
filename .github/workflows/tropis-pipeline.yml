@@ -1,0 +1,228 @@
+# Tropis's pipeline. Replaced on update. To own it, copy this file to
+# project-pipeline.yml and point pipeline.yml at that copy.
+
+name: Tropis pipeline
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version for the pipeline
+        type: string
+        default: '22'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      framework: ${{ steps.plan.outputs.framework }}
+      sanity: ${{ steps.plan.outputs.sanity }}
+      unit: ${{ steps.plan.outputs.unit }}
+      integration: ${{ steps.plan.outputs.integration }}
+      end-to-end: ${{ steps.plan.outputs.end-to-end }}
+      deploy: ${{ steps.plan.outputs.deploy }}
+      lines: ${{ steps.plan.outputs.lines }}
+      environment: ${{ steps.plan.outputs.environment }}
+      branch: ${{ steps.plan.outputs.branch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if [ "$ACTION" = "closed" ]; then
+              environment=$(node .tropis/scripts/pipeline.mjs environment "$HEAD_REF" --no-check)
+            else
+              environment=$(node .tropis/scripts/pipeline.mjs environment "$HEAD_REF")
+            fi
+            echo "environment=$environment" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$ACTION" = "closed" ]; then
+            node .tropis/scripts/pipeline.mjs plan --closed >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            base="$PR_BASE"
+            head="$PR_HEAD"
+          else
+            base="$PUSH_BEFORE"
+            head="$PUSH_SHA"
+          fi
+          lines=$(node .tropis/scripts/pipeline.mjs plan --base "$base" --head "$head")
+          branch=$(printf '%s\n' "$lines" | sed -n 's/^branch=//p')
+          if [ -z "$branch" ]; then
+            echo "plan: no branch line" >&2
+            exit 1
+          fi
+          {
+            echo "branch=$branch"
+            echo "lines<<PLAN_EOF"
+            printf '%s\n' "$lines"
+            echo "PLAN_EOF"
+            printf '%s\n' "$lines"
+          } >> "$GITHUB_OUTPUT"
+
+  framework:
+    needs: plan
+    if: ${{ github.event.action != 'closed' }}
+    uses: ./.github/workflows/tropis-framework-checks.yml
+    with:
+      node-version: ${{ inputs.node-version }}
+
+  sanity:
+    needs: [plan, framework]
+    if: needs.plan.outputs.sanity == 'run'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs run sanity
+        env:
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+
+  unit:
+    needs: [plan, framework]
+    if: needs.plan.outputs.unit == 'run'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs run unit
+        env:
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+
+  integration:
+    needs: [plan, framework]
+    if: needs.plan.outputs.integration == 'run'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs run integration
+        env:
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+
+  end-to-end:
+    needs: [plan, framework]
+    if: needs.plan.outputs.end-to-end == 'run'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs run end-to-end
+        env:
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+
+  # Opening a pull request creates the environment. It does not wait for the
+  # stages. One group per environment: at most one of these jobs runs, a new
+  # pending job replaces an older pending one, and a running job is not
+  # cancelled. https://docs.github.com/en/actions/using-jobs/using-concurrency
+  branch-create:
+    needs: plan
+    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened') && needs.plan.outputs.branch == 'filled' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs branch create "$HEAD_REF"
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+
+  # A condition with no status function is combined with success(), which is
+  # false once an empty stage was skipped. always() runs the gate anyway.
+  # A closed pull request removes the environment and runs no stage.
+  gate:
+    needs: [plan, framework, sanity, unit, integration, end-to-end]
+    if: ${{ always() && github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BRANCH: ${{ needs.plan.outputs.branch }}
+          FRAMEWORK: ${{ needs.framework.result }}
+          SANITY: ${{ needs.sanity.result }}
+          UNIT: ${{ needs.unit.result }}
+          INTEGRATION: ${{ needs.integration.result }}
+          END_TO_END: ${{ needs.end-to-end.result }}
+          PLAN_LINES: ${{ needs.plan.outputs.lines }}
+        run: |
+          decision=$(printf '%s\n' "$PLAN_LINES" | node .tropis/scripts/pipeline.mjs gate \
+            --plan - --event "$EVENT_NAME" --branch "$BRANCH" --summary "$GITHUB_STEP_SUMMARY" \
+            "framework=$FRAMEWORK" "sanity=$SANITY" "unit=$UNIT" \
+            "integration=$INTEGRATION" "end-to-end=$END_TO_END")
+          echo "deploy=${decision#deploy=}" >> "$GITHUB_OUTPUT"
+
+  # !cancelled() rather than always(), so a cancelled run does not deploy.
+  # A skipped create is not a failure: a later push still deploys.
+  deploy:
+    needs: [plan, gate, branch-create]
+    if: ${{ !cancelled() && needs.gate.outputs.deploy == 'run' && needs.branch-create.result != 'failure' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - if: github.event_name == 'pull_request'
+        run: node .tropis/scripts/pipeline.mjs branch deploy "$HEAD_REF"
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+      - if: github.event_name != 'pull_request'
+        run: node .tropis/scripts/pipeline.mjs run deploy
+        env:
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+
+  branch-remove:
+    needs: plan
+    if: ${{ github.event.action == 'closed' && needs.plan.outputs.branch == 'filled' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs branch remove "$HEAD_REF"
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}

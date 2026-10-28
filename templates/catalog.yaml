@@ -1,0 +1,75 @@
+# The backlog: one entry per unit of work, from idea to shipped.
+#
+# This file is DATA. A renderer, a generator script, the guards, and any backlog command
+# read it; nothing in the application does. It lives at the repository root because it
+# belongs to neither the application nor any one agent tool.
+#
+# YAML is the canonical interchange format. A project may hold its backlog in another
+# representation provided it can produce this one — the reference tooling and the shared
+# conformance fixtures both assume it.
+#
+# Behaviour — when each status changes, what shelving means, how ordering works — is in
+# rules/catalogs.md, which is delivered at the moment you edit this file. What follows is
+# the shape only.
+#
+# ── REQUIRED ─────────────────────────────────────────────────────────────────
+#
+# id      Stable kebab-case identity, assigned at capture and never changed. Names the
+#         outcome, not the mechanism, so it survives the implementation changing. Specs,
+#         plans and decision records cite it.
+# title   Short display name.
+# status  idea | shaped | building | shipped
+# type    feature      something a user can newly do
+#         bug          something that does not work as intended
+#         improvement  existing behaviour made better, and a user notices
+#         chore        maintenance a user never notices
+#         spike        a question to answer; the output is a finding, not a shipped
+#                      thing. A spike has no modules and never will.
+# layer   product    the thing this repository builds
+#         framework  this repository's own process machinery
+# value   What someone can do and why it matters. Functional, not technical. If the
+#         value cannot be stated, the entry is not ready to capture.
+# acceptanceCriteria
+#         Observable conditions that define done — what a person could check, not what
+#         the code does. Written at `shaped`, before implementation.
+# modules Implementing paths. Required at `shipped`, where a guard asserts each one
+#         exists. Empty until then.
+# refs    Spec, plan and decision-record paths. Entries sharing a spec path form an arc.
+#
+# ── OPTIONAL ─────────────────────────────────────────────────────────────────
+#
+# blockedBy     Ids that must reach `shipped` first, because starting early would
+#               genuinely not work. Omit when nothing blocks it; never write an empty
+#               list.
+# after         Ids this follows in a designed sequence. Weaker than blockedBy: starting
+#               early would work, it is merely not the intended order. An entry may
+#               carry both.
+# supersededBy  Ids that replaced this entry, typically when a shaping split one idea
+#               into several. The entry stays, because specs cite ids and those
+#               citations must keep resolving.
+# shelved       true when an entry is shaped and deliberately not scheduled. Only `idea`
+#               and `shaped` entries may carry it. Never write false.
+# externalRef   A tracker link, if the project uses one.
+#
+# Comments are part of the record. Put the reasoning for a re-pointing, a shelving or an
+# unusual decision in a `#` comment above the key it explains — that is why this is YAML
+# and not JSON.
+
+# Replace this entry with a real one, or delete it. It shows the shape of each field,
+# including acceptance criteria written as things a person could check rather than as
+# descriptions of the implementation. Its module path does not exist in your project,
+# which the reality guard will correctly reject.
+- id: example-stable-id
+  title: Example entry
+  status: shipped
+  type: feature
+  layer: product
+  value: What someone can now do, and why that matters to them. Written so it would
+    still make sense to a reader who has never seen the code.
+  acceptanceCriteria:
+    - A person can perform the action and observe the stated result.
+    - The failure case surfaces a message naming what went wrong.
+  modules:
+    - src/path/to/implementation.js
+  refs:
+    - docs/plans/example-plan.md

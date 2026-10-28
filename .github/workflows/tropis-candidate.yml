@@ -1,0 +1,61 @@
+# Tropis's file, replaced on update. Started through the project's candidate.yml.
+
+name: Tropis release candidate
+
+on:
+  workflow_call:
+    inputs:
+      commit:
+        description: The commit to rehearse, in full.
+        type: string
+        required: true
+      node-version:
+        description: Node.js version for the candidate
+        type: string
+        default: '22'
+
+jobs:
+  framework:
+    uses: ./.github/workflows/tropis-framework-checks.yml
+    with:
+      node-version: ${{ inputs.node-version }}
+      ref: ${{ inputs.commit }}
+
+  # There is no gate. The candidate runs every stage and skips none, so this
+  # matrix is the whole run, and GitHub's implicit success() holds rehearse
+  # back when any stage failed.
+  stages:
+    needs: framework
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        stage: [sanity, unit, integration, end-to-end]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.commit }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs run ${{ matrix.stage }}
+        env:
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+
+  rehearse:
+    needs: stages
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tropis-candidate-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs candidate rehearse --summary "$GITHUB_STEP_SUMMARY"
+        env:
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}

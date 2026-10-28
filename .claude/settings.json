@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/capture-at-write.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/capture-at-write.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/capture-at-merge.sh",
+            "if": "Bash(gh pr merge *)"
+          },
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/framework-commit-check.sh",
+            "if": "Bash(git commit *)"
+          },
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/public-exposure-check.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Edit(.claude/rules/**)",
+      "Edit(.claude/framework/**)",
+      "Edit(.tropis/hooks/**)",
+      "Edit(.tropis/scripts/**)",
+      "Edit(.tropis/guards/**)",
+      "Edit(.tropis/rules/**)",
+      "Edit(.tropis/templates/**)",
+      "Edit(.tropis/jest.config.js)"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "tropis-framework",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "next": "node ./scripts/next.mjs",
+    "board": "node ./scripts/build-backlog-board.mjs",
+    "dispatch": "node ./scripts/dispatch.mjs",
+    "rules": "node ./scripts/generate-rules.mjs"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0",
+    "yaml": "^2.9.0"
+  },
+  "overrides": {
+    "test-exclude": "^8.0.0"
+  }
+}

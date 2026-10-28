@@ -1,0 +1,13 @@
+- id: example-entry
+  title: Example entry
+  status: shipped
+  shelved: true
+  type: feature
+  layer: product
+  value: Something a person can do, stated so a reader who has never seen the code
+    would still understand it. Deferred without explanation.
+  acceptanceCriteria:
+    - A person can perform the action and observe the stated result.
+  modules:
+    - CLAUDE.md
+  refs: []

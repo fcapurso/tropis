@@ -1,0 +1,71 @@
+{
+  "_comment": [
+    "Hook wiring. Delete this _comment key before use —",
+    "it is documentation, not configuration, and some tools reject unknown keys.",
+    "",
+    "Rules are not delivered by a hook: Claude Code loads each .claude/rules/*.md when",
+    "the agent first touches a file its paths: header names, and Cursor reads the .mdc",
+    "projection. Hooks speak only at moments",
+    "nothing else serves. capture-at-write.sh fires on Edit and Write of a rule,",
+    "decision record or framework document. The Bash matcher carries three hooks for",
+    "moments no file path marks: merging a plan, committing a change to the rules or",
+    "framework, and committing or pushing in a public project. The first two are",
+    "narrowed to their command shape by an `if`; public-exposure-check.sh has two",
+    "triggers, so it has no `if` and matches commit and push itself. Each re-checks the",
+    "command itself. Every hook replies through .tropis/hooks/hook-reply.sh, the one",
+    "shape both tools pass to the agent.",
+    "",
+    "Everything else is project-specific and belongs here only when the project needs",
+    "it. What the two source projects added, as examples of the kind of thing that",
+    "goes here rather than as defaults to copy:",
+    "  - a permissions.deny list naming credential files, so a read is refused rather",
+    "    than merely discouraged;",
+    "  - a second Read hook guarding those same files, because a deny list and a guard",
+    "    fail in different ways;",
+    "  - a Bash hook checking commit commands against the commit format.",
+    "",
+    "Order matters within a matcher: hooks run in sequence, and a guard that blocks",
+    "should run before one that only adds context."
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/capture-at-write.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/capture-at-write.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/capture-at-merge.sh",
+            "if": "Bash(gh pr merge *)"
+          },
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/framework-commit-check.sh",
+            "if": "Bash(git commit *)"
+          },
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/public-exposure-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

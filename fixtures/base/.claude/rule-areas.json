@@ -1,0 +1,7 @@
+{
+  "catalogs": ["feature-catalog.yaml"],
+  "harness-scripts": [".tropis/**"],
+  "learnings": ["DECISIONS.md"],
+  "planning": ["docs/superpowers/plans/**"],
+  "tests": ["**/__tests__/**"]
+}

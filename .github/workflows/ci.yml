@@ -1,0 +1,73 @@
+# The release job. Pull requests and pushes to main run through pipeline.yml,
+# whose unit stage is the self-check. Here the self-check runs on the commit the
+# release starts from, and again on the commit that promotes the notes, before that
+# commit is tagged or pushed. It is started by hand, on main, by the developer —
+# never by an agent:
+#   gh workflow run ci.yml --ref main -f bump=<patch|minor|major>
+name: Self-check and release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: patch, minor or major (major means breaking; see RELEASES.md)
+        type: choice
+        options: [patch, minor, major]
+        required: true
+
+jobs:
+  self-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: bash scripts/check-blueprint.sh
+
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    needs: self-check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Releases are cut from main only
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "Started on $GITHUB_REF. Start the release job on main."
+          exit 1
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Work out the version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          last=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          echo "version=$(node .github/scripts/release.mjs version "$BUMP" "$last")" >> "$GITHUB_OUTPUT"
+      - name: Promote the notes and commit
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node .github/scripts/release.mjs promote RELEASES.md "$VERSION" "$(date -u +%F)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(release): v$VERSION" \
+            -m "Promotes the release notes under $VERSION and tags the commit, so a project can be set up from this release."
+      # The commit that is tagged, checked before anything is pushed: a failure here ends
+      # the job, and neither the commit nor the tag leaves the runner.
+      - name: Self-check the release commit
+        run: bash scripts/check-blueprint.sh
+      - name: Tag and push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push --atomic origin HEAD:main "v$VERSION"

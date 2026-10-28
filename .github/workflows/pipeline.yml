@@ -1,0 +1,18 @@
+# The project owns this file. Change the branch name below to the branch
+# deploys run from. To own the pipeline, copy
+# .github/workflows/tropis-pipeline.yml to
+# .github/workflows/project-pipeline.yml and point the job below at that copy.
+
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+  # closed is what removes a branch's environment.
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/tropis-pipeline.yml
+    secrets: inherit

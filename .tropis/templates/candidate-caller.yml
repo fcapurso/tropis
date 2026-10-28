@@ -1,0 +1,20 @@
+# The project owns this file. It is started by hand —
+# gh workflow run candidate.yml --ref main -f commit=<commit> —
+# and never by an agent.
+
+name: Release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: The commit to rehearse, in full. Empty means the head of the branch it is started on.
+        type: string
+        required: false
+
+jobs:
+  candidate:
+    uses: ./.github/workflows/tropis-candidate.yml
+    secrets: inherit
+    with:
+      commit: ${{ inputs.commit || github.sha }}

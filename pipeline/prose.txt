@@ -1,0 +1,3 @@
+# Nothing here is prose. The self-check guards README.md and most of docs/
+# (readme-usable, readme-level, doc-currency, framework-integrity), so a change
+# to them must still run the unit stage.

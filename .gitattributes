@@ -1,0 +1,16 @@
+# The framework and its planning material: kept out of any exported copy (git archive).
+# Anchored to the root. Unanchored, these also match the sample project under fixtures/,
+# which the self-check exports with git archive.
+/.claude/ export-ignore
+/.cursor/ export-ignore
+/.tropis/ export-ignore
+/CLAUDE.md export-ignore
+/AGENTS.md export-ignore
+/feature-catalog.yaml export-ignore
+/docs/superpowers/ export-ignore
+/docs/backlog-board/ export-ignore
+/docs/verification-log.md export-ignore
+/docs/project-brief.md export-ignore
+/docs/BLUEPRINT-UPSTREAM.md export-ignore
+# docs/readme/ stays in exported copies: the self-check reads the README settings there.
+/docs/readme/ -export-ignore

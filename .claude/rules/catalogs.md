@@ -1,0 +1,139 @@
+---
+paths: ["feature-catalog.yaml"]
+---
+# Catalog rules (the backlog)
+<!-- layer: framework -->
+
+The backlog is the source of truth for what this product does and what is planned, and
+the documents generated from it are not to be edited by hand.
+
+- After any change, run the generator and commit the regenerated Markdown **in the same
+  commit**. A guard compares them byte-for-byte, so splitting them across two commits
+  leaves the first one red.
+- Never hand-edit a generated document. Change the backlog and regenerate.
+- **A generated region inside a hand-written page gets the same guard.** Where a page
+  people write by hand must carry a generated reference, mark the region with two comment
+  markers, have the generator rewrite only what lies between them, and compare that
+  region byte-for-byte against a fresh render — the guard a wholly generated document
+  gets. Never hand-edit between the markers. The page stays prose, and the reference
+  cannot go stale.
+- An entry may only reach `shipped` when every acceptance criterion is covered by an
+  automated test or a recorded entry in `docs/verification-log.md`, drafted and recorded
+  through `/manual-check`. If a criterion has neither, the entry does not ship — say so
+  rather than promoting it.
+
+  **A criterion about what a fresh agent session receives or answers has a third
+  route:** a fresh-agent check recorded with its tool, version, operating system and
+  architecture, in the commit body or review record that ships the entry. That is where
+  the workflow already records those checks, and neither a test nor the log can hold
+  one — a test cannot start a session, and the log is for what a person sees. Name the
+  commit or record in a comment above the entry.
+- **A criterion only the developer can observe does not hold the entry back.** The rule
+  above and the delivery guard pull opposite ways the first time a plan merges with an
+  observation still outstanding: this file says do not promote, while, where the project
+  runs one, a guard that every Delivers id on an executed plan is shipped turns the
+  branch red if you do not. **Where that guard runs, it wins.** Where it does not, make
+  the same choice by hand. `shipped` says the code landed, not that every eye has been
+  on it. Record the unobserved criterion in the review record's *Outstanding
+  disposition*, naming who must observe it, and record the observation in
+  `docs/verification-log.md`, through `/manual-check`, when it happens.
+
+  Got wrong in both directions on one plan. Its executor left the entry short of
+  `shipped`, then promoted it while writing the review record to keep the branch green —
+  and the record's own summary two sections below still claimed the entry was not being
+  shipped on an unbacked criterion. The check had in fact been run and reported in
+  conversation; nothing wrote it down, so three separate records said outstanding while
+  the developer believed it closed.
+- Comments are part of the record. Say why an entry was re-pointed, shelved, or ordered
+  the way it is, in a comment above the key it explains.
+- **`refs` names the design the entry belongs to, and nothing else.** The backlog report
+  treats every spec cited by more than one entry as an arc and reports how far it has
+  got, so a grooming or review spec cited on each entry it touched shows as a false arc
+  of unrelated work. Name such a document in a comment above the entry instead.
+
+## What does not become an entry
+
+A finding — from a review, a handover, a fresh-agent check, or work in passing —
+becomes an entry only when it would otherwise be lost. Two kinds would not be:
+
+- **An improvement the next agent in that area would make on the spot.** If whoever
+  next works there would see it and do it without being told — name the evidence a
+  criterion needs, reword a sentence, pick the obvious default — an entry only adds a
+  row someone must later read, band and close.
+- **A bug of little or no impact that the normal flow would catch and neutralise.** If
+  the ordinary next step — setup's own commit, a suite run, a review — would surface it
+  and make its consequence disappear, leaving it costs nothing.
+
+**A bug that fails silently is always an entry.** A hook that emits nothing, a check
+that cannot fail, a rule that is false about the code: the normal flow never catches
+these, because nothing in it looks wrong. When unsure whether the flow would catch a
+bug, it is an entry.
+
+**A drop is a decision, and it carries a reason in one line** where the finding was
+reported — the review record's *Outstanding disposition*, the handover report, or the
+reply to the developer. A finding with neither an entry nor a reason has not been
+dealt with. When the developer asks for an entry, it is captured; this section is for
+findings an agent raises itself.
+
+In the five days to 2026-10-20 the backlog this came from gained 49 entries and
+shipped 21. One review filed two for a single shipped entry: a warning that was wrong
+only before setup's own commit, and a gap the reviewer had already filled by hand.
+Both were dropped the same day.
+
+## Status transitions
+
+Status changes hands at fixed moments, not whenever it feels right:
+
+- `idea` → `shaped` when acceptance criteria are written, before implementation.
+- `shaped` → `building` **when its plan is dispatched**.
+- `building` → `shipped` **when its plan merges**, in the same commit as the regenerated
+  documentation.
+- `building` → `shaped` if the plan is abandoned; nothing stays `building` without a plan.
+
+**A promotion to `shipped` removes `blockedBy`.** An entry that has landed cannot be
+waiting for anything, and the catalog check rejects any shipped entry that still records
+a blocker, where the project has one — whether or not that blocker has itself shipped.
+Delete the field as part of the promotion, in the same edit.
+
+`after` is not touched. It records the order the work was designed in, which stays true
+after the work is done.
+
+An entry stuck at `building` with no open branch is the signal that something was
+dropped — but only if this transition is actually made.
+
+## Layers
+
+Every entry says where the work happens: `product` or `framework`.
+
+Work the upstream framework must do is not recorded here — it goes to the upstream queue
+and reaches the framework's own backlog through `/flush-upstream`. A project still
+holding entries with `layer: blueprint` writes each as a queue line, flushes it, and
+deletes the entry once its pull request is open; the backlog report counts them until
+then.
+
+## Order and supersession
+
+- `after` — the entry follows another in a designed sequence. Starting early would still
+  work; it is merely not the order the design intended.
+- `blockedBy` — starting early would genuinely not work. An entry may carry both.
+- `supersededBy` — set on the original when a shaping splits one entry into several. Do
+  **not** delete the original: specs and plans cite ids and those citations must keep
+  resolving. A superseded entry is not work anyone can pick up, and must not also be
+  `shipped`.
+
+## Shelving
+
+`shelved: true` is a flag beside the status, not a status. It says: this is shaped,
+understood, and deliberately not scheduled — nobody is expected to pick it up.
+
+- Set it when work is parked on purpose rather than blocked. `blockedBy` says *cannot
+  start*; `shelved` says *could start, and we have decided not to*.
+- The entry keeps the status it earned. Un-shelving is deleting the line, not working out
+  which status to restore.
+- Only `idea` and `shaped` entries may carry it. An entry that is `building` has a plan
+  running and one that is `shipped` has landed; neither is something anyone can decline
+  to schedule.
+- Never write `shelved: false`. Absent means not shelved, exactly as with `blockedBy`.
+- Say **why** it is shelved in the entry's `value`, and keep the plan or spec in `refs`.
+  A shelf with no reason on it is indistinguishable from something forgotten.
+<!-- generated by .tropis/scripts/generate-rules.mjs · sha256:5bc3b34ae8c6803c948cec62a01a8cb71d5942314f7adad8b0890fc3335a3100 -->

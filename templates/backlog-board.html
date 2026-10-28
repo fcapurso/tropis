@@ -1,0 +1,493 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+:root{
+  --ground:#f4f6f8; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#151a22; --ink-2:#48525f; --ink-3:#6f7a89;
+  --rule:#d9dfe7; --rule-2:#e8ecf1;
+  --accent:#2b4b7e; --accent-soft:#e4ebf6;
+  --crit:#a8271c; --crit-soft:#f8e6e4;
+  --warn:#8a5600; --warn-soft:#f9eeda;
+  --go:#1c6b45; --go-soft:#e2efe8;
+  --mute:#6a7383; --mute-soft:#e9ecf0;
+  --shadow:0 1px 2px rgba(21,26,34,.06),0 4px 14px rgba(21,26,34,.05);
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"IBM Plex Serif",ui-serif,Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101319; --surface:#181c23; --surface-2:#1f242c;
+    --ink:#e7eaef; --ink-2:#a8b2bf; --ink-3:#7d8794;
+    --rule:#2b323b; --rule-2:#232932;
+    --accent:#8fb0dd; --accent-soft:#1e2a3c;
+    --crit:#f0918a; --crit-soft:#37211f;
+    --warn:#e0ae5c; --warn-soft:#332715;
+    --go:#79c6a0; --go-soft:#172a22;
+    --mute:#8b95a3; --mute-soft:#23282f;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101319; --surface:#181c23; --surface-2:#1f242c;
+  --ink:#e7eaef; --ink-2:#a8b2bf; --ink-3:#7d8794;
+  --rule:#2b323b; --rule-2:#232932;
+  --accent:#8fb0dd; --accent-soft:#1e2a3c;
+  --crit:#f0918a; --crit-soft:#37211f;
+  --warn:#e0ae5c; --warn-soft:#332715;
+  --go:#79c6a0; --go-soft:#172a22;
+  --mute:#8b95a3; --mute-soft:#23282f;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:36px 24px 96px}
+
+/* ---- masthead ---- */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px 32px;
+  padding-bottom:20px;border-bottom:2px solid var(--ink)}
+.mast h1{font-size:29px;font-weight:600;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.mast .sub{font-family:var(--serif);font-size:15px;color:var(--ink-2);margin:6px 0 0;max-width:62ch}
+.mast .meta{margin-left:auto;text-align:right;font-family:var(--mono);font-size:11px;
+  color:var(--ink-3);line-height:1.7;letter-spacing:.02em}
+.mast .meta b{color:var(--ink-2);font-weight:500}
+#readme:empty{display:none}
+
+/* ---- tallies ---- */
+.tallies{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);margin:22px 0 26px}
+.tally{background:var(--surface);padding:12px 14px 13px}
+.tally .n{font-family:var(--mono);font-size:23px;font-weight:600;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.tally .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--ink-3);margin-top:3px;font-weight:600}
+.tally.t-A .n{color:var(--crit)} .tally.t-B .n{color:var(--accent)}
+.tally.t-C .n{color:var(--go)} .tally.t-D .n{color:var(--warn)}
+.tally.t-E .n{color:var(--mute)}
+
+/* ---- arcs ---- */
+.arcs{margin:0 0 26px;border:1px solid var(--rule);background:var(--surface)}
+.arcs .ah{display:flex;align-items:baseline;gap:10px;padding:9px 14px 8px;border-bottom:1px solid var(--rule-2)}
+.arcs .ah .lbl{margin:0}
+.arcs .ah .note{font-family:var(--serif);font-style:italic;font-size:12.5px;color:var(--ink-3)}
+.arc{display:grid;grid-template-columns:minmax(0,1fr) 150px 52px;gap:0 14px;align-items:center;
+  padding:8px 14px;border-bottom:1px solid var(--rule-2)}
+.arc:last-child{border-bottom:none}
+.arc .an{font-size:13px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arc .an .sp{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin-left:8px}
+.arcbar{height:6px;background:var(--surface-2);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.arcbar i{display:block;height:100%;background:var(--accent)}
+.arc .af{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
+.arc-done{background:var(--surface-2)} .arc-done .an{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink-3);white-space:normal} .arc-done .af{color:var(--go)}
+.tag-arc{background:var(--accent-soft);color:var(--accent);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
+.ladder{display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--mono);font-size:11px;color:var(--ink-3);
+  padding:8px 0 2px;line-height:1.5}
+.ladder .st{display:inline-flex;align-items:center;gap:5px}
+.ladder .st.done{color:var(--ink-3)} .ladder .st.done::before{content:"●";color:var(--go);font-size:9px}
+.ladder .st.open{color:var(--ink-2)} .ladder .st.open::before{content:"○";font-size:9px}
+.ladder .st.parked{color:var(--ink-3);text-decoration:line-through} .ladder .st.parked::before{content:"○";font-size:9px}
+.ladder .arrow{color:var(--rule);user-select:none}
+@media (max-width:620px){.arc{grid-template-columns:minmax(0,1fr) 70px 46px}}
+
+/* ---- controls ---- */
+.controls{position:sticky;top:0;z-index:20;background:var(--ground);
+  padding:12px 0 13px;border-bottom:1px solid var(--rule);margin-bottom:4px}
+.crow{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.crow + .crow{margin-top:9px}
+.lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:600;
+  color:var(--ink-3);margin-right:1px}
+input[type=search]{flex:1 1 210px;min-width:170px;font-family:var(--mono);font-size:12.5px;
+  padding:7px 10px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);
+  border-radius:3px}
+input[type=search]::placeholder{color:var(--ink-3)}
+select{font-family:var(--sans);font-size:12.5px;padding:6px 8px;border:1px solid var(--rule);
+  background:var(--surface);color:var(--ink);border-radius:3px}
+.chip{font-family:var(--sans);font-size:12px;font-weight:500;padding:5px 11px;border-radius:999px;
+  border:1px solid var(--rule);background:var(--surface);color:var(--ink-2);cursor:pointer;
+  transition:background .12s,border-color .12s,color .12s}
+.chip:hover{border-color:var(--ink-3)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.chip .c{font-family:var(--mono);font-size:10.5px;opacity:.62;margin-left:5px;
+  font-variant-numeric:tabular-nums}
+button.link{background:none;border:none;padding:0;font-family:var(--sans);font-size:12px;
+  color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+:is(button,select,input,summary):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- groups ---- */
+.group{margin-top:34px}
+.ghead{display:flex;align-items:baseline;gap:12px;padding-bottom:7px;
+  border-bottom:1px solid var(--rule)}
+.gmark{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;
+  letter-spacing:-.03em;min-width:34px}
+.g-A .gmark{color:var(--crit)} .g-B .gmark{color:var(--accent)}
+.g-C .gmark{color:var(--go)} .g-D .gmark{color:var(--warn)}
+.g-E .gmark{color:var(--mute)} .g-x .gmark{color:var(--ink-3);font-size:17px}
+.g-arc .gmark{font-size:15px;color:var(--accent);font-variant-numeric:tabular-nums}
+.gtitle{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.gnote{font-family:var(--serif);font-size:13.5px;color:var(--ink-2);font-style:italic}
+.gcount{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+
+/* ---- rows ---- */
+.rows{display:flex;flex-direction:column}
+.row{border-bottom:1px solid var(--rule-2)}
+.rbtn{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:0 14px;width:100%;
+  text-align:left;background:none;border:none;padding:0;cursor:pointer;font:inherit;color:inherit}
+.rbtn:hover .rid{color:var(--accent)}
+.spine{background:var(--rule-2)}
+.r-A .spine{background:var(--crit)} .r-B .spine{background:var(--accent)}
+.r-C .spine{background:var(--go)} .r-D .spine{background:var(--warn)}
+.r-E .spine{background:var(--mute)}
+.rmain{padding:11px 0 12px;min-width:0}
+.rtop{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 10px}
+.rid{font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:-.01em;
+  word-break:break-word}
+.rtitle{font-size:13px;color:var(--ink-2)}
+.rverdict{font-family:var(--serif);font-size:13.5px;color:var(--ink);margin-top:5px;
+  max-width:74ch;line-height:1.55}
+.rmeta{display:flex;align-items:center;gap:6px;padding:13px 0 0 4px;align-self:start;
+  flex-wrap:wrap;justify-content:flex-end}
+.tag{font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;
+  padding:3px 7px;border-radius:3px;white-space:nowrap}
+.tag-status{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--rule)}
+.tag-shaped{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.tag-layer{background:none;color:var(--ink-3);border:1px solid var(--rule)}
+.tag-type{background:none;color:var(--ink-3)}
+.tag-flag{background:var(--warn-soft);color:var(--warn)}
+.tag-blocked{background:var(--crit-soft);color:var(--crit)}
+.caret{font-family:var(--mono);font-size:11px;color:var(--ink-3);width:12px;text-align:center}
+
+/* ---- detail ---- */
+.detail{padding:2px 0 20px 23px;max-width:82ch}
+.dsec{margin-top:15px}
+.dsec h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);
+  margin:0 0 5px;font-weight:600}
+.dsec p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.6}
+.dsec ul{margin:0;padding-left:17px;font-size:13.5px;color:var(--ink-2);line-height:1.6}
+.dsec li{margin-bottom:3px}
+.evid{background:var(--surface);border-left:3px solid var(--go);padding:10px 13px;
+  font-size:12.5px;line-height:1.6;color:var(--ink-2)}
+.evid code,.mono{font-family:var(--mono);font-size:.94em;color:var(--ink)}
+.deps{font-family:var(--mono);font-size:12px;color:var(--ink-2);
+  display:flex;flex-wrap:wrap;gap:4px 14px}
+.refs{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);word-break:break-all;
+  display:flex;flex-direction:column;gap:2px}
+.empty{padding:40px 4px;font-family:var(--serif);font-style:italic;color:var(--ink-3);font-size:14px}
+.foot{margin-top:52px;padding-top:16px;border-top:1px solid var(--rule);
+  font-size:12px;color:var(--ink-3);max-width:72ch;line-height:1.65}
+.foot b{color:var(--ink-2);font-weight:600}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:620px){
+  .rbtn{grid-template-columns:9px minmax(0,1fr);gap:0 12px}
+  .rmeta{grid-column:2;justify-content:flex-start;padding:0 0 11px}
+  .mast .meta{margin-left:0;text-align:left}
+}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <h1>__TITLE__</h1>
+      <p class="sub">Every open entry in <span class="mono">feature-catalog.yaml</span>, banded by
+      urgency against impact. Verdicts are advisory; the catalog stays the source of truth.</p>
+    </div>
+    <div class="meta">
+      <div><b>__OPEN__</b> open &middot; <b>__SHIPPED__</b> shipped</div>
+      <div>product <b>__PRODUCT__</b> &middot; framework <b>__FRAMEWORK__</b></div>
+      <div id="asof">built __ASOF__</div>
+      <div id="readme">__README__</div>
+    </div>
+  </header>
+
+  <div class="arcs" id="nextup"></div>
+  <div class="tallies" id="tallies"></div>
+  <div class="arcs" id="arcs"></div>
+
+  <div class="controls">
+    <div class="crow">
+      <input type="search" id="q" placeholder="filter by id, title or verdict…" aria-label="Search entries">
+      <span class="lbl">Group</span>
+      <select id="groupby" aria-label="Group by">
+        <option value="band">Band</option>
+        <option value="l">Layer</option>
+        <option value="s">Status</option>
+        <option value="ty">Type</option>
+        <option value="arc">Arc</option>
+      </select>
+      <span class="lbl">Sort</span>
+      <select id="sortby" aria-label="Sort within group">
+        <option value="band">Band</option>
+        <option value="id">Id</option>
+        <option value="s">Status</option>
+        <option value="ty">Type</option>
+        <option value="l">Layer</option>
+      </select>
+      <button class="link" id="expandall" type="button">expand all</button>
+      <button class="link" id="reset" type="button">reset</button>
+    </div>
+    <div class="crow" id="bandchips"><span class="lbl">Band</span></div>
+    <div class="crow" id="layerchips"><span class="lbl">Layer</span></div>
+    <div class="crow" id="statechips"><span class="lbl">State</span></div>
+    <div class="crow" id="arcchips"><span class="lbl">Arc</span></div>
+  </div>
+
+  <main id="board"></main>
+
+  <footer class="foot">
+    <p><b>Bands.</b> <b>A</b> do now — verified, and either exposed or blocking everything behind it.
+    <b>B</b> do next — high impact, no deadline. <b>C</b> cheap wins, worth batching into one branch.
+    <b>D</b> decide, don't build — the next move is a ruling, not a dispatch. <b>E</b> leave alone —
+    correctly shelved or superseded, retained so references keep resolving. Claims marked
+    <span class="mono">checked against the code</span> were verified against the source, not taken from
+    the entry text.</p>
+    <p style="margin-top:9px"><b>Arcs</b> are derived the way <span class="mono">npm run next</span>
+    derives them — entries sharing a design spec, ordered by <span class="mono">after</span>. The board
+    then goes one step further: a <b>superseded</b> entry is left out of an arc's count, since its work
+    moved to another entry, so an arc whose only remaining step is superseded is shown as done rather
+    than in progress. <span class="mono">next</span> does not yet make that distinction and reports such
+    arcs as open. Group by Arc to see each design's full sequence: shipped steps in green, open ones
+    hollow, parked or superseded ones struck through.</p>
+  </footer>
+</div>
+
+<script>
+const ENTRIES = __ENTRIES__;
+const ANNO = __ANNO__;
+const ARCS = __ARCS__;
+const NEXT = __NEXT__;
+
+const BANDS = {
+  A:{t:"Do now",         n:"verified, and either exposed or blocking what sits behind it"},
+  B:{t:"Do next",        n:"high impact, no deadline"},
+  C:{t:"Cheap wins",     n:"batch them into one branch"},
+  D:{t:"Decide, don't build", n:"the next move is a ruling"},
+  E:{t:"Leave alone",    n:"correctly parked, or retained so references resolve"}
+};
+const LAYER_T = {product:"Product", framework:"Framework — this project's own tooling"};
+const STATE_T = {idea:"Idea", shaped:"Shaped", building:"Building"};
+
+const data = ENTRIES.map(e => ({...e, band:(ANNO[e.id]||{}).b||"E",
+  verdict:(ANNO[e.id]||{}).v||"", evidence:(ANNO[e.id]||{}).e||""}));
+
+const S = {q:"", groupby:"band", sortby:"band", bands:new Set(), layers:new Set(),
+           states:new Set(), arcs:new Set(), open:new Set()};
+// A superseded entry's work moved to another entry, so it sits in neither the numerator
+// nor the denominator: an arc whose only remaining step is superseded is done. The raw
+// shipped/total from the catalog would report 7/8 and 1/2 as in progress; both are
+// finished. Shelved entries stay in the total — parked is not resolved.
+for (const a of ARCS) {
+  a.effTotal = a.order.filter(o=>!o.sup).length;
+  a.effShipped = a.order.filter(o=>o.s==="shipped").length;
+  a.done = a.effShipped >= a.effTotal;
+  a.superseded = a.order.filter(o=>o.sup).length;
+}
+const ARC_BY_KEY = Object.fromEntries(ARCS.map(a=>[a.key,a]));
+const LIVE_ARCS = ARCS.filter(a=>!a.done);
+const DONE_BY_SUPERSESSION = ARCS.filter(a=>a.done && a.superseded>0);
+try{ const v=JSON.parse(localStorage.getItem("jpk-board")||"{}");
+  if(v.groupby) S.groupby=v.groupby; if(v.sortby) S.sortby=v.sortby;
+}catch(_){}
+const save=()=>{try{localStorage.setItem("jpk-board",JSON.stringify({groupby:S.groupby,sortby:S.sortby}))}catch(_){}};
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const count = (fn) => data.filter(fn).length;
+
+function chip(host, key, label, cnt, set){
+  const b = document.createElement("button");
+  b.type="button"; b.className="chip"; b.setAttribute("aria-pressed","false");
+  b.innerHTML = esc(label) + '<span class="c">' + cnt + "</span>";
+  b.onclick = () => { set.has(key) ? set.delete(key) : set.add(key);
+    b.setAttribute("aria-pressed", set.has(key) ? "true" : "false"); render(); };
+  host.appendChild(b); return b;
+}
+
+const bandHost=document.getElementById("bandchips"), layerHost=document.getElementById("layerchips"),
+      stateHost=document.getElementById("statechips");
+["A","B","C","D","E"].forEach(k => chip(bandHost, k, k+" · "+BANDS[k].t, count(e=>e.band===k), S.bands));
+["product","framework"].forEach(k => chip(layerHost, k, k, count(e=>e.l===k), S.layers));
+chip(stateHost,"idea","idea",count(e=>e.s==="idea"&&!e.sh&&!e.sup),S.states);
+chip(stateHost,"shaped","shaped",count(e=>e.s==="shaped"&&!e.sh&&!e.sup),S.states);
+chip(stateHost,"blocked","blocked",count(e=>e.bb),S.states);
+chip(stateHost,"shelved","shelved",count(e=>e.sh),S.states);
+chip(stateHost,"superseded","superseded",count(e=>e.sup),S.states);
+
+const arcHost=document.getElementById("arcchips");
+LIVE_ARCS.forEach(a => chip(arcHost, a.key, a.label, count(e=>e.arc.includes(a.key)), S.arcs));
+chip(arcHost, "_none", "no arc", count(e=>!e.arc.length), S.arcs);
+
+document.getElementById("arcs").innerHTML =
+  '<div class="ah"><span class="lbl">Arcs in progress</span>'+
+  '<span class="note">entries sharing a design spec, in the order the design set — shipped over total</span></div>'+
+  LIVE_ARCS.map(a => {
+    const pct = Math.round(100*a.effShipped/a.effTotal);
+    const note = a.superseded ? '<span class="sp" title="superseded entries are left out of the count">'+a.superseded+' superseded</span>' : '';
+    return '<div class="arc"><div class="an">'+esc(a.label)+'<span class="sp">'+esc(a.key)+'.md</span>'+note+'</div>'+
+      '<div class="arcbar"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="af">'+a.effShipped+'/'+a.effTotal+'</div></div>';
+  }).join("") +
+  (DONE_BY_SUPERSESSION.length ? '<div class="arc arc-done"><div class="an">'+
+     'Complete once superseded entries are set aside: '+
+     DONE_BY_SUPERSESSION.map(a=>esc(a.label)+' <span class="sp">'+a.shipped+'/'+a.total+' raw</span>').join(' · ')+
+     '</div><div></div><div class="af">done</div></div>' : '');
+
+// What /next suggests, computed by the same code from the same bands, so the board and
+// /next give one answer. Nothing banded A–C and ready leaves the suggestion empty.
+document.getElementById("nextup").innerHTML =
+  '<div class="ah"><span class="lbl">Next</span>'+
+  '<span class="note">what /next suggests — the highest-banded ready entry</span></div>'+
+  '<div class="arc"><div class="an">'+
+    (NEXT && NEXT.id
+      ? esc(NEXT.t)+' <span class="sp">'+esc(NEXT.id)+'</span>'
+      : '<span class="sp">nothing is suggested</span>')+
+    '</div><div></div><div class="af">'+(NEXT && NEXT.b ? esc(NEXT.b) : "")+'</div></div>';
+
+document.getElementById("tallies").innerHTML = ["A","B","C","D","E"].map(k =>
+  '<div class="tally t-'+k+'"><div class="n">'+count(e=>e.band===k)+'</div>'+
+  '<div class="k">'+esc(BANDS[k].t)+'</div></div>').join("") +
+  '<div class="tally"><div class="n">'+count(e=>e.sh||e.sup)+'</div><div class="k">Parked</div></div>';
+
+function matches(e){
+  if(S.bands.size && !S.bands.has(e.band)) return false;
+  if(S.layers.size && !S.layers.has(e.l)) return false;
+  if(S.arcs.size){ const mine = e.arc.length ? e.arc : ["_none"]; if(!mine.some(k=>S.arcs.has(k))) return false; }
+  if(S.states.size){
+    let ok=false;
+    if(S.states.has("idea") && e.s==="idea" && !e.sh && !e.sup) ok=true;
+    if(S.states.has("shaped") && e.s==="shaped" && !e.sh && !e.sup) ok=true;
+    if(S.states.has("blocked") && e.bb) ok=true;
+    if(S.states.has("shelved") && e.sh) ok=true;
+    if(S.states.has("superseded") && e.sup) ok=true;
+    if(!ok) return false;
+  }
+  if(S.q){
+    const hay=(e.id+" "+e.t+" "+e.verdict+" "+e.v+" "+e.ty+" "+e.l).toLowerCase();
+    if(!hay.includes(S.q)) return false;
+  }
+  return true;
+}
+
+const GKEY = e => S.groupby==="band" ? e.band : S.groupby==="arc" ? (e.arc[0] || "_none") : e[S.groupby];
+const ARC_POS = {}; for (const a of ARCS) a.order.forEach((o,i)=>{ ARC_POS[a.key+"|"+o.id]=i; });
+const GORDER = {band:["A","B","C","D","E"], l:["product","framework"],
+  s:["shaped","idea","building"], ty:["bug","spike","feature","improvement","chore"],
+  arc:[...LIVE_ARCS.map(a=>a.key), ...DONE_BY_SUPERSESSION.map(a=>a.key), "_none"]};
+const SORTK = {band:e=>e.band, id:e=>e.id, s:e=>e.s, ty:e=>e.ty, l:e=>e.l};
+
+function row(e){
+  const wrap=document.createElement("div");
+  wrap.className="row r-"+e.band;
+  const open=S.open.has(e.id);
+  const tags=[];
+  if(e.sup) tags.push('<span class="tag tag-flag">superseded</span>');
+  else if(e.sh) tags.push('<span class="tag tag-flag">shelved</span>');
+  if(e.bb) tags.push('<span class="tag tag-blocked">blocked</span>');
+  tags.push('<span class="tag tag-status'+(e.s==="shaped"?" tag-shaped":"")+'">'+esc(e.s)+"</span>");
+  if (S.groupby!=="arc" && e.arc.length) tags.push('<span class="tag tag-arc">'+esc((ARC_BY_KEY[e.arc[0]]||{}).label||e.arc[0])+"</span>");
+  tags.push('<span class="tag tag-layer">'+esc(e.l)+"</span>");
+  tags.push('<span class="tag tag-type">'+esc(e.ty)+"</span>");
+  wrap.innerHTML =
+    '<button class="rbtn" type="button" aria-expanded="'+open+'">'+
+      '<span class="spine" aria-hidden="true"></span>'+
+      '<span class="rmain">'+
+        '<span class="rtop"><span class="rid">'+esc(e.id)+'</span>'+
+          '<span class="rtitle">'+esc(e.t)+'</span></span>'+
+        (e.verdict ? '<span class="rverdict">'+esc(e.verdict)+'</span>' : "")+
+      '</span>'+
+      '<span class="rmeta">'+tags.join("")+'<span class="caret">'+(open?"−":"+")+'</span></span>'+
+    '</button>';
+  const btn=wrap.querySelector(".rbtn");
+  btn.onclick=()=>{ S.open.has(e.id)?S.open.delete(e.id):S.open.add(e.id); render(); };
+  if(open) wrap.appendChild(detail(e));
+  return wrap;
+}
+
+function detail(e){
+  const d=document.createElement("div"); d.className="detail";
+  let h='<div class="dsec"><h4>Value</h4><p>'+esc(e.v)+"</p></div>";
+  if(e.evidence) h+='<div class="dsec"><h4>Checked against the code</h4>'+
+    '<div class="evid">'+esc(e.evidence)+"</div></div>";
+  if(e.ac.length) h+='<div class="dsec"><h4>Acceptance criteria</h4><ul>'+
+    e.ac.map(a=>"<li>"+esc(a)+"</li>").join("")+"</ul></div>";
+  const deps=[];
+  if(e.bb) deps.push("blockedBy → "+e.bb.join(", "));
+  if(e.af) deps.push("after → "+e.af.join(", "));
+  if(e.sup) deps.push("supersededBy → "+e.sup.join(", "));
+  if(deps.length) h+='<div class="dsec"><h4>Dependencies</h4><div class="deps">'+
+    deps.map(x=>"<span>"+esc(x)+"</span>").join("")+"</div></div>";
+  if(e.refs.length) h+='<div class="dsec"><h4>References</h4><div class="refs">'+
+    e.refs.map(r=>"<span>"+esc(r)+"</span>").join("")+"</div></div>";
+  d.innerHTML=h; return d;
+}
+
+function render(){
+  const board=document.getElementById("board");
+  const list=data.filter(matches);
+  board.innerHTML="";
+  if(!list.length){ board.innerHTML='<p class="empty">No entry matches these filters.</p>'; return; }
+  const keys=[...new Set(list.map(GKEY))].sort((a,b)=>{
+    const o=GORDER[S.groupby]||[]; const ia=o.indexOf(a), ib=o.indexOf(b);
+    return (ia<0?99:ia)-(ib<0?99:ib) || String(a).localeCompare(String(b));
+  });
+  for(const k of keys){
+    const items=list.filter(e=>GKEY(e)===k)
+      .sort((a,b)=> S.groupby==="arc" && k!=="_none"
+        ? (ARC_POS[k+"|"+a.id] ?? 99) - (ARC_POS[k+"|"+b.id] ?? 99)
+        : String(SORTK[S.sortby](a)).localeCompare(String(SORTK[S.sortby](b))) || a.id.localeCompare(b.id));
+    const g=document.createElement("section");
+    g.className="group "+(S.groupby==="band" ? "g-"+k : "g-x");
+    if (S.groupby==="arc") g.classList.add("g-arc");
+    const isBand=S.groupby==="band";
+    const isArc = S.groupby==="arc";
+    const arc = isArc ? ARC_BY_KEY[k] : null;
+    let head;
+    if (arc) {
+      head='<div class="ghead"><span class="gmark">'+arc.effShipped+'/'+arc.effTotal+"</span>"+
+        '<span class="gtitle">'+esc(arc.label)+"</span>"+
+        '<span class="gnote">'+esc(arc.key)+'.md</span>'+
+        '<span class="gcount">'+items.length+" open</span></div>"+
+        '<div class="ladder">'+arc.order.map((o,i)=>{
+          const cls = o.s==="shipped" ? "done" : (o.sh||o.sup) ? "parked" : "open";
+          return (i?'<span class="arrow">→</span>':'')+'<span class="st '+cls+'" title="'+esc(o.t)+'">'+esc(o.id)+'</span>';
+        }).join("")+"</div>";
+    } else if (isArc) {
+      head='<div class="ghead"><span class="gmark">—</span><span class="gtitle">No arc</span>'+
+        '<span class="gnote">entries with no shared design spec</span>'+
+        '<span class="gcount">'+items.length+"</span></div>";
+    } else {
+      head='<div class="ghead"><span class="gmark">'+esc(k)+"</span>"+
+        '<span class="gtitle">'+esc(isBand?BANDS[k].t:(LAYER_T[k]||STATE_T[k]||k))+"</span>"+
+        (isBand?'<span class="gnote">'+esc(BANDS[k].n)+"</span>":"")+
+        '<span class="gcount">'+items.length+"</span></div>";
+    }
+    g.innerHTML=head;
+    const rows=document.createElement("div"); rows.className="rows";
+    items.forEach(e=>rows.appendChild(row(e)));
+    g.appendChild(rows); board.appendChild(g);
+  }
+}
+
+document.getElementById("q").oninput = ev => { S.q=ev.target.value.trim().toLowerCase(); render(); };
+const gb=document.getElementById("groupby"), sb=document.getElementById("sortby");
+gb.value=S.groupby; sb.value=S.sortby;
+gb.onchange=ev=>{S.groupby=ev.target.value;save();render()};
+sb.onchange=ev=>{S.sortby=ev.target.value;save();render()};
+document.getElementById("expandall").onclick=ev=>{
+  const showing=data.filter(matches);
+  const allOpen=showing.every(e=>S.open.has(e.id));
+  showing.forEach(e=>allOpen?S.open.delete(e.id):S.open.add(e.id));
+  ev.target.textContent=allOpen?"expand all":"collapse all"; render();
+};
+document.getElementById("reset").onclick=()=>{
+  S.q=""; S.bands.clear(); S.layers.clear(); S.states.clear(); S.arcs.clear(); S.open.clear();
+  document.getElementById("q").value="";
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","false"));
+  document.getElementById("expandall").textContent="expand all"; render();
+};
+render();
+</script>

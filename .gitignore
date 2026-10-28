@@ -1,0 +1,4 @@
+.self-check/
+.tropis/node_modules/
+.claude/settings.local.json
+docs/backlog-board/index.html

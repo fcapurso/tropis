@@ -1,0 +1,11 @@
+- id: example-entry
+  status: shipped
+  type: feature
+  layer: product
+  value: Something a person can do, stated so a reader who has never seen the code
+    would still understand it.
+  acceptanceCriteria:
+    - A person can perform the action and observe the stated result.
+  modules:
+    - CLAUDE.md
+  refs: []
