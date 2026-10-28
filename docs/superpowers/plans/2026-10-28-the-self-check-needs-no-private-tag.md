@@ -236,3 +236,187 @@ needs the tag v0.1.0`, then drop the commit.
 
 Append `## Handover report` to this plan with the six sections the planning rule names,
 commit it, push the branch to `origin` and open a pull request. Do not merge.
+
+## Handover report
+
+### Task completion
+
+Tasks 1 through 5 are done and committed as `b655d20`. Task 6 is this report. Nothing was skipped. No step needed the developer.
+
+### Verification results
+
+Ran on macOS 26.2, Darwin arm64, with git 2.49.0 and Node v22.15.0.
+
+`npm --prefix .tropis test` in the worktree, exit 0:
+
+```
+Test Suites: 6 passed, 6 total
+Tests:       33 passed, 33 total
+Time:        0.889 s
+```
+
+Before that commit, `guards/take-version.test.js` run directly with Jest 30 from `.tropis/node_modules` (the self-check's config, on the working tree) printed `Tests: 40 passed, 40 total` in 83s. `guards/set-up-project.test.js` the same way printed `Tests: 1 failed, 17 passed, 18 total`. The failure was `records every shipped file at version unknown`, which expected `unknown` and received a `git describe` string, because that run was in a checkout that has tags. The self-check below is the run the plan names: its stage is an export with no `.git`, and its clean baseline passed.
+
+Tagless clone of `plan/the-self-check-needs-no-private-tag` at `b655d20`, then `npm --prefix .tropis ci` and `bash scripts/check-blueprint.sh`. `git tag | wc -l` printed `       0` (the count is 0; `wc` pads). The self-check exited 0. Last line:
+
+```
+Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.
+```
+
+It named the commit `b655d20`. The absolute clone path is a home path and is omitted.
+
+`git grep -nE 'TROPIS_V010|v0\.1\.0' -- scripts guards templates pipeline` printed only:
+
+```
+guards/installed-files.test.js:249:        version: 'v0.1.0',
+guards/installed-files.test.js:271:        version: 'v0.1.0',
+guards/release.test.js:43:    expect(() => nextVersion('huge', 'v0.1.0')).toThrow(/bump/);
+```
+
+Both use `v0.1.0` as a version string. `TROPIS_V010` is gone.
+
+`git grep -nF '.framework/' -- scripts guards templates` printed only the refusals and the tests that build the refused layout:
+
+```
+guards/set-up-project.test.js:351:  it('refuses a project that already holds the framework in .framework/', () => {
+guards/set-up-project.test.js:355:      writeFileSync(join(dir, '.framework/installed.json'), '{}\n');
+guards/set-up-project.test.js:363:        `set-up-project: ${project} holds the framework in .framework/, a layout this release no longer takes. `
+guards/set-up-project.test.js:364:        + `Remove .framework/, commit, and run this again.\n`,
+guards/take-version.test.js:629:  it('refuses a project that holds .framework/ beside .tropis/, changing nothing', () => inWorld({}, (w) => {
+guards/take-version.test.js:632:    write(w.project, '.framework/marker', 'old\n');
+guards/take-version.test.js:639:      `take-version: ${w.project} holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and set the project up again with scripts/set-up-project.sh.\n`,
+guards/take-version.test.js:658:  it('refuses a project that holds only .framework/, changing nothing', () => inWorld({}, (w) => {
+guards/take-version.test.js:667:      `take-version: ${w.project} holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and set the project up again with scripts/set-up-project.sh.\n`,
+scripts/set-up-project.sh:28:  echo "set-up-project: $PROJECT holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and run this again." >&2
+scripts/take-version.mjs:309:    refuse(`${project} holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and set the project up again with scripts/set-up-project.sh.`);
+```
+
+The lines that are not the refusal message are the tests constructing the folder the refusal is about.
+
+Throwaway commit restoring `scripts/check-blueprint.sh` from `origin/main`, cloned the same tagless way (`wc -l` again `       0`). `bash scripts/check-blueprint.sh` exited 2 and printed:
+
+```
+The self-check needs the tag v0.1.0: git fetch --tags.
+```
+
+That commit was then dropped. `HEAD` is `b655d20`, and that sentence is absent from `scripts/check-blueprint.sh`.
+
+`pipeline/unit.sh`: the plan's grep, run before the `TROPIS_V010` lines were removed, hit `scripts/check-blueprint.sh` (the tag export), `git rev-parse` in `scripts/capture-at-merge.sh`, `scripts/capture-at-write.sh`, `scripts/probe-hook-channels.sh` and `scripts/public-exposure-check.sh` (repository root or branch name), and `guards/release.test.js` matching the words `git tag` and `git rev-parse` in the release job's text. Nothing else in that list reads a tag of this repository, so the unshallow-and-fetch block was removed. `scripts/set-up-project.sh` still runs `git describe --tags --always`; that line is not a hit of the plan's pattern (`git -C`, not `git describe`), and `--always` names the commit when no tag exists.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` at `b655d20`, before this report:
+
+```
+ RELEASES.md                   |   3 +-
+ feature-catalog.yaml          |   5 +-
+ framework/DECISIONS.md        |  21 +++-
+ guards/set-up-project.test.js |   4 +-
+ guards/take-version.test.js   | 267 +++------------------------------------
+ pipeline/unit.sh              |   4 -
+ scripts/check-blueprint.sh    |  12 --
+ scripts/check-version.mjs     |   4 +-
+ scripts/set-up-project.sh     |   6 +-
+ scripts/take-version.mjs      | 287 ++++--------------------------------------
+ templates/README.md           |   5 +-
+ 11 files changed, 78 insertions(+), 540 deletions(-)
+```
+
+Every one of those files is in the File Structure table. This report's commit adds only this plan, which the table also names.
+
+Isolation: a sibling worktree `tropis-no-private-tag` of a clone whose `origin` is `https://github.com/fcapurso/tropis.git`, on `main` at `0f75a2d` (the public repository; the first commit is `21b855f`). Created by `isolate-for-plan.sh`. The archive checkout was not used. The absolute path is a home path and is omitted.
+
+### Judgment calls
+
+- Header comments in `scripts/take-version.mjs` and `scripts/set-up-project.sh` do not contain the characters `.framework/`. The verification grep would otherwise have counted them, and the plan says the remaining hits are the refusals and their tests. The refusal strings are unchanged from the plan.
+- `apply` no longer carries a migration report. On the current layout that report was empty, and the install line still prints only when the package file changed.
+- FW-033 names this plan in plain text. A path in backticks in `framework/DECISIONS.md` is copied into projects that do not have the plan.
+- `## [Unreleased]` held only the placeholder `_Nothing yet._`. That line was replaced by the note. Nothing else was under the heading.
+- The three package-name tests that sit in the file between the old-layout tests were kept. They use `inWorld` and do not exercise the old layout.
+
+### What the plan got wrong
+
+The eight tests to remove are not one contiguous block. `keeps the package name when the update runs in a folder of another name`, `keeps the package name with --from when there is no record`, and `names the package after the folder when the package names nothing` sit between `moves an areas-layout project that already has a record` and `throws when TROPIS_V010 is unset`.
+
+The sentence in `templates/README.md` after the one the plan deletes still says edited text from a shipped rule is left in `.claude/rule-additions/<n>.md.old`. `take-version` no longer does that. The plan said to change nothing else on that paragraph, so the sentence is still there.
+
+`git tag | wc -l` on this platform prints a space-padded `0`, not the digit alone.
+
+### Outstanding
+
+The specifying session reviews and merges. This branch is not merged.
+
+The installed release under `.claude/`, `.tropis/` and `.cursor/` still describes the migration. This plan forbids editing those directories; they change when a release is taken.
+
+## Review record
+
+### Checks re-run
+
+By the specifying session, with git 2.43.0 and Node v22.22.0 on Linux x86_64:
+
+- A clone of the pushed branch at `0f6c324`, made with `git clone --no-tags
+  --single-branch` from `https://github.com/fcapurso/tropis.git`: `git tag | wc -l`
+  printed `0`; after `npm --prefix .tropis ci`, `bash scripts/check-blueprint.sh` exited
+  0 with `Self-check passed: every guard caught its defect, the clean baseline passed,
+  and the framework repository's own guards passed.`
+- The re-break, in that same tagless clone: a throwaway commit restoring
+  `scripts/check-blueprint.sh` from the public `main`, then the self-check, which exited
+  2 with `The self-check needs the tag v0.1.0: git fetch --tags.` The commit was then
+  dropped.
+- `npm --prefix .tropis test` on the branch with the review fixes: `Tests: 33 passed, 33 total`.
+- The public pipeline on `d059d7e`, the first run of the unit stage from a shallow,
+  tagless checkout: the result is in the pull request's checks.
+- Scope: `git diff --stat` against the public `main` names 12 files, each in the File
+  Structure table.
+- Code: the current-layout path of `takeVersion` and `apply` receives the same baseline,
+  settings and areas as before, which `relocate` used to pass through unchanged for that
+  layout; the `.framework/` refusal comes before any write; `mdNames`, `legacyFiles`,
+  `relocate` and their helpers have no remaining caller.
+
+### Found
+
+Public exposure: the diff and both executor commits were read for private material.
+The diff holds none. **Both executor commits were authored with the developer's
+personal email address** rather than the noreply address the first public commit used,
+because that is the git default on the executor's computer. They were already pushed to
+the pull request branch. The squash-merge makes a new commit under the developer's
+GitHub identity, so the address does not enter `main`'s history; the branch is deleted
+after the merge. The developer was told how to set the noreply address in that clone
+and how to have GitHub refuse such a push.
+
+Fixed on the branch by the reviewer, in `d059d7e`, both mechanical:
+
+- `templates/README.md` still told operators that edited rule text is left in
+  `.claude/rule-additions/<n>.md.old`. Only the removed `v0.1.0` path wrote those files,
+  so the sentence is deleted. The executor reported it and rightly left it, because the
+  plan said to change nothing else on that paragraph; that instruction was the plan's
+  error.
+- Two double blank lines left where code was removed, in `scripts/take-version.mjs` and
+  `guards/take-version.test.js`.
+
+### Outstanding disposition
+
+- The installed release under `.claude/`, `.tropis/` and `.cursor/` still describes the
+  migration: dropped as an item, since it changes when this repository next takes a
+  release, which `/release` and `/update` do.
+- The executor's note that `guards/set-up-project.test.js` fails in a checkout that has
+  tags (`records every shipped file at version unknown`): dropped, because the source
+  tests run only inside the self-check's export, which has no `.git`, and pass there.
+
+### Learnings routed
+
+- **A self-check proved only in the checkout that wrote it cannot fail on what that
+  checkout has and the published copy lacks.** That is how this defect reached the
+  public repository. Not routed as a rule: the cause, a tag that existed only in the
+  private history, is removed by this plan, and nothing else in the self-check reads one
+  (Task 3's evidence). Recorded in the handover of
+  docs/superpowers/plans/2026-10-28-tropis-is-public.md, under *What the plan got wrong*.
+- An executor commits as whatever its computer's git says: the developer sets the
+  noreply address in the public clone. No rule change: the private-material guard checks
+  files, not commit metadata, and GitHub's own push setting covers it.
+
+### Merged because
+
+The self-check passes in a clone with no tags and stops when the old code is restored,
+nothing a `.tropis/` project relies on changed, and the public pipeline is green on the
+head.

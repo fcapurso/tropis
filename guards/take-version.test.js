@@ -19,7 +19,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fingerprint, recordOf, recordProblems, shippedFiles } from '../scripts/installed-files.js';
-import { checkStamp } from '../scripts/rule-areas.js';
 import { appendMissingLines } from '../scripts/take-version.mjs';
 
 const blueprint = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -111,95 +110,6 @@ function world({ v020 = {} } = {}) {
     },
   };
 }
-
-const copySource = (dest) => {
-  for (const folder of SOURCE_FOLDERS) {
-    rmSync(join(dest, folder), { recursive: true, force: true });
-    cpSync(join(blueprint, folder), join(dest, folder), {
-      recursive: true,
-      filter: (src) => !/[\\/](node_modules|\.self-check)([\\/]|$)/.test(src),
-    });
-  }
-};
-
-/**
- * A scratch Tropis whose first commit is the tree at `TROPIS_V010`, tagged `v0.1.0`,
- * and whose second is the current source, tagged `v0.2.0`. The project is set up from
- * `setupFrom` and committed. Throws when `TROPIS_V010` is unset — the self-check is
- * what exports it, and a missing tag is a failed check, not a skipped one.
- */
-function worldV010({ setupFrom = 'v0.1.0' } = {}) {
-  const v010 = process.env.TROPIS_V010;
-  if (!v010) {
-    throw new Error('TROPIS_V010 is unset. bash scripts/check-blueprint.sh exports it from the v0.1.0 tag.');
-  }
-  const parent = mkdtempSync(join(tmpdir(), 'tv-v010-'));
-  const tropis = join(parent, 'tropis');
-  cpSync(v010, tropis, {
-    recursive: true,
-    filter: (src) => !/[\\/](node_modules|\.self-check)([\\/]|$)/.test(src),
-  });
-  git(tropis, 'init', '-q', '-b', 'main');
-  git(tropis, 'add', '-A');
-  git(tropis, 'commit', '-qm', 'v0.1.0');
-  git(tropis, 'tag', 'v0.1.0');
-
-  const advance = () => {
-    copySource(tropis);
-    git(tropis, 'add', '-A');
-    git(tropis, 'commit', '-qm', 'v0.2.0');
-    git(tropis, 'tag', 'v0.2.0');
-  };
-  if (setupFrom === 'v0.2.0') advance();
-
-  const project = join(parent, 'example-project');
-  mkdirSync(project);
-  git(project, 'init', '-q', '-b', 'main');
-  const setup = spawnSync('bash', [join(tropis, 'scripts/set-up-project.sh'), project], { encoding: 'utf8' });
-  if (setup.status !== 0) throw new Error(setup.stderr || setup.stdout);
-  git(project, 'add', '-A');
-  git(project, 'commit', '-qm', 'set up');
-  if (setupFrom === 'v0.1.0') advance();
-
-  return {
-    parent,
-    tropis,
-    project,
-    release(tag, change) {
-      git(tropis, 'checkout', '-q', 'main');
-      change(tropis);
-      git(tropis, 'add', '-A');
-      git(tropis, 'commit', '-qm', tag);
-      git(tropis, 'tag', tag);
-    },
-    commit(message = 'project change') {
-      git(project, 'add', '-A');
-      git(project, 'commit', '-qm', message);
-    },
-    /** `v0.2.0` with `--from v0.1.0 --accept-breaking`, unless the caller passes flags. */
-    take(ref = 'v0.2.0', ...flags) {
-      git(tropis, 'checkout', '-q', ref);
-      const args = flags.length > 0 ? flags : ['--from', 'v0.1.0', '--accept-breaking'];
-      return spawnSync('node', [join(tropis, 'scripts/take-version.mjs'), project, ...args], { encoding: 'utf8' });
-    },
-    clean() {
-      rmSync(parent, { recursive: true, force: true });
-    },
-  };
-}
-
-function inV010(options, fn) {
-  const w = worldV010(options);
-  try {
-    return fn(w);
-  } finally {
-    w.clean();
-  }
-}
-
-const hookCommands = (settings) => Object.values(settings.hooks ?? {}).flatMap(
-  (groups) => groups.flatMap((group) => (group.hooks ?? []).map((hook) => hook.command)),
-);
 
 /** Run `fn(world)` and always remove the scratch folders. */
 function inWorld(options, fn) {
@@ -716,7 +626,7 @@ describe('take-version.mjs', () => {
     expect(snapshot(w.project)).toEqual(before);
   }), SLOW);
 
-  it('refuses a project that has both folders, changing nothing', () => inWorld({}, (w) => {
+  it('refuses a project that holds .framework/ beside .tropis/, changing nothing', () => inWorld({}, (w) => {
     w.release('v0.2.1', bumpNext);
     mkdirSync(join(w.project, '.framework'));
     write(w.project, '.framework/marker', 'old\n');
@@ -726,7 +636,7 @@ describe('take-version.mjs', () => {
     const r = w.take('v0.2.1', '--accept-breaking');
     expect(r.status).toBe(1);
     expect(r.stderr).toBe(
-      `take-version: ${w.project} has both .framework/ and .tropis/. Remove the one that is not in use, commit, and run again.\n`,
+      `take-version: ${w.project} holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and set the project up again with scripts/set-up-project.sh.\n`,
     );
     expect(snapshot(w.project)).toEqual(before);
   }), SLOW);
@@ -740,7 +650,21 @@ describe('take-version.mjs', () => {
     const r = w.take('v0.2.1', '--accept-breaking');
     expect(r.status).toBe(1);
     expect(r.stderr).toBe(
-      `take-version: ${w.project} has no .tropis/ or .framework/. Set it up with scripts/set-up-project.sh first.\n`,
+      `take-version: ${w.project} has no .tropis/. Set it up with scripts/set-up-project.sh first.\n`,
+    );
+    expect(snapshot(w.project)).toEqual(before);
+  }), SLOW);
+
+  it('refuses a project that holds only .framework/, changing nothing', () => inWorld({}, (w) => {
+    w.release('v0.2.1', bumpNext);
+    renameSync(join(w.project, '.tropis'), join(w.project, '.framework'));
+    w.commit('old layout');
+    const before = snapshot(w.project);
+
+    const r = w.take('v0.2.1', '--accept-breaking');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toBe(
+      `take-version: ${w.project} holds the framework in .framework/, a layout this release no longer takes. Remove .framework/, commit, and set the project up again with scripts/set-up-project.sh.\n`,
     );
     expect(snapshot(w.project)).toEqual(before);
   }), SLOW);
@@ -887,152 +811,6 @@ describe('take-version.mjs', () => {
     expect(next).toContain('Merge CLAUDE.md into AGENTS.md');
   }), SLOW);
 
-  it('moves an untouched v0.1.0 project to .tropis/', () => inV010({}, (w) => {
-    const r = w.take();
-    expect(r.stderr).toBe('');
-    expect(r.status).toBe(0);
-    expect(existsSync(join(w.project, '.framework'))).toBe(false);
-    expect(existsSync(join(w.project, '.tropis'))).toBe(true);
-
-    const record = recordOfProject(w.project);
-    expect(record.version).toBe('v0.2.0');
-    expect(recordProblems(w.project)).toEqual([]);
-    expect(JSON.parse(read(w.project, '.claude/rule-areas.json'))).toEqual(
-      JSON.parse(read(w.tropis, 'templates/rule-areas.json')),
-    );
-
-    const check = spawnSync('node', [join(w.project, '.tropis/scripts/generate-rules.mjs'), '--check'], {
-      encoding: 'utf8',
-    });
-    expect(check.status).toBe(0);
-
-    const settings = JSON.parse(read(w.project, '.claude/settings.json'));
-    const commands = hookCommands(settings);
-    expect(commands.length).toBeGreaterThan(0);
-    expect(commands.every((command) => command.includes('.tropis/hooks/'))).toBe(true);
-    for (const groups of Object.values(settings.hooks)) {
-      for (const group of groups) {
-        const inGroup = (group.hooks ?? []).map((hook) => hook.command);
-        expect(new Set(inGroup).size).toBe(inGroup.length);
-      }
-    }
-
-    const ignore = read(w.project, '.gitignore').split('\n');
-    expect(ignore).toContain('.tropis/node_modules/');
-    expect(ignore.some((line) => line.includes('.framework/'))).toBe(false);
-    expect(read(w.project, '.gitattributes')).toContain('.tropis/ export-ignore');
-
-    const still = r.stdout.split('Still names .framework/:')[1];
-    expect(still).toBeDefined();
-    expect(still).not.toContain('\n  CLAUDE.md\n');
-    expect(read(w.project, 'CLAUDE.md')).toBe('@AGENTS.md\n');
-    expect(still).toContain('\n  AGENTS.md\n');
-    expect(still).not.toContain('.claude/framework/');
-    expect(git(w.project, 'log', '--oneline').trim().split('\n')).toHaveLength(1);
-  }), SLOW);
-
-  it('keeps a widened area from a v0.1.0 rule header', () => inV010({}, (w) => {
-    edit(w.project, '.claude/rules/tests.md', (text) => text.replace(
-      'paths: ["**/__tests__/**", "**/*.test.*", "**/*.spec.*", "test/**", "tests/**"]',
-      'paths: ["**/__tests__/**", "**/*.test.*", "**/*.spec.*", "test/**", "tests/**", "src/**"]',
-    ));
-    edit(w.project, '.claude/rules/harness-scripts.md', (text) => text.replace(
-      'paths: [".framework/**"]',
-      'paths: [".framework/**", "scripts/**"]',
-    ));
-    w.commit('widen areas');
-
-    const r = w.take();
-    expect(r.status).toBe(0);
-    const areas = JSON.parse(read(w.project, '.claude/rule-areas.json'));
-    expect(areas.tests).toContain('src/**');
-    expect(areas['harness-scripts']).toEqual(['.tropis/**', 'scripts/**']);
-  }), SLOW);
-
-  it('keeps edited v0.1.0 rule text for the operator', () => inV010({}, (w) => {
-    edit(w.project, '.claude/rules/tests.md', (text) => `${text}Project line.\n`);
-    const edited = read(w.project, '.claude/rules/tests.md');
-    w.commit('edit tests');
-
-    const r = w.take();
-    expect(r.status).toBe(0);
-    expect(read(w.project, '.claude/rule-additions/tests.md.old')).toBe(edited);
-    expect(r.stdout).toContain('.claude/rule-additions/<n>.md.old: tests');
-    expect(r.stdout).toContain('Move the lines you added into .claude/rule-additions/<n>.md, then delete the .old file.');
-    const generated = read(w.project, '.claude/rules/tests.md');
-    expect(generated).not.toContain('Project line.');
-    expect(generated).toContain(read(w.project, '.tropis/rules/tests.md').trim());
-    expect(checkStamp(generated).generated).toBe(true);
-  }), SLOW);
-
-  it('keeps a project rule and regenerates its old cursor file', () => inV010({}, (w) => {
-    const rule = '---\npaths: ["src/**"]\n---\nOur rule.\n';
-    write(w.project, '.claude/rules/app.md', rule);
-    write(w.project, '.cursor/rules/app.mdc', '---\nglobs: src/**\n---\nOld projection.\n');
-    w.commit('own rule');
-
-    const r = w.take();
-    expect(r.status).toBe(0);
-    expect(read(w.project, '.claude/rules/app.md')).toBe(rule);
-    const cursor = read(w.project, '.cursor/rules/app.mdc');
-    expect(cursor).not.toContain('Old projection.');
-    expect(checkStamp(cursor).generated).toBe(true);
-  }), SLOW);
-
-  it('keeps a project hook and rewrites a permissions entry', () => inV010({}, (w) => {
-    write(w.project, '.framework/hooks/own-check.sh', '#!/bin/bash\nexit 0\n');
-    const settings = JSON.parse(read(w.project, '.claude/settings.json'));
-    const bash = settings.hooks.PreToolUse.find((group) => group.matcher === 'Bash');
-    bash.hooks.unshift({ type: 'command', command: 'bash .framework/hooks/own-check.sh' });
-    settings.permissions = { deny: ['Edit(.framework/hooks/**)'] };
-    write(w.project, '.claude/settings.json', `${JSON.stringify(settings, null, 2)}\n`);
-    w.commit('own hook');
-
-    const r = w.take();
-    expect(r.status).toBe(0);
-    expect(existsSync(join(w.project, '.tropis/hooks/own-check.sh'))).toBe(true);
-    const after = JSON.parse(read(w.project, '.claude/settings.json'));
-    const bashAfter = after.hooks.PreToolUse.find((group) => group.matcher === 'Bash');
-    expect(bashAfter.hooks[0].command).toContain('.tropis/hooks/own-check.sh');
-    expect(after.permissions.deny).toEqual(['Edit(.tropis/hooks/**)']);
-  }), SLOW);
-
-  it('uses the new default area when a shipped v0.1.0 rule was deleted', () => inV010({}, (w) => {
-    rmSync(join(w.project, '.claude/rules/learnings.md'));
-    w.commit('delete learnings');
-
-    const r = w.take();
-    expect(r.status).toBe(0);
-    const areas = JSON.parse(read(w.project, '.claude/rule-areas.json'));
-    const defaults = JSON.parse(read(w.tropis, 'templates/rule-areas.json'));
-    expect(areas.learnings).toEqual(defaults.learnings);
-    expect(existsSync(join(w.project, '.claude/rule-additions/learnings.md.old'))).toBe(false);
-  }), SLOW);
-
-  it('moves an areas-layout project that already has a record', () => inV010({ setupFrom: 'v0.2.0' }, (w) => {
-    renameSync(join(w.project, '.tropis'), join(w.project, '.framework'));
-    for (const rel of ['.claude/settings.json', '.gitignore', '.gitattributes', '.claude/rule-areas.json']) {
-      edit(w.project, rel, (text) => text.replaceAll('.tropis/', '.framework/'));
-    }
-    const recordPath = '.framework/installed.json';
-    const record = JSON.parse(read(w.project, recordPath));
-    const files = {};
-    for (const [rel, hash] of Object.entries(record.files)) files[rel.replace(/^\.tropis\//, '.framework/')] = hash;
-    const hash = git(w.tropis, 'rev-parse', '--short', 'v0.1.0').trim();
-    write(w.project, recordPath, `${JSON.stringify({ version: `v0.1.0-1-g${hash}`, files }, null, 2)}\n`);
-    w.commit('old folder with a record');
-
-    w.release('v0.2.1', bumpNext);
-    const r = w.take('v0.2.1', '--accept-breaking');
-    expect(r.stderr).toBe('');
-    expect(r.status).toBe(0);
-    expect(existsSync(join(w.project, '.framework'))).toBe(false);
-    expect(existsSync(join(w.project, '.tropis'))).toBe(true);
-    expect(recordProblems(w.project)).toEqual([]);
-    const names = readdirSync(w.project, { recursive: true }).map(String);
-    expect(names.filter((rel) => rel.endsWith('.new'))).toEqual([]);
-  }), SLOW);
-
   it('keeps the package name when the update runs in a folder of another name', () => inWorld({}, (w) => {
     w.release('v0.2.1', addExtraScript);
     const { r, worktree } = takeInWorktree(w, 'v0.2.1');
@@ -1069,15 +847,4 @@ describe('take-version.mjs', () => {
     expect(read(worktree, '.tropis/package.json')).toBe(committed);
     expect(JSON.parse(read(worktree, '.tropis/package.json.new')).name).toBe('example-project-update-framework');
   }), SLOW);
-
-  it('throws when TROPIS_V010 is unset', () => {
-    const saved = process.env.TROPIS_V010;
-    delete process.env.TROPIS_V010;
-    try {
-      expect(() => worldV010()).toThrow(/TROPIS_V010/);
-    } finally {
-      if (saved === undefined) delete process.env.TROPIS_V010;
-      else process.env.TROPIS_V010 = saved;
-    }
-  });
 });

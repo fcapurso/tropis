@@ -56,12 +56,8 @@ wrote yours with a leading slash or without one. To keep one of the framework's 
 exported copies, such as `docs/readme/`, add a line such as
 `/docs/readme/ -export-ignore` to `.gitattributes`, and no update excludes it again. A
 breaking release asks for `--accept-breaking` after you read its notes. A
-project set up before versions were recorded passes `--from` and the version it holds. A
-project that still holds the framework in `.framework/` is moved to `.tropis/` by the
-same command. Edited text from a rule that release shipped as a file is left in
-`.claude/rule-additions/<n>.md.old`; move the lines you added into
-`.claude/rule-additions/<n>.md` and delete the `.old` file. The framework's README has
-the details.
+project set up before versions were recorded passes `--from` and the version it holds.
+The framework's README has the details.
 
 ## The pipeline
 
