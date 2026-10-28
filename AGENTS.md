@@ -52,6 +52,17 @@ with Jest; no package file at the root.
   session ids, unlisted email addresses and hashed names in every committed file
   outside the installed release, but **a name nobody has hashed yet passes**: read
   your own diff for names before pushing.
+- **What GitHub enforces here, checked 2026-10-28.** Two rulesets: on `main`, no force
+  push and no deletion; on tags `v*`, no update and no deletion. **No check is required
+  and no pull request is required**, so a red pull request can still be merged and
+  anything can be pushed straight to `main`: the workflow is the gate, not the host.
+  Workflows from a first-time contributor's fork wait for approval, workflows get
+  read-only access by default and cannot approve pull requests, and secret scanning,
+  push protection, Dependabot alerts and private vulnerability reporting are on.
+- **The private history is in `fcapurso/tropis-archive`.** This repository's history
+  starts at one commit made from that archive's `main`. A clone made before the move
+  still names `fcapurso/tropis` as `origin`, which is now this public repository: check
+  `git remote -v` before pushing from one.
 
 ## Setting up a working copy
 

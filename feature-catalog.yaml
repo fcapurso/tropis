@@ -3208,11 +3208,14 @@
 # checklist in the arc's spec, Going public. Blocked by own-files-refuse-private-material,
 # which must hold before anything is published, and done after a release from the
 # cleaned source is taken here, so the installed copies are clean too.
+# Shipped by plan docs/superpowers/plans/2026-10-28-tropis-is-public.md; its handover
+# report holds each gate's output. Criteria, as that report records them: (1) Gate 4 and
+# Task 4. The public history is one commit, 21b855f, tagged v0.5.1 rather than v0.4.3,
+# because Gate 1 needed a release (v0.5.1) before the source was clean. (2) Gate 3, the
+# archive is fcapurso/tropis-archive. (3) Gate 5. (4) AGENTS.md, under Gotchas.
 - id: tropis-is-public
   title: Anyone can read, install and contribute to Tropis
-  status: shaped
-  blockedBy:
-    - own-files-refuse-private-material
+  status: shipped
   value: Tropis is open source under the MIT licence, at the address projects already
     install it from, so anyone can set a project up with it, read why it works the way it
     does, and send improvements back. The repository it grew in stays private as the
