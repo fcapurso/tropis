@@ -3403,3 +3403,38 @@
   layer: product
   modules: []
   refs: []
+# 2026-10-28, raised by the developer. Until now it lived only in one agent tool's memory
+# for this repository, so no other project, and no other tool, received it. It came from
+# two corrections there: on 2026-10-15 a guard defect was raised as a background task card
+# instead of an entry, and on 2026-10-21 defects found by a /refresh-model-tiers pass were
+# proposed straight to a branch, then a plan, and the developer had to ask twice before
+# the missing entry was named. The bar for which findings are worth keeping already ships
+# in the catalog rule's What does not become an entry; this adds where a kept one goes,
+# building on that section and changing nothing it already says.
+- id: kept-findings-go-to-the-catalog
+  title: A finding worth keeping goes into the backlog, and a fix starts there too
+  status: shaped
+  value: Every piece of work an agent finds outside the change in hand ends up in the one
+    place the project plans from, so nothing is tracked in a tool's task card or side
+    session that the backlog, its report and its board never see. An agent that proposes
+    a fix of its own captures it as an idea and has it shaped before any branch or plan,
+    so the developer decides whether and when it is done, rather than finding work
+    already under way.
+  acceptanceCriteria:
+    - The catalog rule's What does not become an entry says a finding worth keeping is
+      captured as a backlog entry, never raised instead as a task card or a side or
+      background session of the agent tool.
+    - The same section says a fix an agent proposes on its own, a fix to the framework
+      included, starts as an idea entry and is shaped before any branch or plan is made
+      for it, and that this does not apply to work the developer asks for directly.
+    - Everything that section and the rest of the catalog rule said before is still there
+      unchanged - the two kinds of finding that do not become entries, the silent failure
+      that always does, and the drop that carries a reason - and the two statements are
+      added to it, not written as a second copy elsewhere.
+    - The fresh-agent check the workflow requires for a rule change is pointed at the two
+      new statements, and is recorded with tool, version, operating system and
+      architecture.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
