@@ -28,6 +28,13 @@ blueprint-page-checks-run-in-the-self-check:
   seen:
     status: idea
     blockers: []
+branch-slot-never-touches-a-permanent-environment:
+  band: A
+  verdict: "One branch named like production would deploy over it and remove it when its pull request closes. Small to build, and every project guards it by hand today."
+  evidence: "2026-10-29 — scripts/pipeline.mjs:557-590 refuses only a name another branch shares, never a permanent environment's."
+  seen:
+    status: shaped
+    blockers: []
 catalog-rules-name-the-colon-trap:
   band: C
   verdict: "One sentence in the catalog rule; batch with other rule-text fixes."
@@ -38,6 +45,13 @@ catalog-rules-name-the-colon-trap:
 cloud-executor-attaches-every-checkout:
   band: C
   verdict: "Small change to the prompt dispatch prints; only plans with more than one checkout need it. Batch with the other dispatch fixes."
+  seen:
+    status: shaped
+    blockers: []
+command-matcher-sees-every-shell:
+  band: B
+  verdict: "Every command-position hook shares this matcher, so each miss lets a deploy, commit or push through unwarned. Worth doing soon; the cases are listed."
+  evidence: "2026-10-29 — scripts/command-at-position.py:17 knows only bash, sh and zsh, and :273-284 fall back to a substring search."
   seen:
     status: shaped
     blockers: []
@@ -77,6 +91,13 @@ entry-template-says-how-rules-load:
 flush-is-seen-to-drain-the-queue:
   band: C
   verdict: "A small check for a failure seen once in first-adopter, a flush merged with every line still queued. Cheap insurance."
+  seen:
+    status: shaped
+    blockers: []
+flush-name-is-explained-and-unique:
+  band: B
+  verdict: "Flushes go to a public repository, so a leaked project name or wording cannot be taken back. Worth doing before the next adopter flushes."
+  evidence: "2026-10-29 — commands/flush-upstream.md:20-24 only says the name is public, and :77 quotes the queue entry word for word."
   seen:
     status: shaped
     blockers: []
@@ -130,6 +151,13 @@ integrity-guard-is-green-on-a-fresh-checkout:
   seen:
     status: idea
     blockers: []
+isolation-refuses-a-base-without-the-plan:
+  band: C
+  verdict: "A small check at the moment a worktree is cut, against a mistake that already cost an executor a cherry-pick and a failed review check."
+  evidence: "2026-10-29 — scripts/isolate-for-plan.mjs:54-80 runs the isolation command with no check that the plan is on its base."
+  seen:
+    status: shaped
+    blockers: []
 kept-findings-go-to-the-catalog:
   band: C
   verdict: "Two sentences added to one section of the catalog rule, plus the fresh-agent check a rule change owes. Cheap, and it moves into the repository a correction that so far lived only in one tool's memory; batch with the other rule-text fixes."
@@ -173,6 +201,18 @@ next-shows-which-work-is-planned:
   seen:
     status: idea
     blockers: []
+pipeline-bills-no-job-that-decides-nothing:
+  band: C
+  verdict: "Saves minutes on every run for private projects, and costs nothing to public ones either way. Batch it with other pipeline work."
+  seen:
+    status: shaped
+    blockers: []
+pipeline-does-not-redo-green-work:
+  band: B
+  verdict: "The most common re-runs of already-passed code, on pull requests and merges to main. The release still runs the full suite."
+  seen:
+    status: shaped
+    blockers: []
 plan-checks-must-be-falsifiable:
   band: C
   verdict: "A rule-text change with three recorded cases behind it. Cheap; do it with plans-are-accurate-without-a-rehearsal, which follows it."
@@ -211,6 +251,19 @@ project-has-one-display-name:
   evidence: "2026-10-19 — commands/bootstrap.md:19 asks for a display name; scripts/build-backlog-board.mjs:101 titles the board with basename(root)."
   seen:
     status: idea
+    blockers: []
+project-settings-are-listed-and-held-once:
+  band: B
+  verdict: "The two prose lists already disagree in this repository. Its shaping has one open question - how the README and release notes, committed straight to main but read by checks, fit one list."
+  evidence: "2026-10-29 — scripts/framework-commit-check.sh:31 allows README.md and docs/ straight to main; pipeline/prose.txt lists nothing."
+  seen:
+    status: shaped
+    blockers: []
+release-guides-through-both-steps:
+  band: B
+  verdict: "Removes the release step people forget and the jargon around it, but the rename touches every shipped file and needs a migration for projects."
+  seen:
+    status: shaped
     blockers: []
 release-notes-stay-a-readable-size:
   band: E
@@ -276,6 +329,13 @@ self-check-red-runs-keep-their-output:
   seen:
     status: idea
     blockers: []
+self-check-runs-beside-another:
+  band: C
+  verdict: "A small change to one test, and it stops a parallel flush from going red for nothing. It may also explain self-check-clean-baseline-flake."
+  evidence: "2026-10-29 — guards/take-version.test.js:126 looks for leftovers in the machine-wide temporary folder, so another run's folder counts."
+  seen:
+    status: shaped
+    blockers: []
 set-up-project-can-generate-its-catalog-document:
   band: C
   verdict: "A rule that orders a step projects cannot take; small text fix, batch it."
@@ -326,6 +386,13 @@ update-keeps-ignore-lines-in-their-own-form:
   verdict: "Breaks this repository's self-check on every update until lines are deleted by hand. Small; batch with setup-export-lines-match-only-the-root."
   seen:
     status: idea
+    blockers: []
+update-keeps-instructions-behind-a-symlink:
+  band: A
+  verdict: "An update silently empties every entry instruction of a symlinked project and reports success. Small fix, severe failure."
+  evidence: "2026-10-29 — scripts/take-version.mjs:393-396 writes the pointer through the symlink, so both files end as @AGENTS.md."
+  seen:
+    status: shaped
     blockers: []
 update-skips-a-new-file-that-matches:
   band: C
