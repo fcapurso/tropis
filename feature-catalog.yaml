@@ -3459,3 +3459,23 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+- id: prose-pull-request-gets-no-environment
+  title: A pull request of prose and framework files creates no branch environment
+  status: shaped
+  value: Every pull request opened while the branch slot is filled creates an
+    environment, including ones that can never deploy. That costs minutes to create and
+    remove, and holds one of the hosting platform's limited environments for nothing.
+  acceptanceCriteria:
+    - branch-create runs only when the plan says the pull request carries more than prose
+      and framework files, judged by the same list the pipeline and the direct-to-main
+      hook use.
+    - The operator guide states the trade-off - a pull request that later gains code has
+      no environment, and closing and reopening it creates one.
+    - A guard covers a prose-only and a code-carrying pull request.
+  type: feature
+  layer: product
+  modules:
+    - templates/github/tropis-pipeline.yml
+    - templates/README.md
+  refs: []
