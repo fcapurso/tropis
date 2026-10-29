@@ -3459,3 +3459,20 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-19.
+- id: self-check-runs-beside-another
+  title: Two self-check runs on one machine do not fail each other
+  status: shaped
+  value: A flush with more than one submission runs a self-check per clone. Run side by
+    side, one run's scratch folder reads as the other's leak, the check goes red, and an
+    executor spends a batch finding out that nothing was wrong.
+  acceptanceCriteria:
+    - The test that take-version removes its scratch folder on every exit path looks for
+      leftovers only in a temporary folder of its own run, not the machine's shared one.
+    - Two runs of the self-check started together in two clones on one machine both pass.
+    - Making take-version leave its scratch folder behind still turns the test red.
+  type: bug
+  layer: product
+  modules:
+    - guards/take-version.test.js
+  refs: []
