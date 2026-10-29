@@ -3653,23 +3653,38 @@
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
 - id: release-guides-through-both-steps
-  title: /release stays with the developer from notes to production
+  title: A release is two plainly named steps, and /release stays with the developer through both
   status: shaped
-  value: A release with a staging step takes three commands in the right order today, and
-    the developer has to remember the middle one. One command that carries them through,
-    and picks up where it left off, removes the step people forget.
+  value: Candidate and rehearsal read as jargon, and release names three different
+    things. The industry's words, deploy to staging and promote to production, say what
+    each step does, and promote names the guarantee that production gets the build that
+    was checked. A release with a staging step also takes three commands in the right
+    order today, and the developer has to remember the middle one. One command that
+    carries them through, and picks up where it left off, removes the step people forget.
   acceptanceCriteria:
-    - With the candidate slot filled, after the notes are committed, /release shows step 1
-      of 2 with its trigger, waits for the developer to say it has started, then reports
-      the run's summary and its by-hand list.
+    - Every shipped file, command, script argument, workflow and decision record calls the
+      two steps deploy to staging and promote to production, with none of the old names
+      left except in a migration note.
+    - When the project deploys to staging, after the notes are committed, /release shows
+      step 1 of 2, deploy to staging, with its trigger, waits for the developer to say it
+      has started, then reports the run's summary and its by-hand list.
     - It drafts and records the check with the developer in the same sitting, as
       /manual-check does.
-    - On a pass it shows step 2 of 2 with the production trigger. On a failed run or check
-      it records the failure and stops, and running /release again resumes from step 1
-      for the new commit.
+    - On a pass it shows step 2 of 2, promote to production, with its trigger. On a failed
+      run or check it records the failure and stops, and running /release again resumes
+      from step 1 for the new commit.
     - The developer starts both steps; the command runs neither trigger.
+    - Taking the release, a project with a filled pipeline/candidate/ or its caller
+      workflow is moved to the new names, or told exactly what to rename, and nothing is
+      lost silently.
+    - The release-notes line Checked on the release candidate is renamed, and /release
+      reads either form during the transition.
   type: feature
   layer: product
   modules:
     - commands/release.md
+    - scripts/pipeline.mjs
+    - templates/github/tropis-candidate.yml
+    - framework/workflow.md
+    - framework/DECISIONS.md
   refs: []
