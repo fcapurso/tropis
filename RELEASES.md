@@ -16,12 +16,26 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-A project which still holds the framework in `.framework/` can no longer update and must
-be set up again. Projects in `.tropis/` are unaffected.
+A project whose files add up to more than 1 MiB, which is any real project, can now
+rehearse a release before it is tagged. Tropis no longer updates a project that still
+keeps the framework in `.framework/`; projects in `.tropis/` have nothing to do.
 
-Rehearsing a release no longer stops at `candidate: could not read the production tag`
-when your project's tagged files add up to more than 1 MiB: the rehearsal now reads a
-production tag of any size and goes on to run `pipeline/candidate/reset.sh`.
+### Rehearsing a release works on a real project
+
+Until now the rehearsal stopped at once with `candidate: could not read the production
+tag` whenever the files of your last release added up to more than 1 MiB, before
+`pipeline/candidate/reset.sh` ran. It now reads a release of any size and goes on to put
+your pre-production environment back on that version. If your rehearsal failed this way,
+run it again after updating.
+
+### A project in `.framework/` must be set up again
+
+Tropis used to move a project from the old `.framework/` folder into `.tropis/` when it
+updated. It no longer does: setting up and updating refuse such a project and say to
+remove the folder and set the project up again. If your framework lives in `.tropis/`,
+nothing changes for you.
+
+Checked on the release candidate: no — no candidate was rehearsed
 
 ## [0.5.1] — 2026-10-28
 
