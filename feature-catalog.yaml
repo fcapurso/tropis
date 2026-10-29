@@ -3459,3 +3459,25 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+- id: release-guides-through-both-steps
+  title: /release stays with the developer from notes to production
+  status: shaped
+  value: A release with a staging step takes three commands in the right order today, and
+    the developer has to remember the middle one. One command that carries them through,
+    and picks up where it left off, removes the step people forget.
+  acceptanceCriteria:
+    - With the candidate slot filled, after the notes are committed, /release shows step 1
+      of 2 with its trigger, waits for the developer to say it has started, then reports
+      the run's summary and its by-hand list.
+    - It drafts and records the check with the developer in the same sitting, as
+      /manual-check does.
+    - On a pass it shows step 2 of 2 with the production trigger. On a failed run or check
+      it records the failure and stops, and running /release again resumes from step 1
+      for the new commit.
+    - The developer starts both steps; the command runs neither trigger.
+  type: feature
+  layer: product
+  modules:
+    - commands/release.md
+  refs: []
