@@ -373,6 +373,14 @@ which version a result came from. A result that holds only on some versions is a
 finding about the framework — change it so it no longer depends on what varies — not
 a reason to require a version.
 
+**A probe on someone's own machine is not given only the repository.** The agent tool
+also loads that person's own instructions, the ones that apply to every project. When
+the change repeats something already in them, the probe follows those and passes
+whether or not the change works. Before running it, check whether they say what the
+change says; if they do, run the probe where they do not load, such as a cloud session,
+and say so in the record. Found absorbing a flush, where a probe of a provenance rule
+started locally reported seeing its owner's own copy of that rule.
+
 **End the check with a proposal.** Whatever it finds becomes a backlog entry, a rule, or a
 shaped plan — put to the developer as a recommendation, not left in the conversation that
 ran it — or is dropped with a one-line reason, when the catalog rule's *What does not
