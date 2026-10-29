@@ -3690,13 +3690,15 @@
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
 - id: flush-name-is-explained-and-unique
-  title: A flush name comes with its purpose, a safe default and a clash check
+  title: A flush reveals nothing of the project, in the name it goes under or in what it sends
   status: shaped
   after:
     - project-chooses-the-name-it-flushes-under
-  value: An operator asked for a flush name learns only that it will be public, so they
-    may use the real project name, change it between flushes, or pick one already in use
-    - each of which reveals the project or breaks the maintainer's grouping and tracking.
+  value: An operator can flush from a private project without reading every word for
+    leaks. Today an operator asked for a flush name learns only that it will be public, so
+    they may use the real project name, change it between flushes, or pick one already in
+    use - each of which reveals the project or breaks the maintainer's grouping and
+    tracking. And a queue entry goes out verbatim, written in the project's own terms.
   acceptanceCriteria:
     - When asking, /flush-upstream says in two sentences what the name is for and that it
       should never change, and the queue header line it writes says the same.
@@ -3706,10 +3708,23 @@
       suffix, made with no dependency.
     - Before accepting any name it refuses one under which another account already has
       pull requests on the framework, comparing head branches without the fork owner.
-    - A guard covers the default's format and the clash refusal.
+    - /capture-learning, when it routes to the upstream queue, writes the entry in the
+      framework's terms - no file, path or name of the project's own, no product or
+      customer, and only the figures the point needs - and what it leaves out goes in the
+      project's own record.
+    - /flush-upstream, for each entry decided flush, shows the text as it will be sent
+      with anything of the project's own taken out, the operator approves it, and the
+      plan's commit and pull request quote that approved text, not the queue line.
+    - Each submission task reads its commit message and pull request body for anything of
+      the project's own before pushing, as the exposure check does, and stops for the
+      operator if it finds any.
+    - The flush command says that a reworded queue entry must be matched in any project
+      file that names it by its wording.
+    - A guard covers the default name's format and the clash refusal.
   type: feature
   layer: product
   modules:
     - commands/flush-upstream.md
+    - commands/capture-learning.md
     - scripts/submit-upstream.sh
   refs: []
