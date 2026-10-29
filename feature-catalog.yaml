@@ -3459,3 +3459,27 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-22.
+- id: command-matcher-sees-every-shell
+  title: The command matcher finds a watched command wherever a shell would run it
+  status: shaped
+  value: Every hook that speaks at command position shares one matcher. Where it misses,
+    a deploy, a commit or a push passes with no warning; where an unparseable command
+    becomes a substring search, a grep gets the warning. A project that needs it right
+    keeps its own copy today.
+  acceptanceCriteria:
+    - A heredoc body read by dash, ksh, ssh or a shell named by path, directly, piped into
+      one, or behind a redirect, is checked as commands.
+    - A watched command on the line after a heredoc that sits inside a comment is at
+      command position.
+    - A dash heredoc's tab-indented terminator ends it.
+    - A command that cannot be parsed, or an unclosed heredoc, counts as a match, not a
+      substring search.
+    - The guard carries each case above, matching and not matching, and every hook built
+      on the matcher still passes its own cases.
+  type: bug
+  layer: product
+  modules:
+    - scripts/command-at-position.py
+    - guards/rule-delivery.test.js
+  refs: []
