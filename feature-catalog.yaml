@@ -3459,3 +3459,28 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+- id: flush-name-is-explained-and-unique
+  title: A flush name comes with its purpose, a safe default and a clash check
+  status: shaped
+  after:
+    - project-chooses-the-name-it-flushes-under
+  value: An operator asked for a flush name learns only that it will be public, so they
+    may use the real project name, change it between flushes, or pick one already in use
+    - each of which reveals the project or breaks the maintainer's grouping and tracking.
+  acceptanceCriteria:
+    - When asking, /flush-upstream says in two sentences what the name is for and that it
+      should never change, and the queue header line it writes says the same.
+    - It first asks whether the project has flushed before or is already named in the
+      framework's records, and proposes that name if so.
+    - Otherwise it proposes a generated default, a readable prefix and a short random
+      suffix, made with no dependency.
+    - Before accepting any name it refuses one under which another account already has
+      pull requests on the framework, comparing head branches without the fork owner.
+    - A guard covers the default's format and the clash refusal.
+  type: feature
+  layer: product
+  modules:
+    - commands/flush-upstream.md
+    - scripts/submit-upstream.sh
+  refs: []
