@@ -72,6 +72,12 @@ stage with no script is empty and passes. Run one locally with
 `node .tropis/scripts/pipeline.mjs run <stage>`. The run summary says what each
 stage did, including why a deploy was held or skipped.
 
+Each stage starts from a shallow checkout of the commit, with no submodules and no ref
+for the base branch. The framework stage has `.tropis/` installed; the other stages have
+nothing installed. A stage script that reads git history, such as a file as it stands on
+the main branch, fetches that history first; one that needs submodules or the product's
+dependencies fetches and installs them first.
+
 To give each open pull request an environment of its own, fill
 `pipeline/branch/` with `create.sh`, `deploy.sh` and `remove.sh`. Each receives
 `TROPIS_ENVIRONMENT`, the environment's name, and `TROPIS_BRANCH`, the branch.
