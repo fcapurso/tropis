@@ -19,6 +19,10 @@ For the full development history, see the git log.
 A project which still holds the framework in `.framework/` can no longer update and must
 be set up again. Projects in `.tropis/` are unaffected.
 
+Rehearsing a release no longer stops at `candidate: could not read the production tag`
+when your project's tagged files add up to more than 1 MiB: the rehearsal now reads a
+production tag of any size and goes on to run `pipeline/candidate/reset.sh`.
+
 ## [0.5.1] — 2026-10-28
 
 Tropis's own checks now run on Jest 30. The lockfile Tropis installs in your project
