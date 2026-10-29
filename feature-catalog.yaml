@@ -3438,3 +3438,24 @@
   layer: product
   modules: []
   refs: []
+# 2026-10-29, raised by the developer from first-adopter's first release rehearsal, which
+# failed in 0s with "candidate: could not read the production tag" before reset.sh ran.
+# extractTag read git archive's output through spawnSync's default 1 MiB buffer, and the
+# adopter's tag archives to about 6 MiB: ENOBUFS, no exit status. The tests' fixture tags
+# held one small file, so nothing caught it.
+- id: candidate-reads-a-large-tag
+  title: The release rehearsal reads a production tag of any size
+  status: shipped
+  value: A project whose tagged tree archives to more than 1 MiB, which is any real one,
+    can rehearse a release. Until now the rehearsal stopped at "could not read the
+    production tag" before reset.sh ran.
+  acceptanceCriteria:
+    - candidate rehearse on a tag whose archive is several MiB runs reset.sh, and
+      TROPIS_PRODUCTION_DIR holds the tag's files and nothing else.
+    - The test of it fails with the old extraction restored.
+  type: bug
+  layer: framework
+  modules:
+    - scripts/pipeline.mjs
+    - guards/pipeline.test.js
+  refs: []

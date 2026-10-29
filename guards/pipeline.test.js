@@ -6,6 +6,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -418,6 +419,30 @@ describe('candidate rehearse', () => {
     expect(statSync(join(root, 'saw-deploy-dir.txt'), { throwIfNoEntry: false })).toBeUndefined();
     expect(readFileSync(summary, 'utf8')).toBe(`prior\n${text}`);
     expect(result.stderr).toBe('');
+  });
+
+  it('hands reset.sh a tag whose archive is larger than a spawn buffer, and only its files', () => {
+    const root = repository();
+    write(root, 'version.txt', 'v1.0.0\n');
+    // Random bytes do not compress, so the archive stays several MiB.
+    writeFileSync(join(root, 'large.bin'), randomBytes(4 * 1024 * 1024));
+    commit(root, 'one');
+    git(root, 'tag', 'v1.0.0');
+    write(root, 'version.txt', 'later\n');
+    commit(root, 'later');
+    write(root, 'pipeline/candidate/reset.sh', [
+      'cat "$TROPIS_PRODUCTION_DIR/version.txt" > saw-version.txt',
+      'wc -c < "$TROPIS_PRODUCTION_DIR/large.bin" | tr -d " " > saw-size.txt',
+      'ls -A "$TROPIS_PRODUCTION_DIR" > saw-files.txt',
+      '',
+    ].join('\n'));
+    write(root, 'pipeline/candidate/deploy.sh', 'exit 0\n');
+    const result = runPipeline(root, ['candidate', 'rehearse']);
+    expect(result.stderr).not.toContain('could not read the production tag');
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(root, 'saw-version.txt'), 'utf8')).toBe('v1.0.0\n');
+    expect(readFileSync(join(root, 'saw-size.txt'), 'utf8')).toBe(`${4 * 1024 * 1024}\n`);
+    expect(readFileSync(join(root, 'saw-files.txt'), 'utf8')).toBe('large.bin\nversion.txt\n');
   });
 
   it('resets to the highest vX.Y.Z tag, not to a pre-release tag above it', () => {

@@ -387,10 +387,17 @@ function byHandLines(text) {
   return lines;
 }
 
+/**
+ * Writes the tag's files into dir. The archive goes through a file, never a spawn
+ * buffer: spawnSync's default maxBuffer is 1 MiB, and a real project's tag archives
+ * to more than that, which fails with ENOBUFS and no exit status.
+ */
 function extractTag(root, tag, dir) {
-  const archive = spawnSync('git', ['-C', root, 'archive', tag]);
+  const tarPath = join(dir, '.tropis-production.tar');
+  const archive = spawnSync('git', ['-C', root, 'archive', '-o', tarPath, tag]);
   if ((archive.status ?? 1) !== 0) return false;
-  const extracted = spawnSync('tar', ['-x', '-C', dir], { input: archive.stdout });
+  const extracted = spawnSync('tar', ['-xf', tarPath, '-C', dir]);
+  rmSync(tarPath, { force: true });
   return (extracted.status ?? 1) === 0;
 }
 
