@@ -50,6 +50,7 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
    part is flushed, held or declined only with its entry; a part the operator wants to
    decline alone is first split into its own entry.
    - **Flush, a lesson:** agree the exact words and where they land (file and heading).
+     Where the words name a file of the framework's own, such as one under scripts/, write it as plain text, not in backticks: the framework's integrity guard reads a backticked path in shipped text as a file every set-up project must contain, and the submission's self-check fails.
    - **Flush, a capability:** shape the entry with the operator — id, title, type,
      value, acceptance criteria, `layer: product` — in the framework's catalog format. If
      it cannot be shaped now, it is held, and marked "waiting to be shaped".
