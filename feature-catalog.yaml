@@ -3459,3 +3459,26 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-26.
+- id: branch-slot-never-touches-a-permanent-environment
+  title: A branch environment can never be a permanent one
+  status: shaped
+  value: A pull request from a branch named like a permanent environment would deploy over
+    it, and delete it when the pull request closes - one wrong branch name away from
+    losing production. Today every project guards against it itself.
+  acceptanceCriteria:
+    - A project lists its permanent environment names in a file it owns under
+      pipeline/branch/, one per line.
+    - branch create, branch deploy and branch remove refuse, before running any project
+      script, a branch whose environment name is on that list, naming the branch and the
+      environment. With no list they refuse production, staging and development.
+    - The operator guide says the deploy script may find no environment, because create
+      failed or the pull request closed mid-run, must not create one there, and should
+      fail saying to close and reopen the pull request.
+    - A guard covers each refusal and the default list.
+  type: bug
+  layer: product
+  modules:
+    - scripts/pipeline.mjs
+    - templates/README.md
+  refs: []
