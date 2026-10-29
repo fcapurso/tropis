@@ -270,6 +270,9 @@ Plan: <plan document path>
    same client, same code path. Different vantage points return different truths about
    the same record, and the difference reads convincingly as instability. For anything
    beyond a small fix, get agreement before implementing.
+
+   **Where code came from is a second assumption, and it fails differently.** A pointer at a working example is a tip about where to look, not a licence to adopt its approach wholesale: research how the problem is solved, then write the project's own version against its own interfaces and names, and say which named source you worked from — in the plan, the handover or the reply — even when the answer is "nothing in particular". An agent cannot check this for itself: it has no licence awareness while generating and no way to audit its own output for provenance afterwards, so its assurance that it wrote something itself is worth nothing as evidence, and the declaration is the only record anyone gets. In a closed-source product, this is what keeps expression copied from a copyleft project out of the code, along with the obligation to publish source that comes with it.
+
 3. **Implement,** with tests. Run the suite immediately after writing or changing a
    test — do not batch and do not proceed with a failing suite.
 4. **Verify.** Automated checks, plus any check only a person can perform. Use
