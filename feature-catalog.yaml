@@ -3524,11 +3524,14 @@
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-24.
 - id: project-settings-are-listed-and-held-once
-  title: A project's settings are listed in one place, and the direct-to-main list is written once
+  title: A project's settings are listed in one place, and one list decides what counts as prose everywhere
   status: shaped
   value: An operator can see every file they own to tailor Tropis, and the two lists that
     decide whether a change needs a pull request can no longer disagree - which today
-    leads to a commit warned about wrongly, or a pull request skipped wrongly.
+    leads to a commit warned about wrongly, or a pull request skipped wrongly. A pull
+    request of prose and framework files also stops creating a branch environment it can
+    never deploy to, which costs minutes and holds one of the hosting platform's limited
+    environments for nothing.
   acceptanceCriteria:
     - The operator guide has a section listing each file a project owns to tailor Tropis,
       what reads it, and its format.
@@ -3543,12 +3546,18 @@
       may still go straight to main, though a check reads them, so the pipeline still runs
       for them. The list says how such a file is told apart from prose, and the operator
       guide says why.
-    - A guard shows the hook and the pipeline give the same answer for the same path.
+    - branch-create runs only when the plan says the pull request carries more than prose
+      and framework files, judged by that same list. The operator guide states the
+      trade-off - a pull request that later gains code has no environment, and closing and
+      reopening it creates one.
+    - A guard shows the hook and the pipeline give the same answer for the same path, and
+      covers a prose-only and a code-carrying pull request.
   type: feature
   layer: product
   modules:
     - scripts/framework-commit-check.sh
     - scripts/pipeline.mjs
+    - templates/github/tropis-pipeline.yml
     - templates/README.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-26.
