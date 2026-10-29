@@ -102,6 +102,8 @@ someone must upgrade or approve by hand; an empty file means nothing. Copy
 release pipeline must take the candidate's commit, as the workflow's release
 section says.
 
+Three things the reset meets that nothing here handles for you. A stored-data schema that may only grow: the pre-production environment holds every attribute the main branch has had, production's tag can lack some, and a platform may refuse a deploy that drops one, so deploy the tag's code with the candidate's schema. Submodules: `TROPIS_PRODUCTION_DIR` holds the tag's files without them, and an old tag's `.gitmodules` may name an address the runner cannot reach, so fetch each one over the candidate's address at the commit the tag pins. A new major version: a non-interactive deploy may need approving, and an installed site may stay on the old major version until upgraded, so approve and upgrade the pre-production install in the scripts, or append a line to `TROPIS_BY_HAND`.
+
 Tropis ships the pipeline and replaces its copy on update. To own the pipeline,
 copy `.github/workflows/tropis-pipeline.yml` to
 `.github/workflows/project-pipeline.yml` and point
