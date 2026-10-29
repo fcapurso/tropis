@@ -3459,3 +3459,29 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+- id: flush-sends-nothing-of-the-project-own
+  title: What a flush sends carries nothing of the project's own unless the operator approves it
+  status: shaped
+  value: An operator can flush from a private project without reading every word for
+    leaks. Today a queue entry goes out verbatim, written in the project's own terms, and
+    only the flush name is protected.
+  acceptanceCriteria:
+    - /capture-learning, when it routes to the upstream queue, writes the entry in the
+      framework's terms - no file, path or name of the project's own, no product or
+      customer, and only the figures the point needs - and what it leaves out goes in the
+      project's own record.
+    - /flush-upstream, for each entry decided flush, shows the text as it will be sent
+      with anything of the project's own taken out, the operator approves it, and the
+      plan's commit and pull request quote that approved text, not the queue line.
+    - Each submission task reads its commit message and pull request body for anything of
+      the project's own before pushing, as the exposure check does, and stops for the
+      operator if it finds any.
+    - The flush command says that a reworded queue entry must be matched in any project
+      file that names it by its wording.
+  type: feature
+  layer: product
+  modules:
+    - commands/capture-learning.md
+    - commands/flush-upstream.md
+  refs: []
