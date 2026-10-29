@@ -16,6 +16,10 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.5.2] — 2026-10-29
+
 A project whose files add up to more than 1 MiB, which is any real project, can now
 rehearse a release before it is tagged. Tropis no longer updates a project that still
 keeps the framework in `.framework/`; projects in `.tropis/` have nothing to do.
