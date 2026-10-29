@@ -3459,3 +3459,20 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+- id: pipeline-stages-cache-their-installs
+  title: Pipeline stage jobs reuse cached installs
+  status: shaped
+  value: Each stage job installs its dependencies from scratch, so every stage pays the
+    full install time on every run.
+  acceptanceCriteria:
+    - Every Tropis workflow job that sets up Node turns on its npm cache, keyed on the lock
+      files it installs from.
+    - A run with an unchanged lock file restores from the cache.
+  type: feature
+  layer: product
+  modules:
+    - templates/github/tropis-pipeline.yml
+    - templates/github/tropis-candidate.yml
+    - templates/github/tropis-framework-checks.yml
+  refs: []
