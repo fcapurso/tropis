@@ -3574,3 +3574,26 @@
     - scripts/pipeline.mjs
     - templates/README.md
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-28.
+- id: update-keeps-instructions-behind-a-symlink
+  title: An update never empties the entry instructions of a project whose entry files are symlinked
+  status: shaped
+  value: A project set up with one entry file as a symlink to the other loses every
+    instruction when it takes an update, and the update reports success. Every later
+    session then works with no workflow, and nothing says so until something unrelated
+    fails.
+  acceptanceCriteria:
+    - When AGENTS.md or CLAUDE.md is a symlink to the other, the update replaces the
+      symlink with a regular file carrying the instructions before writing the pointer,
+      and says it did.
+    - After the update AGENTS.md holds the instructions and CLAUDE.md is the single line
+      that imports it, whichever way the symlink pointed.
+    - The entry-file check fails when AGENTS.md is itself only an import line, or a
+      symlink, and says what to do.
+    - A guard covers both symlink directions and the check's new failure.
+  type: bug
+  layer: product
+  modules:
+    - scripts/take-version.mjs
+    - guards/entry-file.test.js
+  refs: []
