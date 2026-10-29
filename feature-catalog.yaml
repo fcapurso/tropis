@@ -3476,3 +3476,26 @@
   modules:
     - guards/take-version.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-19.
+- id: isolation-refuses-a-base-without-the-plan
+  title: Isolation refuses to branch from a commit that does not hold the plan
+  status: shaped
+  value: An executor isolated from a base without its plan finds no instructions in its
+    worktree and has to cherry-pick the plan in, and any check that reads the plan from
+    the main branch then fails. The workflow already says to push before dispatching;
+    this checks it at the moment the branch is cut.
+  acceptanceCriteria:
+    - Before creating any worktree, the isolation helper checks that the plan file is
+      committed in the commit that the checkout of the repository holding the plan would
+      branch from. A plan's other repositories do not hold it and are not checked. When it
+      is not, it refuses, naming the plan, the checkout and that commit and saying to
+      commit and push the plan to the base first, and creates nothing.
+    - The same check says, without refusing, when that commit is not on the remote's main
+      branch, since a plan's review record is read from there.
+    - A plan committed on the base isolates as it does today.
+    - A guard covers the refusal, the note and the unchanged case.
+  type: feature
+  layer: product
+  modules:
+    - scripts/isolate-for-plan.mjs
+  refs: []
