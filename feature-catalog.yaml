@@ -3459,3 +3459,23 @@
     - scripts/pipeline.mjs
     - guards/pipeline.test.js
   refs: []
+# 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+- id: release-steps-use-plain-names
+  title: The release's steps are called deploy to staging and promote to production
+  status: shaped
+  value: Candidate and rehearsal read as jargon, and release names three different
+    things. The industry's words, deploy to staging and promote to production, say what
+    each step does, and promote names the guarantee that production gets the build that
+    was checked.
+  acceptanceCriteria:
+    - Every shipped file, command, script argument, workflow and decision record uses the
+      new names consistently, with none of the old left except in a migration note.
+    - Taking the release, a project with a filled pipeline/candidate/ or its caller
+      workflow is moved to the new names, or told exactly what to rename, and nothing is
+      lost silently.
+    - The release-notes line Checked on the release candidate is renamed, and /release
+      reads either form during the transition.
+  type: feature
+  layer: product
+  modules: []
+  refs: []
