@@ -67,6 +67,15 @@ describe('movedBands', () => {
     const bands = { gate: { band: 'A' }, vanished: { band: 'C' } };
     expect(movedBands(catalog, bands)).toEqual([]);
   });
+
+  it('ignores a band whose entry is replaced or shelved — the build reports it as stale', () => {
+    const closed = [
+      { id: 'old', status: 'shaped', supersededBy: ['new'] },
+      { id: 'parked', status: 'shaped', shelved: true },
+    ];
+    const bands = { old: { band: 'B' }, parked: { band: 'B' } };
+    expect(movedBands(closed, bands)).toEqual([]);
+  });
 });
 
 describe('stampBands', () => {

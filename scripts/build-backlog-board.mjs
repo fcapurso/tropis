@@ -1,7 +1,9 @@
 // Shared machinery: no part of this file is project-owned.
 /**
- * Build the backlog board — one local HTML page of every open catalog entry, grouped
- * by the bands in docs/backlog-board/bands.yaml.
+ * Build the backlog board — one local HTML page of every active catalog entry, grouped
+ * by the bands in docs/backlog-board/bands.yaml and ranked inside a band by value over
+ * effort. An entry that has shipped, been replaced or been shelved is closed: it leaves
+ * the bands and is listed in a collapsed section at the bottom of the page.
  *
  * Two inputs, deliberately separate: the catalog (facts) and `arcs()` / `nextStep()`
  * from next-work.js, so the page's top box is the same suggestion `/next` prints; and
@@ -16,7 +18,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
-import { bandLetters, movedBands, stampBands } from './board-bands.js';
+import { bandLetters, bandScores, movedBands, stampBands } from './board-bands.js';
 import { arcs, bandOf, hasBandRows, nextStep } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';
 
@@ -62,43 +64,66 @@ for (const a of arcData) {
   }
 }
 
-const open = catalog.filter((e) => e.status !== 'shipped');
-const entries = open.map((e) => ({
-  id: e.id,
-  t: e.title,
-  s: e.status,
-  ty: e.type,
-  l: e.layer,
-  sh: !!e.shelved,
-  sup: e.supersededBy || null,
-  bb: e.blockedBy || null,
-  af: e.after || null,
-  ac: e.acceptanceCriteria || [],
-  v: e.value,
-  refs: e.refs || [],
-  arc: arcsOf.get(e.id) || [],
-}));
+// Closed entries are not work: shipped, replaced by another entry, or shelved on purpose.
+const closedHow = (e) => {
+  if (e.status === 'shipped') return { k: 'shipped' };
+  if ((e.supersededBy ?? []).length) return { k: 'replaced', by: e.supersededBy };
+  if (e.shelved) return { k: 'shelved' };
+  return null;
+};
+const active = catalog.filter((e) => !closedHow(e));
+const entries = catalog.map((e) => {
+  const cl = closedHow(e);
+  if (cl) return { id: e.id, t: e.title, cl };
+  return {
+    id: e.id,
+    t: e.title,
+    s: e.status,
+    ty: e.type,
+    l: e.layer,
+    cl: null,
+    // Only blockers and predecessors that have not shipped are waited on.
+    bb: (e.blockedBy ?? []).filter((id) => catalog.find((x) => x.id === id)?.status !== 'shipped'),
+    af: (e.after ?? []).filter((id) => catalog.find((x) => x.id === id)?.status !== 'shipped'),
+    ac: e.acceptanceCriteria || [],
+    v: e.value,
+    refs: e.refs || [],
+    arc: arcsOf.get(e.id) || [],
+  };
+});
 
+const scores = bandScores(bands);
 const anno = {};
 for (const [id, b] of Object.entries(bands)) {
-  anno[id] = { b: b.band, v: b.verdict ?? '', e: b.evidence ?? '' };
+  anno[id] = {
+    b: b.band,
+    v: b.verdict ?? '',
+    e: b.evidence ?? '',
+    sc: scores[id] ?? null,
+    vw: b.valueWhy ?? '',
+    ew: b.effortWhy ?? '',
+  };
 }
 
 const letters = bandLetters(bands);
-const step = nextStep(catalog, letters);
+const step = nextStep(catalog, letters, scores);
 const nextUp = step
   ? { id: step.id, t: step.title, b: hasBandRows(letters) ? bandOf(step.id, letters) : null }
   : null;
 
-const openIds = new Set(open.map((e) => e.id));
-const unbanded = open.filter((e) => !(e.id in bands)).map((e) => e.id);
-const stale = Object.keys(bands).filter((id) => !openIds.has(id));
+const activeIds = new Set(active.map((e) => e.id));
+const unbanded = active.filter((e) => !(e.id in bands)).map((e) => e.id);
+const stale = Object.keys(bands).filter((id) => !activeIds.has(id));
+const notAToD = Object.entries(bands)
+  .filter(([id, b]) => activeIds.has(id) && !['A', 'B', 'C', 'D'].includes(b?.band))
+  .map(([id, b]) => ({ id, letter: b?.band ?? '(none)' }));
+const unscored = Object.keys(bands).filter((id) => activeIds.has(id) && !(id in scores));
 const moved = reevaluate
-  ? Object.entries(bands).filter(([id]) => openIds.has(id))
-    .map(([id, b]) => ({ id, reason: `band ${b.band}, ${open.find((e) => e.id === id).status}` }))
+  ? Object.entries(bands).filter(([id]) => activeIds.has(id))
+    .map(([id, b]) => ({ id, reason: `band ${b.band}, ${active.find((e) => e.id === id).status}` }))
   : movedBands(catalog, bands);
 
-const count = (fn) => open.filter(fn).length;
+const count = (fn) => active.filter(fn).length;
 const today = new Date();
 const freshness = readmeFreshnessAt(
   root,
@@ -116,8 +141,8 @@ const html = readFileSync(templatePath, 'utf8')
   .replace('__ANNO__', JSON.stringify(anno))
   .replace('__ARCS__', JSON.stringify(arcData))
   .replace('__NEXT__', JSON.stringify(nextUp))
-  .replace('__OPEN__', String(open.length))
-  .replace('__SHIPPED__', String(catalog.length - open.length))
+  .replace('__OPEN__', String(active.length))
+  .replace('__SHIPPED__', String(catalog.filter((e) => e.status === 'shipped').length))
   .replace('__PRODUCT__', String(count((e) => e.layer === 'product')))
   .replace('__FRAMEWORK__', String(count((e) => e.layer === 'framework')))
   .replace('__ASOF__', new Date().toISOString().slice(0, 10))
@@ -131,11 +156,11 @@ console.log(out);
 if (freshness) console.log(freshness);
 console.log('Open it in a browser.');
 if (unbanded.length) {
-  console.log(`\n${unbanded.length} open entr${unbanded.length === 1 ? 'y has' : 'ies have'} no band — the board shows them as E until bands.yaml says otherwise:`);
+  console.log(`\n${unbanded.length} active entr${unbanded.length === 1 ? 'y has' : 'ies have'} no band — the board shows them as D until bands.yaml says otherwise:`);
   for (const id of unbanded) console.log(`  - ${id}`);
 }
 if (stale.length) {
-  console.log(`\n${stale.length} band${stale.length === 1 ? '' : 's'} in bands.yaml for entries that have shipped or gone — delete them:`);
+  console.log(`\n${stale.length} band${stale.length === 1 ? '' : 's'} in bands.yaml for entries that have shipped, been replaced, been shelved or gone — delete them:`);
   for (const id of stale) console.log(`  - ${id}`);
 }
 if (moved.length) {
@@ -143,4 +168,12 @@ if (moved.length) {
     ? `\n${moved.length} band${moved.length === 1 ? '' : 's'} to re-evaluate (--reevaluate lists every band whose entry is open). Rewrite or confirm each verdict, then run with --stamp:`
     : `\n${moved.length} band${moved.length === 1 ? '' : 's'} whose entry has moved since it was judged — re-evaluate, then run with --stamp:`);
   for (const m of moved) console.log(`  - ${m.id} — ${m.reason}`);
+}
+if (notAToD.length) {
+  console.log(`\n${notAToD.length} band${notAToD.length === 1 ? '' : 's'} not A to D — re-band them:`);
+  for (const r of notAToD) console.log(`  - ${r.id} — ${r.letter}`);
+}
+if (unscored.length) {
+  console.log(`\n${unscored.length} band${unscored.length === 1 ? '' : 's'} with no value or effort score (1 to 5) — score them:`);
+  for (const id of unscored) console.log(`  - ${id}`);
 }

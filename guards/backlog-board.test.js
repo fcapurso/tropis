@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
-import { bandLetters, movedBands } from '../scripts/board-bands.js';
+import { bandLetters, bandScores, movedBands } from '../scripts/board-bands.js';
 import { bandOf, nextStep } from '../scripts/next-work.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -127,12 +127,14 @@ describe('backlog board build', () => {
     expect(page(dir).startsWith('<!doctype html>\n<meta charset="utf-8">')).toBe(true);
   });
 
-  it('embeds data the page can parse, covering every open entry', () => {
+  it('embeds data the page can parse, covering every entry and flagging the closed ones', () => {
     const html = page(dir);
     const entries = grab(html, 'ENTRIES');
     const arcs = grab(html, 'ARCS');
-    const open = YAML.parse(CATALOG).filter((e) => e.status !== 'shipped');
-    expect(entries.map((e) => e.id).sort()).toEqual(open.map((e) => e.id).sort());
+    const all = YAML.parse(CATALOG);
+    expect(entries.map((e) => e.id).sort()).toEqual(all.map((e) => e.id).sort());
+    expect(entries.find((e) => e.id === 'done').cl).toEqual({ k: 'shipped' });
+    expect(entries.find((e) => e.id === 'open-a').cl).toBeNull();
     expect(arcs.length).toBeGreaterThan(0);
     for (const a of arcs) expect(a.order.length).toBe(a.total);
   });
@@ -164,7 +166,7 @@ describe('backlog board build', () => {
   it('shows at the top the entry nextStep returns, and is empty when that is null', () => {
     const catalog = YAML.parse(CATALOG);
     const letters = bandLetters(YAML.parse(BANDS));
-    const step = nextStep(catalog, letters);
+    const step = nextStep(catalog, letters, bandScores(YAML.parse(BANDS)));
     const shown = grab(page(dir), 'NEXT');
     expect(step).not.toBeNull();
     expect(shown).toEqual({ id: step.id, t: step.title, b: bandOf(step.id, letters) });
@@ -183,11 +185,121 @@ describe('backlog board build', () => {
     try {
       const none = build(noneDir);
       expect(none.status).toBe(0);
-      expect(nextStep(YAML.parse(readFileSync(join(noneDir, 'feature-catalog.yaml'), 'utf8')), { decide: 'D' })).toBeNull();
+      expect(nextStep(YAML.parse(readFileSync(join(noneDir, 'feature-catalog.yaml'), 'utf8')), { decide: 'C' })).toBeNull();
       expect(grab(page(noneDir), 'NEXT')).toBeNull();
     } finally {
       rmSync(noneDir, { recursive: true, force: true });
     }
+  });
+});
+
+const CLOSED_CATALOG = `${CATALOG}- id: replaced
+  title: Replaced
+  status: shaped
+  type: feature
+  layer: product
+  value: Moved.
+  acceptanceCriteria:
+    - Moved.
+  modules: []
+  supersededBy:
+    - open-a
+  refs: []
+- id: parked
+  title: Parked
+  status: shaped
+  type: feature
+  layer: product
+  value: On purpose.
+  acceptanceCriteria:
+    - On purpose.
+  modules: []
+  shelved: true
+  refs: []
+- id: waiting
+  title: Waiting
+  status: shaped
+  type: feature
+  layer: product
+  value: Waits.
+  acceptanceCriteria:
+    - Waits.
+  modules: []
+  blockedBy:
+    - done
+    - open-b
+  after:
+    - open-a
+    - done
+  refs: []
+`;
+
+describe('backlog board with closed entries and scores', () => {
+  const bands = `open-a:
+  band: A
+  value: 4
+  valueWhy: "Blocks work."
+  effort: 2
+  effortWhy: "One file."
+  verdict: Do it.
+open-b:
+  band: E
+  verdict: Old letter.
+waiting:
+  band: B
+  value: 9
+  effort: 1
+  verdict: Waits.
+replaced:
+  band: B
+  verdict: Replaced.
+parked:
+  band: C
+  verdict: Parked.
+`;
+  let dir;
+  let run;
+  beforeAll(() => {
+    dir = stage(CLOSED_CATALOG, bands);
+    run = build(dir);
+  });
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  it('reports a band on a replaced or shelved entry as stale, and not as moved', () => {
+    expect(run.status).toBe(0);
+    const stale = run.stdout.slice(run.stdout.indexOf('been replaced, been shelved or gone'));
+    expect(run.stdout).toContain('2 bands in bands.yaml for entries that have shipped, been replaced, been shelved or gone — delete them:');
+    expect(stale).toContain('- replaced');
+    expect(stale).toContain('- parked');
+    expect(run.stdout).not.toContain('- replaced —');
+    expect(run.stdout).not.toContain('- parked —');
+  });
+
+  it('reports a band outside A to D, and a band with no valid scores', () => {
+    expect(run.stdout).toContain('1 band not A to D — re-band them:\n  - open-b — E\n');
+    expect(run.stdout).toContain(
+      '2 bands with no value or effort score (1 to 5) — score them:\n  - open-b\n  - waiting\n',
+    );
+    expect(run.stdout.indexOf('not A to D')).toBeLessThan(run.stdout.indexOf('no value or effort score'));
+  });
+
+  it('flags closed entries for the page and lists only unshipped waits', () => {
+    const entries = grab(page(dir), 'ENTRIES');
+    const byId = Object.fromEntries(entries.map((e) => [e.id, e]));
+    expect(byId.done.cl).toEqual({ k: 'shipped' });
+    expect(byId.replaced.cl).toEqual({ k: 'replaced', by: ['open-a'] });
+    expect(byId.parked.cl).toEqual({ k: 'shelved' });
+    expect(byId.waiting.cl).toBeNull();
+    expect(byId.waiting.bb).toEqual(['open-b']);
+    expect(byId.waiting.af).toEqual(['open-a']);
+  });
+
+  it('gives the page scores only where both are integers from 1 to 5', () => {
+    const anno = grab(page(dir), 'ANNO');
+    expect(anno['open-a'].sc).toEqual({ value: 4, effort: 2 });
+    expect(anno['open-a'].vw).toBe('Blocks work.');
+    expect(anno.waiting.sc).toBeNull();
+    expect(anno['open-b'].sc).toBeNull();
   });
 });
 
@@ -284,7 +396,8 @@ describe('backlog board without a bands file', () => {
       const html = page(due);
       expect(html).toContain('<div id="readme">');
       expect(html).toContain('1 shipped since: kept&amp;page');
-      expect(html).not.toContain('kept&page');
+      // The id is also in the page data, now that closed entries are listed; the line is not.
+      expect(html.match(/<div id="readme">(.*?)<\/div>/s)[1]).not.toContain('kept&page');
       const [pathLine, line] = built.stdout.split('\n');
       expect(pathLine).toContain('index.html');
       expect(line).toContain('1 shipped since: kept&page');
