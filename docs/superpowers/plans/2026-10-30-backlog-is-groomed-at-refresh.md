@@ -199,3 +199,46 @@ request against `main`. Do not merge.
 
 - The first full grooming pass on this repository's backlog: after a release carrying both
   plans is taken, with `/refresh-board all groom`.
+
+## Handover report
+
+Measured with git 2.49.0, Node v22.15.0, Claude Code desktop (Sonnet 5.5), macOS 26.2 on arm64.
+
+### Task completion
+
+- Task 0: the prerequisite plan carries a `## Review record` on `main`. `npm --prefix .tropis ci` ran. The self-check was run after Task 1, not before (see Judgment calls).
+- Task 1: done. `bandBundles`, the `bundle` key surviving a stamp, the page tag, the one-row bundle report and the *With it* line (present and absent), tests first.
+- Task 2: done. The Groom step, the bands template and fixture line, FW-035, and the fresh-agent check.
+- Task 3: done. The entry is `shipped` with a comment naming this report; both suites run; pull request opened, not merged.
+
+### Verification results
+
+- `bash scripts/check-blueprint.sh` on the Task 1 commit: `Self-check FAILED`, with exactly one failure, `/refresh-board › grooms: names groom, the four findings, and that nothing is applied without a yes`. I wrote that test in Task 1 along with the others, so it was red until Task 2 supplied the command text.
+- The same command on the Task 2 commit: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 6 passed, 6 total`, `Tests: 33 passed, 33 total`.
+- Fresh-agent check (a general-purpose subagent in Claude Code desktop, Sonnet 5.5, macOS 26.2 on arm64), run on a scratch project of six invented entries: two describing CSV export in different words, two about theme choice, one sign-in entry open beside a shipped one that already did the work, with all six banded and scored. It ran `/refresh-board groom` from the source command text. It proposed `merge: export-to-csv absorbs spreadsheet-download`, `bundle theme: dark-theme, theme-toggle-memory`, and `close: sign-in-screen — the shipped entry login-page already provides the sign-in page`. It proposed no conflict (there was none). It applied none of them and changed no catalog entry; its only change was the `seen` stamp on the five rows. It passes.
+- The self-check was run once more after the final commit; see the pull request for the result.
+
+### Scope
+
+Diff stat against `a1df7bb`, before the catalog and plan commit: 11 files, 193 insertions, 13 deletions. Every file is in the File Structure table; the catalog entry and this plan file are the last two. Worktree used: `../tropis-groomed-backlog` (sibling of `tropis`), created by the isolate helper.
+
+### Judgment calls
+
+- The Task 1 tests included the command-text test that Task 2 satisfies, so the Task 1 commit's self-check was red on that one test. I did not split it, since the plan asks for the command test in Task 2 but one test file holds both.
+- `next.mjs` sorts the bundle-mates itself (band letter, then value over effort with unscored last, then id) instead of exporting `compareByBand` from `next-work.js`, which is not in the File Structure table.
+- The bundle-mates listed by `/next` are every open entry with that name, including entries that are blocked.
+- `bandBundles` ignores a `bundle` that is not a non-empty string. The one-row report counts only rows whose entry is open.
+- The fresh-agent check used a scratch project outside the repository, a copy of the board scripts, and a git repository of its own; it was not pointed at any real backlog entry.
+- The command renumbers its steps to six and now skips to step 5 (Look) when the build reports nothing and `groom` was not asked.
+
+### What the plan got wrong
+
+- It says the self-check on the Task 1 commit is expected to pass; with the command test written in Task 1 it cannot (above).
+- It never says how to choose a bundle name; the probe agent invented one, which is the intended behaviour.
+- The planned `Then` ordering (Groom between *Band and prune* and *Build again*) leaves the bundle-with-one-entry report in the first build, before grooming can add or remove a bundle. A bundle proposed and applied during a refresh is only checked by the next one.
+
+### Outstanding
+
+- The first full grooming pass on this repository's backlog is deliberately not in this plan.
+- Nothing for the developer to observe on a screen beyond the `bundle` tag on the board; a `/manual-check` for that is the reviewer's call.
