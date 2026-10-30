@@ -128,6 +128,11 @@ header line naming `bundle` as optional and saying what it means.
   (as `guards/backlog-board.test.js` › `/refresh-board` already reads the command for its
   arc wording).
 - **The self-check reads committed content only.** Commit, then run it.
+- **`npm --prefix .tropis test` is not this plan's suite.** It runs the installed
+  release's checks on this repository, not the source guards under `guards/` this plan
+  changes; those run only through `bash scripts/check-blueprint.sh`. "Run the suite" in
+  the tasks means the self-check, after a commit. The ranking plan said otherwise and its
+  executor had to work around it.
 
 ## File Structure
 
