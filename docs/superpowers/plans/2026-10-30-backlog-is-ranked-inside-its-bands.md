@@ -394,3 +394,59 @@ Tool versions: Node v22.15.0, Claude Code 2.1.300 (Sonnet 5.5), macOS 26.2, arm6
 - This repository's own bands file is untouched, as required; its rows are re-judged after taking a release with this change.
 - The ordering on the real backlog and the page as a screen are for the reviewing session and `/manual-check`.
 - The scratch jest setup added lines to the shared `.git/info/exclude` of the specifying session's checkout (`jest.config.js`, `node_modules`, `package.json`); I removed them again; a reviewer may confirm.
+
+## Review record
+
+Reviewed by the specifying session on 2026-10-30, with git 2.49.0 and Node v22.15.0 in
+Claude Code desktop (Opus 5.5) on macOS 26.2, arm64.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` on the branch at `5a9f063`: last line `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`
+- `npm --prefix .tropis test` in the worktree: 6 suites, 33 tests passed.
+- Scope: `git diff --name-only origin/main...HEAD` against the File Structure table:
+  nothing outside it. `guards/next-work.test.js` was not created, which the table
+  allowed ("or the existing guards below").
+- A scratch project set up from the branch with `scripts/set-up-project.sh`: its checks
+  passed (6 suites, 33 tests). Given this repository's catalog and bands file at
+  `3201aae`, the build reported 2 unbanded, 8 stale, 5 not A to D and 56 unscored — the
+  handover's figures.
+- The handover's diagnosis that `npm --prefix .tropis test` does not run the source guards
+  under `guards/` was checked against `AGENTS.md`, which says the same: those run only
+  through the self-check. True.
+- `.git/info/exclude` in the specifying checkout: no lines left from the executor's
+  scratch setup.
+
+### Found
+
+Public exposure: the diff and the branch's commit bodies were read for private material
+(people's names, other projects, home paths, hostnames, email addresses): nothing.
+
+Nothing the handover did not report. The code for rank, the blocked-ahead line, the
+closed section, the markers and the two new reports reads as the plan's *Decisions*
+describe, and the judgment calls listed in the handover stand.
+
+### Outstanding disposition
+
+- This repository's bands file is untouched: no entry. Re-judging it is the one-time
+  `/refresh-board all groom` after a release carrying this plan and its grooming sequel,
+  already named in the design and in that plan's *Not in this plan*.
+- The page as a screen and the order on the real backlog: checked by the developer
+  through `/manual-check`, all nine steps passed — `docs/verification-log.md`, entry
+  2026-10-30, *The backlog board ranks inside four bands*.
+- The executor's lines in the shared exclude file: confirmed removed; nothing left to do.
+
+### Learnings routed
+
+- The plan told the executor to run `npm --prefix .tropis test` as the suite, which here
+  runs the installed release's checks, not the source guards. `AGENTS.md` already says
+  so under *Gotchas*; the plan's author did not apply it. Routed into the grooming plan,
+  docs/superpowers/plans/2026-10-30-backlog-is-groomed-at-refresh.md, as a trap before it
+  is dispatched. Nothing further generalises: the rule exists and is delivered.
+
+### Merged because
+
+Every check re-ran green, the scope matches the plan, and the developer passed all nine
+steps on the page.
