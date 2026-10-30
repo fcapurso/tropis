@@ -3777,7 +3777,7 @@
 
 - id: backlog-is-groomed-at-refresh
   title: Refreshing the board proposes merging, bundling or closing entries that overlap
-  status: building
+  status: shipped # handover: Handover report in docs/superpowers/plans/2026-10-30-backlog-is-groomed-at-refresh.md
   after:
     - backlog-is-ranked-inside-its-bands
   value: Entries that overlap, conflict or belong together are noticed while someone is

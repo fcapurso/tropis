@@ -14,7 +14,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import YAML from 'yaml';
-import { bandLetters, bandScores } from './board-bands.js';
+import { bandBundles, bandLetters, bandScores } from './board-bands.js';
 import { inFlight, blocked, arcs, nextStep, bandOf, readyInBandOrder, hasBandRows, blockedAhead } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';
 
@@ -28,6 +28,7 @@ const bandsPath = resolve(root, 'docs/backlog-board/bands.yaml');
 const bandRows = existsSync(bandsPath) ? YAML.parse(readFileSync(bandsPath, 'utf8')) : null;
 const bands = bandRows ? bandLetters(bandRows) : null;
 const scores = bandRows ? bandScores(bandRows) : null;
+const bundles = bandRows ? bandBundles(bandRows) : {};
 
 function tag(entry) {
   return `[${entry.type}]`;
@@ -54,6 +55,17 @@ function line(entry) {
 }
 
 const step = nextStep(catalog, bands, scores);
+
+// The suggestion's bundle-mates that are still open, best band first, then value over
+// effort (unscored last), then id.
+function bundleMates(of) {
+  const open = (e) => e.status !== 'shipped' && !e.shelved && !(e.supersededBy ?? []).length;
+  const rank = (id) => (scores?.[id] ? scores[id].value / scores[id].effort : -1);
+  return catalog
+    .filter((e) => e.id !== of.id && bundles[e.id] === bundles[of.id] && open(e))
+    .sort((a, b) => bandOf(a.id, bands).localeCompare(bandOf(b.id, bands)) || rank(b.id) - rank(a.id) || a.id.localeCompare(b.id))
+    .map((e) => e.id);
+}
 if (hasBandRows(bands)) {
   if (step) {
     const spec = (step.refs ?? []).find((r) => r.includes('/specs/'));
@@ -66,6 +78,8 @@ if (hasBandRows(bands)) {
       ? `Next step: none — nothing ready is banded A or B; ${decisions.join(', ')} need a decision, not a plan.`
       : 'Next step: none — nothing ready is banded A or B; the rest is banded to leave for now.');
   }
+  const mates = step && bundles[step.id] ? bundleMates(step) : [];
+  if (mates.length) console.log(`  With it, bundle ${bundles[step.id]}: ${mates.join(', ')}`);
   const ahead = blockedAhead(catalog, bands, scores, step);
   if (ahead) {
     const waitingIds = ahead.waitingOn.map((b) => b.id).join(', ');

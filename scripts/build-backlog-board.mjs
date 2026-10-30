@@ -18,7 +18,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
-import { bandLetters, bandScores, movedBands, stampBands } from './board-bands.js';
+import { bandBundles, bandLetters, bandScores, movedBands, stampBands } from './board-bands.js';
 import { arcs, bandOf, hasBandRows, nextStep } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';
 
@@ -93,6 +93,7 @@ const entries = catalog.map((e) => {
 });
 
 const scores = bandScores(bands);
+const bundles = bandBundles(bands);
 const anno = {};
 for (const [id, b] of Object.entries(bands)) {
   anno[id] = {
@@ -102,6 +103,7 @@ for (const [id, b] of Object.entries(bands)) {
     sc: scores[id] ?? null,
     vw: b.valueWhy ?? '',
     ew: b.effortWhy ?? '',
+    bn: bundles[id] ?? '',
   };
 }
 
@@ -118,6 +120,9 @@ const notAToD = Object.entries(bands)
   .filter(([id, b]) => activeIds.has(id) && !['A', 'B', 'C', 'D'].includes(b?.band))
   .map(([id, b]) => ({ id, letter: b?.band ?? '(none)' }));
 const unscored = Object.keys(bands).filter((id) => activeIds.has(id) && !(id in scores));
+const bundleMembers = {};
+for (const id of Object.keys(bundles)) if (activeIds.has(id)) (bundleMembers[bundles[id]] ??= []).push(id);
+const lonely = Object.entries(bundleMembers).filter(([, ids]) => ids.length === 1);
 const moved = reevaluate
   ? Object.entries(bands).filter(([id]) => activeIds.has(id))
     .map(([id, b]) => ({ id, reason: `band ${b.band}, ${active.find((e) => e.id === id).status}` }))
@@ -176,4 +181,8 @@ if (notAToD.length) {
 if (unscored.length) {
   console.log(`\n${unscored.length} band${unscored.length === 1 ? '' : 's'} with no value or effort score (1 to 5) — score them:`);
   for (const id of unscored) console.log(`  - ${id}`);
+}
+for (const [name, ids] of lonely) {
+  console.log(`\nbundle ${name} has one entry — remove the field:`);
+  console.log(`  - ${ids[0]}`);
 }

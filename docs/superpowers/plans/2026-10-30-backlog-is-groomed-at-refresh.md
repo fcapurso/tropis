@@ -199,3 +199,103 @@ request against `main`. Do not merge.
 
 - The first full grooming pass on this repository's backlog: after a release carrying both
   plans is taken, with `/refresh-board all groom`.
+
+## Handover report
+
+Measured with git 2.49.0, Node v22.15.0, Claude Code desktop (Sonnet 5.5), macOS 26.2 on arm64.
+
+### Task completion
+
+- Task 0: the prerequisite plan carries a `## Review record` on `main`. `npm --prefix .tropis ci` ran. The self-check was run after Task 1, not before (see Judgment calls).
+- Task 1: done. `bandBundles`, the `bundle` key surviving a stamp, the page tag, the one-row bundle report and the *With it* line (present and absent), tests first.
+- Task 2: done. The Groom step, the bands template and fixture line, FW-035, and the fresh-agent check.
+- Task 3: done. The entry is `shipped` with a comment naming this report; both suites run; pull request opened, not merged.
+
+### Verification results
+
+- `bash scripts/check-blueprint.sh` on the Task 1 commit: `Self-check FAILED`, with exactly one failure, `/refresh-board › grooms: names groom, the four findings, and that nothing is applied without a yes`. I wrote that test in Task 1 along with the others, so it was red until Task 2 supplied the command text.
+- The same command on the Task 2 commit: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 6 passed, 6 total`, `Tests: 33 passed, 33 total`.
+- Fresh-agent check (a general-purpose subagent in Claude Code desktop, Sonnet 5.5, macOS 26.2 on arm64), run on a scratch project of six invented entries: two describing CSV export in different words, two about theme choice, one sign-in entry open beside a shipped one that already did the work, with all six banded and scored. It ran `/refresh-board groom` from the source command text. It proposed `merge: export-to-csv absorbs spreadsheet-download`, `bundle theme: dark-theme, theme-toggle-memory`, and `close: sign-in-screen — the shipped entry login-page already provides the sign-in page`. It proposed no conflict (there was none). It applied none of them and changed no catalog entry; its only change was the `seen` stamp on the five rows. It passes.
+- The self-check was run once more after the final commit; see the pull request for the result.
+
+### Scope
+
+Diff stat against `a1df7bb`, before the catalog and plan commit: 11 files, 193 insertions, 13 deletions. Every file is in the File Structure table; the catalog entry and this plan file are the last two. Worktree used: `../tropis-groomed-backlog` (sibling of `tropis`), created by the isolate helper.
+
+### Judgment calls
+
+- The Task 1 tests included the command-text test that Task 2 satisfies, so the Task 1 commit's self-check was red on that one test. I did not split it, since the plan asks for the command test in Task 2 but one test file holds both.
+- `next.mjs` sorts the bundle-mates itself (band letter, then value over effort with unscored last, then id) instead of exporting `compareByBand` from `next-work.js`, which is not in the File Structure table.
+- The bundle-mates listed by `/next` are every open entry with that name, including entries that are blocked.
+- `bandBundles` ignores a `bundle` that is not a non-empty string. The one-row report counts only rows whose entry is open.
+- The fresh-agent check used a scratch project outside the repository, a copy of the board scripts, and a git repository of its own; it was not pointed at any real backlog entry.
+- The command renumbers its steps to six and now skips to step 5 (Look) when the build reports nothing and `groom` was not asked.
+
+### What the plan got wrong
+
+- It says the self-check on the Task 1 commit is expected to pass; with the command test written in Task 1 it cannot (above).
+- It never says how to choose a bundle name; the probe agent invented one, which is the intended behaviour.
+- The planned `Then` ordering (Groom between *Band and prune* and *Build again*) leaves the bundle-with-one-entry report in the first build, before grooming can add or remove a bundle. A bundle proposed and applied during a refresh is only checked by the next one.
+
+### Outstanding
+
+- The first full grooming pass on this repository's backlog is deliberately not in this plan.
+- Nothing for the developer to observe on a screen beyond the `bundle` tag on the board; a `/manual-check` for that is the reviewer's call.
+
+## Review record
+
+Reviewed by the specifying session on 2026-10-30, with git 2.49.0 and Node v22.15.0 in
+Claude Code desktop (Opus 5.5) on macOS 26.2, arm64.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` on the branch at `08bba8b`: last line `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`
+- `npm --prefix .tropis test` in the worktree: 33 tests passed.
+- Scope: `git diff --name-only origin/main...HEAD` against the File Structure table:
+  every file listed, nothing outside it.
+- A scratch project set up from the branch with `scripts/set-up-project.sh`, given this
+  repository's catalog and bands file at `a1df7bb` and three scratch `bundle` fields: the
+  build printed `bundle check-alone has one entry — remove the field:`, and `next`
+  printed `  With it, bundle check-pair: a-failing-push-is-visible` directly under its
+  `Next step:` line.
+- The command text was read against *Decisions* 1 and 2: the Groom step sits between
+  *Band and prune* and *Build again*, names both moments and their combination with
+  `all`, carries the four findings with what each becomes, and says it applies none
+  without a yes and changes the catalog only through `/feature`.
+
+### Found
+
+Public exposure: the diff and the branch's commit bodies were read for private material
+(people's names, other projects, home paths, hostnames, email addresses): nothing.
+
+The handover's third item under *What the plan got wrong* does not hold. It says a bundle
+applied during a refresh is checked only by the next refresh. The Groom step comes before
+*Build again*, which must report nothing needing a person, so a bundle left with one entry
+is reported in the same refresh. No change needed.
+
+### Outstanding disposition
+
+- The first full grooming pass on this repository's backlog: not an entry. It is the
+  one-time `/refresh-board all groom` after a release carrying this plan and the ranking
+  plan, named in the design and in this plan's *Not in this plan*.
+- The bundle tag on the board: checked by the developer through `/manual-check`, all
+  three steps passed — `docs/verification-log.md`, entry 2026-10-30, *The backlog board
+  tags bundles*.
+- No bundle-naming guidance in the plan: dropped. The command asks for a short
+  kebab-case name and the agent choosing it is the right judge; the fresh-agent check
+  named one sensibly unprompted.
+
+### Learnings routed
+
+The handover's first item, a test written in Task 1 that only Task 2 can satisfy, is a
+plan-writing slip of this plan alone: the command test belonged in Task 2's list. Nothing
+generalises beyond it, so nothing was written.
+
+### Merged because
+
+Every check re-ran green, the scope matches the plan, the fresh-agent check found the
+merge, bundle and close unprompted and applied none, and the developer passed the page
+check.

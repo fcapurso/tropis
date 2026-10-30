@@ -1082,3 +1082,26 @@ refresh re-judges each one.
 **Consequences:** A project's first refresh after taking this release re-judges every row.
 Until then an old C row reads as decide first, an old D row as leave it, and an old E row
 as unbanded, which counts as D; none of them is suggested.
+
+---
+
+## FW-035: Grooming is a mode of `/refresh-board`, on every refresh for what moved and in full on request
+
+**Date:** 2026-10-30 · **Status:** Accepted
+
+**Decision:** `/refresh-board` proposes four kinds of finding about the backlog: two
+entries describing the same work (merge), two that cannot both be done as written
+(conflict), entries better done together (bundle) and an entry already done or no longer
+true (close). On every refresh it compares the entries it banded, re-banded or re-scored
+against all other open entries; `/refresh-board groom` compares every open entry against
+every other. It applies nothing without the developer's yes, and changes the catalog only
+through `/feature`. Rows sharing a `bundle` name in the bands file are tagged together on
+the board, and `/next`, suggesting one of them, names the rest.
+
+**Rejected:** A separate grooming command, since the refresh is where backlog judgments
+already live. A full pass on every refresh, which is slow and noisy once the backlog is
+large.
+
+**Consequences:** A grooming pass is judgment, so its findings are not tested; the
+mechanics around it (the bundle field, the page tag, the one-row report, the `/next` line)
+are.

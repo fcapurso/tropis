@@ -414,4 +414,51 @@ describe('/refresh-board', () => {
     expect(cmd).toMatch(/arc already under way/);
     expect(cmd).toMatch(/finishing (that|the) arc/i);
   });
+
+  it('grooms: names groom, the four findings, and that nothing is applied without a yes', () => {
+    const cmd = readFileSync(resolve(here, '../commands/refresh-board.md'), 'utf8');
+    expect(cmd).toMatch(/\/refresh-board groom/);
+    for (const finding of ['merge:', 'conflict:', 'bundle <name>:', 'close:']) expect(cmd).toContain(finding);
+    expect(cmd).toMatch(/applies none without/);
+    expect(cmd).toContain('Grooming: nothing to propose.');
+  });
+});
+
+describe('backlog board bundles', () => {
+  const bands = `open-a:
+  band: A
+  value: 4
+  effort: 2
+  bundle: pair
+open-b:
+  band: B
+  value: 3
+  effort: 3
+  bundle: pair
+waiting:
+  band: B
+  value: 2
+  effort: 2
+  bundle: alone
+`;
+  let dir;
+  let run;
+  beforeAll(() => {
+    dir = stage(CLOSED_CATALOG, bands);
+    run = build(dir);
+  });
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  it('gives the page each row\'s bundle name, and the template draws it as a tag', () => {
+    const html = page(dir);
+    const anno = grab(html, 'ANNO');
+    expect(anno['open-a'].bn).toBe('pair');
+    expect(anno['open-b'].bn).toBe('pair');
+    expect(html).toContain("'<span class=\"tag tag-bundle\">bundle '+esc(e.bn)");
+  });
+
+  it('reports a bundle with one row left', () => {
+    expect(run.stdout).toContain('bundle alone has one entry — remove the field:\n  - waiting\n');
+    expect(run.stdout).not.toContain('bundle pair has one entry');
+  });
 });

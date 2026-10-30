@@ -16,6 +16,9 @@
 # value and effort: whole numbers 1 to 5, each with a one-line reason (valueWhy,
 # effortWhy). Inside a band the board and /next rank by value divided by effort, and an
 # entry missing either score comes last.
+# bundle (optional, after effortWhy): a short kebab-case name. Rows with the same name are
+# best done together; the board tags them and /next, suggesting one, names the rest. A
+# bundle needs two or more rows. /refresh-board proposes bundles; nothing adds one unasked.
 # verdict: one or two sentences, plain English.
 # evidence (optional): what was checked against the code, dated, so a reader can tell a
 # verified claim from the entry's own text.
