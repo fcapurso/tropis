@@ -3728,3 +3728,78 @@
     - commands/capture-learning.md
     - scripts/submit-upstream.sh
   refs: []
+
+# 2026-10-30, raised by the developer while refreshing the board: inside a band entries
+# were listed by id, band B held 19, and the lowest band held replaced, shelved, finished
+# and waiting entries alike. Design agreed in conversation, written to the spec in refs.
+- id: backlog-is-ranked-inside-its-bands
+  title: The backlog is ranked inside four bands that each say what qualifies
+  status: shaped
+  value: Someone choosing what to do next sees one order, not a band of nineteen entries
+    sorted by id. Each entry carries a value and an effort score with a reason a person
+    can argue with, and the rank inside a band follows from them. Work nobody will do no
+    longer sits in the lowest band, and an entry waiting on another is judged on its own
+    worth with a marker naming what it waits on, so the developer can decide to clear the
+    way.
+  acceptanceCriteria:
+    - The bands are A do now, B do next, C decide first and D leave it, each with a
+      written meaning in the bands template, the refresh command and the board page; a
+      row with any other letter is reported by the build.
+    - A row in the bands file carries value and effort, each 1 to 5, and a one-line
+      reason for each; the build reports a row missing either score.
+    - Inside a band the board and the backlog report list entries by value divided by
+      effort, highest first, then an entry in an arc under way, then the order the report
+      already used.
+    - The backlog report suggests shaped entries from A and B only, lists C as needing a
+      decision, never suggests D, and counts an open entry with no band as D.
+    - When a blocked shaped entry ranks ahead of the one the report suggests, the report
+      says so in one line naming its unshipped blockers.
+    - The board marks an entry blocked by, or coming after, an unshipped entry, naming it.
+    - Shipped, superseded and shelved entries take no band; the board lists them in one
+      collapsed section at the bottom saying what closed each, and the build reports a
+      band on a superseded or shelved entry as stale.
+    - The refresh command asks for scores with every band it writes, and a decision
+      record says why ranking sits inside the bands and why there is no conversion step.
+  type: improvement
+  layer: product
+  modules:
+    - scripts/next-work.js
+    - scripts/next.mjs
+    - scripts/board-bands.js
+    - scripts/build-backlog-board.mjs
+    - templates/backlog-board.html
+    - templates/backlog-bands.yaml
+    - commands/refresh-board.md
+  refs:
+    - docs/superpowers/specs/2026-10-30-backlog-ranking-design.md
+    - docs/superpowers/plans/2026-10-30-backlog-is-ranked-inside-its-bands.md
+
+- id: backlog-is-groomed-at-refresh
+  title: Refreshing the board proposes merging, bundling or closing entries that overlap
+  status: shaped
+  after:
+    - backlog-is-ranked-inside-its-bands
+  value: Entries that overlap, conflict or belong together are noticed while someone is
+    already reading them, rather than piling up until the backlog is too long to judge.
+    Every refresh checks what is new against the rest, a full pass is one word away, and
+    nothing changes without the developer's yes.
+  acceptanceCriteria:
+    - Every refresh compares each new or moved entry with the open backlog and proposes,
+      in its report, any overlap, conflict, bundle or entry already done that it finds.
+    - The refresh run as groom compares every open entry with every other, and combines
+      with all.
+    - Each kind of proposal says what it becomes on a yes - a superseded entry or a
+      closed one through the feature command, a conflict to band C, or a shared bundle
+      name on the rows - and the refresh applies none without one.
+    - Rows sharing a bundle name are tagged as one bundle on the board, and the backlog
+      report, suggesting one of them, names the others.
+  type: improvement
+  layer: product
+  modules:
+    - commands/refresh-board.md
+    - scripts/next.mjs
+    - scripts/build-backlog-board.mjs
+    - templates/backlog-board.html
+  refs:
+    - docs/superpowers/specs/2026-10-30-backlog-ranking-design.md
+    - docs/superpowers/plans/2026-10-30-backlog-is-groomed-at-refresh.md
