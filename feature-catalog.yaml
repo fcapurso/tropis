@@ -1625,6 +1625,9 @@
 # Cursor sentence is written once, about what the framework then generates.
 # 2026-10-16, backlog cleanup: added to the updates arc, which promises rules reach the agent in
 # every tool; this is the part still untrue on the page every project gets.
+# 2026-10-30, groomed at refresh: shelved because the work is done. templates/AGENTS.md
+# already says a rule loads on first touch in Claude Code and on read in Cursor, and no
+# catalog entry recorded the change that wrote it.
 - id: entry-file-says-how-rules-arrive
   title: A project's entry file says truthfully how area rules reach each tool
   status: idea
@@ -1635,6 +1638,8 @@
     whatever the framework generates — so it neither assumes it has every rule nor reads
     them all by hand. Today the entry file every project gets says Claude Code loads all
     rules at session start and Cursor attaches none, and both sentences are now wrong.
+    Shelved 2026-10-30 - nothing left to do, since the entry template already says this.
+  shelved: true
   acceptanceCriteria: []
   type: bug
   layer: product
@@ -1666,7 +1671,11 @@
 # projectionOf('rules/planning.md') and projectionOf('rules/pricing.md') both return a
 # .claude/rules/ and a .cursor/rules/ path. Latent today: this repository's /dispatch runs
 # the installed release, which predates the mapping.
+# 2026-10-30, groomed at refresh: already fixed in the source by
+# dispatch-asks-only-for-files-the-rules-command-writes, so closed as replaced by it.
 - id: plan-checks-pair-only-generated-sources
+  supersededBy:
+    - dispatch-asks-only-for-files-the-rules-command-writes
   title: The plan check asks for generated files only when a plan lists a real rule source
   status: idea
   value: A plan that edits a file under a top-level rules/ folder is not refused for leaving

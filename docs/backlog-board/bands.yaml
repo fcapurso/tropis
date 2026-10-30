@@ -56,6 +56,7 @@ catalog-rules-name-the-colon-trap:
   valueWhy: Saves one failed generator run per unlucky entry.
   effort: 1
   effortWhy: One sentence in the catalog rule.
+  bundle: rule-text
   verdict: "One sentence in the catalog rule; batch with other rule-text fixes."
   evidence: "2026-10-17 — rules/catalogs.md says nothing about colon-space in
     unquoted values; only this repository's CLAUDE.md gotchas do."
@@ -68,6 +69,7 @@ cloud-executor-attaches-every-checkout:
   valueWhy: Only plans with more than one checkout need it.
   effort: 1
   effortWhy: A step in the dispatch prompt and a test.
+  bundle: dispatch-fixes
   verdict: "Small change to the prompt dispatch prints; only plans with more than
     one checkout need it. Batch with the other dispatch fixes."
   seen:
@@ -120,6 +122,7 @@ dispatch-refuses-a-blank-header-field:
     needs nothing.
   effort: 2
   effortWhy: One parser and its tests, plus removing a note from the entry file.
+  bundle: dispatch-fixes
   verdict: "Now shaped with both shapes in one entry - read a wrapped field whole,
     refuse one that parses empty. Still a small change to one parser; batch with
     other dispatch fixes."
@@ -128,26 +131,13 @@ dispatch-refuses-a-blank-header-field:
   seen:
     status: shaped
     blockers: []
-entry-file-says-how-rules-arrive:
-  band: B
-  value: 2
-  valueWhy: Two wrong sentences in every project's entry file.
-  effort: 1
-  effortWhy: A text fix, if anything is left.
-  verdict: "The template now says Claude Code loads a rule on first touch and
-    Cursor attaches its copy on read, so this looks done. Proposed for closing
-    in this refresh."
-  evidence: "2026-10-30 — templates/AGENTS.md:82-87 describes delivery on first
-    touch in Claude Code and on read in Cursor; the 2026-10-17 wording is gone."
-  seen:
-    status: idea
-    blockers: []
 flush-is-seen-to-drain-the-queue:
   band: B
   value: 2
   valueWhy: Catches a flush that merged with its queue undrained, seen once.
   effort: 2
   effortWhy: One check in set-up projects.
+  bundle: set-up-project-checks
   verdict: "A small check for a failure seen once in first-adopter, a flush merged
     with every line still queued. Cheap insurance."
   seen:
@@ -250,6 +240,7 @@ isolation-refuses-a-base-without-the-plan:
   valueWhy: Already cost an executor a cherry-pick and a failed review check.
   effort: 1
   effortWhy: One check in the isolation helper.
+  bundle: dispatch-fixes
   verdict: "A small check at the moment a worktree is cut, against a mistake that
     already cost an executor a cherry-pick and a failed review check."
   evidence: "2026-10-29 — scripts/isolate-for-plan.mjs:54-80 runs the isolation
@@ -263,6 +254,7 @@ kept-findings-go-to-the-catalog:
   valueWhy: Keeps every found piece of work where the backlog can see it.
   effort: 2
   effortWhy: Two sentences in the catalog rule and its fresh-agent check.
+  bundle: rule-text
   verdict: "Two sentences added to one section of the catalog rule, plus the
     fresh-agent check a rule change owes. Cheap, and it moves into the
     repository a correction that so far lived only in one tool's memory; batch
@@ -292,10 +284,11 @@ next-leaves-replaced-entries-out-of-arcs:
   valueWhy: Arc progress in /next counts replaced entries as unfinished.
   effort: 1
   effortWhy: A filter in arcs().
+  bundle: next-report
   verdict: "The board half is done: replaced entries left the bands with the
     ranked board. The backlog report still counts them as unfinished in an arc."
-  evidence: 2026-10-30 — scripts/next-work.js arcs() counts every entry citing a spec,
-    superseded ones included.
+  evidence: 2026-10-30 — scripts/next-work.js arcs() counts every entry citing a
+    spec, superseded ones included.
   seen:
     status: idea
     blockers: []
@@ -305,6 +298,7 @@ next-lets-no-open-work-drop-out:
   valueWhy: One layer's next step can hide the other's, and ideas worth shaping drop out.
   effort: 3
   effortWhy: A restructure of next.mjs, fully specified.
+  bundle: next-report
   verdict: "A report that lets one layer hide the other, or drops a band A or B
     idea that needs shaping, is how open work goes unseen. Moderate change to
     next.mjs, fully specified."
@@ -317,6 +311,7 @@ next-names-the-flush-when-due:
   valueWhy: Lessons sit unsent when nobody is prompted to flush.
   effort: 1
   effortWhy: A few lines in the report.
+  bundle: next-report
   verdict: "A few lines in the report for set-up projects, so the queue gets
     flushed when it is worth a sitting. Cheap; batch with the other report
     changes."
@@ -329,6 +324,7 @@ next-shows-which-work-is-planned:
   valueWhy: Ready-to-dispatch work reads as work still to design.
   effort: 2
   effortWhy: A change to the backlog report.
+  bundle: next-report
   verdict: "Small improvement to the backlog report; useful the moment several
     shaped entries have plans waiting, as now."
   seen:
@@ -363,24 +359,11 @@ plan-checks-must-be-falsifiable:
   valueWhy: A check that cannot fail lets a wrong plan pass; three recorded cases.
   effort: 1
   effortWhy: A paragraph in the planning rule and its fresh-agent check.
+  bundle: planning-rule
   verdict: "A rule-text change with three recorded cases behind it. Cheap; do it
     with plans-are-accurate-without-a-rehearsal, which follows it."
   seen:
     status: shaped
-    blockers: []
-plan-checks-pair-only-generated-sources:
-  band: D
-  value: 1
-  valueWhy: Already fixed; nothing left to gain.
-  effort: 1
-  effortWhy: Closing it is one /feature edit.
-  verdict: "Already fixed by
-    dispatch-asks-only-for-files-the-rules-command-writes. Nothing to build;
-    proposed for closing in this refresh."
-  evidence: "2026-10-17 — guards/plan-dispatchable.test.js:77 asserts a top-level
-    rules/ file asks for nothing; landed in 4d2241f."
-  seen:
-    status: idea
     blockers: []
 plan-folder-names-no-plugin:
   band: C
@@ -399,6 +382,7 @@ plans-are-accurate-without-a-rehearsal:
   valueWhy: Authors are paying twice for plans, rehearsing work an executor then repeats.
   effort: 2
   effortWhy: A planning-rule change and its fresh-agent check.
+  bundle: planning-rule
   verdict: "Shaped and worth having: authors are paying twice for plans. Follows
     plan-checks-must-be-falsifiable and should be planned with it."
   seen:
@@ -480,6 +464,7 @@ rule-claims-are-held-true:
     in its area.
   effort: 3
   effortWhy: Installing an existing check and adding the temporary-clause pairing.
+  bundle: set-up-project-checks
   verdict: "A rule that is false about the code is delivered silently into every
     session in its area. The check already exists as a template and setup does
     not install it; the temporary-clause pairing is new work."
@@ -543,6 +528,7 @@ scripts-never-hide-the-users-git-config:
   valueWhy: Prevents a script that passes its tests and fails on first real use.
   effort: 1
   effortWhy: One paragraph in the script rules.
+  bundle: rule-text
   verdict: "A one-paragraph addition to the script rules, from a defect that
     passed its tests and would have failed on first real use. Cheap; batch it
     with the next change to that rule."
@@ -569,6 +555,7 @@ self-check-red-runs-keep-their-output:
   valueWhy: Makes an intermittent red diagnosable instead of re-run.
   effort: 1
   effortWhy: Write a red run's output to a file.
+  bundle: self-check
   verdict: "Small and self-contained: write a red run's output to a file that
     outlives the terminal. It is what self-check-clean-baseline-flake waits on,
     so the next intermittent red becomes diagnosable instead of re-run."
@@ -583,6 +570,7 @@ self-check-runs-beside-another:
   valueWhy: A parallel flush goes red for nothing, and it may explain the one-off flake.
   effort: 1
   effortWhy: One test's temporary folder.
+  bundle: self-check
   verdict: "A small change to one test, and it stops a parallel flush from going
     red for nothing. It may also explain self-check-clean-baseline-flake."
   evidence: "2026-10-29 — guards/take-version.test.js:126 looks for leftovers in
@@ -596,6 +584,7 @@ set-up-project-can-generate-its-catalog-document:
   valueWhy: Every set-up project is told to take a step it cannot take.
   effort: 1
   effortWhy: A text fix in the catalog rule.
+  bundle: rule-text
   verdict: "A rule that orders a step projects cannot take; small text fix, batch it."
   seen:
     status: idea
@@ -606,6 +595,7 @@ set-up-project-checks-its-catalog:
   valueWhy: The catalog rule describes a guard projects do not get.
   effort: 3
   effortWhy: Eight invariants, each with a planted defect.
+  bundle: set-up-project-checks
   verdict: "The catalog rule describes a guard that set-up projects do not get;
     they install only catalog-entries.test.js. A real gap every adopter has:
     eight invariants, each with a planted defect."
@@ -621,6 +611,7 @@ set-up-project-checks-its-pages:
   valueWhy: Projects get none of the page checks Tropis runs on itself.
   effort: 3
   effortWhy: Installing two guards and teaching them what commands create.
+  bundle: set-up-project-checks
   verdict: "A set-up project gets none of the page checks Tropis runs on itself,
     and first-adopter is red on a fresh checkout for want of one. Real gap every
     adopter has."
@@ -634,6 +625,7 @@ set-up-project-checks-its-plans:
   effort: 3
   effortWhy: Installing three existing guards and making them work outside this
     repository.
+  bundle: set-up-project-checks
   verdict: "The workflow tells projects their suite catches unpromoted entries,
     missing review records and undispatchable plans, and it does not. A real gap
     between what is promised and what runs."
@@ -688,6 +680,7 @@ update-skips-a-new-file-that-matches:
   valueWhy: Saves an operator deleting a .new identical to its file.
   effort: 1
   effortWhy: A comparison before writing.
+  bundle: update-fixes
   verdict: "A small comparison before writing a .new file; batch with the other
     update fixes."
   seen:
@@ -699,6 +692,7 @@ update-survives-a-dropped-edited-rule:
   valueWhy: An update that stops part-way is the worst outcome an update can have.
   effort: 2
   effortWhy: Handling one case in take-version and telling the operator.
+  bundle: update-fixes
   verdict: "An update that stops part-way is the worst outcome an update can have.
     Moved up because it is in the framework-updates arc, where the update must
     be trustworthy."
@@ -711,6 +705,7 @@ version-check-lists-ignore-lines:
   valueWhy: Makes the safe verdict honest about ignore and export lines.
   effort: 2
   effortWhy: A listing added to the version check.
+  bundle: update-fixes
   verdict: "Small addition to the version check that makes its verdict honest
     about ignore and export lines; batch with the update fixes."
   seen:
