@@ -493,6 +493,25 @@ ${extra}`;
     expect(behind.stdout).not.toContain('Ahead of it');
   });
 
+  it('names the rest of the suggestion\'s bundle, in band and rank order, right after Next step', () => {
+    const catalog = gate + shapedEntry('now', 'Now') + shapedEntry('mate-b', 'Mate B')
+      + shapedEntry('mate-a', 'Mate A') + shapedEntry('loner', 'Loner') + waitingEntry('held');
+    const bundled = (band, v, e) => `${scored(band, v, e)}  bundle: pair\n`;
+    const bands = `now:\n${bundled('A', 5, 1)}mate-b:\n${bundled('B', 3, 1)}mate-a:\n${bundled('B', 4, 1)}`
+      + `held:\n${bundled('B', 1, 5)}loner:\n${scored('B', 5, 1)}gate:\n  band: B\n`;
+    const { stdout, stderr } = stageReport(catalog, bands);
+    expect(stderr).toBe('');
+    expect(stdout).toContain('Next step: now — band A\n  With it, bundle pair: mate-a, mate-b, held\n');
+  });
+
+  it('prints no With it line when the suggestion has no bundle', () => {
+    const catalog = shapedEntry('now', 'Now') + shapedEntry('other', 'Other');
+    const bands = `now:\n${scored('A', 5, 1)}other:\n${scored('B', 3, 1)}  bundle: solo\n`;
+    const { stdout } = stageReport(catalog, bands);
+    expect(stdout).toContain('Next step: now — band A');
+    expect(stdout).not.toContain('With it');
+  });
+
   it('names the highest blocked A or B entry when nothing is suggested', () => {
     const catalog = gate + shapedEntry('left', 'Left') + waitingEntry('held') + waitingEntry('decide');
     const named = stageReport(

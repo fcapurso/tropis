@@ -160,6 +160,7 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
 .tag-flag{background:var(--warn-soft);color:var(--warn)}
 .tag-blocked{background:var(--crit-soft);color:var(--crit)}
 .tag-wait{background:none;color:var(--crit);border:1px solid var(--crit);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
+.tag-bundle{background:var(--accent-soft);color:var(--accent);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
 .tag-after{background:none;color:var(--ink-2);border:1px solid var(--rule);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
 .score{font-family:var(--mono);font-size:11px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
 .score.none{color:var(--ink-3);font-style:italic}
@@ -296,7 +297,7 @@ const CLOSED = ENTRIES.filter(e => e.cl);
 const data = ENTRIES.filter(e => !e.cl).map(e => {
   const a = ANNO[e.id] || {};
   const band = BAND_LETTERS.includes(a.b) ? a.b : "D";
-  return {...e, band, verdict:a.v||"", evidence:a.e||"", sc:a.sc||null, vw:a.vw||"", ew:a.ew||"",
+  return {...e, band, verdict:a.v||"", evidence:a.e||"", sc:a.sc||null, vw:a.vw||"", ew:a.ew||"", bn:a.bn||"",
           rank:a.sc ? a.sc.value/a.sc.effort : null};
 });
 
@@ -426,6 +427,7 @@ function row(e){
   if(e.bb.length) tags.push('<span class="tag tag-blocked">blocked</span>');
   e.bb.forEach(id => tags.push('<span class="tag tag-wait">blocked by '+esc(id)+'</span>'));
   e.af.forEach(id => tags.push('<span class="tag tag-after">after '+esc(id)+'</span>'));
+  if (e.bn) tags.push('<span class="tag tag-bundle">bundle '+esc(e.bn)+"</span>");
   tags.push('<span class="tag tag-status'+(e.s==="shaped"?" tag-shaped":"")+'">'+esc(e.s)+"</span>");
   if (S.groupby!=="arc" && e.arc.length) tags.push('<span class="tag tag-arc">'+esc((ARC_BY_KEY[e.arc[0]]||{}).label||e.arc[0])+"</span>");
   tags.push('<span class="tag tag-layer">'+esc(e.l)+"</span>");

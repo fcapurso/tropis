@@ -5,7 +5,7 @@
  * record up to date. Text-level on purpose — bands.yaml carries comments and
  * hand-wrapped prose that must survive a stamp untouched.
  */
-import { movedBands, openBlockers, stampBands, bandLetters, bandScores } from '../scripts/board-bands.js';
+import { movedBands, openBlockers, stampBands, bandLetters, bandScores, bandBundles } from '../scripts/board-bands.js';
 
 const catalog = [
   { id: 'gate', status: 'shipped' },
@@ -204,5 +204,29 @@ describe('bandScores', () => {
   it('is empty for no rows', () => {
     expect(bandScores(null)).toEqual({});
     expect(bandScores({})).toEqual({});
+  });
+});
+
+describe('bandBundles', () => {
+  it('maps ids to bundle names, only for rows that carry one', () => {
+    const rows = {
+      a: { band: 'A', bundle: 'release-gate' },
+      b: { band: 'B', bundle: 'release-gate' },
+      c: { band: 'B' },
+      d: { band: 'B', bundle: '' },
+      e: { band: 'B', bundle: 7 },
+    };
+    expect(bandBundles(rows)).toEqual({ a: 'release-gate', b: 'release-gate' });
+  });
+
+  it('is empty for no rows', () => {
+    expect(bandBundles(null)).toEqual({});
+    expect(bandBundles({})).toEqual({});
+  });
+
+  it('survives a stamp, byte for byte', () => {
+    const text = 'panel:\n  band: A\n  effortWhy: "One screen."\n  bundle: release-gate\n  verdict: Do it.\n';
+    const out = stampBands(text, [{ id: 'panel', status: 'building' }]);
+    expect(out).toBe(`${text.trimEnd()}\n  seen:\n    status: building\n    blockers: []\n`);
   });
 });

@@ -106,6 +106,18 @@ export function bandLetters(rows) {
 }
 
 /**
+ * The bundles rows name: id to bundle name, for rows whose `bundle` is a non-empty
+ * string. Rows with the same name are done together.
+ * @param {Record<string, {bundle?: unknown}> | null | undefined} rows bands.yaml, parsed
+ * @returns {Record<string, string>}
+ */
+export function bandBundles(rows) {
+  return Object.fromEntries(Object.entries(rows ?? {})
+    .filter(([, row]) => typeof row?.bundle === 'string' && row.bundle !== '')
+    .map(([id, row]) => [id, row.bundle]));
+}
+
+/**
  * The scores behind the rank inside a band: id to value and effort, for rows whose two
  * scores are both integers 1 to 5. A row missing either, or carrying one outside that
  * range, is left out and so has no rank.
