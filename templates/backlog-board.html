@@ -68,8 +68,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);line-heig
 .tally .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
   color:var(--ink-3);margin-top:3px;font-weight:600}
 .tally.t-A .n{color:var(--crit)} .tally.t-B .n{color:var(--accent)}
-.tally.t-C .n{color:var(--go)} .tally.t-D .n{color:var(--warn)}
-.tally.t-E .n{color:var(--mute)}
+.tally.t-C .n{color:var(--go)} .tally.t-D .n{color:var(--mute)}
 
 /* ---- arcs ---- */
 .arcs{margin:0 0 26px;border:1px solid var(--rule);background:var(--surface)}
@@ -126,8 +125,8 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
 .gmark{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;
   letter-spacing:-.03em;min-width:34px}
 .g-A .gmark{color:var(--crit)} .g-B .gmark{color:var(--accent)}
-.g-C .gmark{color:var(--go)} .g-D .gmark{color:var(--warn)}
-.g-E .gmark{color:var(--mute)} .g-x .gmark{color:var(--ink-3);font-size:17px}
+.g-C .gmark{color:var(--go)} .g-D .gmark{color:var(--mute)}
+.g-x .gmark{color:var(--ink-3);font-size:17px}
 .g-arc .gmark{font-size:15px;color:var(--accent);font-variant-numeric:tabular-nums}
 .gtitle{font-size:16px;font-weight:600;letter-spacing:-.01em}
 .gnote{font-family:var(--serif);font-size:13.5px;color:var(--ink-2);font-style:italic}
@@ -142,8 +141,7 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
 .rbtn:hover .rid{color:var(--accent)}
 .spine{background:var(--rule-2)}
 .r-A .spine{background:var(--crit)} .r-B .spine{background:var(--accent)}
-.r-C .spine{background:var(--go)} .r-D .spine{background:var(--warn)}
-.r-E .spine{background:var(--mute)}
+.r-C .spine{background:var(--go)} .r-D .spine{background:var(--mute)}
 .rmain{padding:11px 0 12px;min-width:0}
 .rtop{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 10px}
 .rid{font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:-.01em;
@@ -161,6 +159,10 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
 .tag-type{background:none;color:var(--ink-3)}
 .tag-flag{background:var(--warn-soft);color:var(--warn)}
 .tag-blocked{background:var(--crit-soft);color:var(--crit)}
+.tag-wait{background:none;color:var(--crit);border:1px solid var(--crit);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
+.tag-after{background:none;color:var(--ink-2);border:1px solid var(--rule);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
+.score{font-family:var(--mono);font-size:11px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.score.none{color:var(--ink-3);font-style:italic}
 .caret{font-family:var(--mono);font-size:11px;color:var(--ink-3);width:12px;text-align:center}
 
 /* ---- detail ---- */
@@ -178,6 +180,16 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
   display:flex;flex-wrap:wrap;gap:4px 14px}
 .refs{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);word-break:break-all;
   display:flex;flex-direction:column;gap:2px}
+.closed{margin-top:40px;border:1px solid var(--rule);background:var(--surface)}
+.closed summary{cursor:pointer;padding:10px 14px;font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.09em;font-weight:600;color:var(--ink-2)}
+.closed summary .c{font-family:var(--mono);margin-left:6px;color:var(--ink-3)}
+.crow2{display:grid;grid-template-columns:minmax(0,1.4fr) 150px minmax(0,2fr);gap:0 14px;
+  padding:6px 14px;border-top:1px solid var(--rule-2);font-size:12.5px;align-items:baseline}
+.crow2 .rid{font-size:12px}
+.crow2 .how{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.crow2 .rtitle{color:var(--ink-3)}
+@media (max-width:620px){.crow2{grid-template-columns:minmax(0,1fr)}}
 .empty{padding:40px 4px;font-family:var(--serif);font-style:italic;color:var(--ink-3);font-size:14px}
 .foot{margin-top:52px;padding-top:16px;border-top:1px solid var(--rule);
   font-size:12px;color:var(--ink-3);max-width:72ch;line-height:1.65}
@@ -194,8 +206,8 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
   <header class="mast">
     <div>
       <h1>__TITLE__</h1>
-      <p class="sub">Every open entry in <span class="mono">feature-catalog.yaml</span>, banded by
-      urgency against impact. Verdicts are advisory; the catalog stays the source of truth.</p>
+      <p class="sub">Every active entry in <span class="mono">feature-catalog.yaml</span>, banded A to D and ranked
+      inside a band by value over effort. Verdicts and scores are advisory; the catalog stays the source of truth.</p>
     </div>
     <div class="meta">
       <div><b>__OPEN__</b> open &middot; <b>__SHIPPED__</b> shipped</div>
@@ -222,6 +234,7 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
       </select>
       <span class="lbl">Sort</span>
       <select id="sortby" aria-label="Sort within group">
+        <option value="rank">Rank</option>
         <option value="band">Band</option>
         <option value="id">Id</option>
         <option value="s">Status</option>
@@ -239,11 +252,16 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
 
   <main id="board"></main>
 
+  <details class="closed" id="closed"></details>
+
   <footer class="foot">
-    <p><b>Bands.</b> <b>A</b> do now — verified, and either exposed or blocking everything behind it.
-    <b>B</b> do next — high impact, no deadline. <b>C</b> cheap wins, worth batching into one branch.
-    <b>D</b> decide, don't build — the next move is a ruling, not a dispatch. <b>E</b> leave alone —
-    correctly shelved or superseded, retained so references keep resolving. Claims marked
+    <p><b>Bands.</b> <b>A</b> do now — high value, and urgent or blocking other work.
+    <b>B</b> do next — worth doing, no deadline. <b>C</b> decide first — an open question only the
+    developer can answer stands between the entry and a plan. <b>D</b> leave it — nothing to do until
+    something happens. Inside a band, entries are ranked by <b>value divided by effort</b>, each scored
+    1 to 5 in the bands file with a reason; an entry without both scores comes last. An entry waiting on
+    another is banded on its own value and marked with what it waits on. Shipped, replaced and shelved
+    entries are not banded: they are listed under Closed. Claims marked
     <span class="mono">checked against the code</span> were verified against the source, not taken from
     the entry text.</p>
     <p style="margin-top:9px"><b>Arcs</b> are derived the way <span class="mono">npm run next</span>
@@ -263,19 +281,26 @@ const ARCS = __ARCS__;
 const NEXT = __NEXT__;
 
 const BANDS = {
-  A:{t:"Do now",         n:"verified, and either exposed or blocking what sits behind it"},
-  B:{t:"Do next",        n:"high impact, no deadline"},
-  C:{t:"Cheap wins",     n:"batch them into one branch"},
-  D:{t:"Decide, don't build", n:"the next move is a ruling"},
-  E:{t:"Leave alone",    n:"correctly parked, or retained so references resolve"}
+  A:{t:"Do now",       n:"high value, and urgent or blocking other work"},
+  B:{t:"Do next",      n:"worth doing, no deadline"},
+  C:{t:"Decide first", n:"an open question only the developer can answer stands in the way"},
+  D:{t:"Leave it",     n:"nothing to do until something happens"}
 };
+const BAND_LETTERS = ["A","B","C","D"];
 const LAYER_T = {product:"Product", framework:"Framework — this project's own tooling"};
 const STATE_T = {idea:"Idea", shaped:"Shaped", building:"Building"};
 
-const data = ENTRIES.map(e => ({...e, band:(ANNO[e.id]||{}).b||"E",
-  verdict:(ANNO[e.id]||{}).v||"", evidence:(ANNO[e.id]||{}).e||""}));
+// Closed entries (shipped, replaced, shelved) are not work: they leave the bands and
+// appear only in the Closed section.
+const CLOSED = ENTRIES.filter(e => e.cl);
+const data = ENTRIES.filter(e => !e.cl).map(e => {
+  const a = ANNO[e.id] || {};
+  const band = BAND_LETTERS.includes(a.b) ? a.b : "D";
+  return {...e, band, verdict:a.v||"", evidence:a.e||"", sc:a.sc||null, vw:a.vw||"", ew:a.ew||"",
+          rank:a.sc ? a.sc.value/a.sc.effort : null};
+});
 
-const S = {q:"", groupby:"band", sortby:"band", bands:new Set(), layers:new Set(),
+const S = {q:"", groupby:"band", sortby:"rank", bands:new Set(), layers:new Set(),
            states:new Set(), arcs:new Set(), open:new Set()};
 // A superseded entry's work moved to another entry, so it sits in neither the numerator
 // nor the denominator: an arc whose only remaining step is superseded is done. The raw
@@ -309,13 +334,11 @@ function chip(host, key, label, cnt, set){
 
 const bandHost=document.getElementById("bandchips"), layerHost=document.getElementById("layerchips"),
       stateHost=document.getElementById("statechips");
-["A","B","C","D","E"].forEach(k => chip(bandHost, k, k+" · "+BANDS[k].t, count(e=>e.band===k), S.bands));
+BAND_LETTERS.forEach(k => chip(bandHost, k, k+" · "+BANDS[k].t, count(e=>e.band===k), S.bands));
 ["product","framework"].forEach(k => chip(layerHost, k, k, count(e=>e.l===k), S.layers));
-chip(stateHost,"idea","idea",count(e=>e.s==="idea"&&!e.sh&&!e.sup),S.states);
-chip(stateHost,"shaped","shaped",count(e=>e.s==="shaped"&&!e.sh&&!e.sup),S.states);
-chip(stateHost,"blocked","blocked",count(e=>e.bb),S.states);
-chip(stateHost,"shelved","shelved",count(e=>e.sh),S.states);
-chip(stateHost,"superseded","superseded",count(e=>e.sup),S.states);
+chip(stateHost,"idea","idea",count(e=>e.s==="idea"),S.states);
+chip(stateHost,"shaped","shaped",count(e=>e.s==="shaped"),S.states);
+chip(stateHost,"blocked","blocked",count(e=>e.bb.length),S.states);
 
 const arcHost=document.getElementById("arcchips");
 LIVE_ARCS.forEach(a => chip(arcHost, a.key, a.label, count(e=>e.arc.includes(a.key)), S.arcs));
@@ -337,20 +360,27 @@ document.getElementById("arcs").innerHTML =
      '</div><div></div><div class="af">done</div></div>' : '');
 
 // What /next suggests, computed by the same code from the same bands, so the board and
-// /next give one answer. Nothing banded A–C and ready leaves the suggestion empty.
+// /next give one answer. Nothing banded A or B and ready leaves the suggestion empty.
 document.getElementById("nextup").innerHTML =
   '<div class="ah"><span class="lbl">Next</span>'+
-  '<span class="note">what /next suggests — the highest-banded ready entry</span></div>'+
+  '<span class="note">what /next suggests — the best-ranked ready entry in the highest band</span></div>'+
   '<div class="arc"><div class="an">'+
     (NEXT && NEXT.id
       ? esc(NEXT.t)+' <span class="sp">'+esc(NEXT.id)+'</span>'
       : '<span class="sp">nothing is suggested</span>')+
     '</div><div></div><div class="af">'+(NEXT && NEXT.b ? esc(NEXT.b) : "")+'</div></div>';
 
-document.getElementById("tallies").innerHTML = ["A","B","C","D","E"].map(k =>
+document.getElementById("tallies").innerHTML = BAND_LETTERS.map(k =>
   '<div class="tally t-'+k+'"><div class="n">'+count(e=>e.band===k)+'</div>'+
-  '<div class="k">'+esc(BANDS[k].t)+'</div></div>').join("") +
-  '<div class="tally"><div class="n">'+count(e=>e.sh||e.sup)+'</div><div class="k">Parked</div></div>';
+  '<div class="k">'+esc(BANDS[k].t)+'</div></div>').join("");
+
+document.getElementById("closed").innerHTML =
+  '<summary>Closed<span class="c">'+CLOSED.length+'</span></summary>'+
+  CLOSED.map(e => {
+    const how = e.cl.k==="replaced" ? "replaced by "+e.cl.by.join(", ") : e.cl.k;
+    return '<div class="crow2"><span class="rid">'+esc(e.id)+'</span><span class="how">'+esc(how)+
+      '</span><span class="rtitle">'+esc(e.t)+'</span></div>';
+  }).join("");
 
 function matches(e){
   if(S.bands.size && !S.bands.has(e.band)) return false;
@@ -358,11 +388,9 @@ function matches(e){
   if(S.arcs.size){ const mine = e.arc.length ? e.arc : ["_none"]; if(!mine.some(k=>S.arcs.has(k))) return false; }
   if(S.states.size){
     let ok=false;
-    if(S.states.has("idea") && e.s==="idea" && !e.sh && !e.sup) ok=true;
-    if(S.states.has("shaped") && e.s==="shaped" && !e.sh && !e.sup) ok=true;
-    if(S.states.has("blocked") && e.bb) ok=true;
-    if(S.states.has("shelved") && e.sh) ok=true;
-    if(S.states.has("superseded") && e.sup) ok=true;
+    if(S.states.has("idea") && e.s==="idea") ok=true;
+    if(S.states.has("shaped") && e.s==="shaped") ok=true;
+    if(S.states.has("blocked") && e.bb.length) ok=true;
     if(!ok) return false;
   }
   if(S.q){
@@ -374,19 +402,30 @@ function matches(e){
 
 const GKEY = e => S.groupby==="band" ? e.band : S.groupby==="arc" ? (e.arc[0] || "_none") : e[S.groupby];
 const ARC_POS = {}; for (const a of ARCS) a.order.forEach((o,i)=>{ ARC_POS[a.key+"|"+o.id]=i; });
-const GORDER = {band:["A","B","C","D","E"], l:["product","framework"],
+const GORDER = {band:BAND_LETTERS, l:["product","framework"],
   s:["shaped","idea","building"], ty:["bug","spike","feature","improvement","chore"],
   arc:[...LIVE_ARCS.map(a=>a.key), ...DONE_BY_SUPERSESSION.map(a=>a.key), "_none"]};
 const SORTK = {band:e=>e.band, id:e=>e.id, s:e=>e.s, ty:e=>e.ty, l:e=>e.l};
+// An arc already under way: some of its entries shipped, some not.
+const UNDER_WAY = new Set(ARCS.filter(a=>a.shipped>0 && a.shipped<a.total).flatMap(a=>a.order.map(o=>o.id)));
+// The order /next suggests in: band, then value over effort (unscored last), then an arc
+// under way, then id.
+const byRank = (a,b) => BAND_LETTERS.indexOf(a.band)-BAND_LETTERS.indexOf(b.band)
+  || (a.rank===b.rank ? 0 : a.rank===null ? 1 : b.rank===null ? -1 : b.rank-a.rank)
+  || (UNDER_WAY.has(a.id)?0:1)-(UNDER_WAY.has(b.id)?0:1)
+  || a.id.localeCompare(b.id);
 
 function row(e){
   const wrap=document.createElement("div");
   wrap.className="row r-"+e.band;
   const open=S.open.has(e.id);
   const tags=[];
-  if(e.sup) tags.push('<span class="tag tag-flag">superseded</span>');
-  else if(e.sh) tags.push('<span class="tag tag-flag">shelved</span>');
-  if(e.bb) tags.push('<span class="tag tag-blocked">blocked</span>');
+  tags.push(e.sc
+    ? '<span class="score">value '+e.sc.value+' · effort '+e.sc.effort+'</span>'
+    : '<span class="score none">not scored</span>');
+  if(e.bb.length) tags.push('<span class="tag tag-blocked">blocked</span>');
+  e.bb.forEach(id => tags.push('<span class="tag tag-wait">blocked by '+esc(id)+'</span>'));
+  e.af.forEach(id => tags.push('<span class="tag tag-after">after '+esc(id)+'</span>'));
   tags.push('<span class="tag tag-status'+(e.s==="shaped"?" tag-shaped":"")+'">'+esc(e.s)+"</span>");
   if (S.groupby!=="arc" && e.arc.length) tags.push('<span class="tag tag-arc">'+esc((ARC_BY_KEY[e.arc[0]]||{}).label||e.arc[0])+"</span>");
   tags.push('<span class="tag tag-layer">'+esc(e.l)+"</span>");
@@ -410,14 +449,17 @@ function row(e){
 function detail(e){
   const d=document.createElement("div"); d.className="detail";
   let h='<div class="dsec"><h4>Value</h4><p>'+esc(e.v)+"</p></div>";
+  h+='<div class="dsec"><h4>Scores</h4>'+(e.sc
+    ? '<p><b>Value '+e.sc.value+'</b> — '+esc(e.vw||"no reason given")+'</p>'+
+      '<p><b>Effort '+e.sc.effort+'</b> — '+esc(e.ew||"no reason given")+'</p>'
+    : '<p>not scored</p>')+'</div>';
   if(e.evidence) h+='<div class="dsec"><h4>Checked against the code</h4>'+
     '<div class="evid">'+esc(e.evidence)+"</div></div>";
   if(e.ac.length) h+='<div class="dsec"><h4>Acceptance criteria</h4><ul>'+
     e.ac.map(a=>"<li>"+esc(a)+"</li>").join("")+"</ul></div>";
   const deps=[];
-  if(e.bb) deps.push("blockedBy → "+e.bb.join(", "));
-  if(e.af) deps.push("after → "+e.af.join(", "));
-  if(e.sup) deps.push("supersededBy → "+e.sup.join(", "));
+  if(e.bb.length) deps.push("blockedBy → "+e.bb.join(", "));
+  if(e.af.length) deps.push("after → "+e.af.join(", "));
   if(deps.length) h+='<div class="dsec"><h4>Dependencies</h4><div class="deps">'+
     deps.map(x=>"<span>"+esc(x)+"</span>").join("")+"</div></div>";
   if(e.refs.length) h+='<div class="dsec"><h4>References</h4><div class="refs">'+
@@ -438,6 +480,7 @@ function render(){
     const items=list.filter(e=>GKEY(e)===k)
       .sort((a,b)=> S.groupby==="arc" && k!=="_none"
         ? (ARC_POS[k+"|"+a.id] ?? 99) - (ARC_POS[k+"|"+b.id] ?? 99)
+        : S.sortby==="rank" ? byRank(a,b)
         : String(SORTK[S.sortby](a)).localeCompare(String(SORTK[S.sortby](b))) || a.id.localeCompare(b.id));
     const g=document.createElement("section");
     g.className="group "+(S.groupby==="band" ? "g-"+k : "g-x");
