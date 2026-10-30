@@ -28,15 +28,15 @@ export function openBlockers(entry, catalog) {
  * @param {{id: string, status: string, blockedBy?: string[]}[]} catalog
  * @param {Record<string, {seen?: {status?: string, blockers?: string[]}}>} bands
  * @returns {{id: string, reason: string}[]} in bands.yaml order. A band with no `seen`
- *   is `never stamped`; a band whose entry has shipped or gone is skipped — the build
- *   reports those as stale already.
+ *   is `never stamped`; a band whose entry has shipped, been replaced, been shelved or gone
+ *   is skipped — the build reports those as stale already.
  */
 export function movedBands(catalog, bands) {
   const byId = new Map(catalog.map((e) => [e.id, e]));
   const moved = [];
   for (const [id, band] of Object.entries(bands)) {
     const entry = byId.get(id);
-    if (!entry || entry.status === 'shipped') continue;
+    if (!entry || entry.status === 'shipped' || entry.shelved || (entry.supersededBy ?? []).length) continue;
     if (!band.seen) {
       moved.push({ id, reason: 'never stamped' });
       continue;
@@ -103,4 +103,18 @@ export function stampBands(text, catalog) {
  */
 export function bandLetters(rows) {
   return Object.fromEntries(Object.entries(rows ?? {}).map(([id, row]) => [id, row?.band]));
+}
+
+/**
+ * The scores behind the rank inside a band: id to value and effort, for rows whose two
+ * scores are both integers 1 to 5. A row missing either, or carrying one outside that
+ * range, is left out and so has no rank.
+ * @param {Record<string, {value?: unknown, effort?: unknown}> | null | undefined} rows bands.yaml, parsed
+ * @returns {Record<string, {value: number, effort: number}>}
+ */
+export function bandScores(rows) {
+  const ok = (n) => Number.isInteger(n) && n >= 1 && n <= 5;
+  return Object.fromEntries(Object.entries(rows ?? {})
+    .filter(([, row]) => ok(row?.value) && ok(row?.effort))
+    .map(([id, row]) => [id, { value: row.value, effort: row.effort }]));
 }

@@ -5,7 +5,7 @@
  * record up to date. Text-level on purpose — bands.yaml carries comments and
  * hand-wrapped prose that must survive a stamp untouched.
  */
-import { movedBands, openBlockers, stampBands, bandLetters } from '../scripts/board-bands.js';
+import { movedBands, openBlockers, stampBands, bandLetters, bandScores } from '../scripts/board-bands.js';
 
 const catalog = [
   { id: 'gate', status: 'shipped' },
@@ -67,6 +67,15 @@ describe('movedBands', () => {
     const bands = { gate: { band: 'A' }, vanished: { band: 'C' } };
     expect(movedBands(catalog, bands)).toEqual([]);
   });
+
+  it('ignores a band whose entry is replaced or shelved — the build reports it as stale', () => {
+    const closed = [
+      { id: 'old', status: 'shaped', supersededBy: ['new'] },
+      { id: 'parked', status: 'shaped', shelved: true },
+    ];
+    const bands = { old: { band: 'B' }, parked: { band: 'B' } };
+    expect(movedBands(closed, bands)).toEqual([]);
+  });
 });
 
 describe('stampBands', () => {
@@ -78,6 +87,10 @@ idea:
   verdict: Leave it.
 panel:
   band: A
+  value: 5
+  valueWhy: "Blocks the release."
+  effort: 2
+  effortWhy: "One screen."
   verdict: Do it now, because the last release
     shipped without it.
   evidence: "Checked 2026-09-01 — the panel is not wired."
@@ -105,6 +118,10 @@ idea:
     blockers: []
 panel:
   band: A
+  value: 5
+  valueWhy: "Blocks the release."
+  effort: 2
+  effortWhy: "One screen."
   verdict: Do it now, because the last release
     shipped without it.
   evidence: "Checked 2026-09-01 — the panel is not wired."
@@ -167,5 +184,25 @@ describe('bandLetters', () => {
   it('returns an empty map for an empty or missing file', () => {
     expect(bandLetters(null)).toEqual({});
     expect(bandLetters({})).toEqual({});
+  });
+});
+
+describe('bandScores', () => {
+  it('keeps rows with both scores as integers from 1 to 5', () => {
+    const rows = {
+      ok: { band: 'A', value: 4, effort: 2 },
+      low: { band: 'A', value: 1, effort: 5 },
+      noEffort: { band: 'A', value: 4 },
+      zero: { band: 'A', value: 0, effort: 2 },
+      big: { band: 'A', value: 3, effort: 6 },
+      half: { band: 'A', value: 2.5, effort: 2 },
+      text: { band: 'A', value: '4', effort: 2 },
+    };
+    expect(bandScores(rows)).toEqual({ ok: { value: 4, effort: 2 }, low: { value: 1, effort: 5 } });
+  });
+
+  it('is empty for no rows', () => {
+    expect(bandScores(null)).toEqual({});
+    expect(bandScores({})).toEqual({});
   });
 });

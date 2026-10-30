@@ -356,8 +356,7 @@ in-arc:
     );
   });
 
-  it('never suggests D or E', () => {
-    const entry = (id, title) => `- id: ${id}
+  const shapedEntry = (id, title, extra = '') => `- id: ${id}
   title: ${title}
   status: shaped
   type: feature
@@ -367,56 +366,144 @@ in-arc:
     - It can start.
   modules: []
   refs: []
-`;
+${extra}`;
+  const readySection = (stdout) => stdout.slice(stdout.indexOf('Ready to start'), stdout.indexOf('Blocked'));
+
+  it('never suggests C or D', () => {
     const both = stageReport(
-      entry('decide', 'Decide') + entry('leave', 'Leave'),
-      'decide:\n  band: D\nleave:\n  band: E\n',
+      shapedEntry('decide', 'Decide') + shapedEntry('leave', 'Leave'),
+      'decide:\n  band: C\nleave:\n  band: D\n',
     );
     expect(both.stderr).toBe('');
     expect(both.stdout).toContain(
-      'Next step: none — nothing ready is banded A to C; decide need a decision, not a plan.',
+      'Next step: none — nothing ready is banded A or B; decide need a decision, not a plan.',
     );
-    expect(both.stdout).toContain('  - [D] [feature] decide: Decide (needs a decision)');
-    expect(both.stdout).toContain('  - [E] [feature] leave: Leave');
+    expect(both.stdout).toContain('  - [C] [feature] decide: Decide (needs a decision)');
+    expect(both.stdout).toContain('  - [D] [feature] leave: Leave');
     expect(both.stdout).not.toContain('leave: Leave (needs a decision)');
 
-    const onlyE = stageReport(entry('leave', 'Leave'), 'leave:\n  band: E\n');
-    expect(onlyE.stderr).toBe('');
-    expect(onlyE.stdout).toContain(
-      'Next step: none — nothing ready is banded A to C; the rest is banded to leave alone.',
+    const onlyD = stageReport(shapedEntry('leave', 'Leave'), 'leave:\n  band: D\n');
+    expect(onlyD.stderr).toBe('');
+    expect(onlyD.stdout).toContain(
+      'Next step: none — nothing ready is banded A or B; the rest is banded to leave for now.',
     );
   });
 
-  it('counts an unbanded entry as E', () => {
-    const catalog = `- id: unbanded
-  title: Unbanded
+  it('counts an unbanded entry, and a letter outside A to D, as D', () => {
+    const catalog = shapedEntry('unbanded', 'Unbanded')
+      + shapedEntry('old', 'Old letter')
+      + shapedEntry('next', 'Next');
+    const { stdout, stderr } = stageReport(catalog, 'next:\n  band: B\nold:\n  band: E\n');
+    expect(stderr).toBe('');
+    expect(stdout).toContain('Next step: next — band B');
+    const ready = readySection(stdout);
+    expect(ready).toContain('  - [D] [feature] unbanded: Unbanded');
+    expect(ready).toContain('  - [D] [feature] old: Old letter');
+    expect(ready.indexOf('  - [B] [feature] next: Next')).toBeLessThan(
+      ready.indexOf('  - [D] [feature] unbanded: Unbanded'),
+    );
+  });
+
+  const scored = (band, value, effort) => `  band: ${band}\n  value: ${value}\n  effort: ${effort}\n`;
+
+  it('ranks inside a band by value over effort, unscored last', () => {
+    const catalog = shapedEntry('unscored', 'Unscored')
+      + shapedEntry('big', 'Big')
+      + shapedEntry('cheap', 'Cheap')
+      + shapedEntry('bad-score', 'Bad score');
+    const bands = `unscored:\n  band: B\n`
+      + `big:\n${scored('B', 5, 5)}`
+      + `cheap:\n${scored('B', 3, 1)}`
+      + `bad-score:\n${scored('B', 9, 1)}`;
+    const { stdout, stderr } = stageReport(catalog, bands);
+    expect(stderr).toBe('');
+    expect(stdout).toContain('Next step: cheap — band B');
+    const ready = readySection(stdout);
+    const at = (id) => ready.indexOf(`] ${id}:`);
+    expect(at('cheap')).toBeLessThan(at('big'));
+    expect(at('big')).toBeLessThan(at('unscored'));
+    expect(at('big')).toBeLessThan(at('bad-score'));
+    // Unranked entries keep the order ready() gave.
+    expect(at('unscored')).toBeLessThan(at('bad-score'));
+  });
+
+  it('puts an arc under way ahead of an equal rank, and rank ahead of the arc', () => {
+    const arc = `- id: shipped-arc
+  title: Shipped arc step
+  status: shipped
+  type: feature
+  layer: product
+  value: Done.
+  acceptanceCriteria:
+    - Done.
+  modules: []
+  refs:
+    - docs/specs/arc-design.md
+`;
+    const inArc = `- id: in-arc
+  title: In arc
   status: shaped
   type: feature
   layer: product
-  value: No row.
+  value: The rest.
   acceptanceCriteria:
     - It can start.
   modules: []
-  refs: []
-- id: cheap
-  title: Cheap
-  status: shaped
+  refs:
+    - docs/specs/arc-design.md
+`;
+    const catalog = arc + shapedEntry('plain', 'Plain') + inArc;
+    const equal = stageReport(catalog, `plain:\n${scored('B', 3, 3)}in-arc:\n${scored('B', 2, 2)}`);
+    expect(equal.stdout).toContain('Next step: in-arc — band B');
+    const higher = stageReport(catalog, `plain:\n${scored('B', 4, 2)}in-arc:\n${scored('B', 2, 2)}`);
+    expect(higher.stdout).toContain('Next step: plain — band B');
+  });
+
+  const WAITING = `  blockedBy:
+    - gate
+`;
+  const gate = `- id: gate
+  title: Gate
+  status: idea
   type: feature
   layer: product
-  value: Banded C.
-  acceptanceCriteria:
-    - It can start.
+  value: The thing waited on.
+  acceptanceCriteria: []
   modules: []
   refs: []
 `;
-    const { stdout, stderr } = stageReport(catalog, 'cheap:\n  band: C\n');
-    expect(stderr).toBe('');
-    expect(stdout).toContain('Next step: cheap — band C');
-    const ready = stdout.slice(stdout.indexOf('Ready to start'), stdout.indexOf('Blocked'));
-    expect(ready).toContain('  - [E] [feature] unbanded: Unbanded');
-    expect(ready.indexOf('  - [C] [feature] cheap: Cheap')).toBeLessThan(
-      ready.indexOf('  - [E] [feature] unbanded: Unbanded'),
+  const waitingEntry = (id) => shapedEntry(id, id, '').replace('  refs: []\n', `  refs: []\n${WAITING}`);
+
+  it('names the blocked entry that would sort ahead of the suggestion, and only that', () => {
+    const catalog = gate + shapedEntry('now', 'Now') + waitingEntry('held') + waitingEntry('held-less');
+    const ahead = stageReport(
+      catalog,
+      `now:\n${scored('B', 3, 3)}held:\n${scored('A', 5, 1)}held-less:\n${scored('B', 5, 1)}gate:\n  band: B\n`,
     );
+    expect(ahead.stderr).toBe('');
+    expect(ahead.stdout).toContain(
+      'Next step: now — band B\n  Ahead of it, blocked: held — band A, waiting on gate\n',
+    );
+
+    const behind = stageReport(
+      catalog,
+      `now:\n${scored('A', 3, 3)}held:\n${scored('B', 5, 1)}gate:\n  band: B\n`,
+    );
+    expect(behind.stdout).not.toContain('blocked: held');
+    expect(behind.stdout).not.toContain('Ahead of it');
+  });
+
+  it('names the highest blocked A or B entry when nothing is suggested', () => {
+    const catalog = gate + shapedEntry('left', 'Left') + waitingEntry('held') + waitingEntry('decide');
+    const named = stageReport(
+      catalog,
+      `left:\n  band: D\nheld:\n${scored('B', 4, 2)}decide:\n  band: C\n`,
+    );
+    expect(named.stdout).toContain(
+      'Next step: none — nothing ready is banded A or B; the rest is banded to leave for now.\n  Highest blocked: held — band B, waiting on gate\n',
+    );
+    const none = stageReport(catalog, `left:\n  band: D\ndecide:\n  band: C\nheld:\n  band: C\n`);
+    expect(none.stdout).not.toContain('Highest blocked');
   });
 
   // The refresh point has to be an ancestor: a commit cannot contain its own hash.
