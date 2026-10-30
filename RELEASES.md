@@ -16,6 +16,10 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.6.0] — 2026-10-30
+
 The backlog now comes in one order. Entries sit in four bands, from *do now* to *leave
 it*, and are ranked inside each band by what they are worth against what they cost.
 Refreshing the board proposes merging, bundling or closing entries that overlap or are
