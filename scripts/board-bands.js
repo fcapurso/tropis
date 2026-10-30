@@ -104,3 +104,17 @@ export function stampBands(text, catalog) {
 export function bandLetters(rows) {
   return Object.fromEntries(Object.entries(rows ?? {}).map(([id, row]) => [id, row?.band]));
 }
+
+/**
+ * The scores behind the rank inside a band: id to value and effort, for rows whose two
+ * scores are both integers 1 to 5. A row missing either, or carrying one outside that
+ * range, is left out and so has no rank.
+ * @param {Record<string, {value?: unknown, effort?: unknown}> | null | undefined} rows bands.yaml, parsed
+ * @returns {Record<string, {value: number, effort: number}>}
+ */
+export function bandScores(rows) {
+  const ok = (n) => Number.isInteger(n) && n >= 1 && n <= 5;
+  return Object.fromEntries(Object.entries(rows ?? {})
+    .filter(([, row]) => ok(row?.value) && ok(row?.effort))
+    .map(([id, row]) => [id, { value: row.value, effort: row.effort }]));
+}
