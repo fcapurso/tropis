@@ -270,6 +270,19 @@ Plan: <plan document path>
    same client, same code path. Different vantage points return different truths about
    the same record, and the difference reads convincingly as instability. For anything
    beyond a small fix, get agreement before implementing.
+
+   **Where code came from is a second assumption, and it fails differently.** A pointer
+   at a working example is a tip about where to look, not a licence to adopt its
+   approach wholesale: research how the problem is solved, then write the project's own
+   version against its own interfaces and names, and say which named source you worked
+   from — in the plan, the handover or the reply — even when the answer is "nothing in
+   particular". An agent cannot check this for itself: it has no licence awareness while
+   generating and no way to audit its own output for provenance afterwards, so its
+   assurance that it wrote something itself is worth nothing as evidence, and the
+   declaration is the only record anyone gets. In a closed-source product, this is what
+   keeps expression copied from a copyleft project out of the code, along with the
+   obligation to publish source that comes with it.
+
 3. **Implement,** with tests. Run the suite immediately after writing or changing a
    test — do not batch and do not proceed with a failing suite.
 4. **Verify.** Automated checks, plus any check only a person can perform. Use
@@ -359,6 +372,14 @@ will do. The record is provenance: if a later version behaves differently, it sh
 which version a result came from. A result that holds only on some versions is a
 finding about the framework — change it so it no longer depends on what varies — not
 a reason to require a version.
+
+**A probe on someone's own machine is not given only the repository.** The agent tool
+also loads that person's own instructions, the ones that apply to every project. When
+the change repeats something already in them, the probe follows those and passes
+whether or not the change works. Before running it, check whether they say what the
+change says; if they do, run the probe where they do not load, such as a cloud session,
+and say so in the record. Found absorbing a flush, where a probe of a provenance rule
+started locally reported seeing its owner's own copy of that rule.
 
 **End the check with a proposal.** Whatever it finds becomes a backlog entry, a rule, or a
 shaped plan — put to the developer as a recommendation, not left in the conversation that

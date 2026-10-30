@@ -14,8 +14,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import YAML from 'yaml';
-import { bandLetters } from './board-bands.js';
-import { inFlight, blocked, arcs, nextStep, bandOf, readyInBandOrder, hasBandRows } from './next-work.js';
+import { bandBundles, bandLetters, bandScores } from './board-bands.js';
+import { inFlight, blocked, arcs, nextStep, bandOf, readyInBandOrder, hasBandRows, blockedAhead } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -25,9 +25,10 @@ const queuePath = resolve(root, 'docs/BLUEPRINT-UPSTREAM.md');
 const bandsPath = resolve(root, 'docs/backlog-board/bands.yaml');
 // A missing file is no bands. A header-only file parses as null and becomes {},
 // which has no rows and must not change the report.
-const bands = existsSync(bandsPath)
-  ? bandLetters(YAML.parse(readFileSync(bandsPath, 'utf8')))
-  : null;
+const bandRows = existsSync(bandsPath) ? YAML.parse(readFileSync(bandsPath, 'utf8')) : null;
+const bands = bandRows ? bandLetters(bandRows) : null;
+const scores = bandRows ? bandScores(bandRows) : null;
+const bundles = bandRows ? bandBundles(bandRows) : {};
 
 function tag(entry) {
   return `[${entry.type}]`;
@@ -49,22 +50,40 @@ function sourcePath(entry) {
 
 function line(entry) {
   const prefix = hasBandRows(bands) ? `[${bandOf(entry.id, bands)}] ` : '';
-  const decision = hasBandRows(bands) && bandOf(entry.id, bands) === 'D' ? ' (needs a decision)' : '';
+  const decision = hasBandRows(bands) && bandOf(entry.id, bands) === 'C' ? ' (needs a decision)' : '';
   return `  - ${prefix}${tag(entry)} ${entry.id}: ${entry.title}${sourcePath(entry)}${decision}`;
 }
 
-const step = nextStep(catalog, bands);
+const step = nextStep(catalog, bands, scores);
+
+// The suggestion's bundle-mates that are still open, best band first, then value over
+// effort (unscored last), then id.
+function bundleMates(of) {
+  const open = (e) => e.status !== 'shipped' && !e.shelved && !(e.supersededBy ?? []).length;
+  const rank = (id) => (scores?.[id] ? scores[id].value / scores[id].effort : -1);
+  return catalog
+    .filter((e) => e.id !== of.id && bundles[e.id] === bundles[of.id] && open(e))
+    .sort((a, b) => bandOf(a.id, bands).localeCompare(bandOf(b.id, bands)) || rank(b.id) - rank(a.id) || a.id.localeCompare(b.id))
+    .map((e) => e.id);
+}
 if (hasBandRows(bands)) {
   if (step) {
     const spec = (step.refs ?? []).find((r) => r.includes('/specs/'));
     console.log(`Next step: ${step.id} — band ${bandOf(step.id, bands)}${spec ? ` (${spec})` : ''}`);
   } else {
-    const decisions = readyInBandOrder(catalog, bands)
-      .filter((entry) => bandOf(entry.id, bands) === 'D')
+    const decisions = readyInBandOrder(catalog, bands, scores)
+      .filter((entry) => bandOf(entry.id, bands) === 'C')
       .map((entry) => entry.id);
     console.log(decisions.length > 0
-      ? `Next step: none — nothing ready is banded A to C; ${decisions.join(', ')} need a decision, not a plan.`
-      : 'Next step: none — nothing ready is banded A to C; the rest is banded to leave alone.');
+      ? `Next step: none — nothing ready is banded A or B; ${decisions.join(', ')} need a decision, not a plan.`
+      : 'Next step: none — nothing ready is banded A or B; the rest is banded to leave for now.');
+  }
+  const mates = step && bundles[step.id] ? bundleMates(step) : [];
+  if (mates.length) console.log(`  With it, bundle ${bundles[step.id]}: ${mates.join(', ')}`);
+  const ahead = blockedAhead(catalog, bands, scores, step);
+  if (ahead) {
+    const waitingIds = ahead.waitingOn.map((b) => b.id).join(', ');
+    console.log(`  ${step ? 'Ahead of it, blocked' : 'Highest blocked'}: ${ahead.entry.id} — band ${bandOf(ahead.entry.id, bands)}, waiting on ${waitingIds}`);
   }
   console.log('');
 } else if (step) {
@@ -74,7 +93,7 @@ if (hasBandRows(bands)) {
 }
 
 const flying = inFlight(catalog);
-const startable = readyInBandOrder(catalog, bands);
+const startable = readyInBandOrder(catalog, bands, scores);
 const waiting = blocked(catalog);
 const ideas = catalog.filter((e) => e.status === 'idea').length;
 const shelved = catalog.filter((e) => e.shelved).length;

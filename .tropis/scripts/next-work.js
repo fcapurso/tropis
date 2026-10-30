@@ -140,20 +140,20 @@ export function arcs(catalog) {
     });
 }
 
-const BAND_RANK = { A: 0, B: 1, C: 2, D: 3, E: 4 };
+const BAND_RANK = { A: 0, B: 1, C: 2, D: 3 };
 
-/** Bands /next may suggest. D wants a decision and E is left alone; both are only listed. */
-const SUGGESTABLE = new Set(['A', 'B', 'C']);
+/** Bands /next may suggest. C wants a decision and D is left alone; both are only listed. */
+const SUGGESTABLE = new Set(['A', 'B']);
 
 /**
- * An entry's band. An id with no band, or a band that is not A–E, counts as E.
+ * An entry's band. An id with no band, or a band that is not A–D, counts as D.
  * @param {string} id
  * @param {Record<string, string> | null | undefined} bands id to letter
- * @returns {'A'|'B'|'C'|'D'|'E'}
+ * @returns {'A'|'B'|'C'|'D'}
  */
 export function bandOf(id, bands) {
   const band = bands?.[id];
-  return Object.hasOwn(BAND_RANK, band ?? '') ? band : 'E';
+  return Object.hasOwn(BAND_RANK, band ?? '') ? band : 'D';
 }
 
 /** A parsed bands file with at least one row. Null and a header-only file are neither. */
@@ -173,32 +173,49 @@ function underWayIds(catalog) {
 }
 
 /**
- * Ready entries in band order; inside a band, an entry in an arc already under way
- * first, then the order `ready()` gave. Sort is stable, so that last tie-break is free.
- * @param {object[]} entries
- * @param {Record<string, string>} bands
- * @param {Set<string>} underWay
- * @returns {object[]}
+ * Rank is value over effort. An entry without both scores has none.
+ * @param {string} id
+ * @param {Record<string, {value: number, effort: number}> | null | undefined} scores
+ * @returns {number | null}
  */
-function byBand(entries, bands, underWay) {
-  const arcFirst = (entry) => (underWay.has(entry.id) ? 0 : 1);
-  return [...entries].sort((a, b) => (
-    BAND_RANK[bandOf(a.id, bands)] - BAND_RANK[bandOf(b.id, bands)]
-    || arcFirst(a) - arcFirst(b)
-  ));
+function rankOf(id, scores) {
+  const s = scores?.[id];
+  return s ? s.value / s.effort : null;
+}
+
+/**
+ * Comparator for the order entries are suggested in: band, then rank descending with
+ * unranked entries last, then an entry in an arc already under way first. Ties return 0,
+ * so a stable sort keeps whatever order the caller had.
+ */
+function compareByBand(bands, scores, underWay) {
+  return (a, b) => {
+    const band = BAND_RANK[bandOf(a.id, bands)] - BAND_RANK[bandOf(b.id, bands)];
+    if (band !== 0) return band;
+    const ra = rankOf(a.id, scores);
+    const rb = rankOf(b.id, scores);
+    if (ra !== rb) {
+      if (ra === null) return 1;
+      if (rb === null) return -1;
+      return rb - ra;
+    }
+    return (underWay.has(a.id) ? 0 : 1) - (underWay.has(b.id) ? 0 : 1);
+  };
 }
 
 /**
  * Ready entries in the order the report lists them. With no bands — null, or a
- * file that parsed to no rows — that is the order `ready()` already gave.
+ * file that parsed to no rows — that is the order `ready()` already gave. Scores are
+ * optional; without them the order inside a band is arc under way, then `ready()` order.
  * @param {object[]} catalog
  * @param {Record<string, string> | null} [bands]
+ * @param {Record<string, {value: number, effort: number}> | null} [scores]
  * @returns {object[]}
  */
-export function readyInBandOrder(catalog, bands = null) {
+export function readyInBandOrder(catalog, bands = null, scores = null) {
   const startable = ready(catalog);
   if (!hasBandRows(bands)) return startable;
-  return byBand(startable, bands, underWayIds(catalog));
+  return [...startable].sort(compareByBand(bands, scores, underWayIds(catalog)));
 }
 
 /**
@@ -207,14 +224,37 @@ export function readyInBandOrder(catalog, bands = null) {
  * With no bands (null, or no rows), the earliest ready entry in an arc already
  * under way (some shipped, some not), or null. Do not guess.
  *
- * With bands, the first ready entry banded A, B or C, in band order, an entry
- * in an arc already under way first within a band. D and E are never returned.
+ * With bands, the first ready entry banded A or B in the order of `readyInBandOrder`.
+ * C and D are never returned.
  * @param {object[]} catalog
  * @param {Record<string, string> | null} [bands] id to letter; omit when no bands exist
+ * @param {Record<string, {value: number, effort: number}> | null} [scores]
  * @returns {object|null}
  */
-export function nextStep(catalog, bands = null) {
-  const startable = readyInBandOrder(catalog, bands);
+export function nextStep(catalog, bands = null, scores = null) {
+  const startable = readyInBandOrder(catalog, bands, scores);
   if (!hasBandRows(bands)) return startable.find((e) => underWayIds(catalog).has(e.id)) ?? null;
   return startable.find((e) => SUGGESTABLE.has(bandOf(e.id, bands))) ?? null;
+}
+
+/**
+ * The shaped entry, waiting on an unshipped blocker, that sorts highest in the order
+ * above — strictly ahead of `step` when there is one, otherwise banded A or B. Null
+ * when none qualifies or there are no bands.
+ * @param {object[]} catalog
+ * @param {Record<string, string> | null} bands
+ * @param {Record<string, {value: number, effort: number}> | null} scores
+ * @param {object | null} step the suggestion, or null
+ * @returns {{entry: object, waitingOn: object[]} | null}
+ */
+export function blockedAhead(catalog, bands, scores, step) {
+  if (!hasBandRows(bands)) return null;
+  const compare = compareByBand(bands, scores, underWayIds(catalog));
+  const candidates = blocked(catalog)
+    .filter(({ entry }) => entry.status === 'shaped')
+    .filter(({ entry }) => (step
+      ? compare(entry, step) < 0
+      : SUGGESTABLE.has(bandOf(entry.id, bands))));
+  candidates.sort((a, b) => compare(a.entry, b.entry) || a.entry.id.localeCompare(b.entry.id));
+  return candidates[0] ?? null;
 }

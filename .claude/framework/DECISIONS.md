@@ -569,7 +569,7 @@ moved or merged. Updating needs a Tropis clone until the package install exists
 
 ## FW-015: The framework folder is `.tropis/`, and an earlier install moves there
 
-**Date:** 2026-10-16 · **Status:** Accepted
+**Date:** 2026-10-16 · **Status:** Accepted; its migration superseded by FW-033
 
 **Decision:** Decisions 1 and 3–7 of
 docs/superpowers/plans/2026-10-16-framework-moves-to-tropis.md. A project set up from
@@ -630,7 +630,7 @@ never writes under docs/, so an update does not replace a project's verdicts. `/
 reads those bands when the file has rows and suggests by them — highest band first,
 an arc already under way first within a band, D and E listed and never suggested. With
 no bands file, or a header and no rows, `/next` prints what it printed before bands
-existed.
+existed. Amended by FW-034: four bands, C and D listed and never suggested.
 
 **Rejected:** Publishing to a hosted page, which works in one agent tool, and whose
 address belongs to one project. Bands inside the catalog, a judgment beside facts,
@@ -1037,3 +1037,71 @@ has no use for; one concern per hook keeps each silent where it does not apply.
 agent reads the outgoing diff at every commit and push; the hook asks for a reading, so
 what it catches depends on the reader, and the review record and `/release` are the
 second and third readings.
+
+---
+
+## FW-033: A project in `.framework/` is set up afresh, not moved
+
+**Date:** 2026-10-28 · **Status:** Accepted
+
+**Decision:** `take-version` and setup refuse a project holding `.framework/`, and the
+migration FW-015 described is removed.
+
+**Evidence:** The public repository cannot carry the `v0.1.0` tag its tests needed (the
+Why of the plan dated 2026-10-28 whose slug is the-self-check-needs-no-private-tag), and
+no adopting project is on that layout.
+
+**Rejected:** A fixture built from the `v0.1.0` tree, since that tree holds private
+material. Skipping the tests when the tag is absent, since the public pipeline would
+then check less than it claims.
+
+**Consequences:** A project still in `.framework/` must set up again.
+
+---
+
+## FW-034: The backlog is ranked by value over effort inside four bands
+
+**Date:** 2026-10-30 · **Status:** Accepted
+
+**Decision:** There are four bands, each with a written meaning: A do now (high value,
+and urgent or blocking other work), B do next (worth doing, no deadline), C decide first
+(an open question only the developer can answer stands in the way), D leave it (nothing
+to do until something happens). Inside a band an entry is ranked by value divided by
+effort, each scored 1 to 5 in the bands file with a one-line reason; an entry missing
+either score comes last. `/next` suggests only from A and B, lists C marked as needing a
+decision and D, and names a waiting entry that would outrank the suggestion. Shipped,
+replaced and shelved entries are out of the bands and listed in a collapsed section at the
+bottom of the board. An entry waiting on another is banded on its own value, as though
+what it waits on were done, and the board marks the wait.
+
+**Rejected:** One ranked list across all bands, where a cheap low-value entry would climb
+above urgent work. Keeping a cheap-win band, since the effort score already says it. A
+conversion step for an existing bands file: the missing scores flag every old row, and the
+refresh re-judges each one.
+
+**Consequences:** A project's first refresh after taking this release re-judges every row.
+Until then an old C row reads as decide first, an old D row as leave it, and an old E row
+as unbanded, which counts as D; none of them is suggested.
+
+---
+
+## FW-035: Grooming is a mode of `/refresh-board`, on every refresh for what moved and in full on request
+
+**Date:** 2026-10-30 · **Status:** Accepted
+
+**Decision:** `/refresh-board` proposes four kinds of finding about the backlog: two
+entries describing the same work (merge), two that cannot both be done as written
+(conflict), entries better done together (bundle) and an entry already done or no longer
+true (close). On every refresh it compares the entries it banded, re-banded or re-scored
+against all other open entries; `/refresh-board groom` compares every open entry against
+every other. It applies nothing without the developer's yes, and changes the catalog only
+through `/feature`. Rows sharing a `bundle` name in the bands file are tagged together on
+the board, and `/next`, suggesting one of them, names the rest.
+
+**Rejected:** A separate grooming command, since the refresh is where backlog judgments
+already live. A full pass on every refresh, which is slow and noisy once the backlog is
+large.
+
+**Consequences:** A grooming pass is judgment, so its findings are not tested; the
+mechanics around it (the bundle field, the page tag, the one-row report, the `/next` line)
+are.
