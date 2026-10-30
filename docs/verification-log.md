@@ -48,8 +48,8 @@ recorded through `/manual-check`. Newest first.
 | 8 | Open the collapsed "Closed" section at the bottom | It counts 51. Each row says shipped, "replaced by <id>", or shelved, beside its id and title. None of those ids appears in the bands above |
 | 9 | Narrow the window to phone width | Nothing runs off the side; the Closed rows stack |
 
-- **Result:** pending
-- **Notes:** observed by <who>; anything unexpected
+- **Result:** pass
+- **Notes:** observed by the developer, 2026-10-30; nothing unexpected reported
 - **Closes:** `backlog-is-ranked-inside-its-bands` — "Inside a band the board and the backlog report list entries by value divided by effort, highest first, then an entry in an arc under way, then the order the report already used." (the board half); "The board marks an entry blocked by, or coming after, an unshipped entry, naming it."; "Shipped, superseded and shelved entries take no band; the board lists them in one collapsed section at the bottom saying what closed each, and the build reports a band on a superseded or shelved entry as stale." (the page half)
 
 ### 2026-10-27 — A release rehearsed on a candidate (Screen)
