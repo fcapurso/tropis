@@ -31,6 +31,27 @@ recorded through `/manual-check`. Newest first.
 
 ## Entries
 
+### 2026-10-30 — The backlog board ranks inside four bands (Setup)
+
+- **Change:** `plan/backlog-is-ranked-inside-its-bands` at `5a9f063`, in a scratch project set up from that branch with `set-up-project.sh`, then given this repository's `feature-catalog.yaml` and `docs/backlog-board/bands.yaml` as of `3201aae`, opened in a browser as a local file
+- **Pre-conditions:** already prepared by the reviewing session: the scratch project's setup and its checks passed (6 suites, 33 tests), and the page is built. Scratch edits, not in any repository, so the rank and markers have something to show: band B rows `a-failing-push-is-visible` scored value 4 / effort 1, `contributors-know-how-to-contribute` 3 / 3, `command-matcher-sees-every-shell` 2 / 4; and `contributors-know-how-to-contribute` given `blockedBy: [backlog-is-groomed-at-refresh]`. Every other row is unscored, as every row here is today.
+
+| # | Step | Expected |
+|---|---|---|
+| 1 | Open the page the reviewing session names | The tallies show four bands — Do now 3, Do next 19, Decide first 19, Leave it 17 — and no fifth or "Parked" tally. The header says 58 open |
+| 2 | Look at band B, sorted as it opens | The sort control reads Rank. The first three rows are, in order, `a-failing-push-is-visible` (value 4 · effort 1), `contributors-know-how-to-contribute` (value 3 · effort 3), `command-matcher-sees-every-shell` (value 2 · effort 4); every row after them says "not scored" |
+| 3 | Look at the tags on `contributors-know-how-to-contribute`, then find `backlog-is-groomed-at-refresh` | The first shows "blocked" and "blocked by backlog-is-groomed-at-refresh" and stays in band B; the second shows "after backlog-is-ranked-inside-its-bands" |
+| 4 | Click `a-failing-push-is-visible` to open it | The detail has a Scores section: "Value 4 — scratch score for the check" and "Effort 1 — scratch score for the check" |
+| 5 | Click the "blocked" chip, then clear it | Only `contributors-know-how-to-contribute` is listed; clearing brings the full board back |
+| 6 | Switch Sort to Id, then back to Rank | Band B reorders by id, then returns to the order in step 2 |
+| 7 | Read the footer | Bands A to D are described as do now, do next, decide first, leave it, with ranking by value divided by effort. No "cheap win" and no band E anywhere on the page |
+| 8 | Open the collapsed "Closed" section at the bottom | It counts 51. Each row says shipped, "replaced by <id>", or shelved, beside its id and title. None of those ids appears in the bands above |
+| 9 | Narrow the window to phone width | Nothing runs off the side; the Closed rows stack |
+
+- **Result:** pending
+- **Notes:** observed by <who>; anything unexpected
+- **Closes:** `backlog-is-ranked-inside-its-bands` — "Inside a band the board and the backlog report list entries by value divided by effort, highest first, then an entry in an arc under way, then the order the report already used." (the board half); "The board marks an entry blocked by, or coming after, an unshipped entry, naming it."; "Shipped, superseded and shelved entries take no band; the board lists them in one collapsed section at the bottom saying what closed each, and the build reports a band on a superseded or shelved entry as stale." (the page half)
+
 ### 2026-10-27 — A release rehearsed on a candidate (Screen)
 
 - **Change:** release candidate at `a6db79a`, `plan/release-is-rehearsed-on-a-candidate`, private repository `fcapurso/tropis-pipeline-probe`, opened in a browser while signed in to that GitHub account
