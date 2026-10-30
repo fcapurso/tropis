@@ -1,11 +1,36 @@
 # Bands and verdicts for the backlog board — the judgment layer, kept apart from the
 # catalog so an opinion about priority never sits beside a fact about the product.
 #
-# One entry per open catalog id. band: A do now · B do next · C cheap win, batch it ·
-# D decide, don't build · E leave alone. verdict: one or two sentences, plain English.
+# One row per active catalog id: an entry that has not shipped, been replaced or been
+# shelved. Shipped, replaced and shelved entries have no band.
+#
+# band, one of four:
+#   A  do now       high value, and urgent or blocking other work.
+#   B  do next      worth doing, no deadline.
+#   C  decide first an open question only the developer can answer stands between the
+#                   entry and a plan; the verdict names the question.
+#   D  leave it     nothing to do until something happens; the verdict names what.
+# An entry that waits on another is banded on its own value, as though what it waits on
+# were done; the board marks the wait.
+#
+# value and effort: whole numbers 1 to 5, each with a one-line reason (valueWhy,
+# effortWhy). Inside a band the board and /next rank by value divided by effort, and an
+# entry missing either score comes last.
+# verdict: one or two sentences, plain English.
 # evidence (optional): what was checked against the code, dated, so a reader can tell a
 # verified claim from the entry's own text.
 #
-# npm --prefix .tropis run board reports ids that have no band, and bands whose entry has shipped or gone.
-# Both are the board going stale; neither fails the build, because banding is a judgment
-# and a new idea should not turn the suite red until somebody has formed one.
+# A row, with the keys in this order:
+#   some-entry:
+#     band: B
+#     value: 4
+#     valueWhy: "One line."
+#     effort: 2
+#     effortWhy: "One line."
+#     verdict: "One or two sentences."
+#     evidence: "Optional, dated."
+#
+# npm --prefix .tropis run board reports ids that have no band, bands whose entry has
+# shipped, been replaced, been shelved or gone, bands not A to D, and bands without both
+# scores. All of it is the board going stale; none fails the build, because banding is a
+# judgment and a new idea should not turn the suite red until somebody has formed one.

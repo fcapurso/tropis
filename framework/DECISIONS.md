@@ -630,7 +630,7 @@ never writes under docs/, so an update does not replace a project's verdicts. `/
 reads those bands when the file has rows and suggests by them — highest band first,
 an arc already under way first within a band, D and E listed and never suggested. With
 no bands file, or a header and no rows, `/next` prints what it printed before bands
-existed.
+existed. Amended by FW-034: four bands, C and D listed and never suggested.
 
 **Rejected:** Publishing to a hosted page, which works in one agent tool, and whose
 address belongs to one project. Bands inside the catalog, a judgment beside facts,
@@ -1056,3 +1056,29 @@ material. Skipping the tests when the tag is absent, since the public pipeline w
 then check less than it claims.
 
 **Consequences:** A project still in `.framework/` must set up again.
+
+---
+
+## FW-034: The backlog is ranked by value over effort inside four bands
+
+**Date:** 2026-10-30 · **Status:** Accepted
+
+**Decision:** There are four bands, each with a written meaning: A do now (high value,
+and urgent or blocking other work), B do next (worth doing, no deadline), C decide first
+(an open question only the developer can answer stands in the way), D leave it (nothing
+to do until something happens). Inside a band an entry is ranked by value divided by
+effort, each scored 1 to 5 in the bands file with a one-line reason; an entry missing
+either score comes last. `/next` suggests only from A and B, lists C marked as needing a
+decision and D, and names a waiting entry that would outrank the suggestion. Shipped,
+replaced and shelved entries are out of the bands and listed in a collapsed section at the
+bottom of the board. An entry waiting on another is banded on its own value, as though
+what it waits on were done, and the board marks the wait.
+
+**Rejected:** One ranked list across all bands, where a cheap low-value entry would climb
+above urgent work. Keeping a cheap-win band, since the effort score already says it. A
+conversion step for an existing bands file: the missing scores flag every old row, and the
+refresh re-judges each one.
+
+**Consequences:** A project's first refresh after taking this release re-judges every row.
+Until then an old C row reads as decide first, an old D row as leave it, and an old E row
+as unbanded, which counts as D; none of them is suggested.
