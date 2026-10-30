@@ -351,3 +351,46 @@ Commit, push the branch, open a pull request against `main`. Do not merge.
 - Grooming and the `bundle` field: `backlog-is-groomed-at-refresh`.
 - Re-banding and scoring this repository's own rows: after a release carrying this change
   is taken, with `/refresh-board all groom`.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 6 are done. Task 5's fresh-agent check ran and passed (below). The catalog entry is set to `shipped` with a comment naming this report.
+
+### Verification results
+
+Tool versions: Node v22.15.0, Claude Code 2.1.300 (Sonnet 5.5), macOS 26.2, arm64.
+
+- Unit and report guards, run with jest from a scratch config over `guards/`: `board-bands`, `next-report`, `backlog-board` passed (35 tests in the last two board suites; 22 in `next-report`). The full guard run outside the self-check showed 10 failing suites, all staged-project or tag guards that need the self-check's own layout; they are not the checks of record.
+- `bash scripts/check-blueprint.sh` on the committed branch: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: 6 suites, 33 tests passed.
+- No-bands comparison (Review Focus 1): `node next.mjs` from a scratch copy of this repository's real catalog with no bands file, saved before the change from the base scripts (70 lines) and run again with the new scripts: `diff` printed nothing.
+- Real catalog and bands file (Review Focus 2): the build printed 2 active entries with no band (the two plan-pending entries), 8 stale bands, 5 bands not A to D (all E), and 56 bands with no score. The page rendered 58 active entries, bands A 3, B 19, C 19, D 17, and a collapsed Closed section of 51. Opened in the Browser pane over a local server (not a file, which that pane shows as a static snapshot): no console errors; with two band B rows scored in a scratch copy, the 4-over-1 row listed before the 2-over-4 row, ahead of an unscored row; `after <id>` tags rendered; a `blockedBy` added in the scratch copy rendered `blocked by <id>` and the blocked chip counted 1. No screenshot saved.
+- Fresh-agent check: see the commit body of the documentation commit. A subagent given an invented idea entry and an old unscored C row banded the new entry with scores and reasons and re-judged the old row rather than mapping the letter.
+
+### Scope
+
+`git diff --stat main...HEAD` before this report: 13 files plus the catalog and this plan file, all in the File Structure table. No `guards/next-work.test.js` was created: rank and blocked-ahead cases fit `next-report.test.js`, and `bandScores` fits `board-bands.test.js`. Worktree used: `../tropis-ranked-bands`.
+
+### Judgment calls
+
+- Page ENTRIES now holds every catalog entry; closed ones carry only id, title and a `cl` flag (`shipped`, `replaced` with `by`, or `shelved`), to keep the page small. Existing test of "every open entry" now checks every entry.
+- `movedBands` also skips a band on a replaced or shelved entry, so such a band is reported once, as stale, not also as moved. The plan did not say.
+- The page's tie-break after rank and arc is id, as the plan says for entries not ready; it can differ from `/next` where two ready entries tie exactly on band, rank and arc (the report uses `ready()` order).
+- `anno` for the page gains the score and reasons; waiting tags on the page use only unshipped `blockedBy` and `after` ids, filtered in the build.
+- "Unbanded" report wording now says "active entries" and "as D".
+- A row with no `band` key is listed in the not-A-to-D report with `(none)`.
+- The Closed section is not affected by the search box or chips.
+
+### What the plan got wrong
+
+- The plan says to run the suite with `npm --prefix .tropis test`; that runs the installed release's checks, not the source guards under `guards/`. Source guards run only through `check-blueprint.sh`; for quick runs I used a temporary jest config and root package file, all untracked and excluded.
+- The guard `backlog-board.test.js` asserted `not.toContain('kept&page')` over the whole page; closed entries now put every id in the page data, so it was narrowed to the README line.
+- The plan's blocked-ahead line for a suggestion uses the phrase "sort before"; ties on band, rank and arc do not count as ahead.
+
+### Outstanding
+
+- This repository's own bands file is untouched, as required; its rows are re-judged after taking a release with this change.
+- The ordering on the real backlog and the page as a screen are for the reviewing session and `/manual-check`.
+- The scratch jest setup added lines to the shared `.git/info/exclude` of the specifying session's checkout (`jest.config.js`, `node_modules`, `package.json`); I removed them again; a reviewer may confirm.
