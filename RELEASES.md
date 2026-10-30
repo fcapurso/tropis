@@ -16,7 +16,81 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+The backlog now comes in one order. Entries sit in four bands, from *do now* to *leave
+it*, and are ranked inside each band by what they are worth against what they cost.
+Refreshing the board proposes merging, bundling or closing entries that overlap or are
+already done. Agents are also told to say where the code they write came from.
+
+### After updating: what to do by hand
+
+**1. Re-band your backlog.** The bands have changed meaning, and every row now needs a
+value and an effort score, so `/next` misreads your existing bands until they are judged
+again. C used to mean "cheap win, batch it" and now means "decide first"; D used to mean
+"decide, don't build" and now means "leave it"; E is gone. If your project has
+`docs/backlog-board/bands.yaml`, run `/refresh-board` and answer what it asks. It
+re-judges every row under the new bands and writes the scores. A project without that
+file has nothing to do.
+
+### You see what to do next, in one order
+
+Each entry on the board and in `/next` now carries a value score and an effort score
+from 1 to 5, each with a one-line reason you can argue with. Inside a band, entries are
+listed by value divided by effort. Each of the four bands says what qualifies: A do now,
+B do next, C decide first, D leave it.
+
+`/next` suggests only from A and B, and lists C as needing a decision. When a blocked
+entry would outrank its suggestion, it says so and names what blocks it. An entry waiting
+on another keeps its own band, with a marker naming what it waits on. Shipped, replaced
+and shelved entries move to a collapsed *Closed* section at the bottom of the board.
+
+### Refreshing the board tidies the backlog
+
+`/refresh-board` now compares each entry it banded or re-scored with the rest of the open
+backlog. It proposes one of four things: merging entries that overlap, flagging two that
+cannot both be done, bundling entries better done together, or closing one that is
+already done. `/refresh-board groom` does this across the whole backlog. Nothing changes
+without your yes. Entries in one bundle are tagged together on the board, and `/next`
+names the rest of a bundle beside its suggestion.
+
+### Agents say where their code came from
+
+The workflow now tells agents that a pointer at a working example is a place to look, not
+something to copy. They study it, write your project's own version using your project's
+own names, and say which source they worked from: in the plan, the handover or their
+reply. An agent cannot check its own output for where it came from, so that statement is
+the only record you get. In a closed-source product, it is what keeps out code copied
+from an open-source project, along with the licence terms that come with it.
+
+### What your pipeline scripts must do for themselves
+
+A newly set-up project's operator guide now says this. An update never changes your guide
+at `.tropis/README.md`, so here it is.
+
+Each pipeline stage starts from a shallow checkout of the commit, with no submodules and
+no record of the base branch. Only the framework stage has `.tropis/` installed. A stage
+script that reads git history, or needs submodules or your product's dependencies, must
+fetch and install them itself.
+
+If you rehearse releases in `pipeline/candidate/`, your `reset.sh` and `deploy.sh` must
+handle three things Tropis does not:
+
+- **Stored data that can only grow.** Deploy the production tag's code with the
+  candidate's data schema.
+- **Submodules.** The tag's files arrive without them, so fetch each one over the
+  candidate's address, at the commit the tag pins.
+- **A new major version.** It may need approving or upgrading. Do that in the scripts, or
+  add a line to `TROPIS_BY_HAND`.
+
+### Smaller corrections
+
+- The workflow requires a fresh agent to check any change to the framework itself. If you
+  run that check on your own machine and your personal instructions already say what the
+  change says, run it where they do not load, such as a cloud session, and say so in the
+  commit.
+- `/flush-upstream` writes framework paths without backticks in wording it proposes, so
+  the proposal no longer fails Tropis's check that every backticked path exists.
+
+Checked on the release candidate: no — no candidate was rehearsed
 
 ## [0.5.2] — 2026-10-29
 
