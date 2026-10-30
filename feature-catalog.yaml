@@ -3734,7 +3734,7 @@
 # and waiting entries alike. Design agreed in conversation, written to the spec in refs.
 - id: backlog-is-ranked-inside-its-bands
   title: The backlog is ranked inside four bands that each say what qualifies
-  status: shaped
+  status: building
   value: Someone choosing what to do next sees one order, not a band of nineteen entries
     sorted by id. Each entry carries a value and an effort score with a reason a person
     can argue with, and the rank inside a band follows from them. Work nobody will do no
