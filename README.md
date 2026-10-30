@@ -25,8 +25,10 @@ things are the way they are.
 
 - **An idea becomes a merged change along one path.** It is captured in the backlog,
   shaped, planned by one session, carried out by another, reviewed, and merged.
-- **You see what is in flight and what is ready**, in the terminal or on one page in a
-  browser.
+- **You see what to do next, in one order**, in the terminal or on one page in a
+  browser. The backlog sits in four bands, from *do now* to *leave it*, ranked inside each
+  by value over effort, and refreshing it proposes merging, bundling or closing entries
+  that overlap, belong together or are already done.
 - **Rules reach the agent when it touches their area**, and your project can change where
   a rule applies or add to it in its own files, which updates never overwrite.
 - **What a change taught is recorded where the next agent will meet it**: as a rule, a
@@ -101,9 +103,11 @@ fixes and your scripts fill, described in the operator guide your project gets a
 
 ## Using it day to day
 
-- **`/next`** reports what is in flight, ready and blocked. `npm --prefix .tropis run
-  board` writes the backlog as one page to open in a browser, and `/refresh-board` walks
-  you through grouping it.
+- **`/next`** reports what is in flight, ready and blocked, and suggests what to take
+  next. `npm --prefix .tropis run board` writes the backlog as one page to open in a
+  browser. `/refresh-board` walks you through banding and scoring new entries and proposes
+  tidy-ups for you to accept or decline; `/refresh-board groom` looks across the whole
+  backlog.
 - **`/idea`** adds an entry to the backlog; **`/feature`** moves it along
   `idea → shaped → building → shipped`. An entry can also be parked on purpose.
 - **`/dispatch`** prints the prompt that hands a plan to an executing agent, and

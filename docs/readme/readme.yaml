@@ -1,3 +1,3 @@
 # How Tropis keeps this project's README. Change it with /refresh-readme <level>.
 level: writes          # writes · suggests · manual
-refreshedAt: "1a9ddd9e90166238228db531fe6c72da3febdc1f"        # the commit the README was last refreshed at; empty until then
+refreshedAt: "50b9e18c74d26310b9f05a3a46f3a97bb5a4338e"        # the commit the README was last refreshed at; empty until then
