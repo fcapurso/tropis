@@ -31,6 +31,21 @@ recorded through `/manual-check`. Newest first.
 
 ## Entries
 
+### 2026-10-30 — The backlog board tags bundles (Setup)
+
+- **Change:** `plan/backlog-is-groomed-at-refresh` at `08bba8b`, in a scratch project set up from that branch with `set-up-project.sh`, then given this repository's `feature-catalog.yaml` and `docs/backlog-board/bands.yaml` as of `a1df7bb`, opened in a browser as a local file
+- **Pre-conditions:** already prepared by the reviewing session: the scratch project's checks passed (33 tests) and the page is built. Scratch edits, not in any repository: `command-slots-spike` and `a-failing-push-is-visible` carry `bundle: check-pair`, and `command-matcher-sees-every-shell` carries `bundle: check-alone`. The `/next` line and the one-entry report are covered by the branch's tests; in the scratch project they print `With it, bundle check-pair: a-failing-push-is-visible` and `bundle check-alone has one entry — remove the field:`.
+
+| # | Step | Expected |
+|---|---|---|
+| 1 | Open the page the reviewing session names, in light mode | `command-slots-spike` (band A) and `a-failing-push-is-visible` (band B) each show a tag "bundle check-pair"; `command-matcher-sees-every-shell` shows "bundle check-alone". No other card has a bundle tag |
+| 2 | Switch the system to dark mode and look at the same three cards | The bundle tags are readable against the card |
+| 3 | Glance at the rest of the page | Four bands, scores and the collapsed Closed section look as they did in the ranked board check |
+
+- **Result:** pending
+- **Notes:** observed by <who>; anything unexpected
+- **Closes:** `backlog-is-groomed-at-refresh` — "Rows sharing a bundle name are tagged as one bundle on the board, and the backlog report, suggesting one of them, names the others." (the board half)
+
 ### 2026-10-30 — The backlog board ranks inside four bands (Setup)
 
 - **Change:** `plan/backlog-is-ranked-inside-its-bands` at `5a9f063`, in a scratch project set up from that branch with `set-up-project.sh`, then given this repository's `feature-catalog.yaml` and `docs/backlog-board/bands.yaml` as of `3201aae`, opened in a browser as a local file
