@@ -11,410 +11,721 @@
 # and a new idea should not turn the suite red until somebody has formed one.
 
 a-failing-push-is-visible:
-  band: B
-  verdict: "A ten-day silent red is the most expensive failure on record here, and nothing yet reports CI to the person who pushed. Worth doing soon; needs a shaping decision on where the signal lands."
+  band: A
+  value: 5
+  valueWhy: A red main went unseen for ten days under six commits, and on
+    2026-10-30 a merge went ahead with its checks still queued.
+  effort: 3
+  effortWhy: A signal to the person who pushed, with a decision on where it lands.
+  verdict: "The most expensive failure on record here, and it nearly recurred on
+    2026-10-30 when a pull request merged with its checks still queued and
+    nothing said so. Do it now; deciding where the signal lands is part of the
+    plan."
   seen:
     status: shaped
     blockers: []
 adopt-into-a-project-with-its-own-framework:
-  band: D
-  verdict: "Large, designed from one adoption, and two of its draft criteria cannot be tested yet. Decide its shape, likely as several entries, before anyone builds."
-  seen:
-    status: idea
-    blockers: []
-blueprint-page-checks-run-in-the-self-check:
-  band: E
-  verdict: "Replaced by blueprint-page-guards-run-in-the-self-check; nothing to do under this id."
+  band: C
+  value: 3
+  valueWhy: Adoption into a project with its own framework is a hand triage today.
+  effort: 5
+  effortWhy: Designed from one adoption; likely several entries.
+  verdict: "Large, designed from one adoption, and two of its draft criteria
+    cannot be tested yet. Decide its shape, likely as several entries, before
+    anyone builds."
   seen:
     status: idea
     blockers: []
 branch-slot-never-touches-a-permanent-environment:
   band: A
-  verdict: "One branch named like production would deploy over it and remove it when its pull request closes. Small to build, and every project guards it by hand today."
-  evidence: "2026-10-29 — scripts/pipeline.mjs:557-590 refuses only a name another branch shares, never a permanent environment's."
+  value: 5
+  valueWhy: One branch named like production would deploy over it and remove it.
+  effort: 2
+  effortWhy: A refusal list in three pipeline commands and a guard.
+  verdict: "One branch named like production would deploy over it and remove it
+    when its pull request closes. Small to build, and every project guards it by
+    hand today."
+  evidence: "2026-10-29 — scripts/pipeline.mjs:557-590 refuses only a name another
+    branch shares, never a permanent environment's."
   seen:
     status: shaped
     blockers: []
 catalog-rules-name-the-colon-trap:
-  band: C
+  band: B
+  value: 2
+  valueWhy: Saves one failed generator run per unlucky entry.
+  effort: 1
+  effortWhy: One sentence in the catalog rule.
   verdict: "One sentence in the catalog rule; batch with other rule-text fixes."
-  evidence: "2026-10-17 — rules/catalogs.md says nothing about colon-space in unquoted values; only this repository's CLAUDE.md gotchas do."
+  evidence: "2026-10-17 — rules/catalogs.md says nothing about colon-space in
+    unquoted values; only this repository's CLAUDE.md gotchas do."
   seen:
     status: idea
     blockers: []
 cloud-executor-attaches-every-checkout:
-  band: C
-  verdict: "Small change to the prompt dispatch prints; only plans with more than one checkout need it. Batch with the other dispatch fixes."
+  band: B
+  value: 2
+  valueWhy: Only plans with more than one checkout need it.
+  effort: 1
+  effortWhy: A step in the dispatch prompt and a test.
+  verdict: "Small change to the prompt dispatch prints; only plans with more than
+    one checkout need it. Batch with the other dispatch fixes."
   seen:
     status: shaped
     blockers: []
 command-matcher-sees-every-shell:
   band: B
-  verdict: "Every command-position hook shares this matcher, so each miss lets a deploy, commit or push through unwarned. Worth doing soon; the cases are listed."
-  evidence: "2026-10-29 — scripts/command-at-position.py:17 knows only bash, sh and zsh, and :273-284 fall back to a substring search."
+  value: 4
+  valueWhy: Every command-position hook shares this matcher, so each miss lets a
+    deploy, commit or push through unwarned.
+  effort: 3
+  effortWhy: Parser cases for other shells and heredocs, with a guard.
+  verdict: "Every command-position hook shares this matcher, so each miss lets a
+    deploy, commit or push through unwarned. Worth doing soon; the cases are
+    listed."
+  evidence: "2026-10-29 — scripts/command-at-position.py:17 knows only bash, sh
+    and zsh, and :273-284 fall back to a substring search."
   seen:
     status: shaped
     blockers: []
 command-slots-spike:
   band: A
-  verdict: "The open design question of the framework-updates arc: until it is answered, every command a project touches is a hand merge on each update. It is also what the backlog report names as the next step."
+  value: 5
+  valueWhy: Every command a project touches is a hand merge on every update until
+    this is answered.
+  effort: 4
+  effortWhy: A finding across three projects' changes and a throwaway prototype.
+  verdict: "The open design question of the framework-updates arc: until it is
+    answered, every command a project touches is a hand merge on each update. It
+    is also what the backlog report names as the next step."
   seen:
     status: shaped
     blockers: []
 contributors-know-how-to-contribute:
   band: B
-  verdict: "Shaped and plannable; one page that stops README and bootstrap each half-describing the upstream path. Not urgent while contributors are few."
+  value: 2
+  valueWhy: The repository is public, but contributors are few.
+  effort: 2
+  effortWhy: One page, two pointers, a closeout row and a check.
+  verdict: "Shaped and plannable; one page that stops README and bootstrap each
+    half-describing the upstream path. Not urgent while contributors are few."
   evidence: "2026-10-17 — no CONTRIBUTING.md at the repository root."
   seen:
     status: shaped
     blockers: []
 dispatch-refuses-a-blank-header-field:
-  band: C
-  verdict: "Now shaped with both shapes in one entry - read a wrapped field whole, refuse one that parses empty. Still a small change to one parser; batch with other dispatch fixes."
-  evidence: "2026-10-17 — scripts/plan-binding.js:164-165 reads Requires and the tier and merge fields and falls back to an empty string with no refusal."
+  band: B
+  value: 3
+  valueWhy: A wrapped or empty header field silently tells an executor a plan
+    needs nothing.
+  effort: 2
+  effortWhy: One parser and its tests, plus removing a note from the entry file.
+  verdict: "Now shaped with both shapes in one entry - read a wrapped field whole,
+    refuse one that parses empty. Still a small change to one parser; batch with
+    other dispatch fixes."
+  evidence: "2026-10-17 — scripts/plan-binding.js:164-165 reads Requires and the
+    tier and merge fields and falls back to an empty string with no refusal."
   seen:
     status: shaped
     blockers: []
 entry-file-says-how-rules-arrive:
-  band: C
-  verdict: "Two wrong sentences in the entry template that every project inherits. Cheap, and it finishes a piece of the framework-updates arc."
-  evidence: "2026-10-17 — templates/CLAUDE.md:82-84 still says Claude Code loads all rules at session start and Cursor attaches none."
-  seen:
-    status: idea
-    blockers: []
-entry-template-says-how-rules-load:
-  band: E
-  verdict: "Replaced by entry-file-says-how-rules-arrive; nothing to do under this id."
+  band: B
+  value: 2
+  valueWhy: Two wrong sentences in every project's entry file.
+  effort: 1
+  effortWhy: A text fix, if anything is left.
+  verdict: "The template now says Claude Code loads a rule on first touch and
+    Cursor attaches its copy on read, so this looks done. Proposed for closing
+    in this refresh."
+  evidence: "2026-10-30 — templates/AGENTS.md:82-87 describes delivery on first
+    touch in Claude Code and on read in Cursor; the 2026-10-17 wording is gone."
   seen:
     status: idea
     blockers: []
 flush-is-seen-to-drain-the-queue:
-  band: C
-  verdict: "A small check for a failure seen once in first-adopter, a flush merged with every line still queued. Cheap insurance."
+  band: B
+  value: 2
+  valueWhy: Catches a flush that merged with its queue undrained, seen once.
+  effort: 2
+  effortWhy: One check in set-up projects.
+  verdict: "A small check for a failure seen once in first-adopter, a flush merged
+    with every line still queued. Cheap insurance."
   seen:
     status: shaped
     blockers: []
 flush-name-is-explained-and-unique:
   band: B
-  verdict: "Flushes go to a public repository, so a leaked project name or wording cannot be taken back. Worth doing before the next adopter flushes."
-  evidence: "2026-10-29 — commands/flush-upstream.md:20-24 only says the name is public, and :77 quotes the queue entry word for word."
+  value: 4
+  valueWhy: A flush goes to a public repository, so a leaked name or wording
+    cannot be taken back.
+  effort: 3
+  effortWhy: Changes to two commands, a name generator and a clash check.
+  verdict: "Flushes go to a public repository, so a leaked project name or wording
+    cannot be taken back. Worth doing before the next adopter flushes."
+  evidence: "2026-10-29 — commands/flush-upstream.md:20-24 only says the name is
+    public, and :77 quotes the queue entry word for word."
   seen:
     status: shaped
     blockers: []
 framework-calls-itself-one-thing:
-  band: D
-  verdict: "The rename touches script names and files projects hold, so it is a decision about names and migration before it is work. Decide the one name and whether projects' files move."
+  band: C
+  value: 2
+  valueWhy: A reader has to work out that blueprint, framework and Tropis are one thing.
+  effort: 4
+  effortWhy: Renames script names and files projects hold, with a migration.
+  verdict: "The rename touches script names and files projects hold, so it is a
+    decision about names and migration before it is work. Decide the one name
+    and whether projects' files move."
   seen:
     status: idea
     blockers: []
 framework-doc-delivery:
-  band: D
-  verdict: "Its third criterion asks the kick-off prompt to carry framework material, which the dispatch document rules out. Settle that conflict before anyone plans it."
+  band: C
+  value: 4
+  valueWhy: A framework document that never reaches the agent it governs has
+    failed three times in the same shape.
+  effort: 4
+  effortWhy: A delivery mechanism across tools, plus settling how much a kick-off
+    prompt may carry.
+  verdict: "Its third criterion asks the kick-off prompt to carry framework
+    material, which the dispatch document rules out. Settle that conflict before
+    anyone plans it."
   seen:
     status: shaped
     blockers: []
 framework-installs-as-a-package:
-  band: D
-  verdict: "A large change to how the framework is distributed. Decide whether a machine-wide package is wanted at all before building toward it."
+  band: C
+  value: 3
+  valueWhy: Simpler start and update, but no adopter has asked for it.
+  effort: 5
+  effortWhy: A change to how the framework is distributed, in every tool.
+  verdict: "A large change to how the framework is distributed. Decide whether a
+    machine-wide package is wanted at all before building toward it."
   seen:
     status: idea
     blockers: []
 framework-reaches-every-tool:
   band: B
-  verdict: "Cursor is a supported target and still gets no workflow. The entry file's fallback line now covers the first criterion; the Cursor projection and the guard remain."
-  evidence: "2026-10-17 — templates/CLAUDE.md opens with a plain-text instruction to read workflow.md if the import did not expand; scripts/projections.js projects no framework document."
-  seen:
-    status: shaped
-    blockers: []
-harness-does-not-need-node:
-  band: E
-  verdict: "Shelved on 2026-10-16: the framework ships as a Node package. Reopen only if an adopter asks."
+  value: 4
+  valueWhy: Cursor is a supported target and its agents get no workflow at all.
+  effort: 3
+  effortWhy: A projection of framework documents for Cursor and a guard comparing tools.
+  verdict: "Cursor is a supported target and still gets no workflow. The entry
+    file's fallback line now covers the first criterion; the Cursor projection
+    and the guard remain."
+  evidence: "2026-10-17 — templates/CLAUDE.md opens with a plain-text instruction
+    to read workflow.md if the import did not expand; scripts/projections.js
+    projects no framework document."
   seen:
     status: shaped
     blockers: []
 history-is-kept-apart-from-living-docs:
-  band: C
-  verdict: "Housekeeping with a clear end state; batch it. Watch the two guards that recognise this repository by PORTABILITY-NOTES.md."
+  band: B
+  value: 2
+  valueWhy: A reader cannot tell which documents describe today.
+  effort: 2
+  effortWhy: Moves and two guards that recognise this repository.
+  verdict: "Housekeeping with a clear end state; batch it. Watch the two guards
+    that recognise this repository by PORTABILITY-NOTES.md."
   evidence: "2026-10-17 — PORTABILITY-NOTES.md is still at the repository root."
   seen:
     status: shaped
     blockers: []
 instruction-files-have-a-delivery-map:
-  band: D
-  verdict: "Useful, but it adds a map every project must keep current, and the sender calls it not urgent. Decide whether the weight is worth it before building."
+  band: C
+  value: 3
+  valueWhy: Shows which instruction files reach which tool, and whether that was
+    measured.
+  effort: 3
+  effortWhy: A map every project keeps, and its check.
+  verdict: "Useful, but it adds a map every project must keep current, and the
+    sender calls it not urgent. Decide whether the weight is worth it before
+    building."
   seen:
     status: shaped
     blockers: []
-integrity-guard-is-green-on-a-fresh-checkout:
-  band: E
-  verdict: "Replaced by backlog-shows-open-work-on-one-page, which has shipped; nothing to do under this id."
-  seen:
-    status: idea
-    blockers: []
 isolation-refuses-a-base-without-the-plan:
-  band: C
-  verdict: "A small check at the moment a worktree is cut, against a mistake that already cost an executor a cherry-pick and a failed review check."
-  evidence: "2026-10-29 — scripts/isolate-for-plan.mjs:54-80 runs the isolation command with no check that the plan is on its base."
+  band: B
+  value: 3
+  valueWhy: Already cost an executor a cherry-pick and a failed review check.
+  effort: 1
+  effortWhy: One check in the isolation helper.
+  verdict: "A small check at the moment a worktree is cut, against a mistake that
+    already cost an executor a cherry-pick and a failed review check."
+  evidence: "2026-10-29 — scripts/isolate-for-plan.mjs:54-80 runs the isolation
+    command with no check that the plan is on its base."
   seen:
     status: shaped
     blockers: []
 kept-findings-go-to-the-catalog:
-  band: C
-  verdict: "Two sentences added to one section of the catalog rule, plus the fresh-agent check a rule change owes. Cheap, and it moves into the repository a correction that so far lived only in one tool's memory; batch with the other rule-text fixes."
-  evidence: "2026-10-28 — rules/catalogs.md, What does not become an entry, says when a finding becomes an entry but not that it must not go to a task card or side session instead, nor that a self-proposed fix starts as an idea."
+  band: B
+  value: 3
+  valueWhy: Keeps every found piece of work where the backlog can see it.
+  effort: 2
+  effortWhy: Two sentences in the catalog rule and its fresh-agent check.
+  verdict: "Two sentences added to one section of the catalog rule, plus the
+    fresh-agent check a rule change owes. Cheap, and it moves into the
+    repository a correction that so far lived only in one tool's memory; batch
+    with the other rule-text fixes."
+  evidence: "2026-10-28 — rules/catalogs.md, What does not become an entry, says
+    when a finding becomes an entry but not that it must not go to a task card
+    or side session instead, nor that a self-proposed fix starts as an idea."
   seen:
     status: shaped
     blockers: []
-learnings-can-be-declined:
-  band: E
-  verdict: "Shelved on 2026-08-16: the existing outs already let a learning be declined."
-  seen:
-    status: idea
-    blockers: []
 living-documents-stay-current:
-  band: D
-  verdict: "The second half of the README arc, but still an idea with no criteria: which documents count as living, and what refreshes each, are undecided. Shape it before anyone builds; finishing the arc does not lift it while that is open."
+  band: C
+  value: 4
+  valueWhy: Every living document other than the README drifts unless someone remembers.
+  effort: 4
+  effortWhy: A refresh mechanism per document kind, after deciding which documents count.
+  verdict: "The second half of the README arc, but still an idea with no criteria:
+    which documents count as living, and what refreshes each, are undecided.
+    Shape it before anyone builds; finishing the arc does not lift it while that
+    is open."
   seen:
     status: idea
     blockers: []
 next-leaves-replaced-entries-out-of-arcs:
-  band: C
-  verdict: "Small fix to the backlog report that makes arc progress and this board honest; this refresh had to band four replaced entries it describes."
+  band: B
+  value: 2
+  valueWhy: Arc progress in /next counts replaced entries as unfinished.
+  effort: 1
+  effortWhy: A filter in arcs().
+  verdict: "The board half is done: replaced entries left the bands with the
+    ranked board. The backlog report still counts them as unfinished in an arc."
+  evidence: 2026-10-30 — scripts/next-work.js arcs() counts every entry citing a spec,
+    superseded ones included.
   seen:
     status: idea
     blockers: []
 next-lets-no-open-work-drop-out:
   band: B
-  verdict: "A report that lets one layer hide the other, or drops a band A or B idea that needs shaping, is how open work goes unseen. Moderate change to next.mjs, fully specified."
+  value: 3
+  valueWhy: One layer's next step can hide the other's, and ideas worth shaping drop out.
+  effort: 3
+  effortWhy: A restructure of next.mjs, fully specified.
+  verdict: "A report that lets one layer hide the other, or drops a band A or B
+    idea that needs shaping, is how open work goes unseen. Moderate change to
+    next.mjs, fully specified."
   seen:
     status: shaped
     blockers: []
 next-names-the-flush-when-due:
-  band: C
-  verdict: "A few lines in the report for set-up projects, so the queue gets flushed when it is worth a sitting. Cheap; batch with the other report changes."
+  band: B
+  value: 2
+  valueWhy: Lessons sit unsent when nobody is prompted to flush.
+  effort: 1
+  effortWhy: A few lines in the report.
+  verdict: "A few lines in the report for set-up projects, so the queue gets
+    flushed when it is worth a sitting. Cheap; batch with the other report
+    changes."
   seen:
     status: shaped
     blockers: []
 next-shows-which-work-is-planned:
-  band: C
-  verdict: "Small improvement to the backlog report; useful the moment several shaped entries have plans waiting, as now."
+  band: B
+  value: 3
+  valueWhy: Ready-to-dispatch work reads as work still to design.
+  effort: 2
+  effortWhy: A change to the backlog report.
+  verdict: "Small improvement to the backlog report; useful the moment several
+    shaped entries have plans waiting, as now."
   seen:
     status: idea
     blockers: []
 pipeline-bills-no-job-that-decides-nothing:
-  band: C
-  verdict: "Saves minutes on every run for private projects, and costs nothing to public ones either way. Batch it with other pipeline work."
+  band: B
+  value: 2
+  valueWhy: Saves minutes for private projects; this repository is public and pays
+    nothing.
+  effort: 3
+  effortWhy: Folding two jobs into others and adding a cache.
+  verdict: "Saves minutes on every run for private projects, and costs nothing to
+    public ones either way. Batch it with other pipeline work."
   seen:
     status: shaped
     blockers: []
 pipeline-does-not-redo-green-work:
   band: B
-  verdict: "The most common re-runs of already-passed code, on pull requests and merges to main. The release still runs the full suite."
+  value: 3
+  valueWhy: The most common re-runs of already-passed code.
+  effort: 3
+  effortWhy: Planning from the last green run, with a fallback.
+  verdict: "The most common re-runs of already-passed code, on pull requests and
+    merges to main. The release still runs the full suite."
   seen:
     status: shaped
     blockers: []
 plan-checks-must-be-falsifiable:
-  band: C
-  verdict: "A rule-text change with three recorded cases behind it. Cheap; do it with plans-are-accurate-without-a-rehearsal, which follows it."
+  band: B
+  value: 3
+  valueWhy: A check that cannot fail lets a wrong plan pass; three recorded cases.
+  effort: 1
+  effortWhy: A paragraph in the planning rule and its fresh-agent check.
+  verdict: "A rule-text change with three recorded cases behind it. Cheap; do it
+    with plans-are-accurate-without-a-rehearsal, which follows it."
   seen:
     status: shaped
     blockers: []
 plan-checks-pair-only-generated-sources:
-  band: E
-  verdict: "Already fixed in the source by dispatch-asks-only-for-files-the-rules-command-writes; the entry needs closing through /feature, not building."
-  evidence: "2026-10-17 — guards/plan-dispatchable.test.js:77 asserts a top-level rules/ file asks for nothing; landed in 4d2241f."
+  band: D
+  value: 1
+  valueWhy: Already fixed; nothing left to gain.
+  effort: 1
+  effortWhy: Closing it is one /feature edit.
+  verdict: "Already fixed by
+    dispatch-asks-only-for-files-the-rules-command-writes. Nothing to build;
+    proposed for closing in this refresh."
+  evidence: "2026-10-17 — guards/plan-dispatchable.test.js:77 asserts a top-level
+    rules/ file asks for nothing; landed in 4d2241f."
   seen:
     status: idea
     blockers: []
 plan-folder-names-no-plugin:
-  band: D
-  verdict: "Moving docs/superpowers/ in every project is a migration; decide the name and whether take-version moves it before building."
+  band: C
+  value: 2
+  valueWhy: The folder name suggests a dependency the framework does not have.
+  effort: 3
+  effortWhy: A folder move in every project.
+  verdict: "Moving docs/superpowers/ in every project is a migration; decide the
+    name and whether take-version moves it before building."
   seen:
     status: idea
     blockers: []
 plans-are-accurate-without-a-rehearsal:
   band: B
-  verdict: "Shaped and worth having: authors are paying twice for plans. Follows plan-checks-must-be-falsifiable and should be planned with it."
+  value: 4
+  valueWhy: Authors are paying twice for plans, rehearsing work an executor then repeats.
+  effort: 2
+  effortWhy: A planning-rule change and its fresh-agent check.
+  verdict: "Shaped and worth having: authors are paying twice for plans. Follows
+    plan-checks-must-be-falsifiable and should be planned with it."
   seen:
     status: shaped
     blockers: []
 project-chooses-its-repository-host:
   band: B
-  verdict: "Shaped with checkable criteria; today a project off GitHub silently loses the merge-time reminder and the in-flight list. Worth doing next, and pairs naturally with hooks-match-at-command-position since both rewrite the same trigger."
-  evidence: "2026-10-19 — templates/settings.json:54 gates the hook on Bash(gh pr merge *); scripts/capture-at-merge.sh:31 matches gh pr merge; commands/next.md:13 runs gh pr list."
+  value: 3
+  valueWhy: A project off GitHub silently loses the merge reminder and the
+    in-flight list.
+  effort: 5
+  effortWhy: Host-neutral merge steps, hooks, report and pipeline wiring.
+  verdict: "Shaped with checkable criteria; today a project off GitHub silently
+    loses the merge-time reminder and the in-flight list. Worth doing next, and
+    pairs naturally with hooks-match-at-command-position since both rewrite the
+    same trigger."
+  evidence: "2026-10-19 — templates/settings.json:54 gates the hook on Bash(gh pr
+    merge *); scripts/capture-at-merge.sh:31 matches gh pr merge;
+    commands/next.md:13 runs gh pr list."
   seen:
     status: shaped
     blockers: []
 project-has-one-display-name:
   band: B
-  verdict: "Confirmed: setup asks for a display name and nothing uses it — the board is titled after the folder. Small and plannable once criteria are firmed up; it would also settle update-keeps-the-package-name, so plan the two together."
-  evidence: "2026-10-19 — commands/bootstrap.md:19 asks for a display name; scripts/build-backlog-board.mjs:101 titles the board with basename(root)."
+  value: 3
+  valueWhy: Setup asks for a name and nothing uses it.
+  effort: 2
+  effortWhy: One stored field read in four places.
+  verdict: "Confirmed: setup asks for a display name and nothing uses it — the
+    board is titled after the folder. Small and plannable once criteria are
+    firmed up; it would also settle update-keeps-the-package-name, so plan the
+    two together."
+  evidence: "2026-10-19 — commands/bootstrap.md:19 asks for a display name;
+    scripts/build-backlog-board.mjs:101 titles the board with basename(root)."
   seen:
     status: idea
     blockers: []
 project-settings-are-listed-and-held-once:
-  band: B
-  verdict: "The two prose lists already disagree in this repository. Its shaping has one open question - how the README and release notes, committed straight to main but read by checks, fit one list."
-  evidence: "2026-10-29 — scripts/framework-commit-check.sh:31 allows README.md and docs/ straight to main; pipeline/prose.txt lists nothing."
+  band: C
+  value: 3
+  valueWhy: The two prose lists already disagree here.
+  effort: 4
+  effortWhy: One list read by the hook and the pipeline, a migration and a guard.
+  verdict: "The two prose lists already disagree in this repository. Its shaping
+    has one open question - how the README and release notes, committed straight
+    to main but read by checks, fit one list."
+  evidence: "2026-10-29 — scripts/framework-commit-check.sh:31 allows README.md
+    and docs/ straight to main; pipeline/prose.txt lists nothing."
   seen:
     status: shaped
     blockers: []
 release-guides-through-both-steps:
   band: B
-  verdict: "Removes the release step people forget and the jargon around it, but the rename touches every shipped file and needs a migration for projects."
+  value: 3
+  valueWhy: Removes the release step people forget and the jargon around it.
+  effort: 4
+  effortWhy: A rename across every shipped file with a migration, plus the guided command.
+  verdict: "Removes the release step people forget and the jargon around it, but
+    the rename touches every shipped file and needs a migration for projects."
   seen:
     status: shaped
     blockers: []
 release-notes-stay-a-readable-size:
-  band: E
-  verdict: "Real but slow-growing: ten releases is about 550 lines today, which is still readable. Leave it until the file is a nuisance; it has no criteria yet and needs a decision on archiving versus splitting before anyone builds."
-  evidence: "2026-10-28 — RELEASES.md is 549 lines with 10 second-level headings."
+  band: D
+  value: 1
+  valueWhy: Still readable at today's size.
+  effort: 2
+  effortWhy: Archiving or splitting, once decided.
+  verdict: "Real but slow-growing. Leave it until the file is a nuisance to open;
+    then decide archiving versus splitting."
+  evidence: "2026-10-30 — RELEASES.md is 649 lines with 12 second-level headings."
   seen:
     status: idea
     blockers: []
 rule-claims-are-held-true:
   band: B
-  verdict: "A rule that is false about the code is delivered silently into every session in its area. The check already exists as a template and setup does not install it; the temporary-clause pairing is new work."
-  evidence: "2026-10-19 — templates/rule-claims.test.js exists; neither scripts/set-up-project.sh nor rules/learnings.md mentions it."
+  value: 4
+  valueWhy: A rule false about the code is delivered silently into every session
+    in its area.
+  effort: 3
+  effortWhy: Installing an existing check and adding the temporary-clause pairing.
+  verdict: "A rule that is false about the code is delivered silently into every
+    session in its area. The check already exists as a template and setup does
+    not install it; the temporary-clause pairing is new work."
+  evidence: "2026-10-19 — templates/rule-claims.test.js exists; neither
+    scripts/set-up-project.sh nor rules/learnings.md mentions it."
   seen:
     status: shaped
     blockers: []
 rule-is-measured-with-and-without:
-  band: D
-  verdict: "Whether with-and-without measurement is reliable and cheap enough is the question; decide whether it is worth a spike before rules-are-retired-on-evidence is planned."
+  band: C
+  value: 3
+  valueWhy: Would let rules be judged by evidence rather than memory.
+  effort: 3
+  effortWhy: A spike with repeated agent runs.
+  verdict: "Whether with-and-without measurement is reliable and cheap enough is
+    the question; decide whether it is worth a spike before
+    rules-are-retired-on-evidence is planned."
   seen:
     status: idea
     blockers: []
 rules-are-retired-on-evidence:
-  band: E
-  verdict: "Sound, but it comes after the measurement spike and only pays once releases are regular. Leave until rule-is-measured-with-and-without is decided."
+  band: B
+  value: 3
+  valueWhy: Without it rule files only grow, and every clause costs context in
+    every session.
+  effort: 3
+  effortWhy: A release step, a trial procedure and a record.
+  verdict: "Banded on its own value: the only retirement mechanism that produces
+    evidence. It comes after rule-is-measured-with-and-without, which the board
+    marks."
   seen:
     status: shaped
     blockers: []
 rules-carry-mechanism-not-provenance:
-  band: E
-  verdict: "A large migration of every rule file, ordered after rules-are-retired-on-evidence. Leave until that has run."
+  band: B
+  value: 3
+  valueWhy: Cuts the context every session pays for incident stories it does not need.
+  effort: 5
+  effortWhy: Migrates every rule file, with a record per file and two guards.
+  verdict: "Banded on its own value, as though the retirement trial had run: a
+    real saving on every session, and a large migration. It comes after
+    rules-are-retired-on-evidence, which the board marks."
   seen:
     status: shaped
     blockers: []
 rules-return-after-compaction:
   band: B
-  verdict: "A cheap measurement that decides whether long sessions silently lose their rules. In the framework-updates arc, which is part of why it is B."
+  value: 4
+  valueWhy: If rules do not come back after compaction, long sessions lose them
+    exactly when they have run longest.
+  effort: 2
+  effortWhy: A measurement in two tools, recorded.
+  verdict: "A cheap measurement that decides whether long sessions silently lose
+    their rules. In the framework-updates arc, which is part of why it is B."
   seen:
     status: idea
     blockers: []
 scripts-never-hide-the-users-git-config:
-  band: C
-  verdict: "A one-paragraph addition to the script rules, from a defect that passed its tests and would have failed on first real use. Cheap; batch it with the next change to that rule."
-  evidence: "2026-10-19 — the defect was in .github/scripts/absorb-flush.mjs and was fixed in review before merge; this machine's credential helper is in the system git config and user.name in the global one."
-  seen:
-    status: idea
-    blockers: []
-seed-installs-cursor-generator:
-  band: E
-  verdict: "Replaced by project-is-set-up-in-its-own-repository, which has shipped; nothing to do under this id."
+  band: B
+  value: 2
+  valueWhy: Prevents a script that passes its tests and fails on first real use.
+  effort: 1
+  effortWhy: One paragraph in the script rules.
+  verdict: "A one-paragraph addition to the script rules, from a defect that
+    passed its tests and would have failed on first real use. Cheap; batch it
+    with the next change to that rule."
+  evidence: "2026-10-19 — the defect was in .github/scripts/absorb-flush.mjs and
+    was fixed in review before merge; this machine's credential helper is in the
+    system git config and user.name in the global one."
   seen:
     status: idea
     blockers: []
 self-check-clean-baseline-flake:
-  band: E
-  verdict: "Happened once. Nothing to do until it recurs, and then keep the failing guard's output."
+  band: D
+  value: 2
+  valueWhy: A failure seen once; a real one would look the same.
+  effort: 2
+  effortWhy: Diagnosis once it recurs with its output kept.
+  verdict: "Happened once. Nothing to do until it recurs, and then keep the
+    failing guard's output."
   seen:
     status: idea
     blockers: []
 self-check-red-runs-keep-their-output:
-  band: C
-  verdict: "Small and self-contained: write a red run's output to a file that outlives the terminal. It is what self-check-clean-baseline-flake waits on, so the next intermittent red becomes diagnosable instead of re-run."
-  evidence: "2026-10-20 — scripts/check-blueprint.sh writes its output only to the terminal; its temporary directories are for staging, not a log."
+  band: B
+  value: 3
+  valueWhy: Makes an intermittent red diagnosable instead of re-run.
+  effort: 1
+  effortWhy: Write a red run's output to a file.
+  verdict: "Small and self-contained: write a red run's output to a file that
+    outlives the terminal. It is what self-check-clean-baseline-flake waits on,
+    so the next intermittent red becomes diagnosable instead of re-run."
+  evidence: "2026-10-20 — scripts/check-blueprint.sh writes its output only to the
+    terminal; its temporary directories are for staging, not a log."
   seen:
     status: idea
     blockers: []
 self-check-runs-beside-another:
-  band: C
-  verdict: "A small change to one test, and it stops a parallel flush from going red for nothing. It may also explain self-check-clean-baseline-flake."
-  evidence: "2026-10-29 — guards/take-version.test.js:126 looks for leftovers in the machine-wide temporary folder, so another run's folder counts."
+  band: B
+  value: 3
+  valueWhy: A parallel flush goes red for nothing, and it may explain the one-off flake.
+  effort: 1
+  effortWhy: One test's temporary folder.
+  verdict: "A small change to one test, and it stops a parallel flush from going
+    red for nothing. It may also explain self-check-clean-baseline-flake."
+  evidence: "2026-10-29 — guards/take-version.test.js:126 looks for leftovers in
+    the machine-wide temporary folder, so another run's folder counts."
   seen:
     status: shaped
     blockers: []
 set-up-project-can-generate-its-catalog-document:
-  band: C
+  band: B
+  value: 3
+  valueWhy: Every set-up project is told to take a step it cannot take.
+  effort: 1
+  effortWhy: A text fix in the catalog rule.
   verdict: "A rule that orders a step projects cannot take; small text fix, batch it."
   seen:
     status: idea
     blockers: []
 set-up-project-checks-its-catalog:
   band: B
-  verdict: "The catalog rule describes a guard that set-up projects do not get; they install only catalog-entries.test.js. A real gap every adopter has: eight invariants, each with a planted defect."
-  evidence: "2026-10-19 — .tropis/guards holds the catalog-entries, installed-files, project-layout, rule-areas and rules-generated tests; no catalog-drift."
+  value: 4
+  valueWhy: The catalog rule describes a guard projects do not get.
+  effort: 3
+  effortWhy: Eight invariants, each with a planted defect.
+  verdict: "The catalog rule describes a guard that set-up projects do not get;
+    they install only catalog-entries.test.js. A real gap every adopter has:
+    eight invariants, each with a planted defect."
+  evidence: "2026-10-19 — .tropis/guards holds the catalog-entries,
+    installed-files, project-layout, rule-areas and rules-generated tests; no
+    catalog-drift."
   seen:
     status: shaped
     blockers: []
 set-up-project-checks-its-pages:
   band: B
-  verdict: "A set-up project gets none of the page checks Tropis runs on itself, and first-adopter is red on a fresh checkout for want of one. Real gap every adopter has."
+  value: 4
+  valueWhy: Projects get none of the page checks Tropis runs on itself.
+  effort: 3
+  effortWhy: Installing two guards and teaching them what commands create.
+  verdict: "A set-up project gets none of the page checks Tropis runs on itself,
+    and first-adopter is red on a fresh checkout for want of one. Real gap every
+    adopter has."
   seen:
     status: shaped
     blockers: []
 set-up-project-checks-its-plans:
   band: B
-  verdict: "The workflow tells projects their suite catches unpromoted entries, missing review records and undispatchable plans, and it does not. A real gap between what is promised and what runs."
-  seen:
-    status: idea
-    blockers: []
-setup-export-lines-match-only-the-root:
-  band: C
-  verdict: "Confirmed and small: anchor the export lines. Do it with update-keeps-ignore-lines-in-their-own-form, which follows it."
-  evidence: "2026-10-17 — scripts/set-up-project.sh:97-100 writes .claude/, CLAUDE.md and the rest without a leading slash, so they match at any depth."
+  value: 4
+  valueWhy: The workflow promises projects checks they do not get.
+  effort: 3
+  effortWhy: Installing three existing guards and making them work outside this
+    repository.
+  verdict: "The workflow tells projects their suite catches unpromoted entries,
+    missing review records and undispatchable plans, and it does not. A real gap
+    between what is promised and what runs."
   seen:
     status: idea
     blockers: []
 setup-offers-to-create-the-repository:
-  band: D
-  verdict: "Creating a remote repository is outward-facing and hard to undo, so whether setup should do it at all is the open question. Decide that before shaping; it depends on project-has-one-display-name for the suggested name."
+  band: C
+  value: 2
+  valueWhy: Saves making the repository by hand.
+  effort: 2
+  effortWhy: One guarded step in setup.
+  verdict: "Creating a remote repository is outward-facing and hard to undo, so
+    whether setup should do it at all is the open question. Decide that before
+    shaping; it depends on project-has-one-display-name for the suggested name."
   seen:
     status: idea
     blockers: []
 update-check-runs-the-projects-own-checks:
-  band: D
-  verdict: "Valuable, since no release yet says its candidate was checked, but it carries an open question: the check refuses anything not on a release tag, and the candidate is untagged main. Decide how a candidate is checked before building."
-  evidence: "2026-10-27 — scripts/check-version.mjs:358 runs only npm --prefix .tropis test; :293 requires HEAD to be exactly on a tag."
-  seen:
-    status: idea
-    blockers: []
-update-keeps-ignore-lines-in-their-own-form:
   band: C
-  verdict: "Breaks this repository's self-check on every update until lines are deleted by hand. Small; batch with setup-export-lines-match-only-the-root."
+  value: 4
+  valueWhy: Catches a release that breaks a project's own CI before the take.
+  effort: 4
+  effortWhy: Running the project's stages in the check, after deciding how an
+    untagged candidate is checked.
+  verdict: "Valuable, since no release yet says its candidate was checked, but it
+    carries an open question: the check refuses anything not on a release tag,
+    and the candidate is untagged main. Decide how a candidate is checked before
+    building."
+  evidence: "2026-10-27 — scripts/check-version.mjs:358 runs only npm --prefix
+    .tropis test; :293 requires HEAD to be exactly on a tag."
   seen:
     status: idea
     blockers: []
 update-keeps-instructions-behind-a-symlink:
   band: A
-  verdict: "An update silently empties every entry instruction of a symlinked project and reports success. Small fix, severe failure."
-  evidence: "2026-10-29 — scripts/take-version.mjs:393-396 writes the pointer through the symlink, so both files end as @AGENTS.md."
+  value: 5
+  valueWhy: An update silently empties every instruction of a symlinked project
+    and reports success.
+  effort: 2
+  effortWhy: Handling the symlink in take-version and one new check failure.
+  verdict: "An update silently empties every entry instruction of a symlinked
+    project and reports success. Small fix, severe failure."
+  evidence: "2026-10-29 — scripts/take-version.mjs:393-396 writes the pointer
+    through the symlink, so both files end as @AGENTS.md."
   seen:
     status: shaped
     blockers: []
 update-skips-a-new-file-that-matches:
-  band: C
-  verdict: "A small comparison before writing a .new file; batch with the other update fixes."
+  band: B
+  value: 2
+  valueWhy: Saves an operator deleting a .new identical to its file.
+  effort: 1
+  effortWhy: A comparison before writing.
+  verdict: "A small comparison before writing a .new file; batch with the other
+    update fixes."
   seen:
     status: idea
     blockers: []
 update-survives-a-dropped-edited-rule:
   band: B
-  verdict: "An update that stops part-way is the worst outcome an update can have. Moved up because it is in the framework-updates arc, where the update must be trustworthy."
+  value: 4
+  valueWhy: An update that stops part-way is the worst outcome an update can have.
+  effort: 2
+  effortWhy: Handling one case in take-version and telling the operator.
+  verdict: "An update that stops part-way is the worst outcome an update can have.
+    Moved up because it is in the framework-updates arc, where the update must
+    be trustworthy."
   seen:
     status: idea
     blockers: []
 version-check-lists-ignore-lines:
-  band: C
-  verdict: "Small addition to the version check that makes its verdict honest about ignore and export lines; batch with the update fixes."
+  band: B
+  value: 2
+  valueWhy: Makes the safe verdict honest about ignore and export lines.
+  effort: 2
+  effortWhy: A listing added to the version check.
+  verdict: "Small addition to the version check that makes its verdict honest
+    about ignore and export lines; batch with the update fixes."
   seen:
     status: idea
     blockers: []
 version-check-tells-a-red-baseline:
   band: B
-  verdict: "Without it a project already red reads every failure as the release's fault and defers updates. Worth doing within the framework-updates arc; more than a cheap fix."
+  value: 3
+  valueWhy: A project already red reads every failure as the release's fault and
+    defers updates.
+  effort: 3
+  effortWhy: Running the checks before and after the take and comparing.
+  verdict: "Without it a project already red reads every failure as the release's
+    fault and defers updates. Worth doing within the framework-updates arc; more
+    than a cheap fix."
   seen:
     status: idea
     blockers: []
