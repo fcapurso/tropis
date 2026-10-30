@@ -42,8 +42,8 @@ recorded through `/manual-check`. Newest first.
 | 2 | Switch the system to dark mode and look at the same three cards | The bundle tags are readable against the card |
 | 3 | Glance at the rest of the page | Four bands, scores and the collapsed Closed section look as they did in the ranked board check |
 
-- **Result:** pending
-- **Notes:** observed by <who>; anything unexpected
+- **Result:** pass
+- **Notes:** observed by the developer, 2026-10-30; nothing unexpected reported
 - **Closes:** `backlog-is-groomed-at-refresh` — "Rows sharing a bundle name are tagged as one bundle on the board, and the backlog report, suggesting one of them, names the others." (the board half)
 
 ### 2026-10-30 — The backlog board ranks inside four bands (Setup)
