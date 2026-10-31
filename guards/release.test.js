@@ -290,10 +290,67 @@ describe('the pipeline offer', () => {
     }
   });
 
+  it('asks bootstrap for the gate, and never applies it', () => {
+    expect(bootstrap).toContain(
+      'gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json',
+    );
+    expect(bootstrap).toContain('Allow auto-merge');
+    expect(bootstrap).toContain('"ungated": "<reason>"');
+    expect(bootstrap).toContain('never run it yourself');
+  });
+
+  it('asks the update for the gate when the release brings the ruleset', () => {
+    expect(update).toContain('.tropis/templates/main-branch-ruleset.json');
+    expect(update).toContain('Never apply the ruleset yourself');
+  });
+
+  it('release and refresh-board use a pull request on a gated main', () => {
+    for (const command of [text('commands/release.md'), text('commands/refresh-board.md')]) {
+      expect(
+        command.includes('gh pr merge <N> --auto --squash') || command.includes('merges itself'),
+      ).toBe(true);
+    }
+  });
+
   it('says an auto-merge does not wait where no check is required', () => {
     expect(workflow).toContain(
       'Where the host marks no check as required, its auto-merge merges at once.',
     );
+  });
+});
+
+describe('the gate in the workflow', () => {
+  const workflow = readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), '../framework/workflow.md'),
+    'utf8',
+  ).replace(/\s+/g, ' ');
+
+  it('says nothing goes directly to main where it is gated', () => {
+    expect(workflow).toContain('Where the main branch is gated, nothing goes directly to');
+  });
+
+  it('names the pull request that merges itself', () => {
+    expect(workflow).toContain('gh pr merge <N> --auto --squash');
+  });
+
+  it('has the dispatching session wait for the status change to merge', () => {
+    expect(workflow).toContain('waits until it has merged before the executor starts');
+  });
+
+  it('keeps the direct-to-main list for a main that is not gated', () => {
+    expect(workflow).toContain('Where it is not gated, what may go directly to');
+  });
+
+  it('calls a check that passes on a rerun with nothing changed a bug', () => {
+    expect(workflow).toContain('A check that passes on a rerun with nothing changed is a bug');
+  });
+
+  it('retries no failed check automatically', () => {
+    expect(workflow).toContain('Nothing retries a failed check automatically');
+  });
+
+  it('leaves the remote branch to the host setting, since auto-merge deletes none', () => {
+    expect(workflow).toContain('Automatically delete head branches');
   });
 });
 
@@ -352,6 +409,17 @@ describe('the /release candidate', () => {
     expect(workflow).toContain('Nothing merged after the candidate reaches production through it');
     expect(workflow).toContain('changes no other file');
     expect(workflow).toContain('Only a tag of the form `vX.Y.Z` is a release');
+  });
+
+  it('the operator guide says how to apply the gate and how to opt out', () => {
+    const guide = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), '../templates/README.md'),
+      'utf8',
+    ).replace(/\s+/g, ' ');
+    expect(guide).toContain(
+      'gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json',
+    );
+    expect(guide).toContain('"ungated": "<the reason>"');
   });
 
   it('says only a vX.Y.Z tag counts as a release in the operator guide', () => {

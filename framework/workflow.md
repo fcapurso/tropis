@@ -102,7 +102,19 @@ when the framework half exists to serve the application half. Full rule:
 ## Branching
 
 - One branch per plan: `plan/<id>-<slug>`. Do not commit feature work directly to `main`.
-- **What may go directly to `main` is what cannot change how an agent behaves**: the
+- **Where the main branch is gated, nothing goes directly to `main`.** It is gated when
+  its host refuses a merge whose checks have not passed — on GitHub, the ruleset Tropis
+  ships — and an agent treats it as gated unless `.claude/project.json` records
+  `"ungated"`. There every change, a backlog edit or a plan file included, reaches
+  `main` through a pull request that merges itself once green: commit on a branch, push
+  it, open the pull request, and run `gh pr merge <N> --auto --squash` with `--subject`
+  and `--body`. Dispatch's move of an entry to `building` is such a change: the
+  dispatching session lands it through its pull request and waits until it has merged
+  before the executor starts. A pull request behind `main` waits too, because the host
+  requires it to be up to date: rebase it on `origin/main` and push, and it merges once
+  green again.
+- **Where it is not gated, what may go directly to `main` is what cannot change how an
+  agent behaves**: the
   backlog, generated documentation, plan and spec files, the release notes `/release`
   commits, the README `/refresh-readme` commits, and prose under `docs/`.
   **Anything under `.claude/rules/`, `.claude/rule-additions/` or `.claude/framework/`
@@ -120,17 +132,23 @@ when the framework half exists to serve the application half. Full rule:
   checked file is in the diff every later commit matches: in one project a prose-only
   commit on a pull request already carrying the workflow started a run in seven seconds,
   and the same change as its own pull request started none in 201.
-- **Say whether anything enforces this.** Where the repository host cannot refuse a push
-  to `main` or block a red merge — no branch protection, no required checks — write that
-  in the project's own `AGENTS.md`, with the date it was checked. A reader who assumes a
-  gate exists will trust a green tick that nothing was checking. The moment to repeat it
-  is the commit itself: `framework-commit-check.sh` stays silent for an ordinary
-  direct-to-`main` commit and speaks only when the commit carries something that
-  belonged on a branch.
+- **Say whether anything enforces this.** Tropis's pipeline asks the host on every run,
+  and its `host` job fails until the main branch requires a pull request and a passing
+  check and auto-merge is allowed, or `.claude/project.json` records `"ungated"` with the
+  reason, which every run then repeats in its summary. Where the project records a
+  reason, also write in its own `AGENTS.md` that nothing refuses a push to `main` or a
+  red merge, with the date it was checked: a reader who assumes a gate exists will trust
+  a green tick that nothing was checking. The moment to repeat it is the commit itself:
+  `framework-commit-check.sh` speaks at any commit on `main` where no reason is
+  recorded, and otherwise only when the commit carries something that belonged on a
+  branch.
 - **A release pipeline is a third writer to `main`.** Where the project includes the
   optional release section, its pipeline sets the version and promotes the notes on
   `main` itself. That is not a breach of the list above; name the files it commits in
   the project's own `AGENTS.md`, so a reader of the list does not take them for one.
+  Where the main branch is gated it cannot be: nothing bypasses the gate, so a project
+  whose release pipeline pushes to `main` records why it is ungated until its release
+  only tags what `main` holds.
 - **A commit touching `.claude/rules/`, `.claude/rule-additions/` or
   `.claude/framework/` states what its fresh-agent check found, in the body.** One or
   two sentences: what the agent was asked to do, whether it found what the change
@@ -188,6 +206,8 @@ granular history in the process.
 If the tree is dirty, stop and report rather than stashing or committing it.
 
 Push `main` before dispatching, or hand the agent an explicitly stated base commit.
+Where `main` is gated nothing is committed on it to push: the dispatch's status change
+lands through its own pull request first.
 
 ## Scope check — before merging
 
@@ -219,6 +239,13 @@ dependency directories, tool caches — and plain `git worktree remove` refuses 
 are present. That refusal is what makes `--delete-branch` abandon the remote deletion and
 leave an orphaned branch behind.
 
+**Where the main branch is gated, the merge is
+`gh pr merge <N> --auto --squash --subject "…" --body "…"`**, in place of the command
+above. It returns at once, and the host merges when the required check passes. With
+auto-merge enabled, `gh` deletes neither the local nor the remote branch, so the local
+branch is deleted beforehand, as above, and the remote one by the repository setting
+*Automatically delete head branches*. Pull `main` once the pull request says merged.
+
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's
 checks have finished green. In one project a pull request merged with both checks
@@ -247,6 +274,11 @@ merge:
    invalidate a criterion with no textual conflict — new files shift coverage figures and
    can turn another plan's guard red.
 3. Squash-merge.
+
+**A check that passes on a rerun with nothing changed is a bug.** Record it in the
+backlog with both runs, as any defect. Nothing retries a failed check automatically —
+not the pipeline, not an agent — because a retry that passes hides the failure a person
+needed to see.
 
 The message states the **net functional gain**, not the files touched:
 
