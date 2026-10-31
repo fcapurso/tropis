@@ -11,11 +11,12 @@
 import { spawnSync } from 'node:child_process';
 import {
   cpSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync,
-  statSync, realpathSync,
+  statSync, realpathSync, symlinkSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import YAML from 'yaml';
 import { fingerprint, shippedFiles, blocks } from '../scripts/installed-files.js';
 
@@ -487,6 +488,32 @@ describe('set-up-project.sh', () => {
       rmSync(first.parent, { recursive: true, force: true });
     }
   });
+
+  // The checks a project gets must pass on the day it gets them; a change that would leave
+  // a new project red fails here instead of in the project. The project's suite runs with
+  // the test tools this test runs with, from .tropis/ as `npm --prefix .tropis test` runs
+  // it, and with FRAMEWORK_ROOT unset, as it is there.
+  it('a freshly set-up project passes its own checks', () => {
+    const { parent, dir } = repository();
+    try {
+      expect(runSetup(dir).status).toBe(0);
+      let modules = dirname(createRequire(import.meta.url).resolve('jest'));
+      while (basename(modules) !== 'node_modules') modules = dirname(modules);
+      symlinkSync(modules, join(dir, '.tropis/node_modules'));
+      const env = { ...process.env };
+      delete env.FRAMEWORK_ROOT;
+      delete env.TROPIS_EXPECT_FRAMEWORK;
+      const r = spawnSync(
+        process.execPath,
+        ['--experimental-vm-modules', join(modules, '.bin/jest'), '--no-coverage'],
+        { cwd: join(dir, '.tropis'), env, encoding: 'utf8' },
+      );
+      if (r.status !== 0) console.log(`${r.stdout}\n${r.stderr}`);
+      expect(r.status).toBe(0);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  }, 180_000);
 
   it('writes a header-only bands file the project owns', () => {
     const { parent, dir } = repository();
