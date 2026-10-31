@@ -10,19 +10,6 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
-a-failing-push-is-visible:
-  band: A
-  value: 5
-  valueWhy: A red main went unseen for ten days under six commits; a gate stops red
-    merges but not a main that goes red after one.
-  effort: 2
-  effortWhy: One read-only status command used at three moments that already exist.
-  bundle: main-stays-green
-  verdict: "The failure that started this, narrowed to what the host's gate cannot
-    catch. Do it with the gate, after it."
-  seen:
-    status: shaped
-    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
@@ -32,6 +19,21 @@ adopt-into-a-project-with-its-own-framework:
   verdict: "Large, designed from one adoption, and two of its draft criteria
     cannot be tested yet. Decide its shape, likely as several entries, before
     anyone builds."
+  seen:
+    status: idea
+    blockers: []
+an-update-never-hangs-unpacking-a-version:
+  band: C
+  value: 4
+  valueWhy: An update or a self-check that hangs with nothing on screen costs an hour
+    and looks like slowness, not a fault.
+  effort: 3
+  effortWhy: The cause is not known; it needs a reproduction before a fix, then a
+    timeout or a streamed pipe in take-version.
+  verdict: "Worth fixing, but it has no criteria yet. Decide first: is a bounded
+    timeout that reports the stuck step enough, or must the cause be found?"
+  evidence: "2026-10-31 — scripts/take-version.mjs:52 runs every child through
+    spawnSync with no timeout, so nothing can stop a stuck tar."
   seen:
     status: idea
     blockers: []
@@ -113,18 +115,6 @@ dispatch-refuses-a-blank-header-field:
     other dispatch fixes."
   evidence: "2026-10-17 — scripts/plan-binding.js:164-165 reads Requires and the
     tier and merge fields and falls back to an empty string with no refusal."
-  seen:
-    status: shaped
-    blockers: []
-flush-is-seen-to-drain-the-queue:
-  band: B
-  value: 2
-  valueWhy: Catches a flush that merged with its queue undrained, seen once.
-  effort: 2
-  effortWhy: One check in set-up projects.
-  bundle: set-up-project-checks
-  verdict: "A small check for a failure seen once in first-adopter, a flush merged
-    with every line still queued. Cheap insurance."
   seen:
     status: shaped
     blockers: []
@@ -373,6 +363,20 @@ plans-are-accurate-without-a-rehearsal:
   seen:
     status: shaped
     blockers: []
+prerequisite-check-refuses-old-node:
+  band: B
+  value: 2
+  valueWhy: Only Node 18.0 to 18.13 is affected, and Jest's own refusal already names
+    the version it needs.
+  effort: 1
+  effortWhy: Compare the minor version as well as the major in one script, and a test.
+  verdict: "Small and self-contained; it makes the check agree with what the README
+    and RELEASES.md already say. Do it when something else touches set-up."
+  evidence: "2026-10-31 — scripts/check-prerequisites.sh:47 compares the major version
+    only, so any node 18 passes."
+  seen:
+    status: shaped
+    blockers: []
 project-chooses-its-repository-host:
   band: B
   value: 3
@@ -442,19 +446,26 @@ release-notes-stay-a-readable-size:
   seen:
     status: idea
     blockers: []
-rule-claims-are-held-true:
+release-tags-the-notes-commit:
   band: B
-  value: 4
-  valueWhy: A rule false about the code is delivered silently into every session
-    in its area.
+  value: 3
+  valueWhy: A release can carry work its notes never mention, with agents merging in
+    parallel.
+  effort: 1
+  effortWhy: One input, one check in the release job, and the trigger /release prints.
+  verdict: "Small and closes a real gap while several agents merge at once. Do it
+    before the next release."
+  seen:
+    status: shaped
+    blockers: []
+release-tags-what-main-holds:
+  band: B
+  value: 3
+  valueWhy: Lets a project with a release pipeline turn the gate on with no bypass.
   effort: 3
-  effortWhy: Installing an existing check and adding the temporary-clause pairing.
-  bundle: set-up-project-checks
-  verdict: "A rule that is false about the code is delivered silently into every
-    session in its area. The check already exists as a template and setup does
-    not install it; the temporary-clause pairing is new work."
-  evidence: "2026-10-19 — templates/rule-claims.test.js exists; neither
-    scripts/set-up-project.sh nor rules/learnings.md mentions it."
+  effortWhy: Reworks the release step FW-030 designed, and its guard.
+  verdict: "Needed before an adopter with a release pipeline can gate its main
+    branch; until then it records why it does not."
   seen:
     status: shaped
     blockers: []
@@ -574,48 +585,17 @@ set-up-project-can-generate-its-catalog-document:
   seen:
     status: idea
     blockers: []
-set-up-project-checks-its-catalog:
+set-up-project-installs-from-a-lockfile:
   band: B
-  value: 4
-  valueWhy: The catalog rule describes a guard projects do not get.
-  effort: 3
-  effortWhy: Eight invariants, each with a planted defect.
-  bundle: set-up-project-checks
-  verdict: "The catalog rule describes a guard that set-up projects do not get;
-    they install only catalog-entries.test.js. A real gap every adopter has:
-    eight invariants, each with a planted defect."
-  evidence: "2026-10-19 — .tropis/guards holds the catalog-entries,
-    installed-files, project-layout, rule-areas and rules-generated tests; no
-    catalog-drift."
+  value: 3
+  valueWhy: The first command of every dispatch fails in a new project, and the
+    fallback installs untested versions.
+  effort: 2
+  effortWhy: Ship or write a lockfile at setup and update, and one guard.
+  verdict: "Every new adopter meets it on their first dispatch. Small; carries the
+    setup test that fails from a checkout."
   seen:
     status: shaped
-    blockers: []
-set-up-project-checks-its-pages:
-  band: B
-  value: 4
-  valueWhy: Projects get none of the page checks Tropis runs on itself.
-  effort: 3
-  effortWhy: Installing two guards and teaching them what commands create.
-  bundle: set-up-project-checks
-  verdict: "A set-up project gets none of the page checks Tropis runs on itself,
-    and first-adopter is red on a fresh checkout for want of one. Real gap every
-    adopter has."
-  seen:
-    status: shaped
-    blockers: []
-set-up-project-checks-its-plans:
-  band: B
-  value: 4
-  valueWhy: The workflow promises projects checks they do not get.
-  effort: 3
-  effortWhy: Installing three existing guards and making them work outside this
-    repository.
-  bundle: set-up-project-checks
-  verdict: "The workflow tells projects their suite catches unpromoted entries,
-    missing review records and undispatchable plans, and it does not. A real gap
-    between what is promised and what runs."
-  seen:
-    status: idea
     blockers: []
 setup-offers-to-create-the-repository:
   band: C
@@ -694,65 +674,4 @@ version-check-tells-a-red-baseline:
     than a cheap fix."
   seen:
     status: idea
-    blockers: []
-main-is-gated-by-the-host:
-  band: A
-  value: 5
-  valueWhy: A merge went ahead on 2026-10-30 with its checks still queued; the host
-    can refuse that and was not asked to.
-  effort: 3
-  effortWhy: A ruleset file, one pipeline check, an opt-out, and workflow text.
-  bundle: main-stays-green
-  verdict: "Prevention the host already offers, and the condition for turning it on
-    here. Do it now, before a-failing-push-is-visible."
-  seen:
-    status: shaped
-    blockers: []
-release-tags-what-main-holds:
-  band: B
-  value: 3
-  valueWhy: Lets a project with a release pipeline turn the gate on with no bypass.
-  effort: 3
-  effortWhy: Reworks the release step FW-030 designed, and its guard.
-  verdict: "Needed before an adopter with a release pipeline can gate its main
-    branch; until then it records why it does not."
-  seen:
-    status: shaped
-    blockers: []
-set-up-project-installs-from-a-lockfile:
-  band: B
-  value: 3
-  valueWhy: The first command of every dispatch fails in a new project, and the
-    fallback installs untested versions.
-  effort: 2
-  effortWhy: Ship or write a lockfile at setup and update, and one guard.
-  verdict: "Every new adopter meets it on their first dispatch. Small; carries the
-    setup test that fails from a checkout."
-  seen:
-    status: shaped
-    blockers: []
-release-tags-the-notes-commit:
-  band: B
-  value: 3
-  valueWhy: A release can carry work its notes never mention, with agents merging in
-    parallel.
-  effort: 1
-  effortWhy: One input, one check in the release job, and the trigger /release prints.
-  bundle: main-stays-green
-  verdict: "Small and closes a real gap while several agents merge at once. Do it
-    before the next release."
-  seen:
-    status: shaped
-    blockers: []
-host-check-passes-when-github-does-not-say:
-  band: A
-  value: 5
-  valueWhy: Every gated project reads red after every merge, which trains people to
-    ignore the red-main warning.
-  effort: 1
-  effortWhy: One line in the host check, one test, three sentences of prose.
-  bundle: main-stays-green
-  verdict: "The gate's first real run found it. Do it now and release a patch."
-  seen:
-    status: building
     blockers: []
