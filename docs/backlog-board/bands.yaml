@@ -23,7 +23,7 @@ a-self-merging-pull-request-is-seen-through:
   evidence: "2026-10-31 — the ruleset on main requires a branch up to date with it, and
     allow_update_branch is off; PR #47 sat BEHIND after the v0.7.1 update landed."
   seen:
-    status: shaped
+    status: building
     blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
@@ -195,6 +195,7 @@ framework-reaches-every-tool:
   valueWhy: Cursor is a supported target and its agents get no workflow at all.
   effort: 3
   effortWhy: A projection of framework documents for Cursor and a guard comparing tools.
+  bundle: tool-delivery
   verdict: "Cursor is a supported target and still gets no workflow. The entry
     file's fallback line now covers the first criterion; the Cursor projection
     and the guard remain."
@@ -223,6 +224,7 @@ instruction-files-have-a-delivery-map:
     measured.
   effort: 3
   effortWhy: A map every project keeps, and its check.
+  bundle: tool-delivery
   verdict: "Useful, but it adds a map every project must keep current, and the
     sender calls it not urgent. Decide whether the weight is worth it before
     building."
@@ -448,6 +450,7 @@ release-guides-through-both-steps:
   valueWhy: Removes the release step people forget and the jargon around it.
   effort: 4
   effortWhy: A rename across every shipped file with a migration, plus the guided command.
+  bundle: release-flow
   verdict: "Removes the release step people forget and the jargon around it, but
     the rename touches every shipped file and needs a migration for projects."
   seen:
@@ -485,6 +488,7 @@ release-tags-what-main-holds:
   valueWhy: Lets a project with a release pipeline turn the gate on with no bypass.
   effort: 3
   effortWhy: Reworks the release step FW-030 designed, and its guard.
+  bundle: release-flow
   verdict: "Needed before an adopter with a release pipeline can gate its main
     branch; until then it records why it does not."
   seen:
@@ -561,6 +565,7 @@ self-check-clean-baseline-flake:
   valueWhy: A failure seen once; a real one would look the same.
   effort: 2
   effortWhy: Diagnosis once it recurs with its output kept.
+  bundle: self-check
   verdict: "Happened once. Nothing to do until it recurs, and then keep the
     failing guard's output."
   seen:
@@ -690,6 +695,7 @@ version-check-tells-a-red-baseline:
     defers updates.
   effort: 3
   effortWhy: Running the checks before and after the take and comparing.
+  bundle: update-fixes
   verdict: "Without it a project already red reads every failure as the release's
     fault and defers updates. Worth doing within the framework-updates arc; more
     than a cheap fix."
