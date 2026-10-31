@@ -890,14 +890,30 @@
 # the checks on plans, review records and delivered entries run only in the framework's
 # own self-check, against a sample project. The v0.1.0 notes claimed otherwise; corrected
 # in RELEASES.md under Unreleased.
+# 2026-10-31: shaped for the set-up-project-checks bundle. The criteria are the guards
+# Tropis already has for plans (catalog-drift, review-record, plan-dispatchable),
+# installed; on 2026-10-31 a fresh set-up project failed two of them for having no plans,
+# and plan-dispatchable failed a merged plan here whose handover quotes its worktree
+# command.
 - id: set-up-project-checks-its-plans
   title: A set-up project's checks cover its plans and review records
-  status: idea
+  status: shaped
   value: A project set up with the framework is told by its own checks when a merged plan
     left its entry unpromoted, lacks a review record, or cannot be dispatched — the
     failures the framework's workflow says the suite catches. Today a set-up project
     runs only the checks on its backlog entries, its rule headers and its layout.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - A set-up project's checks fail when a plan whose handover report is on the main
+      branch delivers an entry that is not shipped, or carries no review record, or a
+      review record with an unfilled placeholder or no Learnings routed section, naming
+      the plan.
+    - They fail when a plan not yet executed carries a Repositories table that dispatch
+      would refuse, and do not judge a plan that has a handover report.
+    - A freshly set-up project, with no plans yet, passes them.
+    - On a pull request, the project's framework checks can read the main branch, so the
+      plan the branch executes is not judged as though it were already on the main
+      branch.
+    - Each check catches a planted defect in the fixture tree.
   type: bug
   layer: product
   modules: []
