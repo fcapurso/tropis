@@ -2388,7 +2388,7 @@
 # passes them before /scope writes the brief, by › a freshly set-up project passes its own
 # checks (the backlog board is named in backticks nowhere, so it needs no exemption); the
 # currency check leaves an unchanged installed file alone, by the clean baseline's
-# fixtures/base/.claude/framework/installed-roster.md, which is stale and fingerprinted;
+# fixtures/base/.claude/commands/installed-roster.md, which is stale and fingerprinted;
 # planted defects dangling-reference (framework-integrity) and stale-verification and
 # stale-picks (doc-currency).
 - id: set-up-project-checks-its-pages

@@ -12,7 +12,7 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, join } from 'node:path';
+import { dirname, resolve, join, relative } from 'node:path';
 import { fingerprint } from '../scripts/installed-files.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -30,7 +30,7 @@ function installedUnchanged() {
   const record = resolve(root, '.tropis/installed.json');
   if (!existsSync(record)) return () => false;
   const files = JSON.parse(readFileSync(record, 'utf8')).files ?? {};
-  return (file, text) => files[file.slice(root.length + 1)] === fingerprint(text);
+  return (file, text) => files[relative(root, file)] === fingerprint(text);
 }
 
 /** Markers that assert a point-in-time claim rather than a durable rule. */
