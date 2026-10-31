@@ -313,7 +313,7 @@ with `git reset --hard HEAD~1` before the diff was taken, so it is not in the st
 Merged by the executor under self-merge authority (the plan's *Merge authority* line).
 This is not an independent review: the same session wrote the change and runs these checks.
 
-**Checks re-run**
+### Checks re-run
 
 Run on the branch head `994bcd2` before merge, same session, same tools as above:
 
@@ -331,13 +331,13 @@ Run on the branch head `994bcd2` before merge, same session, same tools as above
   pipeline's own token omits the field was not tested directly here; the log is consistent
   with it and is the only evidence available.
 
-**Found**
+### Found
 
 Public exposure: nothing. The branch diff was read for home paths, hostnames, email
 addresses, the project's own name and internals, and session ids; none found. The probe
 gap in *Outstanding* is a finding the handover also reported; it is not a new defect here.
 
-**Outstanding disposition**
+### Outstanding disposition
 
 1. Probe gap — carried forward to the developer as a decision (catalog entry or framework
    line). No catalog id yet; not dropped.
@@ -345,14 +345,14 @@ gap in *Outstanding* is a finding the handover also reported; it is not a new de
    fix — expected; carried to the next release.
 3. The gated-project pass — developer observes after that release.
 
-**Learnings routed**
+### Learnings routed
 
 The probe gap generalises: a framework section that says a gate exists does not say what
 to do when the host refuses the merge it names. Routed as Outstanding item 1, to the
 developer as a decision. Not written into a rule here, because the framework files this
 plan touched are outside its file list.
 
-**Merged because**
+### Merged because
 
 The fix is mechanical and tested: the new test was red before the fix and green after,
 the re-break goes red again, and the full installed-release suite passes. The one thing
