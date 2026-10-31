@@ -3847,7 +3847,7 @@
 # release-tags-what-main-holds.
 - id: main-is-gated-by-the-host
   title: A project's main branch is gated by its host, or the project has said why not
-  status: shaped
+  status: building
   value: A pull request with failing or unfinished checks cannot merge, two pull
     requests that pass alone cannot break the main branch together, and nothing reaches
     it except through a pull request. On 2026-10-30 a pull request merged here with its
