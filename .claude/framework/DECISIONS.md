@@ -1181,6 +1181,12 @@ by a classic rule moves to the ruleset or records that rule as its reason. The g
 is now red when a stage failed, as the run already was. A pull request behind the main
 branch waits until it is rebased.
 
+**Amended 2026-10-31:** GitHub leaves allow_auto_merge out of the repository answer it
+gives the pipeline's own token, so on the first gated run here the job failed on a
+branch that was gated. The job now fails on auto-merge only when GitHub says it is off;
+a missing answer is reported and not checked. The Evidence above was read
+unauthenticated, which returns the field.
+
 ---
 
 ## FW-038: An entry that will not be done is dropped; a shelved one is only parked
