@@ -19,6 +19,24 @@ For the full development history, see the git log.
 
 _Nothing yet._
 
+## [0.7.1] — 2026-10-31
+
+A fix for projects that gated their main branch in 0.7.0. The pipeline's `host` job no
+longer fails on a branch that is correctly gated, so your main branch reads green after a
+merge again, and the warning that it is red means something again.
+
+### A gated main branch reads green
+
+In 0.7.0 the `host` job failed on every run once the ruleset was applied, because GitHub
+never tells the pipeline whether the repository allows auto-merge. It now passes when the
+main branch requires a pull request and a passing check, and its line in the run summary
+says auto-merge was not checked. It still fails if GitHub does say auto-merge is off, and
+on a branch missing either rule. Because the pipeline cannot see that setting, turning on
+*Allow auto-merge* under Settings → General → Pull Requests on GitHub stays your step, as
+the 0.7.0 notes said.
+
+Checked on the release candidate: no — no candidate was rehearsed
+
 ## [0.7.0] — 2026-10-31
 
 Your main branch can now take only changes whose checks have passed. Tropis ships the
