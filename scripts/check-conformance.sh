@@ -45,6 +45,7 @@ idea-omits-a-field:catalog-entries
 entry-file-not-pointer:entry-file
 entry-agents-is-symlink:entry-file
 entry-agents-is-import:entry-file
+dangling-reference:framework-integrity
 "
 
 fail=0

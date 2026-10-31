@@ -70,7 +70,8 @@ cp "$BP"/templates/github/*.yml "$PROJECT/.github/workflows/"
 
 cp "$BP"/guards/catalog-entries.test.js "$BP"/guards/rule-areas.test.js \
    "$BP"/guards/rules-generated.test.js "$BP"/guards/installed-files.test.js \
-   "$BP"/guards/entry-file.test.js \
+   "$BP"/guards/entry-file.test.js "$BP"/guards/framework-integrity.test.js \
+   "$BP"/guards/doc-currency.test.js \
    "$PROJECT/.tropis/guards/"
 cp "$BP"/templates/project-layout.test.js "$PROJECT/.tropis/guards/"
 cp "$BP"/templates/framework-jest.config.js "$PROJECT/.tropis/jest.config.js"

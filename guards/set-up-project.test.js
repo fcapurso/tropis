@@ -108,6 +108,8 @@ describe('set-up-project.sh', () => {
         '.tropis/guards/rules-generated.test.js',
         '.tropis/guards/installed-files.test.js',
         '.tropis/guards/entry-file.test.js',
+        '.tropis/guards/framework-integrity.test.js',
+        '.tropis/guards/doc-currency.test.js',
         '.tropis/guards/project-layout.test.js',
         '.tropis/installed.json',
         '.tropis/package.json',
