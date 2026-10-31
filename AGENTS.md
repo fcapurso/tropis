@@ -56,13 +56,16 @@ with Jest; no package file at the root.
   session ids, unlisted email addresses and hashed names in every committed file
   outside the installed release, but **a name nobody has hashed yet passes**: read
   your own diff for names before pushing.
-- **What GitHub enforces here, checked 2026-10-28.** Two rulesets: on `main`, no force
-  push and no deletion; on tags `v*`, no update and no deletion. **No check is required
-  and no pull request is required**, so a red pull request can still be merged and
-  anything can be pushed straight to `main`: the workflow is the gate, not the host.
-  Workflows from a first-time contributor's fork wait for approval, workflows get
-  read-only access by default and cannot approve pull requests, and secret scanning,
-  push protection, Dependabot alerts and private vulnerability reporting are on.
+- **What GitHub enforces here, checked 2026-10-31.** On `main`, the ruleset Tropis ships:
+  nothing lands except through a pull request (no approval needed) whose check
+  `pipeline / gate` is green on a branch up to date with `main`, with no bypass, no force
+  push and no deletion. So commit on a branch and merge with
+  `gh pr merge <N> --auto --squash`; a direct push to `main` is refused. Auto-merge and
+  automatic deletion of merged branches are on, and the pipeline's `host` job re-checks
+  the gate on every run. On tags `v*`: no update and no deletion. Workflows from a
+  first-time contributor's fork wait for approval, workflows get read-only access by
+  default and cannot approve pull requests, and secret scanning, push protection,
+  Dependabot alerts and private vulnerability reporting are on.
 - **The private history is in `fcapurso/tropis-archive`.** This repository's history
   starts at one commit made from that archive's `main`. A clone made before the move
   still names `fcapurso/tropis` as `origin`, which is now this public repository: check
