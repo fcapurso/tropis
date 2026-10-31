@@ -113,6 +113,7 @@ describe('set-up-project.sh', () => {
         '.tropis/guards/review-record.test.js',
         '.tropis/guards/plan-dispatchable.test.js',
         '.tropis/guards/catalog-drift.test.js',
+        '.tropis/guards/rule-claims.test.js',
         '.tropis/guards/project-layout.test.js',
         '.tropis/installed.json',
         '.tropis/package.json',
@@ -255,6 +256,7 @@ describe('set-up-project.sh', () => {
         '.claude/commands/next.md',
         '.claude/commands/refresh-board.md',
         '.claude/commands/release.md',
+        '.tropis/guards/rule-claims.test.js',
         '.tropis/hooks/framework-commit-check.sh',
       ]);
     } finally {

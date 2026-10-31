@@ -55,6 +55,9 @@ entry-file-not-pointer:entry-file
 entry-agents-is-symlink:entry-file
 entry-agents-is-import:entry-file
 dangling-reference:framework-integrity
+unasserted-clause:rule-claims
+clause-unknown-entry:rule-claims
+orphan-assertion:rule-claims
 "
 
 fail=0

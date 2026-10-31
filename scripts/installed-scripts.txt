@@ -17,3 +17,4 @@ record-installed.mjs
 update.mjs
 readme-freshness.js
 pipeline.mjs
+rule-claims.js
