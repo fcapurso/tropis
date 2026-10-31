@@ -43,6 +43,8 @@ unpaired-projection:plan-dispatchable
 incomplete-entry:catalog-entries
 idea-omits-a-field:catalog-entries
 entry-file-not-pointer:entry-file
+entry-agents-is-symlink:entry-file
+entry-agents-is-import:entry-file
 "
 
 fail=0
