@@ -852,3 +852,95 @@ judgment.
 - The fresh-agent check covers the learnings section; the planning and catalog rule
   edits are path renames and a list of what a guard checks, with no new instruction to
   an agent, and got no separate probe.
+
+## Review record
+
+Reviewed by the specifying session on 2026-10-31, at `37fe735`.
+
+### Checks re-run
+
+Tools: git 2.49.0, Node v22.15.0, Jest 30.5.2 (the self-check's own install), on macOS
+26.2, Darwin arm64.
+
+- `bash scripts/check-blueprint.sh` on `37fe735`, in `../tropis-checks`: exit 0, 50
+  `caught` lines, `ok clean baseline`, last line `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` All twenty overlays this plan names or relies on are among the catches:
+  the nine catalog overlays, `dangling-reference`, the three rule-claims overlays,
+  `undrained-flush`, `unfilled-placeholder`, `unrouted-learnings`, and the existing
+  `missing-review`, `unpromoted-delivery`, `undispatchable-plan` and
+  `unpaired-projection`. That run also includes the fresh-project test (*Decision 7*).
+- The eight installed guards against this repository (the *Traps* runner, guards from a
+  copy of the branch, `FRAMEWORK_ROOT` at the worktree): `Tests: 92 passed, 92 total`,
+  the handover's figure.
+- Re-broken by hand: with the `fetch-depth: 0` line deleted from
+  `templates/github/tropis-framework-checks.yml`, `framework-checks-workflow.test.js`
+  went from `1 passed` to `1 failed`. Every other new guard is re-broken by its planted
+  overlay in the self-check above.
+- Pull request checks on `37fe735`: `pipeline / plan`, `pipeline / framework / checks`,
+  `pipeline / unit` and `pipeline / gate` passed; the other stages were skipped by the plan
+  job, as for every change of this kind.
+- Scope: `git diff --stat origin/main...HEAD`, 44 files. Every file is in the File
+  Structure table except the three the handover names and explains
+  (`templates/catalog.yaml`, `fixtures/base/.claude/commands/installed-roster.md`, and the
+  `unfilled-placeholder` and `unrouted-learnings` overlays); the review checked each reason
+  below.
+- Diagnoses re-checked, not only figures: the seed entry in `templates/catalog.yaml` does
+  fail the new module check in a fresh project (its module was
+  `src/path/to/implementation.js`); a skip of every listed file would indeed leave
+  `stale-verification` uncatchable, since that overlay dates a shipped framework file;
+  and `doc-currency` now compares fingerprints, read in the diff.
+
+### Found
+
+Public exposure: the added lines were read and searched for home paths, hostnames,
+email addresses and personal names. The only other project named is
+`first-adopter-harness`, a pseudonym the catalog already uses, in five comments
+recording where the dangling `after` ids live. Nothing found.
+
+- **Every deviation from the plan was the plan's error, and the executor's fix is the
+  right one.** The seed module, the fingerprint-based skip and the Jest invocation are
+  each recorded under *What the plan got wrong*; the review agrees with all three.
+- **The message `temporary` throws reads awkwardly** — `The defect "<name>" waits on is
+  fixed.` That wording is the plan's, carried verbatim and asserted by
+  `temporary-clauses.test.js`. Understandable as it stands; not changed here.
+- **Three lines in `rules/planning.md` run past the file's wrap width**, where the guard
+  paths grew. Cosmetic; not changed here, so this review approves no code of its own.
+- The review's own first attempt at running the guards against the repository used a
+  `git archive` export, which drops `.claude/`, `.tropis/` and the plans, because this
+  repository marks them export-ignore; it reported two false failures and was discarded.
+
+### Outstanding disposition
+
+- **`fetch-depth: 0` has not run on a real pull request.** Observed when this repository
+  takes the release: its own pipeline runs the installed `tropis-framework-checks.yml`,
+  and the first pull request after the take shows whether `review-record` and
+  `catalog-drift` see `origin/main`. To be recorded in the review of that update. No
+  entry: the update's own review is where it is seen.
+- **Adopters may go red at their next `/update`.** Dropped as an entry: the operator guide
+  now says so, and `/release` drafts the notes from the five shipped entries, whose
+  values say what each check judges.
+- **The scratch-folder race between `take-version`, `update` and `check-version`
+  tests** is `self-check-runs-beside-another` (shaped), which names the same test and
+  the same shared temporary folder.
+- **No separate probe for the `rules/planning.md` and `rules/catalogs.md` edits.**
+  Accepted: they rename three paths and describe what a guard checks, with no new
+  instruction to an agent. The one new instruction, in `rules/learnings.md`, was probed
+  (Task 8) and passed.
+
+### Learnings routed
+
+- A merged plan was hand-edited after merge to get past a check that should not have
+  judged it. Routed into the code: `plan-dispatchable` now skips executed plans, and
+  `rules/planning.md` says so.
+- A plan's claim that a shipped template was "checked, and unchanged" was false because
+  no test ran a fresh project's own suite. Routed into the code: *Decision 7*'s test now
+  fails any change that leaves a new project red.
+- Nothing else generalises.
+
+### Merged because
+
+Every criterion of the five entries is backed by a guard that the self-check shows
+catching its planted defect. A fresh project passes all of its checks, and so does this
+repository. The executor fixed each place the plan was wrong in the way the plan's own
+intent required.
