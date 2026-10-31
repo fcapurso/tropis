@@ -3593,9 +3593,14 @@
     - templates/README.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-28.
+# Shipped by docs/superpowers/plans/2026-10-31-update-keeps-instructions-behind-a-symlink.md.
+# Criterion 1: take-version tests for CLAUDE.md -> AGENTS.md and AGENTS.md -> CLAUDE.md
+# (the Replaced line printed before the Pointed line), the dangling link and the link to
+# another file. Criterion 2: the same two direction tests. Criterion 3: conformance cases
+# entry-agents-is-symlink and entry-agents-is-import. Criterion 4: all of the above.
 - id: update-keeps-instructions-behind-a-symlink
   title: An update never empties the entry instructions of a project whose entry files are symlinked
-  status: building
+  status: shipped
   value: A project set up with one entry file as a symlink to the other loses every
     instruction when it takes an update, and the update reports success. Every later
     session then works with no workflow, and nothing says so until something unrelated
@@ -3614,6 +3619,8 @@
   modules:
     - scripts/take-version.mjs
     - guards/entry-file.test.js
+    - guards/take-version.test.js
+    - scripts/check-conformance.sh
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
 - id: pipeline-bills-no-job-that-decides-nothing
