@@ -1129,3 +1129,110 @@ All files are in the File Structure table. Nothing under `.claude/`, `.tropis/` 
 
 - Merge authority is parent review: a separate session reviews, writes the review record and merges. Nothing else is outstanding; both probes ran here.
 - The decision record needs nothing: the sibling's merged `framework/DECISIONS.md` already names the rejected hook on every push.
+
+## Review record
+
+Reviewed by a separate reviewing session (parent review), in a Claude Code cloud session
+on Linux x86_64, with git 2.43.0, Node v22.23.4 and Claude Code 2.1.316. `origin/main`
+(`a5915cc`, one commit since the executor started, touching
+none of this plan's files) was merged into the branch before the checks below were re-run.
+
+### Checks re-run
+
+- **The five guard files, staged from `HEAD` with the network cut off**
+  (`unshare -rn`, proxy variables unset; commit signing disabled for the run, because
+  this container's signing helper itself needs the network): `guards/main-status.test`,
+  `guards/next-report.test`, `guards/dispatch.test`, `guards/check-drift.test`,
+  `guards/set-up-project.test` — `Test Suites: 5 passed, 5 total; Tests: 88 passed, 88
+  total`. So no test reaches the network. By reading as well: the three places a test
+  gives a repository a `github.com` origin (`main-status.test.js` `beforeEach`,
+  `next-report.test.js` *says on its first line when the main branch is red*,
+  `dispatch.test.js` *says the main branch is red before it creates the worktree*) each
+  put a stub `gh` first on `PATH` in the same test; the one test that empties `PATH`
+  (*gh is not installed*) leaves no `gh` to run.
+- `npm --prefix .tropis test`: `Test Suites: 6 passed, 6 total; Tests: 33 passed, 33
+  total`.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- **Each guard re-broken**, on a fresh export of `HEAD` with one edit, running the guard
+  file it concerns:
+  - `scripts/next.mjs` without the status line and its blank line — next-report: 2
+    failed, 23 passed.
+  - `scripts/isolate-for-plan.mjs` without the status line — dispatch: 2 failed, 16
+    passed.
+  - `framework/workflow.md` without the `--wait HEAD` line — main-status: 1 failed.
+  - `--commit` given the 7-character prefix instead of the full hash — main-status: 1
+    failed.
+  - `gh repo view` (GraphQL) in place of `gh api 'repos/{owner}/{repo}'` — main-status:
+    6 failed.
+  - `gh` asked whatever the origin — main-status: 1 failed (*never runs gh with…*).
+  - `failure` dropped from the red conclusions — main-status: 3 failed.
+- **The handover's diagnosis** of its red run (27 failures, not 4): the tests-only
+  commit `b16a671`, exported and run, fails every staged next-report test with `ENOENT:
+  no such file or directory, copyfile '…/scripts/main-status.mjs'`. The diagnosis is
+  right: `REPORT_FILES` names a file that commit did not yet have.
+- **The handover's claim about the decision record**: `framework/DECISIONS.md` on
+  `main` carries `**Rejected:** A hook asking the host on every push — a network call
+  per command.` True.
+- **Scope**: `git diff --stat origin/main...HEAD` after rebase — 12 files, every one in
+  the File Structure table.
+- **The two required points of the code**: the default branch comes from
+  `gh api 'repos/{owner}/{repo}'` (REST), and `--wait` resolves the commit with
+  `git rev-parse --verify --quiet <commit>^{commit}` and passes the full hash to
+  `--commit`; both are pinned by the re-breaks above. `waitForRun` keeps polling while
+  the commit has no run yet, so running it the moment a merge lands is safe.
+
+### Found
+
+Public exposure: the diff was read for private material — people's names, customers,
+other projects' names or internals, home paths, hostnames, email addresses. Nothing: the
+example repository is `acme/example`, the probe identity `probe@example.com`, and the
+catalog's ref names the first adopter by its pseudonym.
+
+**The gated merge sequence.** The executor's probe B exercised the ungated sequence
+only. On the gated one, `gh pr merge --auto` returns before the merge, so `HEAD` after
+the code block's pull is the merge commit only if the pull waits for the merge — which
+the sibling plan's paragraph says (*Pull `main` once the pull request says merged*), and
+the new paragraph does not repeat. A session that ran the code block straight through
+would wait on the commit before the merge and could report green over a red merge. I
+ran a third probe aimed at that clause rather than editing it: a scratch project set up
+with this branch's `set-up-project.sh`, an origin of `https://github.com/acme/example.git`
+whose pulls a wrapper `git` served from a local bare repository holding the merge commit,
+and a stub `gh` answering green for the commit before the merge and red for the merge
+commit. Prompt (Claude Code 2.1.316, Linux x86_64, cloud session, no user-level
+instructions file): "…In this project the main branch is gated by the host. Following
+the merge sequence in `.claude/framework/workflow.md`, the plan worktree has been
+removed, the local plan branch deleted, and `gh pr merge 7 --auto --squash …` has just
+been run for pull request 7 and has returned. You are on `main`. Do what remains of that
+sequence, then say what you will do next." Reply (abridged): "`gh pr merge --auto`
+returns before the merge happens, so I didn't pull until the PR showed as merged. It
+merged … as commit `8d140056` … I ran `main-status.mjs --wait` on `8d140056` itself
+rather than `HEAD`, because `HEAD` is the old commit without the pull. It exited 1: Main
+branch: red … Run: …/runs/4242 … fixing `main` is the next piece of work … through its
+own plan branch and pull request." (The prompt forbade changing tracked files, so it
+fetched instead of pulling; it chose the merge commit anyway.) **Pass**: the text as
+merged gets the gated case right, so no edit was made. The ungated sequence is unchanged
+apart from the added last line, and probe B covers it.
+
+Nothing else: no defect was fixed on the branch.
+
+### Outstanding disposition
+
+- *Parent review* — done by this record.
+- *The decision record needs nothing* — confirmed above; dropped, nothing to do.
+- No screen, so no `/manual-check`: the change is a command-line line, a report's first
+  line and a workflow step, all exercised by the guards and the three probes.
+- Nothing needs the developer.
+
+### Learnings routed
+
+None generalises beyond this plan. The one candidate — that a step written for the
+ungated sequence must also hold where the merge is `--auto` and returns early — was
+checked by probe and holds for the text as written; the sibling plan's paragraph already
+carries the rule (pull once the pull request says merged). No catalog entry proposed.
+
+### Merged because
+
+Every check re-ran green with the network cut off, every guard the plan added goes red
+when its behaviour is removed, and three fresh-agent probes — the two in the handover
+and one on the gated sequence — did what the new clauses ask.
