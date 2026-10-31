@@ -3570,9 +3570,16 @@
     - templates/README.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-26.
+# Shipped by the handover in
+# docs/superpowers/plans/2026-10-31-branch-slot-never-touches-a-permanent-environment.md.
+# Criterion 1: "a permanent.txt replaces the default list" and "an empty permanent.txt
+# refuses nothing". Criterion 2: the three "refuses production by default" cases,
+# "refuses staging and development", "refuses before listing origin" and "an empty slot
+# still prints its line". Criterion 3: "the operator guide names the list and what
+# deploy.sh does with no environment". All in guards/pipeline.test.js, branch slot.
 - id: branch-slot-never-touches-a-permanent-environment
   title: A branch environment can never be a permanent one
-  status: building
+  status: shipped
   value: A pull request from a branch named like a permanent environment would deploy over
     it, and delete it when the pull request closes - one wrong branch name away from
     losing production. Today every project guards against it itself.

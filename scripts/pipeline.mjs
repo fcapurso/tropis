@@ -624,11 +624,46 @@ function closedPlan(root) {
   return 0;
 }
 
+const PERMANENT_DEFAULT = Object.freeze(['production', 'staging', 'development']);
+
+/**
+ * The refusal for a branch whose environment is permanent, or null. When
+ * pipeline/branch/permanent.txt exists its names replace the default list,
+ * so a file with no names refuses nothing. A missing or nameless branch is
+ * left to resolveEnvironment, which reports it.
+ * @param {string} root
+ * @param {string | undefined} branch
+ * @returns {string | null}
+ */
+function permanentRefusal(root, branch) {
+  if (!branch) return null;
+  let name;
+  try {
+    name = environmentName(branch);
+  } catch {
+    return null;
+  }
+  const listPath = join(root, 'pipeline', 'branch', 'permanent.txt');
+  const listed = existsSync(listPath);
+  const names = listed
+    ? readFileSync(listPath, 'utf8')
+      .split('\n')
+      .map((line) => line.trim().toLowerCase())
+      .filter((line) => line !== '' && !line.startsWith('#'))
+    : PERMANENT_DEFAULT;
+  if (!names.includes(name)) return null;
+  const why = listed
+    ? 'listed in pipeline/branch/permanent.txt'
+    : 'a default permanent name; list yours in pipeline/branch/permanent.txt';
+  return `branch: ${branch} would use the environment ${name}, which is permanent (${why}) — rename the branch.\n`;
+}
+
 /**
  * Runs `pipeline/branch/<action>.sh` with the stage environment plus
  * `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH`. Remove does not check for a
- * colliding name: the environment may already exist to be deleted. An
- * empty slot prints one line and exits 0.
+ * colliding name: the environment may already exist to be deleted. All three
+ * refuse a branch whose environment is permanent, before origin is listed or
+ * any script runs. An empty slot prints one line and exits 0.
  * @param {string} root
  * @param {string | undefined} action
  * @param {string | undefined} branch
@@ -647,6 +682,11 @@ function branchCommand(root, action, branch) {
   if (slot.slot === 'empty') {
     process.stdout.write('branch: empty — no pipeline/branch/\n');
     return 0;
+  }
+  const refusal = permanentRefusal(root, branch);
+  if (refusal) {
+    process.stderr.write(refusal);
+    return 1;
   }
   const resolved = resolveEnvironment(root, branch, { checkCollision: action !== 'remove' });
   if (resolved.message) process.stderr.write(resolved.message);

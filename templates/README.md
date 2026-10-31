@@ -93,6 +93,21 @@ then the same with `branch deploy`. Create is safe to run again.
 Removing the environment when the pull request closes needs `closed` listed in
 the `pull_request` types of `.github/workflows/pipeline.yml`.
 
+A branch whose environment would be a permanent one is refused: `branch create`,
+`branch deploy` and `branch remove` stop before running any script in
+`pipeline/branch/`, so a pull request from a branch called `production` can neither
+deploy over that environment nor remove it when it closes. List your permanent
+environments in `pipeline/branch/permanent.txt`, one name per line; blank lines and
+lines starting with `#` are ignored. The list is compared with the environment's
+name, not the branch's, so `Production` is refused too. The file replaces the
+default list of `production`, `staging` and `development`, so an empty file refuses
+nothing.
+
+`deploy.sh` may find no environment to deploy to: `create.sh` failed, or the pull
+request was closed while the run was going and its environment was removed. It must
+not create one there, because nothing would remove it; it should fail, saying to
+close and reopen the pull request, which creates the environment again.
+
 To rehearse a release before it is tagged, fill `pipeline/candidate/` with
 `reset.sh` and `deploy.sh`. `reset.sh` puts the pre-production environment back
 on the version production runs. It receives `TROPIS_PRODUCTION_TAG`, that
