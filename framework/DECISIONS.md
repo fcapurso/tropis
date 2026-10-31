@@ -1136,3 +1136,47 @@ group.
 them, and a list drops any default it does not repeat. Closing a pull request from a
 refused branch fails its remove job, having touched nothing. `deploy.sh` may still find
 no environment; the operator guide says it must fail, not create one.
+
+---
+
+## FW-037: A project's main branch is gated by its host, or the project records why not
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** Tropis does not prevent a red merge itself; the host does. Tropis ships a
+GitHub ruleset for the default branch — a pull request with no approval required, the
+check `pipeline / gate` passing on a branch up to date with the main branch, no force
+push, no deletion, and nobody able to bypass it — and the one command that applies it,
+which a developer runs and an agent never does. The pipeline's `host` job asks GitHub on
+every run whether the default branch requires a pull request and any check, whatever its
+name, and whether the repository allows auto-merge, and fails, naming what is missing,
+the command and the opt-out, until `.claude/project.json` records `"ungated"` with a
+reason, which every run then repeats in its summary. The gate job fails when it holds the
+deploy, so the required check means the run passed. Where a project records no reason,
+every change reaches the main branch through a pull request that merges itself once
+green, and the commit hook says so at any commit on main. This repository's release tags
+a commit the main branch already holds and pushes only the tag.
+
+**Evidence:** On 2026-10-30 a pull request here merged with its checks still queued: no
+check was required, so the host's auto-merge merged at once. The gate job exited 0
+whatever the stages did, so no check said a run had passed. Read from GitHub's API on
+2026-10-31, unauthenticated, for this public repository: a branch's rules come back as
+typed objects, `[]` for a branch with none, and the repository's answer carries
+`allow_auto_merge`. With auto-merge, gh 2.89.0 deletes neither branch.
+
+**Rejected:** A hook asking the host on every push — a network call per command. A
+workflow opening an issue when the gate is missing or the main branch is red — it lands
+in notifications nobody reads. Detecting whether the account's plan allows rulesets —
+one message with an opt-out covers both cannot and will not. Requiring a check by name —
+a project that renamed its job would fail for nothing. A GitHub App or a deploy key that
+bypasses the ruleset for the release — a bypass is a way around the gate for whoever
+holds it, so this repository's release became a tag instead. Reading classic branch
+protection — its pull-request requirement is visible only to administrators.
+
+**Consequences:** Until a project applies the ruleset or records a reason, its pipeline
+is red on every run; setup and the update ask at that moment. A private repository on
+GitHub's free plan cannot have the gate and records why. A project whose release pipeline
+pushes to the main branch stays ungated until its release only tags. A project protected
+by a classic rule moves to the ruleset or records that rule as its reason. The gate job
+is now red when a stage failed, as the run already was. A pull request behind the main
+branch waits until it is rebased.
