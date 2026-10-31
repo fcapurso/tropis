@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import YAML from 'yaml';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
-import { inFlight, blocked, arcs, nextStep, bandOf, readyInBandOrder, hasBandRows, blockedAhead } from './next-work.js';
+import { inFlight, blocked, arcs, isClosed, nextStep, bandOf, readyInBandOrder, hasBandRows, blockedAhead } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';
 import { mainStatus } from './main-status.mjs';
 
@@ -64,7 +64,7 @@ const step = nextStep(catalog, bands, scores);
 // The suggestion's bundle-mates that are still open, best band first, then value over
 // effort (unscored last), then id.
 function bundleMates(of) {
-  const open = (e) => e.status !== 'shipped' && !e.shelved && !(e.supersededBy ?? []).length;
+  const open = (e) => !isClosed(e) && !e.shelved;
   const rank = (id) => (scores?.[id] ? scores[id].value / scores[id].effort : -1);
   return catalog
     .filter((e) => e.id !== of.id && bundles[e.id] === bundles[of.id] && open(e))
@@ -171,14 +171,14 @@ if (existsSync(queuePath)) {
 
 // Arc progress comes after the work. An arc spans the whole backlog, and printed above
 // the ready list it pushed the work being asked about down the screen.
-const underWay = arcs(catalog).filter((arc) => arc.shipped > 0 && arc.shipped < arc.total);
+const underWay = arcs(catalog).filter((arc) => arc.state === 'under way');
 if (underWay.length > 0) {
   console.log('');
   console.log('Arcs under way');
   for (const arc of underWay) {
-    console.log(`  ${arc.ref} — ${arc.shipped} of ${arc.total} shipped`);
+    console.log(`  ${arc.ref} — ${arc.shipped} of ${arc.counted} shipped`);
     for (const entry of arc.entries) {
-      const mark = entry.status === 'shipped' ? '✓' : ' ';
+      const mark = entry.status === 'shipped' ? '✓' : isClosed(entry) ? '-' : ' ';
       console.log(`    ${mark} ${entry.id}`);
     }
   }

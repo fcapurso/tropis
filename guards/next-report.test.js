@@ -141,6 +141,43 @@ const RETIRED_LAYER_CATALOG = `- id: retired-step
 `;
 
 describe('backlog report', () => {
+  const arcEntry = (id, spec, status, extra = '') => `- id: ${id}
+  title: ${id}
+  status: ${status}
+  type: feature
+  layer: product
+  value: ${id}.
+  acceptanceCriteria:
+    - ${id}.
+  modules: []
+${extra}  refs:
+    - docs/specs/${spec}.md
+`;
+
+  it('leaves dropped and replaced steps out of an arc\'s count, and marks them', () => {
+    const { stdout, stderr } = stageReport(
+      arcEntry('shipped-step', 'arc-design', 'shipped')
+      + arcEntry('ready-step', 'arc-design', 'shaped')
+      + arcEntry('dropped-step', 'arc-design', 'dropped')
+      + arcEntry('replaced-step', 'arc-design', 'shaped', '  supersededBy:\n    - ready-step\n'),
+    );
+    expect(stderr).toBe('');
+    expect(stdout).toContain('docs/specs/arc-design.md — 1 of 2 shipped');
+    expect(stdout).toContain('    - dropped-step\n');
+    expect(stdout).toContain('    - replaced-step\n');
+  });
+
+  it('does not report an arc as under way when only dropped or shelved steps are left', () => {
+    const { stdout, stderr } = stageReport(
+      arcEntry('a-shipped', 'a-design', 'shipped')
+      + arcEntry('a-dropped', 'a-design', 'dropped')
+      + arcEntry('b-shipped', 'b-design', 'shipped')
+      + arcEntry('b-shelved', 'b-design', 'shaped', '  shelved: true\n'),
+    );
+    expect(stderr).toBe('');
+    expect(stdout).not.toContain('Arcs under way');
+  });
+
   it('prints arc progress after the work, not before it', () => {
     const dir = mkdtempSync(join(tmpdir(), 'next-report-'));
     try {
