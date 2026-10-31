@@ -9,7 +9,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   mkdtempSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, existsSync, rmSync,
-  realpathSync,
+  realpathSync, chmodSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -346,6 +346,52 @@ describe('isolation helper', () => {
       // correctly must not be half-isolated.
       expect(existsSync(join(parent, 'example-project-wt'))).toBe(false);
       expect(existsSync(join(parent, 'missing-wt'))).toBe(false);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('says the main branch is red before it creates the worktree, and still creates it', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY));
+    try {
+      git(root, 'remote', 'add', 'origin', 'https://github.com/acme/example.git');
+      // A stub gh first on PATH: nothing here reaches GitHub.
+      const bin = join(parent, 'bin');
+      mkdirSync(bin);
+      writeFileSync(join(bin, 'gh'), `#!/usr/bin/env bash
+case "$1 $2" in
+  "api repos/{owner}/{repo}") echo '{"default_branch":"main"}' ;;
+  "run list") echo '[{"status":"completed","conclusion":"failure","headSha":"bad0000aaaa","url":"https://github.com/acme/example/actions/runs/1","createdAt":"2026-10-31T11:00:00Z","displayTitle":"break it"}]' ;;
+  *) echo "stub gh: unexpected call: $*" >&2; exit 99 ;;
+esac
+`);
+      chmodSync(join(bin, 'gh'), 0o755);
+      const r = spawnSync('bash', ['.tropis/scripts/isolate-for-plan.sh', PLAN], {
+        cwd: root,
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+        encoding: 'utf8',
+      });
+      expect(r.status).toBe(0);
+      const out = r.stdout.split('\n');
+      expect(out[0]).toBe(
+        'Main branch: red — the pipeline failed on bad0000 (break it). Run: https://github.com/acme/example/actions/runs/1',
+      );
+      expect(out[1]).toMatch(/^isolated in /);
+      expect(owner(join(parent, 'example-project-wt'))).toBe(realpathSync(join(root, '.git')));
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('says it could not tell where there is no origin, and still creates the worktree', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY));
+    try {
+      const r = run(root, 'bash', ['.tropis/scripts/isolate-for-plan.sh', PLAN]);
+      expect(r.status).toBe(0);
+      const out = r.stdout.split('\n');
+      expect(out[0]).toBe('Main branch: could not tell — no remote named origin.');
+      expect(out[1]).toMatch(/^isolated in /);
+      expect(owner(join(parent, 'example-project-wt'))).toBe(realpathSync(join(root, '.git')));
     } finally {
       rmSync(parent, { recursive: true, force: true });
     }
