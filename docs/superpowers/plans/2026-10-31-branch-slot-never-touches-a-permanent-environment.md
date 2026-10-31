@@ -626,8 +626,8 @@ npm 10.9.9, jest 30.5.2, Linux x86_64.
   existed locally and on origin, at `main`'s commit `f575fa1`, with no commits of its own
   (`git rev-list --count origin/main..<branch>` = 0). The isolation helper's `-b` failed on
   it. The primary checkout was sitting on that branch, so I checked it out to `main` (clean,
-  same commit) and ran `git worktree add ../tropis-permanent-env
-  plan/branch-slot-never-touches-a-permanent-environment` on the existing branch. Nothing was
+  same commit) and added the worktree at `../tropis-permanent-env` on the existing
+  branch, without `-b`. Nothing was
   lost; the helper did not run beyond its failed attempt.
 - **Commit attribution.** The attribution reminder asked for a `Co-Authored-By` line naming
   the model. The session's instructions forbid model identifiers in commit messages, so the
