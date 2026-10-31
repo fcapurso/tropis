@@ -264,11 +264,20 @@ describe('rule delivery', () => {
      * A git repository containing exactly the given paths, uncommitted.
      * @param {string[]} paths Repo-relative paths to create.
      * @param {string} [branch] Branch name to check out.
+     * @param {object} [projectJson] Written as .claude/project.json and committed first,
+     *   so the hook does not list it as a change.
      */
-    function repoWith(paths, branch = 'plan/x') {
+    function repoWith(paths, branch = 'plan/x', projectJson) {
       const dir = mkdtempSync(join(tmpdir(), 'commit-hook-'));
       tmps.push(dir);
       spawnSync('git', ['init', '-q', '-b', branch], { cwd: dir });
+      if (projectJson !== undefined) {
+        mkdirSync(resolve(dir, '.claude'), { recursive: true });
+        writeFileSync(resolve(dir, '.claude/project.json'), `${JSON.stringify(projectJson)}\n`);
+        spawnSync('git', ['add', '.claude/project.json'], { cwd: dir });
+        const c = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'project'], { cwd: dir });
+        if (c.status !== 0) throw new Error('could not commit .claude/project.json');
+      }
       for (const p of paths) {
         mkdirSync(dirname(resolve(dir, p)), { recursive: true });
         writeFileSync(resolve(dir, p), 'x\n');
@@ -373,35 +382,64 @@ describe('rule delivery', () => {
     });
 
     it('names a file outside the may-go-to-main paths when the commit is on main', () => {
-      const dir = repoWith(['src/app.js'], 'main');
+      const dir = repoWith(['src/app.js'], 'main', { ungated: "the probe's reason" });
       const said = contextOf(runCommitHook('git commit -m "x"', dir).stdout);
       expect(said).toContain('src/app.js');
       expect(said).toContain('belong on a branch');
     });
 
-    it('stays silent on main for a docs file alone', () => {
-      const dir = repoWith(['docs/notes.md'], 'main');
+    it('stays silent on main for a docs file alone when a reason is recorded', () => {
+      const dir = repoWith(['docs/notes.md'], 'main', { ungated: "the probe's reason" });
       const { stdout, status } = runCommitHook('git commit -m "x"', dir);
       expect(status).toBe(0);
       expect(stdout).toBe('');
     });
 
-    it('stays silent on main for the release notes alone, which /release commits there', () => {
-      const dir = repoWith(['RELEASES.md'], 'main');
+    it('stays silent on main for the release notes alone, which /release commits there when a reason is recorded', () => {
+      const dir = repoWith(['RELEASES.md'], 'main', { ungated: "the probe's reason" });
       const { stdout, status } = runCommitHook('git commit -m "x"', dir);
       expect(status).toBe(0);
       expect(stdout).toBe('');
     });
 
-    it('stays silent on main for the README alone, which /refresh-readme commits there', () => {
-      const dir = repoWith(['README.md'], 'main');
+    it('stays silent on main for the README alone, which /refresh-readme commits there when a reason is recorded', () => {
+      const dir = repoWith(['README.md'], 'main', { ungated: "the probe's reason" });
       const { stdout, status } = runCommitHook('git commit -m "x"', dir);
       expect(status).toBe(0);
       expect(stdout).toBe('');
     });
 
-    it('stays silent on main for the backlog alone', () => {
+    it('stays silent on main for the backlog alone when a reason is recorded', () => {
+      const dir = repoWith(['feature-catalog.yaml'], 'main', { ungated: "the probe's reason" });
+      const { stdout, status } = runCommitHook('git commit -m "x"', dir);
+      expect(status).toBe(0);
+      expect(stdout).toBe('');
+    });
+
+    it('on a gated main names the backlog and says to use a pull request that merges itself', () => {
       const dir = repoWith(['feature-catalog.yaml'], 'main');
+      const said = contextOf(runCommitHook('git commit -m "x"', dir).stdout);
+      expect(said).toContain('feature-catalog.yaml');
+      expect(said).toContain('belong on a branch');
+      expect(said).toContain('main branch is gated');
+      expect(said).toContain('gh pr merge <N> --auto --squash');
+    });
+
+    it('on a gated main names docs too', () => {
+      const dir = repoWith(['docs/notes.md'], 'main');
+      const said = contextOf(runCommitHook('git commit -m "x"', dir).stdout);
+      expect(said).toContain('docs/notes.md');
+      expect(said).toContain('main branch is gated');
+    });
+
+    it('a blank ungated counts as gated', () => {
+      const dir = repoWith(['docs/notes.md'], 'main', { ungated: ' ' });
+      const said = contextOf(runCommitHook('git commit -m "x"', dir).stdout);
+      expect(said).toContain('main branch is gated');
+    });
+
+    it('stays silent off main whether or not a reason is recorded', () => {
+      const dir = repoWith(['docs/notes.md'], 'plan/x');
       const { stdout, status } = runCommitHook('git commit -m "x"', dir);
       expect(status).toBe(0);
       expect(stdout).toBe('');
