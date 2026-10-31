@@ -49,8 +49,11 @@ pipeline there passed or failed, naming the commit and, when it failed, the run.
 isolation helper that `/dispatch`'s prompt runs prints the same line before it creates a
 worktree, and creates it either way, and the workflow's merge sequence ends with
 `node .tropis/scripts/main-status.mjs --wait HEAD`, which waits for the run the merge
-started and exits non-zero when it fails. Run `node .tropis/scripts/main-status.mjs` for
-the line alone. Each asks GitHub through `gh`, for push runs of
+started and exits non-zero when it fails. On a gated main branch,
+`node .tropis/scripts/main-status.mjs --pull-request <N>` does the same for a pull
+request set to merge itself. It waits until it has merged, bringing its branch up to
+date when `main` moves, and says why when it did not merge. Run
+`node .tropis/scripts/main-status.mjs` for the line alone. Each asks GitHub through `gh`, for push runs of
 `.github/workflows/pipeline.yml`; where it cannot — no `gh`, not signed in, an origin that
 is not on GitHub — it says it could not tell, and why.
 

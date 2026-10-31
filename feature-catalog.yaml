@@ -1880,6 +1880,15 @@
 # found a test failing because it scanned the shared temporary folder while other tests
 # wrote take-version- folders there. take-version.test.js's own leftover test scans that
 # folder too, so two self-check runs at once could trip it.
+# 2026-10-31, from the review of docs/superpowers/plans/2026-10-31-a-self-merging-pull-request-is-seen-through.md:
+# the self-check hung twice and passed twice on commits with nothing changed between them
+# (0119628, hung after about 15 minutes, then passed in about 3; a8a6a0d, hung after about
+# 7 minutes, then passed in about 3), on node v22.15.0, macOS (Darwin) arm64, one run at a
+# time. Each hang stopped in the clean baseline with every Jest worker idle and one
+# take-version.test.js process left, take-version.mjs --from v0.2.0, whose tar -x child
+# (take-version.mjs line 140, a spawnSync that passes git archive's output as input) was
+# waiting on its standard input after git archive had exited. The cause is untested.
+# Nothing names the hung test, so the next step is a per-test timeout that fails it by name.
 - id: self-check-clean-baseline-flake
   title: Find out why the self-check's clean baseline failed once and then passed
   status: idea
@@ -4242,9 +4251,13 @@
 # and to pull main once the pull request says merged; that a branch behind main must be
 # rebased is said only in Branching, and nothing watches a pull request the way
 # main-status.mjs --wait watches main, so each agent writes its own wait loop.
+# Shipped by docs/superpowers/plans/2026-10-31-a-self-merging-pull-request-is-seen-through.md.
+# Criteria 1, 2 and 3 are covered by main-status.test.js (--pull-request), which runs the
+# command against a stub gh. Criterion 4 is covered by release.test.js and
+# rule-delivery.test.js, plus the fresh-agent check in the handover.
 - id: a-self-merging-pull-request-is-seen-through
   title: An agent that sets a pull request to merge itself stays until it has merged and main is green
-  status: building
+  status: shipped
   value: Work an agent hands to auto-merge reaches main, or the agent says why it did not.
     Today the agent sets auto-merge and considers the job done, so a pull request that
     falls behind main, fails a check or hits a conflict sits unmerged with nobody told,
@@ -4265,7 +4278,11 @@
   layer: product
   after:
     - main-is-gated-by-the-host
-  modules: []
+  modules:
+    - scripts/main-status.mjs
+    - scripts/framework-commit-check.sh
+    - framework/workflow.md
+    - commands/release.md
   refs:
     - docs/superpowers/plans/2026-10-31-a-self-merging-pull-request-is-seen-through.md
 # 2026-10-31, found writing the plan for a-self-merging-pull-request-is-seen-through: two

@@ -384,6 +384,17 @@ describe('the gate in the workflow', () => {
     expect(workflow).toContain('waits until it has merged before the executor starts');
   });
 
+  it('sees a pull request set to merge itself through to a green main branch', () => {
+    expect(workflow).toContain('then run `node .tropis/scripts/main-status.mjs --pull-request <N>`');
+    expect(workflow).toContain('Setting auto-merge does not finish the job');
+    const release = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), '../commands/release.md'),
+      'utf8',
+    ).replace(/\s+/g, ' ');
+    expect(release.split('node .tropis/scripts/main-status.mjs --pull-request <N>').length - 1)
+      .toBeGreaterThanOrEqual(2);
+  });
+
   it('keeps the direct-to-main list for a main that is not gated', () => {
     expect(workflow).toContain('Where it is not gated, what may go directly to');
   });

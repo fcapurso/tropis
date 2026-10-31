@@ -469,3 +469,222 @@ Append `## Handover report` to this plan with the six sections the planning rule
 Say where the code came from: nothing outside this repository, unless something was. In
 that case, name it. Commit and push. Make the pull request's body say what is now true,
 ending with the attribution lines your session gives. Then stop: parent review merges.
+
+## Handover report
+
+### Task completion
+
+All tasks done, 0 to 5, and this report (Task 6). Started from `main` at `4b5e2bf`. The
+work was done in the worktree `../tropis-see-through` on the branch
+`plan/a-self-merging-pull-request-is-seen-through`. The pull request is
+[fcapurso/tropis#55](https://github.com/fcapurso/tropis/pull/55). Auto-merge is not set;
+parent review merges.
+
+Tools: git 2.49.0, node v22.15.0, gh 2.103.2, Claude Code 2.1.300, on macOS (Darwin)
+arm64.
+
+Where the code came from: nothing outside this repository. `seeThrough` follows the
+shape of `waitForRun` in the same file, and the test stub extends the existing one.
+
+### Verification results
+
+- **Task 0 baseline.** `bash scripts/check-blueprint.sh`: `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.`
+- **Task 1, red.** `bash scripts/check-blueprint.sh` failed (`Self-check FAILED:
+  conformance or the clean baseline (above).`). The failing tests:
+  - all twelve `main branch status › --pull-request › …` behaviour tests;
+  - `main branch status › never runs gh with no origin` and `… with an origin not on
+    GitHub` (the `--pull-request` line added to them);
+  - `rule delivery › framework-commit-check fires when a commit carries the instruction
+    layer › on a gated main names the backlog and says to use a pull request that merges
+    itself`;
+  - `the gate in the workflow › sees a pull request set to merge itself through to a
+    green main branch`.
+
+  The four usage refusals already passed: the parser before this plan refuses
+  `--pull-request` as an unknown flag, so they pinned behaviour that was already right.
+- **Task 2.** Only the two text assertions still failed (the rule-delivery and gate
+  tests above).
+- **Task 3.** `Self-check passed: every guard caught its defect, the clean baseline
+  passed, and the framework repository's own guards passed.`
+- **Task 4, live and read-only.**
+  - `node scripts/main-status.mjs --pull-request 47 --interval 5 --timeout 1`:
+
+    ```
+    main-status: waiting for pull request #47 to merge, asking every 5 s for up to 1 min
+    Pull request #47 merged as 6305da6. Main branch: green — the pipeline passed on 6305da6 (docs(board): band the new entries, prune closed ones, and close the a…).
+    ```
+    exit 0.
+  - `node scripts/main-status.mjs --pull-request 55 --interval 5 --timeout 1`, on this
+    plan's own pull request with auto-merge not set:
+
+    ```
+    main-status: waiting for pull request #55 to merge, asking every 5 s for up to 1 min
+    Pull request #55: did not merge — auto-merge is off.
+    ```
+    exit 4.
+- **Task 4, fresh-agent check — pass.** Run locally with Claude Code 2.1.300
+  (`claude -p`, default model), on macOS (Darwin) arm64. The developer's user-level
+  instructions loaded, and were checked first: they say nothing about waiting on a pull
+  request or about auto-merge. The scratch project was set up with this branch's
+  `scripts/set-up-project.sh`, with origin `https://github.com/acme/example.git` and no
+  `.claude/project.json` (so gated). A stub `git` sent fetch and push to a local bare
+  repository, and a stub `gh` served `pulls/7` as `behind`, then `clean`, then merged
+  with a merge commit, and a green push run on it. Prompt, piped on stdin: "This is a
+  probe; its output will be discarded. In this project, add a line `- probe` to
+  `docs/notes.md` and land it on `main` as the workflow requires. Report when you are
+  done." The stub's log, abridged:
+
+  ```
+  pr create --base main --head docs/notes-probe --title docs: add probe line to notes --body …
+  pr merge 7 --auto --squash --subject docs: add probe line to notes --body …
+  api repos/{owner}/{repo}/pulls/7
+  api repos/{owner}/{repo}/commits/63850d7…/check-runs?per_page=100
+  api -X PUT repos/{owner}/{repo}/pulls/7/update-branch -f expected_head_sha=63850d7…
+  api repos/{owner}/{repo}/pulls/7
+  api repos/{owner}/{repo}/commits/63850d7…/check-runs?per_page=100
+  api repos/{owner}/{repo}/pulls/7
+  run list --workflow pipeline.yml --commit beef000722… --event push --limit 20 --json …
+  ```
+
+  The reply, abridged: it branched, committed, pushed and opened #7, ran
+  `gh pr merge 7 --auto --squash` with a subject and body, then ran
+  `node .tropis/scripts/main-status.mjs --pull-request 7`, which "brought the branch up
+  to date with `main` when it fell behind" and reported "Pull request #7 merged as
+  beef000. Main branch: green." It reported done after that line, then pulled `main`
+  and noted that the stub's merge never wrote to the bare repository's `main`. The
+  scratch project was then removed.
+- **Task 5.** `npm --prefix .tropis test`: `Tests:       126 passed, 126 total`.
+  `bash scripts/check-blueprint.sh` on `0119628`: the first run hung. After about 15
+  minutes every Jest worker was idle, and the only process left was a test's
+  `take-version.mjs … --from v0.2.0` waiting on a `tar -x` child that never received
+  input. This plan does not touch `take-version.mjs` or its test. The run was stopped and
+  started again on the same commit with nothing changed, and passed in about 3 minutes:
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.` Under the workflow, a check that passes on
+  a rerun with nothing changed is a defect to record; it is listed under *Outstanding*.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`:
+
+```
+ commands/release.md                                |  10 +-
+ ...-a-self-merging-pull-request-is-seen-through.md | 145 ++++++++++++++++++
+ feature-catalog.yaml                               |  12 +-
+ framework/DECISIONS.md                             |  29 ++++
+ framework/workflow.md                              |  24 ++-
+ guards/main-status.test.js                         | 162 ++++++++++++++++++++-
+ guards/release.test.js                             |  11 ++
+ guards/rule-delivery.test.js                       |   1 +
+ scripts/framework-commit-check.sh                  |   3 +-
+ scripts/main-status.mjs                            |  74 +++++++++-
+ templates/README.md                                |   7 +-
+ 11 files changed, 457 insertions(+), 21 deletions(-)
+```
+
+Every file is in *File Structure*.
+
+### Judgment calls
+
+- **The "update refused" reason strips a leading `gh: ` as well as `gh failed: `.**
+  `gh api` prints its errors as `gh: <message>`, and the plan's test 5 has the stub print
+  `gh: merge conflict between base and head (HTTP 422)` while expecting the reason
+  `merge conflict between base and head (HTTP 422)`. Stripping only `gh failed: `, as
+  *Decision 3* says, would have left `gh: ` in the line.
+- **An open pull request's `merge_commit_sha` is ignored.** GitHub fills it with a test
+  merge commit while the pull request is open, so the command reads it only once
+  `merged` is true, as *Decision 2* orders.
+- **A missing `auto_merge` field counts as on.** Only `null` means off, as *Decision 2*
+  says; a field GitHub leaves out is not read as a failure.
+- **The check-runs ask happens on every poll**, after the closed and auto-merge tests,
+  so a check that fails while the pull request waits stops the command at the next poll.
+- **The fresh-agent check ran locally**, not in a cloud session, after checking that
+  the developer's own instructions say nothing about waiting on a pull request. It ran
+  with an allowlist of tools rather than with permissions bypassed; the session's
+  safety check refused the bypass.
+
+### What the plan got wrong
+
+- *Decision 3*'s "update refused" reason and Task 1's test 5 disagreed about the `gh: `
+  prefix (above).
+- Task 1 said every new test would fail at the red step. The four `--pull-request` usage
+  refusals passed already, since the old parser refuses an unknown flag with the same
+  usage and exit 2.
+
+### Outstanding
+
+- **The update-branch path has not run against the real host.** Only the read paths
+  (`pulls/<n>`, `check-runs`) and the auto-merge-off stop were exercised live. The
+  reviewing session should merge this pull request with `gh pr merge 55 --auto --squash`
+  (with `--subject` and `--body`), followed by
+  `node scripts/main-status.mjs --pull-request 55` run from the worktree, so the new
+  command is the one that sees its own pull request through. Record whether the pull
+  request was behind `main` and what the command printed.
+- **A hang in the self-check, not recorded in the backlog.** The `take-version.mjs`
+  test hang described under *Verification results* needs a backlog entry with both runs.
+  It is outside this plan's files, so it is left to the reviewing session.
+
+## Review record
+
+### Checks re-run
+
+Run by the reviewing session in Claude Code 2.1.300, with git 2.49.0, node v22.15.0 and
+gh 2.103.2, on macOS (Darwin) arm64, in the worktree `../tropis-see-through`.
+
+- `bash scripts/check-blueprint.sh` on `a8a6a0d`, first run: hung. After about 7 minutes
+  the log stood at `Clean baseline: every guard must pass`, every Jest worker was idle,
+  and the only process doing anything was a `take-version.test.js` run of
+  `take-version.mjs … --from v0.2.0`, whose `tar -x` child had been waiting on its
+  standard input for over 5 minutes after `git archive` had exited. Stopped by hand.
+- `bash scripts/check-blueprint.sh` on `a8a6a0d` again, nothing changed: `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.` in about 3 minutes.
+- Pull request CI on `a8a6a0d`: `pipeline / plan`, `host`, `framework / checks`, `unit`
+  and `gate` all succeeded.
+- The scope check, `git diff --stat origin/main...HEAD`: the eleven files in *File
+  Structure*, nothing else.
+- The handover's diagnosis of the hang matches what I saw. It is the same process, the
+  same child, at the same phase. It does not touch this plan's files: `take-version.mjs`
+  and its test are not in the diff.
+
+### Found
+
+Public exposure: I read the diff for people's names, other projects' names, home paths,
+hostnames and email addresses: nothing.
+
+I read the code against *Decisions 1–3*: the order of the poll, the lines word for word,
+the exits, the parser refusing `--wait` together with `--pull-request`, and that no
+local git change is made. Nothing differs from the plan except the two judgment calls the
+handover names, and both are right: GitHub's `gh api` prints its errors starting `gh: `,
+and an open pull request's `merge_commit_sha` is a test merge. I read the documentation
+against *Decision 4*, and it matches. The guards pinned in *Traps* still hold.
+
+Nothing else turned up.
+
+### Outstanding disposition
+
+- **The update-branch path has not run against the real host.** That happens when this
+  pull request merges: it is set to merge itself, and the worktree's
+  `scripts/main-status.mjs --pull-request 55` sees it through. Whether it was behind
+  `main`, and what the command printed, is reported to the developer at merge. If the
+  update path breaks there, that goes into a new backlog entry.
+- **The self-check hang.** It goes to `self-check-clean-baseline-flake`. This branch adds
+  the four runs above, two hangs and two passes, as a comment on that entry, and names
+  the hung process but not its cause, which is untested.
+
+### Learnings routed
+
+- **The hang** goes to the backlog entry above. It is a check that passes on a rerun with
+  nothing changed, which the workflow says to record as a defect.
+- **Running the self-check in the background tells you nothing until it ends**, so a hang
+  looks like a slow run. Not routed: the per-test timeout the backlog comment names as the
+  next step would fix it where it belongs, in the check.
+- Nothing else generalises beyond this plan.
+
+### Merged because
+
+The command, its tests and the text do what the plan decided. CI and a self-check run on
+the final commit are green. The one failure seen was a hang in a part the plan does not
+touch, now recorded with its evidence.

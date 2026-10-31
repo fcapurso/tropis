@@ -107,12 +107,16 @@ when the framework half exists to serve the application half. Full rule:
   ships — and an agent treats it as gated unless `.claude/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch, push
-  it, open the pull request, and run `gh pr merge <N> --auto --squash` with `--subject`
-  and `--body`. Dispatch's move of an entry to `building` is such a change: the
+  it, open the pull request, run `gh pr merge <N> --auto --squash` with `--subject` and
+  `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  **Setting auto-merge does not finish the job; the change is done when that command
+  reports the main branch green.** Auto-merge does not update a branch, and the host
+  requires one up to date with `main`, so a pull request that falls behind sits
+  unmerged with nobody told. The command brings it up to date and keeps waiting, and
+  stops, naming the pull request, when it conflicts, a check fails, or auto-merge is
+  off. Dispatch's move of an entry to `building` is such a change: the
   dispatching session lands it through its pull request and waits until it has merged
-  before the executor starts. A pull request behind `main` waits too, because the host
-  requires it to be up to date: rebase it on `origin/main` and push, and it merges once
-  green again.
+  before the executor starts.
 - **Where it is not gated, what may go directly to `main` is what cannot change how an
   agent behaves**: the
   backlog, generated documentation, plan and spec files, the release notes `/release`
@@ -245,7 +249,15 @@ leave an orphaned branch behind.
 above. It returns at once, and the host merges when the required check passes. With
 auto-merge enabled, `gh` deletes neither the local nor the remote branch, so the local
 branch is deleted beforehand, as above, and the remote one by the repository setting
-*Automatically delete head branches*. Pull `main` once the pull request says merged.
+*Automatically delete head branches*. Then run
+`node .tropis/scripts/main-status.mjs --pull-request <N>`, in place of the code block's
+last line. It waits until the pull request has merged, bringing its branch
+up to date whenever `main` moves under it, then waits for the run the merge started on
+`main`, on the merge commit itself rather than on `HEAD`. Its exits are those of
+`--wait` below, plus 4 when the pull request did not merge. Its line then names why:
+a conflict, a failed check, auto-merge off, or the pull request closed. On 4, fix what
+it names, set auto-merge again if it was off, and run it again. Pull `main` once it has
+reported.
 
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's

@@ -58,7 +58,9 @@ no file, or a level that is none of these — run `/refresh-readme` as its comma
 
 If it committed a refreshed README, push it (`git push origin main`). Where the main
 branch is gated (workflow.md, *Branching*), move that commit to a branch instead, open a
-pull request, run `gh pr merge <N> --auto --squash`, and wait until it has merged.
+pull request, run `gh pr merge <N> --auto --squash`, then
+`node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only once it
+reports the main branch green; on any other line, show it and stop.
 Pre-flight found nothing else unpushed, so the push carries only that commit.
 
 If the refresh stopped before it could judge the page, say why. If the README is still
@@ -205,8 +207,10 @@ still in it — the pipeline promotes the section as written, and a placeholder 
 become the permanent record. Commit with
 `docs(release): draft notes for the next release`, a body line `Bump: <bump>`, and push.
 Where the main branch is gated, commit on a branch instead, open a pull request, run
-`gh pr merge <N> --auto --squash` with the same subject and body, and wait until it has
-merged; the commit Stage 6 names is then the one the merge made on `main`.
+`gh pr merge <N> --auto --squash` with the same subject and body, then
+`node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only once it
+reports the main branch green; on any other line, show it and stop. The commit Stage 6
+names is then the one the merge made on `main`, which that line names.
 
 ## Stage 6 — Print the next trigger. Do not run it.
 

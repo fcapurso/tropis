@@ -1215,3 +1215,32 @@ do until something happens.
 **Consequences:** A project's shelved entries keep their meaning, but any that recorded
 work nobody will do should be dropped by hand; nothing converts them. A band row on a
 shelved entry is reported stale. `/next` still does not offer shelved entries.
+
+---
+
+## FW-039: An agent that sets a pull request to merge itself stays until main is green
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** An agent that sets a pull request to merge itself runs
+`main-status.mjs --pull-request <N>` and stays until the merge and the main branch's run
+have finished. The command keeps the branch up to date through GitHub's update-branch
+endpoint, which merges `main` into the branch.
+
+**Evidence:** Pull request 47 here was set to merge itself and the agent moved on. The
+main branch then moved with the v0.7.1 update; the ruleset requires a branch up to date
+with it, and auto-merge does not update one, so the pull request sat behind with nobody
+told until the developer noticed. Read from GitHub's REST API on 2026-10-31, with gh
+2.103.2: a pull request carries `merged`, `merge_commit_sha`, `mergeable_state`,
+`auto_merge` (`null` when off), `head.sha` and `base.ref`, and a commit's check runs
+carry each run's `conclusion` and `html_url`.
+
+**Rejected:** Rebasing locally and force-pushing. That needs a checkout of the branch,
+which a session that has already removed its worktree no longer has, and the squash
+discards the merge commit anyway. Leaving the wait to each agent: that is what happened,
+and the wait was never written. `gh pr` subcommands, which need GraphQL, refused in some
+agent sessions.
+
+**Consequences:** A check that is not required and fails stops the command, even though
+auto-merge would still merge; the agent then reports a failure the host would have let
+through. The command makes no local git change, so the session pulls `main` afterwards.
