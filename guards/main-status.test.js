@@ -20,10 +20,28 @@ const here = dirname(fileURLToPath(import.meta.url));
 const blueprint = resolve(here, '..');
 const script = join(blueprint, 'scripts/main-status.mjs');
 
-// Logs every call as one line. `api` answers the default branch; `run list` answers
-// runs-<n>.json on its n-th call when that file exists, and runs.json otherwise.
+// Logs every call as one line. An `api` call is routed by its path: update-branch
+// answers {} (or fails when the file update-fails exists), check-runs answers
+// checks.json, and pulls/<n> answers pull-<k>.json on its k-th call when that file
+// exists, and pull.json otherwise. Else `api repos/{owner}/{repo}` answers the default
+// branch, and `run list` answers runs-<n>.json on its n-th call when that file exists,
+// and runs.json otherwise.
 const STUB_GH = `#!/usr/bin/env bash
 echo "$*" >> "$STUB_DIR/gh.log"
+if [ "$1" = api ]; then
+  case "$*" in
+    *pulls/*/update-branch*)
+      if [ -f "$STUB_DIR/update-fails" ]; then
+        echo "gh: merge conflict between base and head (HTTP 422)" >&2; exit 1
+      fi
+      echo "{}"; exit 0 ;;
+    *check-runs*) cat "$STUB_DIR/checks.json"; exit 0 ;;
+    *pulls/*)
+      k=$(( $(cat "$STUB_DIR/pull-count" 2>/dev/null || echo 0) + 1 )); echo "$k" > "$STUB_DIR/pull-count"
+      f="$STUB_DIR/pull-$k.json"; [ -f "$f" ] || f="$STUB_DIR/pull.json"
+      cat "$f"; exit 0 ;;
+  esac
+fi
 case "$1 $2" in
   "api repos/{owner}/{repo}") echo "{\\"default_branch\\":\\"\${STUB_DEFAULT:-main}\\"}"; exit 0 ;;
   "run list")
@@ -65,6 +83,7 @@ describe('main branch status', () => {
     chmodSync(join(dir, 'bin/gh'), 0o755);
     writeFileSync(join(dir, 'gh.log'), '');
     runs([]);
+    writeFileSync(join(dir, 'checks.json'), JSON.stringify({ total_count: 0, check_runs: [] }));
     repo = join(dir, 'repo');
     mkdirSync(repo);
     git(repo, 'init', '-q', '-b', 'main');
@@ -150,6 +169,8 @@ describe('main branch status', () => {
     expect(cli().stdout).toBe(`Main branch: could not tell — ${reason}.\n`);
     expect(cli('--wait', 'HEAD', '--interval', '0', '--timeout', '0.01').stdout)
       .toBe(`Main branch: could not tell — ${reason}.\n`);
+    expect(cli('--pull-request', '1', '--interval', '0', '--timeout', '0.01').stdout)
+      .toBe(`Pull request #1: could not tell — ${reason}.\n`);
     expect(log()).toBe('');
   });
 
@@ -213,6 +234,143 @@ describe('main branch status', () => {
       expect(r.stderr).toBe('main-status: no-such-ref is not a commit here\n');
       expect(log()).toBe('');
     });
+  });
+
+  describe('--pull-request', () => {
+    const fast = ['--interval', '0.05', '--timeout', '0.05'];
+    const HEAD_SHA = 'feed000' + '1'.repeat(33);
+    const MERGED_SHA = 'beef000' + '2'.repeat(33);
+    const pull = (fields) => ({
+      number: 7, state: 'open', merged: false, merge_commit_sha: 'test0000', mergeable_state: 'blocked',
+      auto_merge: { merge_method: 'squash' }, head: { sha: HEAD_SHA }, base: { ref: 'main' }, ...fields,
+    });
+    const MERGED = pull({ state: 'closed', merged: true, merge_commit_sha: MERGED_SHA, mergeable_state: 'unknown' });
+    const pulls = (...list) => list.forEach((p, i) => writeFileSync(
+      join(dir, i === list.length - 1 ? 'pull.json' : `pull-${i + 1}.json`), JSON.stringify(p),
+    ));
+    const checks = (...list) => writeFileSync(join(dir, 'checks.json'), JSON.stringify({
+      total_count: list.length,
+      check_runs: list.map(([name, conclusion]) => ({
+        name, status: 'completed', conclusion, html_url: `https://github.com/acme/example/runs/${name.length}`,
+      })),
+    }));
+    const updates = () => log().split('\n').filter((l) => l.includes('/update-branch'));
+    const GREEN = `Pull request #7 merged as beef000. Main branch: green — the pipeline passed on beef000 (title of beef000).\n`;
+
+    beforeEach(() => runs([run('completed', 'success', MERGED_SHA, '2026-10-31T12:00:00Z')]));
+
+    it('waits for the run on the merge commit and exits 0 when main is green', () => {
+      pulls(MERGED);
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe(GREEN);
+      expect(r.stderr).toContain('main-status: waiting for pull request #7 to merge, asking every 0.05 s for up to 0.05 min');
+      expect(log()).toContain('api repos/{owner}/{repo}/pulls/7\n');
+      expect(log()).toContain(`run list --workflow pipeline.yml --commit ${MERGED_SHA} --event push`);
+    });
+
+    it('exits 1 when the merge left main red', () => {
+      pulls(MERGED);
+      runs([run('completed', 'failure', MERGED_SHA, '2026-10-31T12:00:00Z')]);
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe(
+        'Pull request #7 merged as beef000. Main branch: red — the pipeline failed on beef000 (title of beef000). '
+        + 'Run: https://github.com/acme/example/actions/runs/beef\n',
+      );
+    });
+
+    it('brings a branch that is behind up to date once, and waits on', () => {
+      pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'clean' }), MERGED);
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe(GREEN);
+      expect(r.stderr).toContain('main-status: pull request #7 was behind main; brought it up to date');
+      expect(updates()).toEqual([
+        `api -X PUT repos/{owner}/{repo}/pulls/7/update-branch -f expected_head_sha=${HEAD_SHA}`,
+      ]);
+    });
+
+    it('never asks twice to update the same head', () => {
+      pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'behind' }), MERGED);
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe(GREEN);
+      expect(updates()).toHaveLength(1);
+    });
+
+    it('stops with exit 4 when the update is refused', () => {
+      pulls(pull({ mergeable_state: 'behind' }));
+      writeFileSync(join(dir, 'update-fails'), '');
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(4);
+      expect(r.stdout).toBe('Pull request #7: did not merge — it is behind main and could not be brought up to date: '
+        + 'merge conflict between base and head (HTTP 422).\n');
+    });
+
+    it('stops with exit 4 on a conflict, without asking for an update', () => {
+      pulls(pull({ mergeable_state: 'dirty' }));
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(4);
+      expect(r.stdout).toBe('Pull request #7: did not merge — it conflicts with main.\n');
+      expect(updates()).toHaveLength(0);
+    });
+
+    it('stops with exit 4 naming the check that failed', () => {
+      pulls(pull({}));
+      checks(['pipeline / host', 'cancelled'], ['pipeline / gate', 'failure'], ['pipeline / skip', 'skipped']);
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(4);
+      expect(r.stdout).toBe('Pull request #7: did not merge — the check pipeline / gate failed on feed000. '
+        + 'Run: https://github.com/acme/example/runs/15\n');
+      expect(log()).toContain(`api repos/{owner}/{repo}/commits/${HEAD_SHA}/check-runs?per_page=100`);
+    });
+
+    it('does not count a cancelled or skipped check as a failure', () => {
+      pulls(pull({}), MERGED);
+      checks(['pipeline / host', 'cancelled'], ['pipeline / skip', 'skipped']);
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe(GREEN);
+    });
+
+    it('stops with exit 4 when auto-merge is off', () => {
+      pulls(pull({ auto_merge: null }));
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(4);
+      expect(r.stdout).toBe('Pull request #7: did not merge — auto-merge is off.\n');
+    });
+
+    it('stops with exit 4 when it was closed without merging', () => {
+      pulls(pull({ state: 'closed' }));
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(4);
+      expect(r.stdout).toBe('Pull request #7: did not merge — it was closed without merging.\n');
+    });
+
+    it('exits 3 when it has not merged by the timeout', () => {
+      pulls(pull({}));
+      const r = cli('--pull-request', '7', '--interval', '0.05', '--timeout', '0.005');
+      expect(r.status).toBe(3);
+      expect(r.stdout).toBe('Pull request #7: still open — not merged within 0.005 minutes.\n');
+    });
+
+    it('says it could not tell when gh fails', () => {
+      writeFileSync(join(dir, 'bin/gh'), '#!/usr/bin/env bash\necho "HTTP 401: Bad credentials" >&2\nexit 1\n');
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('Pull request #7: could not tell — gh failed: HTTP 401: Bad credentials.\n');
+    });
+
+    it.each([[['--pull-request']], [['--pull-request', 'abc']], [['--pull-request', '0']],
+      [['--wait', 'HEAD', '--pull-request', '1']]])(
+      'refuses %j with the usage and exit 2', (args) => {
+        const r = cli(...args);
+        expect(r.status).toBe(2);
+        expect(r.stderr).toContain('usage: main-status.mjs');
+        expect(log()).toBe('');
+      },
+    );
   });
 
   it('the merge sequence ends by waiting for the run the merge started, and stops on red', () => {

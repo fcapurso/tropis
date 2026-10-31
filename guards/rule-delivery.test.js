@@ -423,6 +423,7 @@ describe('rule delivery', () => {
       expect(said).toContain('belong on a branch');
       expect(said).toContain('main branch is gated');
       expect(said).toContain('gh pr merge <N> --auto --squash');
+      expect(said).toContain('main-status.mjs --pull-request <N>');
     });
 
     it('on a gated main names docs too', () => {
