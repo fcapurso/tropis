@@ -1137,6 +1137,16 @@ on Linux x86_64, with git 2.43.0, Node v22.23.4 and Claude Code 2.1.316. `origin
 (`a5915cc`, one commit since the executor started, touching
 none of this plan's files) was merged into the branch before the checks below were re-run.
 
+`main` then moved again (`3226d3b`, `b488232`), and was merged in a second time. Two
+conflicts, each two additions at one place, were resolved by keeping both:
+`scripts/installed-scripts.txt` lists `rule-claims.js` then `main-status.mjs`, and the
+operator guide keeps `main`'s paragraph on what the checks cover, then this plan's
+paragraph on the main branch. Neither commit touched the workflow, the command or the
+two scripts. On the merged commit: the five guard files offline, `Tests: 89 passed, 89
+total` (one more set-up test from `main`); `npm --prefix .tropis test`, `Tests: 33
+passed, 33 total`; `bash scripts/check-blueprint.sh`, `Self-check passed: …`. The
+figures below are from the first merge.
+
 ### Checks re-run
 
 - **The five guard files, staged from `HEAD` with the network cut off**
