@@ -513,7 +513,9 @@ describe('set-up-project.sh', () => {
       delete env.TROPIS_EXPECT_FRAMEWORK;
       const r = spawnSync(
         process.execPath,
-        ['--experimental-vm-modules', join(modules, '.bin/jest'), '--no-coverage'],
+        // In band: the self-check already runs every worker, and a second pool beside it
+        // slows the timing-sensitive tests of other files past their limits.
+        ['--experimental-vm-modules', join(modules, '.bin/jest'), '--no-coverage', '--runInBand'],
         { cwd: join(dir, '.tropis'), env, encoding: 'utf8' },
       );
       if (r.status !== 0) console.log(`${r.stdout}\n${r.stderr}`);
