@@ -25,6 +25,25 @@ a-self-merging-pull-request-is-seen-through:
   seen:
     status: building
     blockers: []
+a-session-cannot-move-another-sessions-branch:
+  band: A
+  value: 4
+  valueWhy: Two sessions open on one project is the usual way of working now, and on a
+    gated main each of them creates branches, so any checkout or pull by one moves the
+    other's work, and the repair takes a force-push and a reset of main.
+  effort: 3
+  effortWhy: A paragraph of Branching, a hook on three branch-creating commands built
+    like the commit hook, its tests, and the clean-up step extended beyond plans.
+  verdict: "Do now: it happened today, while writing a plan, and it will happen again
+    the next time two sessions share the checkout. Build it after the self-merging
+    entry, since both rewrite the gated bullet of Branching."
+  evidence: "2026-10-31 — framework-commit-check.sh matches its command through
+    command-at-position.py, which a branch-creating hook can reuse; git rev-parse
+    --git-dir and --git-common-dir print the same path in the main checkout and
+    differ in a linked worktree."
+  seen:
+    status: shaped
+    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
