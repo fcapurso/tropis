@@ -4018,3 +4018,23 @@
   layer: product
   modules: []
   refs: []
+# 2026-10-31, found while writing the plan for readme-says-what-it-needs. The prerequisite
+# check accepts any node 18, but the Jest it installs (30.5.2) declares engines.node
+# ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0, and the README and RELEASES.md already say
+# 18.14 or later. So node 18.0 to 18.13 passes the check and fails when the guards run.
+- id: prerequisite-check-refuses-old-node
+  title: The prerequisite check refuses a Node the guards cannot run on
+  status: shaped
+  value: Someone setting up a project learns from the prerequisite check, before anything
+    else runs, that their Node is too old for the guards. Today a Node from 18.0 to 18.13
+    passes the check, and the first sign of trouble is Jest refusing to run.
+  acceptanceCriteria:
+    - The prerequisite check refuses node older than 18.14 and exits non-zero, saying the
+      version it found and that 18.14 or newer is needed.
+    - It still accepts node 18.14 and every later 18, and node 20 and newer.
+    - A test runs the shipped script against a reported Node version and fails if either
+      of the above stops being true.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
