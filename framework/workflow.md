@@ -232,6 +232,7 @@ gh pr merge <N> --squash --delete-branch \
   --subject "<type>(<scope>): <net functional gain>" \
   --body "<intent — what is now true that was not before>"
 git checkout main && git pull origin main
+node .tropis/scripts/main-status.mjs --wait HEAD   # the run this merge started
 ```
 
 `--force` is required, not optional: a plan worktree accumulates untracked files —
@@ -254,6 +255,23 @@ pending; they passed afterwards, by luck.
 Pass `--subject` and `--body` explicitly. Left to itself the squash inherits the branch
 commits' messages, and the merged commit then lists working history instead of saying
 what the plan made true.
+
+**The sequence ends by waiting for the run the merge started on the main branch.**
+`main-status.mjs --wait` asks GitHub, through `gh`, for the pipeline's push run on that
+commit every 30 seconds, for up to 30 minutes, and prints one line. Exit 1 means the main
+branch is red: say so, with the commit and the run the line names, and stop. Repairing it
+is the next piece of work, through a pull request like any other, and nothing else starts
+on top of it. Exit 3 means the run had not finished in 30 minutes: say so, and run the
+command again later. A line saying it could not tell exits 0: report it as it stands,
+with its reason, and do not read it as green. Where an agent tool stops a command sooner
+than 30 minutes, run it in the background, or run it again: each run waits for the same
+pipeline run.
+
+A gate on the host stops a red pull request merging. It does not stop the main branch
+going red after the merge — from a deploy, an environment, or two changes that pass
+alone — and a project without the gate has nothing else that tells anyone. In one
+project a break lasted ten days while six further commits landed on top of it, and was
+found only because someone went to look.
 
 ## Merging
 

@@ -38,6 +38,16 @@ with anything but `true`, none of this happens. An update never touches the file
 
     npm --prefix .tropis test
 
+`/next` opens with one line on the main branch: whether the last finished run of the
+pipeline there passed or failed, naming the commit and, when it failed, the run. The
+isolation helper that `/dispatch`'s prompt runs prints the same line before it creates a
+worktree, and creates it either way, and the workflow's merge sequence ends with
+`node .tropis/scripts/main-status.mjs --wait HEAD`, which waits for the run the merge
+started and exits non-zero when it fails. Run `node .tropis/scripts/main-status.mjs` for
+the line alone. Each asks GitHub through `gh`, for push runs of
+`.github/workflows/pipeline.yml`; where it cannot — no `gh`, not signed in, an origin that
+is not on GitHub — it says it could not tell, and why.
+
 ## Where the framework lives
 
 This project was set up from the framework at `{{BLUEPRINT_URL}}`. General adoption,
