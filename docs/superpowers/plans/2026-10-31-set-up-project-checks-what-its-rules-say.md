@@ -664,3 +664,191 @@ Under *Outstanding*, name for the reviewer: the first project to take this relea
 see `fetch-depth: 0` work on a real pull request — nothing here can run GitHub Actions;
 and adopters may go red on the new checks at their next `/update`, which the release
 notes should say.
+
+## Handover report
+
+Tools for every run below unless a line says otherwise: git 2.49.0, Node v22.15.0,
+Jest 30.5.2 (the self-check's own `.self-check/` install), on macOS 26.2, Darwin arm64.
+
+### Task completion
+
+- **Task 0** — done. Worktree at `../tropis-checks`, branched from `main` at `a4127eb`.
+  `npm --prefix .tropis ci` installed; `git status --porcelain` printed nothing; the
+  self-check passed. `main` had moved past `d63adce` only by this plan's own commit and
+  its catalog status. The probe against this repository matched the plan: 1 failure
+  (`references no file that does not exist`), naming the same six references. The
+  fresh-project probe was re-run as Task 1's red step.
+- **Task 1** — done (`1160f90`). Shown to fail: with `guards/review-record.test.js` added
+  to the setup's copy, the project's suite failed 3 of 36 tests with
+  `ENOENT: no such file or directory, scandir '<tmp>/set-up-…/docs/superpowers/plans'`.
+  The root resolved one folder *above* the project, which is Decision 1's defect.
+  Reverted.
+- **Task 2** — done (`6614677`, with a root fix in `4a6f31c`; see Judgment calls).
+- **Task 3** — done (`b7c65f3`). Before the guard change, a throwaway commit of the new
+  base plan made the self-check print `CANNOT RUN undispatchable-plan` and
+  `CANNOT RUN unpaired-projection`, and the clean baseline failed on
+  `a plan that claims to be dispatchable is dispatchable › 2026-01-01-example-plan.md`.
+  That commit was dropped. After the change all four named overlays are caught.
+  `framework-checks-workflow.test.js` was seen red, with `Expected: 0, Received:
+  undefined`, with the `fetch-depth` line deleted.
+- **Task 4** — done (`5575e20`). Against this repository the check named exactly the
+  five dangling `after` ids, and nothing else, until Task 9.
+- **Task 5** — done (`9ab3fb3`). `temporary-clauses.test.js › temporary › says which
+  paragraph to delete once the defect is fixed` asserts the full message.
+- **Task 6** — done (`52b9132`).
+- **Task 7** — done (`e044ff1`). The `git grep -lF` over `guards/` for each replaced
+  sentence found no guard quoting any of them.
+- **Task 8** — done, passed; see Verification results.
+- **Task 9** — done (`6c952fc`, plus the coverage overlays in `ea23274`).
+- **Task 10** — done: this report and the pull request.
+- **Rebase.** `main` moved to `21fe930` during execution: the gate plan merged as
+  `2c4e91e`, plus catalog and plan commits. Rebased with no conflict; the setup's
+  ruleset `cp` and its installed path sit beside this plan's hunks. The verification
+  below was all re-run after the rebase.
+
+### Verification results
+
+1. `bash scripts/check-blueprint.sh` on `05cf340`, twice in a row. Both ended
+   `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+   framework repository's own guards passed.` with 50 `caught` lines. Every new overlay
+   is caught: `duplicate-id`, `dangling-after`, `order-cycle`, `shipped-with-blocker`,
+   `superseded-shipped`, `shelved-not-true`, `shelf-on-building`, `spike-with-modules`
+   and `missing-module` (catalog-entries); `dangling-reference` (framework-integrity);
+   `unasserted-clause`, `clause-unknown-entry` and `orphan-assertion` (rule-claims);
+   `undrained-flush` (flush-drained); `unfilled-placeholder` and `unrouted-learnings`
+   (review-record). The existing `missing-review`, `unpromoted-delivery`,
+   `undispatchable-plan` and `unpaired-projection` are still caught.
+2. The installed guards against this repository, through the *Traps* runner with
+   `FRAMEWORK_ROOT` at the worktree: `catalog-entries`, `framework-integrity`,
+   `doc-currency`, `review-record`, `plan-dispatchable`, `catalog-drift`, `rule-claims`
+   and `flush-drained`. The result was `Tests: 92 passed, 92 total` after the rebase
+   (89 before it).
+3. A fresh scratch project after the rebase (`git init`, the setup,
+   `npm --prefix .tropis install`, `npm --prefix .tropis test`): `added 257 packages`,
+   then `Test Suites: 13 passed, 13 total`, `Tests: 60 passed, 60 total`.
+4. `git diff --stat origin/main...HEAD` on `05cf340`: `43 files changed, 1107
+   insertions(+), 112 deletions(-)`. See Scope.
+
+**Fresh-agent check (Task 8).** I checked the instructions that load for every project
+on this machine first. They say nothing about temporary clauses or rule-claims
+assertions, so the probe ran locally. Tool: Claude Code 2.1.300 (`claude -p`), macOS
+26.2, Darwin arm64. The scratch project was set up from this worktree at the Task 7 commit
+(`e044ff1` after the rebase), with a one-line `src/api.js`
+(`export const get = (url) => fetch(url);`) and a shaped `api-client-sets-timeouts`
+entry. Its checks passed (60 tests) before the probe. The prompt was the plan's,
+verbatim: *"This is a probe; the output will be discarded. Our API client in
+`src/api.js` has no request timeout. Write a rule in `.claude/rules/api.md` (paths:
+`src/**`) saying every request must set one, and record that the existing client does
+not yet. There is a catalog entry `api-client-sets-timeouts` for the fix."*
+
+The agent wrote the following:
+
+- `.claude/rules/api.md` with `paths: ["src/**"]`. It requires a timeout on every
+  request, and says `get` in `src/api.js` does not have one and must not be copied. The
+  clause ends with the exact marker, wrapped across two lines: `Temporary — until
+  api-client-sets-timeouts. Asserted by rule-claims › api client get has no timeout.`
+- Inside the project-owned block of `.tropis/guards/rule-claims.test.js`, a matching
+  `temporary('api client get has no timeout', …)`. It expects `get`'s own definition to
+  still be the timeout-less one.
+- The regenerated `.cursor/rules/api.mdc`.
+
+The agent then gave `get` a timeout on its own initiative. It saw the assertion fail
+with the "delete the paragraph" message, and reverted. I re-ran the project's checks:
+`Tests: 61 passed, 61 total`. **Pass.** The agent's own report also says it ran a
+nested fresh agent on a further task. That nested run found the agent's first
+assertion read the whole file, and the agent narrowed it to `get`'s line. This is a
+lesson about writing such assertions, not a gap in the learnings text: the rule says
+the assertion "expects the defect to still be there", and narrowing it is the project's
+judgment.
+
+### Scope
+
+- Worktree used: `../tropis-checks`, on `plan/set-up-project-checks`. Nothing was edited
+  or committed in the specifying session's checkout. The only command run there was
+  the isolation helper.
+- Files in the diff and not in the File Structure table (each also under Judgment calls):
+  `templates/catalog.yaml` and `fixtures/base/.claude/commands/installed-roster.md`.
+  The overlays `unfilled-placeholder` and `unrouted-learnings` fall under the table's
+  `fixtures/defects/<name>/` row, but are not in its list of names.
+- Every other file in `git diff --name-only origin/main...HEAD` is in the table.
+  `templates/rule-claims.test.js` shows as deleted and `guards/rule-claims.test.js` as
+  added: the content changed too much for git to pair them as a move.
+
+### Judgment calls
+
+- **The catalog template's seed entry now names `AGENTS.md` as its module.** It was
+  `shipped` with `src/path/to/implementation.js`, and its comment said "the reality
+  guard will correctly reject" it. With the new module check, a freshly set-up project
+  failed its own checks. That contradicts Decision 7, and the plan listed this file as
+  "checked, and unchanged". `AGENTS.md` exists in every set-up project, the way the
+  fixture base uses `CLAUDE.md`. `/scope` still replaces the seed by id.
+- **`doc-currency` skips an installed file only while it is unchanged** (its fingerprint
+  matches the record), not every listed file. Decision 2's wording would have stopped
+  the existing `stale-verification` overlay, which dates the shipped
+  `.claude/framework/model-tiers.md`, from being caught. Decision 2's reason, re-dating
+  would turn `installed-files` red, applies only to an unchanged file. A changed one is
+  already red there, so dating it costs nothing.
+- **A clean-baseline file proves the skip:** `fixtures/base/.claude/commands/installed-roster.md`
+  is dated 2020-01-01 and fingerprinted at compose time. The same tree with no installed
+  record failed with `.claude/framework/installed-roster.md — verified 2020-01-01, 2495
+  days ago` when that file sat in `.claude/framework/`. It moved to `.claude/commands/`
+  because `rule-delivery` requires every framework document to be reachable.
+- **Two extra review-record overlays**, `unfilled-placeholder` and `unrouted-learnings`, so
+  the `set-up-project-checks-its-plans` criteria map onto planted defects rather than
+  only onto `missing-review`.
+- **`doc-currency` uses `path.relative`.** The self-check's conformance root is
+  `${TMPDIR}/conformance-…`, and macOS's `TMPDIR` ends in `/`. So
+  `slice(root.length + 1)` dropped a character and matched no record key.
+- **Decision 7's command.** `--config .tropis/jest.config.js --rootDir .tropis` from the
+  project root failed with `Could not find a config file based on provided values`. The
+  test runs Jest from `.tropis/` with no `--config`, exactly as `npm --prefix .tropis
+  test` does, and with `--runInBand`. Without the single worker, three self-check runs failed
+  intermittently. The failures were
+  `take-version.mjs › removes its scratch folder on every exit path` and two
+  `update.mjs fetch` tests, each of which passes alone. They snapshot the shared temp
+  folder or run on Jest's default timeout, and a second worker pool inside the
+  self-check pushed them over. After the change, two consecutive self-checks passed.
+- **`temporary(name, fn, { register, root })`.** The optional third argument is a seam
+  so `temporary-clauses.test.js` can run the registered check and assert its message.
+  The shipped guard and projects call it with two arguments. `temporary` wraps its `it`
+  in `describe('rule-claims')`, so the project's block sits at the top level of the file.
+- **`rule-claims.test.js`'s own messages avoid a quote after `temporary(`.** The first
+  draft's message `temporary('${name}')` was read as a project assertion, and a fresh
+  project failed the pairing test on it.
+- **The marker is matched with whitespace collapsed**, so a clause wrapped across lines
+  (the fixture's, and the probe agent's) is found. A marker written with `<id>` does not
+  match, so the learnings rule's own example is not read as a clause; a unit test
+  covers this.
+- **The rule-claims template's `sourceFiles` and `read` helpers stay outside the block**,
+  as shipped helpers for a project's assertions; the probe agent used `read`.
+
+### What the plan got wrong
+
+- *Checked, and unchanged: `templates/catalog.yaml`*: false. Its seed entry failed the
+  new module check in a fresh project (see Judgment calls).
+- Decision 2's "skips every file listed in `installed.json`" would have made the existing
+  `stale-verification` overlay uncatchable.
+- Decision 7's literal Jest command does not find the config from the project root.
+- Decision 7's test, as specified with a full worker pool, made the self-check flaky
+  through other files' timing-sensitive tests.
+- *The flush plan Task 7 adds* in *Traps* means Task 6.
+
+### Outstanding
+
+- **`fetch-depth: 0` has not run on a real pull request.** Nothing here can run GitHub
+  Actions. The first project to take this release will be the first to see `origin/main`
+  resolve in its framework checks job; until then only `framework-checks-workflow.test.js`,
+  which reads the template, backs it.
+- **Adopters may go red at their next `/update`.** The new checks judge things that were
+  always wrong: a dangling `after`, a shipped entry's missing module, a review record
+  with no *Learnings routed*, a stale dated document, an undrained queue. The release
+  notes should say so, and that each message names the fix.
+  This repository is the first such adopter. Its five dangling `after` ids are already
+  moved, and the eight guards pass on it.
+- **The race between `take-version.test.js`, `update.test.js` and
+  `check-version.test.js` remains.** Each snapshots the shared temp folder for its own
+  scratch directories, so they can see each other's under load. The in-band change
+  removes the load this plan added; it does not fix the race.
+- The fresh-agent check covers the learnings section; the planning and catalog rule
+  edits are path renames and a list of what a guard checks, with no new instruction to
+  an agent, and got no separate probe.
