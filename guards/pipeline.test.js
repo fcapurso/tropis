@@ -241,6 +241,98 @@ describe('branch slot', () => {
     expect(result.stdout).toBe('branch: empty — no pipeline/branch/\n');
   });
 
+  describe('permanent environments', () => {
+    const DEFAULT_WHY = '(a default permanent name; list yours in pipeline/branch/permanent.txt)';
+    const LISTED_WHY = '(listed in pipeline/branch/permanent.txt)';
+    const ran = (root) => statSync(join(root, 'seen.txt'), { throwIfNoEntry: false }) !== undefined;
+
+    it.each(['create', 'deploy', 'remove'])('%s refuses production by default and runs nothing', (action) => {
+      const root = repository();
+      fillBranchSlot(root, 'printf ran > seen.txt\n');
+      const result = runPipeline(root, ['branch', action, 'production']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(
+        `branch: production would use the environment production, which is permanent ${DEFAULT_WHY} — rename the branch.\n`,
+      );
+      expect(result.stdout).toBe('');
+      expect(ran(root)).toBe(false);
+    });
+
+    it('refuses staging and development by their environment names', () => {
+      const root = repository();
+      fillBranchSlot(root, 'printf ran > seen.txt\n');
+      const staging = runPipeline(root, ['branch', 'deploy', 'Staging']);
+      expect(staging.status).toBe(1);
+      expect(staging.stderr).toBe(
+        `branch: Staging would use the environment staging, which is permanent ${DEFAULT_WHY} — rename the branch.\n`,
+      );
+      const development = runPipeline(root, ['branch', 'create', 'development/']);
+      expect(development.status).toBe(1);
+      expect(development.stderr).toBe(
+        `branch: development/ would use the environment development, which is permanent ${DEFAULT_WHY} — rename the branch.\n`,
+      );
+      expect(ran(root)).toBe(false);
+    });
+
+    it('a permanent.txt replaces the default list', () => {
+      const root = repository();
+      fillBranchSlot(root, 'printf ran > seen.txt\n');
+      write(root, 'pipeline/branch/permanent.txt', '  Live\r\n# comment\n\n');
+      const live = runPipeline(root, ['branch', 'deploy', 'live']);
+      expect(live.status).toBe(1);
+      expect(live.stderr).toBe(
+        `branch: live would use the environment live, which is permanent ${LISTED_WHY} — rename the branch.\n`,
+      );
+      expect(ran(root)).toBe(false);
+      const production = runPipeline(root, ['branch', 'deploy', 'production']);
+      expect(production.status).toBe(0);
+      expect(ran(root)).toBe(true);
+    });
+
+    it('an empty permanent.txt refuses nothing', () => {
+      const root = repository();
+      fillBranchSlot(root, 'printf ran > seen.txt\n');
+      write(root, 'pipeline/branch/permanent.txt', '');
+      const result = runPipeline(root, ['branch', 'deploy', 'production']);
+      expect(result.status).toBe(0);
+      expect(ran(root)).toBe(true);
+    });
+
+    it('an empty slot still prints its line for a permanent name', () => {
+      const root = repository();
+      const result = runPipeline(root, ['branch', 'create', 'production']);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe('branch: empty — no pipeline/branch/\n');
+      expect(result.stderr).toBe('');
+    });
+
+    it('refuses before listing origin', () => {
+      const root = repository();
+      fillBranchSlot(root, 'printf ran > seen.txt\n');
+      git(root, 'remote', 'add', 'origin', join(root, 'no-such-origin'));
+      const result = runPipeline(root, ['branch', 'create', 'production']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('which is permanent');
+      expect(result.stderr).not.toContain('could not list branches on origin');
+      expect(ran(root)).toBe(false);
+    });
+
+    it('environment still prints a permanent name', () => {
+      const root = repository();
+      const result = runPipeline(root, ['environment', 'production']);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe('production\n');
+    });
+
+    it('the operator guide names the list and what deploy.sh does with no environment', () => {
+      const guide = readFileSync(join(blueprint, 'templates', 'README.md'), 'utf8').replace(/\s+/g, ' ');
+      expect(guide).toContain('pipeline/branch/permanent.txt');
+      expect(guide).toContain('replaces the default list');
+      expect(guide).toContain('must not create one');
+      expect(guide).toContain('close and reopen the pull request');
+    });
+  });
+
   it('passes secret values to a branch script without forwarding the payload', () => {
     const root = repository();
     fillBranchSlot(root, 'exit 0\n');
