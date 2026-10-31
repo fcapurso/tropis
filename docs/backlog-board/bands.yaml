@@ -444,6 +444,20 @@ project-settings-are-listed-and-held-once:
   seen:
     status: shaped
     blockers: []
+project-settings-live-under-tropis:
+  band: B
+  value: 3
+  valueWhy: One home for a project's own settings, in a folder no agent tool owns,
+    before a second settings file is created.
+  effort: 4
+  effortWhy: A move every project with the file must take, everything that reads it,
+    and a review of each project-owned file under .claude/.
+  verdict: "The direction is decided - .tropis/ is the home. Plan it with
+    project-has-one-display-name, so the name is written into the file this move
+    creates rather than into a second one."
+  seen:
+    status: idea
+    blockers: []
 release-guides-through-both-steps:
   band: B
   value: 3

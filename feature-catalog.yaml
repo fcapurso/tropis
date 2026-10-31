@@ -2108,6 +2108,11 @@
 # .tropis/project.json as the home over the README's first heading, which any README edit
 # would silently change. Settles update-keeps-the-package-name too if the package name is
 # derived from it.
+# 2026-10-31: since update-keeps-the-package-name shipped, the package keeps the name of
+# the folder the project was set up in, not whichever folder an update ran in. The name
+# stays in .tropis/project.json: the developer confirmed it as the one file for a
+# project's own settings, and project-settings-live-under-tropis moves .claude/project.json
+# there to join it.
 - id: project-has-one-display-name
   title: A project's name is written once and everything the framework writes uses it
   status: idea
@@ -2115,13 +2120,36 @@
     all — and the framework uses that name wherever it writes one, whatever the repository
     folder is called. Today the setup asks for a display name and then drops it, so the
     backlog board is titled after the folder and the framework package is named after
-    whichever folder the update ran in.
+    the folder the project was set up in.
   acceptanceCriteria:
     - The setup command asks for the project's display name and stores it in
       .tropis/project.json, a file of the project's own that an update never replaces.
     - The backlog board, the operator guide, the brief heading and the framework package
       name all take the name from that file, and fall back to the folder name only when
       it is absent.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
+# Raised 2026-10-31 at a backlog refresh. .claude/project.json was placed by FW-032, which
+# weighed it only against a key in the README's settings and a call to GitHub, never
+# against .tropis/; the display name had been given .tropis/project.json on 2026-10-17. The
+# developer chose .tropis/ as the one home: .claude/ is named after one agent tool, and
+# these settings belong to the project whatever tool it uses.
+- id: project-settings-live-under-tropis
+  title: A project's own settings and data live under .tropis/, in one place
+  status: idea
+  value: Someone tailoring a project finds every setting the project owns in one file
+    under .tropis/, the framework's own folder, rather than split between it and the
+    folder one agent tool reads. Today whether the project is public and why its main
+    branch is not gated sit in .claude/project.json, while its display name is planned
+    for .tropis/project.json, so a project would keep two settings files in two folders,
+    and settings that apply to every agent tool sit in a folder named after one. The move
+    covers .claude/project.json, and every other file of the project's own under .claude/
+    is looked at - the rule areas, the additions to shipped rules, the project's own
+    rules and its share of settings.json among them - to decide whether it moves too or
+    stays because a tool reads it only from there.
+  acceptanceCriteria: []
   type: improvement
   layer: product
   modules: []
