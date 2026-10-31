@@ -4177,9 +4177,12 @@
 # auto-merge is allowed. The pipeline's token reads the branch rules, but GitHub leaves
 # allow_auto_merge out of the repository answer it gives that token. Every project that
 # applies the ruleset reads red on every run until this ships.
+# Shipped by docs/superpowers/plans/2026-10-31-host-check-passes-when-github-does-not-say.md;
+# criteria 1 and 2 by guards/pipeline.test.js, describe host; criterion 3 by Task 3's
+# fresh-agent check.
 - id: host-check-passes-when-github-does-not-say
   title: The host check passes a gated branch when GitHub does not report auto-merge
-  status: building
+  status: shipped
   value: A project whose main branch is gated reads green. Today the host job fails
     whenever GitHub leaves auto-merge out of its answer, which it always does for the
     pipeline's own token, so a gated project's main branch is red after every merge and
@@ -4196,5 +4199,6 @@
   layer: product
   after:
     - main-is-gated-by-the-host
-  modules: []
+  modules:
+    - scripts/pipeline.mjs
   refs: []
