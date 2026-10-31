@@ -503,3 +503,92 @@ Nothing that blocked work. The red failures land at the symlink assertion, not o
 ### Outstanding
 
 Review and merge by the specifying session. The plan's Review record (including the re-break of the `isSymbolicLink()` branch) is not written, by instruction.
+
+## Review record
+
+Reviewed by a separate session, at the developer's request: the plan granted self-merge,
+and the executor was told to stop after the handover report and the pull request. Every
+check below ran in a Claude Code cloud session with git 2.43.0, Node v22.23.4, Jest
+30.5.2 and GNU cp (coreutils) 9.4, on Linux x86_64.
+
+### Checks re-run
+
+- **Before bringing in `main`**, on the branch head `45f0a25`:
+  - Task 1's staged command (`take-version -t "entry pair|AGENTS.md|symlink"`):
+    `Tests: 35 skipped, 9 passed, 44 total`; the whole file: `Tests: 44 passed, 44 total`.
+  - **The update fix re-broken**: in a throwaway commit, `unlinkEntryFile` no longer
+    called from `entryFiles`. Staged command: `Tests: 4 failed, 35 skipped, 5 passed,
+    44 total`, the four being the new tests — `replaces a CLAUDE.md symlinked to
+    AGENTS.md …`, `replaces an AGENTS.md symlinked to CLAUDE.md …`, `removes a dangling
+    CLAUDE.md symlink …`, `reports a replaced CLAUDE.md symlink to another file even on an
+    early return`. Reset away.
+  - **The `isSymbolicLink()` branch deleted** from `agentsProblem`, throwaway commit,
+    self-check: exit 1, `NOT CAUGHT  entry-agents-is-symlink entry-file passed against a
+    broken project`, the other two entry cases still `caught`. Reset away.
+  - **The import-line check deleted** from `agentsProblem`, throwaway commit, self-check:
+    exit 1, `NOT CAUGHT  entry-agents-is-import entry-file passed against a broken
+    project`, the other two still `caught`. Reset away. So each overlay shows one fault,
+    as *Decision 4* intends.
+  - `git ls-tree` on the branch: `fixtures/defects/entry-agents-is-symlink/AGENTS.md` is
+    mode `120000`, a link to `entry-instructions.md`.
+- **After bringing in `origin/main` at `3b750d0`**, the sibling plan's merge. Both touch
+  `feature-catalog.yaml`; it applied without conflict. The branch was first rebased, and
+  Task 4 run in full on the rebased head:
+  - `npm --prefix .tropis test`: `Test Suites: 6 passed, 6 total`, `Tests: 33 passed,
+    33 total`.
+  - `bash scripts/check-blueprint.sh`: `caught      entry-file-not-pointer entry-file`,
+    `caught      entry-agents-is-symlink entry-file`, `caught      entry-agents-is-import
+    entry-file`, `ok          clean baseline`, and `Self-check passed: every guard caught
+    its defect, the clean baseline passed, and the framework repository's own guards
+    passed.`
+  - The whole `take-version` file, staged: `Tests: 44 passed, 44 total`.
+  - `git diff --stat origin/main...HEAD`: 9 files, 204 insertions, 14 deletions — the
+    eight files in *File Structure* plus this plan, nothing else. The code, guard,
+    fixtures and catalog edit match *Decisions 1, 3 and 4* and Task 3 as written.
+
+  The force-push a rebase needs was refused in this session, so `origin/main` was merged
+  into the branch instead, and that merge is what was pushed. Its tree is identical to
+  the rebased head's (`git diff` between them prints nothing), so the results above hold
+  for it; the squash-merge gives the same commit either way. The self-check was run again
+  on the commit carrying this record.
+- **The handover's diagnosis** — that the red tests failed at the `isSymbolicLink()`
+  assertion rather than on content, because the pointer was written through the link and
+  left it a link — is what the old code predicts: `writeText` is `writeFileSync`, which
+  writes through a link, and each new test asserts `lstatSync(…).isSymbolicLink()` is
+  false before it compares bytes. Confirmed by reading; the re-break above reproduces
+  four failures.
+
+### Found
+
+Public exposure: the whole diff was read for private material — people's names,
+customers, other projects' names or internals, home paths, hostnames, addresses. The
+only other project named is `first-adopter`, the pseudonym; the worktree is named by its
+relative path; the `ls -l` line in the handover shows the container's `root` user, which
+names no one. Nothing found.
+
+Nothing beyond what the handover reports. No fresh-agent check is owed (*Decision 5*):
+nothing an agent is told to follow changed. No manual check is owed: the change has no
+screen.
+
+### Outstanding disposition
+
+- *Review and merge by the specifying session* — done by this review; nothing carried
+  forward.
+- The branch already existed when the executor's session started (*Judgment calls*);
+  the sibling plan's executor reports the same, and its review record drops it with the
+  reason. Dropped here for the same reason.
+- BSD/macOS `cp` copying the overlay's link was not measured (*Traps*); CI runs on
+  Linux and is the gate, as the plan says. Dropped: CI is where the self-check gates a
+  merge.
+
+### Learnings routed
+
+None generalises. Writing through a symlink is specific to the entry pair, which is the
+only place the update writes a file a project may have linked, and this plan fixes it
+there and guards it.
+
+### Merged because
+
+Every criterion has a test or conformance case shown red when its target is broken, the
+full merge criteria pass again with the sibling's merge brought in, and the diff is
+exactly the File Structure table.
