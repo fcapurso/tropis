@@ -134,6 +134,22 @@ deploy may need approving, and an installed site may stay on the old major versi
 upgraded, so approve and upgrade the pre-production install in the scripts, or append a
 line to `TROPIS_BY_HAND`.
 
+On GitHub the host can refuse a pull request whose checks have not passed. Tropis ships
+the settings in `.tropis/templates/main-branch-ruleset.json`: the main branch takes
+changes only through a pull request, needs no approval, requires the check
+`pipeline / gate` on a branch up to date with it, refuses force pushes and deletion, and
+lets nobody bypass it. Apply it with
+`gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
+and turn on *Allow auto-merge* and *Automatically delete head branches* under Settings →
+General → Pull Requests. If you renamed the job in `pipeline.yml` or the gate, apply a
+copy with the check's name changed. The pipeline's `host` job fails on every run until
+the main branch requires a pull request and a check and auto-merge is allowed, or until
+`.claude/project.json` says why not, as `"ungated": "<the reason>"` — a private
+repository on GitHub's free plan cannot have rulesets, for one; the run summary then
+carries the reason. Only rulesets are read: a classic branch protection rule does not
+count. A release pipeline that pushes to the main branch cannot run behind the gate,
+because nothing bypasses it; such a project records why it is ungated for now.
+
 Tropis ships the pipeline and replaces its copy on update. To own the pipeline,
 copy `.github/workflows/tropis-pipeline.yml` to
 `.github/workflows/project-pipeline.yml` and point
