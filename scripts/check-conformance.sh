@@ -29,6 +29,8 @@ orphan-rule:rule-areas
 stale-verification:doc-currency
 stale-picks:doc-currency
 missing-review:review-record
+unfilled-placeholder:review-record
+unrouted-learnings:review-record
 projection-drift:rules-generated
 hand-edited-rule:rules-generated
 orphan-addition:rules-generated
