@@ -1053,3 +1053,202 @@ Stop there: the specifying session reviews and merges.
 - **The `host` job and the red gate have not run on GitHub.** The first run after this
   repository takes the release is the observation; the reviewer names who looks at it.
 - Whatever Task 1 and Task 9 found that this plan did not settle.
+
+## Handover report
+
+### Task completion
+
+- **Task 0** — done. In the worktree `../tropis-gate`: `npm --prefix .tropis ci` succeeded;
+  `git status --porcelain` printed nothing; `bash scripts/check-blueprint.sh` ended
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.` Guard files before any change:
+  `guards/pipeline.test.js` 87 passed of 87; `guards/release.test.js` 47 of 47;
+  `guards/set-up-project.test.js` 17 passed, **1 failed** of 18 — the failure was there before
+  any edit (see *What the plan got wrong*).
+- **Task 1** — done, **did not stop**. All three questions were settled; no `permissions:`
+  block was added and the ruleset file is unchanged. **docs.github.com could not be
+  reached**: the session's proxy answers 403 to CONNECT for that host (policy denial).
+  The same documentation was read from its source instead, on
+  raw.githubusercontent.com, which was reachable:
+  1. *Permissions.* `github/docs`, `src/github-apps/data/fpt-2022-11-28/fine-grained-pat-permissions.json`
+     and `server-to-server-permissions.json` (the data the *Fine-grained access tokens*
+     sections of the REST pages are generated from) list
+     `GET /repos/{owner}/{repo}` and `GET /repos/{owner}/{repo}/rules/branches/{branch}`
+     under **metadata, read**, and `POST /repos/{owner}/{repo}/rulesets` under
+     administration, write. `data/reusables/actions/github-token-available-permissions.md`
+     lists every permission a `permissions:` block can set (actions, contents,
+     pull-requests, …) — metadata is not among them, so no block can grant or remove it,
+     and the file says "If you specify the access for any of these permissions, all of
+     those that are not specified are set to `none`." The sentence "the `GITHUB_TOKEN`
+     always has metadata read" was not found in the current docs source (the page
+     *automatic-token-authentication* that carried its table has moved; four candidate
+     paths returned 404). The conclusion — Metadata: read suffices and is not
+     configurable — rests on the two facts above; the first run on GitHub is its
+     observation (*Outstanding*).
+  2. *What the endpoints return*, unauthenticated, curl 8.5.0 through the session proxy,
+     2026-10-31: `GET repos/fcapurso/tropis` → `default_branch` `main`,
+     `allow_auto_merge` `false` (present), `delete_branch_on_merge` `false`;
+     `GET repos/fcapurso/tropis/rules/branches/main` → two objects, `deletion` and
+     `non_fast_forward`, each with `ruleset_source_type`, `ruleset_source`,
+     `ruleset_id`; the same for `no-such-branch-xyz` → `[]`. `gh auth status` failed
+     (not signed in), so no `gh api` comparison. The published REST description
+     (`github/rest-api-description`, `descriptions/api.github.com/api.github.com.json`,
+     version 1.1.4) says of the rules endpoint: "The branch does not need to exist …
+     All active rules that apply will be returned, regardless of the level at which
+     they are configured (e.g. repository or organization). Rules in rulesets with
+     "evaluate" or "disabled" enforcement statuses are not returned." `allow_auto_merge`
+     is a property of `full-repository` but not in its `required` list — which the
+     "GitHub did not say whether auto-merge is allowed" gap covers.
+  3. *The ruleset schema*, from the same REST description, `repos/create-repo-ruleset`:
+     the body requires only `name` and `enforcement`; `ref_name.include` "Also accepts
+     `~DEFAULT_BRANCH` to include the default branch"; a `pull_request` rule's
+     parameters require `dismiss_stale_reviews_on_push`, `require_code_owner_review`,
+     `require_last_push_approval`, `required_approving_review_count` and
+     `required_review_thread_resolution` — all five present in *Decision 1*;
+     `required_status_checks` requires `required_status_checks` and
+     `strict_required_status_checks_policy`, and each check requires only `context`
+     (`integration_id` optional). No change to the file.
+- **Task 2** — done. The two new assertions were red first (pipeline 1 failed of 88;
+  set-up-project 2 failed of 18, one of them the old failure), then green.
+- **Task 3** — done. Before the code: 14 failed of 99 — the two held gate tests, the
+  no-plan test, all ten `host` tests and the workflow test; the third gate test was green,
+  as expected. After: 99 of 99. Mutations, each reverted at once:
+  1. `gateCommand` returns 0 for `held` → `holds a deploy when framework failed and the
+     other stage jobs were skipped`, `holds a stage that was planned to run and finished
+     skipped` failed.
+  2. returns 1 always → `skips deploy on a green pull request and runs it for the same
+     results on a push` failed.
+  3. `gateGaps` requires a check whose rule names `pipeline / gate` → `passes when the
+     main branch requires a pull request and any check, and auto-merge is allowed`,
+     `reads the default branch from the repository` failed.
+  4. GitHub asked before `.claude/project.json` is read → `passes when …` (the stub log
+     held four calls), `an ungated reason passes without asking GitHub, and the summary
+     carries it`, `an ungated value that is not a reason fails` failed.
+  After revert: 99 of 99.
+- **Task 4** — done. Committed tests and hook together; the self-check passed. With
+  `ungated=yes` forced right after the reader, committed as a throwaway, the self-check
+  failed its clean baseline on `a blank ungated counts as gated`, `on a gated main names
+  docs too`, and `on a gated main names the backlog and says to use a pull request that
+  merges itself`; then `git reset --hard HEAD~1`.
+- **Task 5** — done; FW-037 was still the next free number, also after the rebase.
+- **Task 6** — done. 7 failed of 54 before the edit, 54 of 54 after.
+- **Task 7** — done. 3 failed of 57 before, 57 of 57 after.
+- **Task 8** — done. 1 failed of 58 before, 58 of 58 after.
+- **Task 9** — done; see *Verification results*. Both runs did what the change intended
+  on the first try; Task 6's bullet was not reworded.
+- **Task 10** — done. Before the code the release guard file did not load
+  (`checkReleased` not exported: *Test suite failed to run*, 0 tests); after, 65 of 65.
+- **Task 11** — this report, the push and the pull request.
+
+### Verification results
+
+All in a Claude Code cloud session on Linux x86_64, with git 2.43.0, Node v22.23.4,
+Claude Code 2.1.316.
+
+- Guard files on the final tree (Task 0's command): `guards/pipeline.test.js`
+  `Tests: 99 passed, 99 total`; `guards/release.test.js` `Tests: 65 passed, 65 total`;
+  `guards/set-up-project.test.js` `Tests: 1 failed, 17 passed, 18 total`, the failure
+  being `set-up-project.sh › records every shipped file at version unknown`
+  (`Expected: "unknown"`, `Received: "v0.6.0-…"`), present before any change.
+- `npm --prefix .tropis test`: `Test Suites: 6 passed, 6 total`,
+  `Tests: 33 passed, 33 total` — the installed-files check passed with the edit to the
+  project-owned block of `.claude/commands/release.md`.
+- `bash scripts/check-blueprint.sh` after the Task 10 commit, and again on this report's
+  commit after the rebase: last line `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- **Fresh-agent check (Task 9).** No user-level instruction file exists on this install
+  (no `~/.claude/CLAUDE.md`), so nothing outside the scratch projects said anything about
+  gated branches. Two scratch projects under the session's scratch directory, outside
+  every checkout: `git init -b main`, `bash ../tropis-gate/scripts/set-up-project.sh`,
+  everything committed on `main`, no remote; the second also with
+  `.claude/project.json` `{"ungated": "probe control"}` committed. Each ran
+  `claude -p` with the plan's prompt verbatim, as its working directory, so the scratch
+  project's own settings and hooks applied.
+  - *No `.claude/project.json`:* the agent said the project "counts as gated, so nothing
+    goes straight to `main`", created `plan/probe-widget-export-idea`, committed the
+    entry there (`docs(backlog): capture the idea that a widget can be exported`), left
+    `main` at the setup commit, and wrote — not ran — `git push -u origin …`,
+    `gh pr create …`, and `gh pr merge <N> --auto --squash --subject "…" --body "…"`,
+    then `git pull origin main` once merged. **As intended.**
+  - *Control, `"ungated": "probe control"`:* it committed the entry on `main`, citing the
+    record and the direct-to-main list, and wrote `git push origin main` as the step it
+    would run. **As intended.**
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report (after rebasing onto
+`origin/main` at `a4127eb`): 21 files, 875 insertions, 141 deletions —
+`.claude/commands/release.md`, `.github/scripts/release.mjs`, `.github/workflows/ci.yml`,
+`RELEASES.md`, `commands/bootstrap.md`, `commands/refresh-board.md`,
+`commands/release.md`, `commands/update.md`, `feature-catalog.yaml`,
+`framework/DECISIONS.md`, `framework/workflow.md`, `guards/pipeline.test.js`,
+`guards/release.test.js`, `guards/rule-delivery.test.js`,
+`guards/set-up-project.test.js`, `scripts/framework-commit-check.sh`,
+`scripts/pipeline.mjs`, `scripts/set-up-project.sh`, `templates/README.md`,
+`templates/github/main-branch-ruleset.json`, `templates/github/tropis-pipeline.yml`;
+with this report, the plan file makes 22. Every file is in the File Structure table.
+Worktree: `../tropis-gate`, created by `isolate-for-plan.sh`, on
+`plan/main-is-gated-by-the-host`.
+
+### Judgment calls
+
+- **Where `host` resolves the root.** The dispatch block parses the arguments, then
+  checks `GITHUB_ACTIONS`, and only then resolves the root with `projectRoot()` (as
+  `environment` does), so step 2's "nothing else read" holds outside a git repository too.
+  Outside a repository inside Actions it prints `pipeline: not a git repository`, exit 1,
+  like the other commands.
+- **`host` with `--summary` and an empty file name** is refused as a bad argument (exit 2).
+- **A GitHub answer that parses but has no `default_branch`, or a rules answer that is not
+  a list,** gives the gap line `could not ask GitHub (gh …): the answer has no
+  default_branch` / `… the answer is not a list of rules`, as step 5's "not the expected
+  JSON".
+- **The no-plan test** also checks that the line reaches the summary file, and a tenth
+  `host` test covers step 1's bad-argument message.
+- **In Tasks 6–8 the guard edits all sit in `guards/release.test.js`,** committed with the
+  workflow commit; the command and guide commits that follow make their tests pass. The
+  red-then-green runs were done per task on the working tree, as recorded above.
+- **`ci.yml` keeps its workflow name** `Self-check and release` (it still self-checks the
+  commit it tags); the plan did not ask for a rename.
+- **The release-job test reads the steps after setup-node** (the plan's "after the
+  setup-node step that have a `run`"), and the structural test also asserts the
+  `version` input is required.
+- **The criteria comment in the catalog** sits below the existing comment above the
+  entry, as asked; YAML parsed after the edit.
+
+### What the plan got wrong
+
+- **`guards/set-up-project.test.js` cannot pass in a checkout.** Its test
+  `records every shipped file at version unknown` expects `unknown`, which `git describe`
+  gives only in the self-check's archive export; run from the worktree it fails before
+  any change. Task 2's "after step 3 (green)" was therefore 17 of 18, the one being that
+  test. The self-check, which runs it from the export, passes.
+- **docs.github.com is not reachable from this environment** (a network-policy refusal),
+  so Task 1's question 1 could not be read from the pages it names; its source data in
+  `github/docs` was readable and settled it.
+- **`origin/main` moved during execution** (two commits: the next plan and its catalog
+  dispatch); the branch was rebased with no conflict.
+
+### Outstanding
+
+- **The developer applies the ruleset to this repository after merge, in this order.**
+  (1) Release with `/release` — the new block prints `-f version=…`. (2) Take that
+  release here with `/update`, so this repository's installed pipeline has the red gate
+  and the `host` job; before that, `pipeline / gate` here is green even when a stage
+  fails, and requiring it would gate nothing. (3) Run the apply command for
+  `fcapurso/tropis` and turn on *Allow auto-merge* and *Automatically delete head
+  branches*. (4) The specifying session then updates `AGENTS.md`'s *What GitHub enforces
+  here*, with the date checked.
+- **The `host` job and the red gate have not run on GitHub.** The first run after this
+  repository takes the release is the observation — including that the job's default
+  `GITHUB_TOKEN`, with no `permissions:` block, can read both endpoints (Task 1 rests
+  this on the docs' permission data, not on a run); the reviewer names who looks at it.
+- **The first release under the new job.** `/release`'s project-owned block now promotes
+  the notes before its commit; its first use is when it is exercised.
+- **Proposal from Task 9 — the setup line `npm --prefix .tropis ci` fails in a freshly
+  set-up project**, because setup writes `.tropis/package.json` and no lockfile; both
+  probe agents fell back to `npm install --no-package-lock` and said so. Not this plan's
+  change. Recommend a backlog entry: a set-up project can run its documented install
+  command first time (ship a lockfile from setup, or name `npm install` until one is
+  committed). The reviewer decides.
+- **Proposal — the set-up-project version test above**: make it independent of where it
+  runs (a backlog entry or a small fix). The reviewer decides.
