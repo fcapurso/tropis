@@ -4125,3 +4125,23 @@
   layer: product
   modules: []
   refs: []
+# 2026-10-31, found reviewing work-that-will-not-be-done-reads-as-closed (its review record,
+# Found): a self-check run sat for an hour in a take-version test. take-version.mjs was
+# blocked in buildVersion, where spawnSync pipes git archive's output into tar -x: tar had
+# read the archive and waited at archive_read_close for the end of its input, and the node
+# process never closed the pipe. spawnSync blocks the test worker, so the test's timeout
+# never fired. An 11-day-old check-version.mjs test process was stuck on the same machine.
+# Why the pipe was never closed is not known. Seen on macOS (Darwin 25.2.0), arm64,
+# Node v22.15.0, bsdtar.
+- id: an-update-never-hangs-unpacking-a-version
+  title: Taking or checking an update never hangs unpacking a version
+  status: idea
+  value: Someone taking an update, or checking whether one fits, gets an answer or an error
+    in bounded time. Today the step that unpacks a version into a scratch folder can wait
+    forever with nothing on the screen, and the framework's own checks that exercise it
+    can hang for an hour, because nothing can time them out.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
