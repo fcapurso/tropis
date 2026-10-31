@@ -10,6 +10,21 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
+a-self-merging-pull-request-is-seen-through:
+  band: A
+  value: 4
+  valueWhy: Every merge on a gated main goes through auto-merge, and any one of them can
+    stall unseen when main moves, which it does often with agents merging in parallel.
+  effort: 2
+  effortWhy: One waiting command beside main-status.mjs, and a line in three places that
+    name it.
+  verdict: "Do now: the gate went on today, and the first self-merge after it stalled
+    behind main until the developer noticed."
+  evidence: "2026-10-31 — the ruleset on main requires a branch up to date with it, and
+    allow_update_branch is off; PR #47 sat BEHIND after the v0.7.1 update landed."
+  seen:
+    status: shaped
+    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
