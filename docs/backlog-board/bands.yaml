@@ -13,14 +13,13 @@
 a-failing-push-is-visible:
   band: A
   value: 5
-  valueWhy: A red main went unseen for ten days under six commits, and on
-    2026-10-30 a merge went ahead with its checks still queued.
-  effort: 3
-  effortWhy: A signal to the person who pushed, with a decision on where it lands.
-  verdict: "The most expensive failure on record here, and it nearly recurred on
-    2026-10-30 when a pull request merged with its checks still queued and
-    nothing said so. Do it now; deciding where the signal lands is part of the
-    plan."
+  valueWhy: A red main went unseen for ten days under six commits; a gate stops red
+    merges but not a main that goes red after one.
+  effort: 2
+  effortWhy: One read-only status command used at three moments that already exist.
+  bundle: main-stays-green
+  verdict: "The failure that started this, narrowed to what the host's gate cannot
+    catch. Do it with the gate, after it."
   seen:
     status: shaped
     blockers: []
@@ -35,20 +34,6 @@ adopt-into-a-project-with-its-own-framework:
     anyone builds."
   seen:
     status: idea
-    blockers: []
-branch-slot-never-touches-a-permanent-environment:
-  band: A
-  value: 5
-  valueWhy: One branch named like production would deploy over it and remove it.
-  effort: 2
-  effortWhy: A refusal list in three pipeline commands and a guard.
-  verdict: "One branch named like production would deploy over it and remove it
-    when its pull request closes. Small to build, and every project guards it by
-    hand today."
-  evidence: "2026-10-29 — scripts/pipeline.mjs:557-590 refuses only a name another
-    branch shares, never a permanent environment's."
-  seen:
-    status: shaped
     blockers: []
 catalog-rules-name-the-colon-trap:
   band: B
@@ -660,20 +645,6 @@ update-check-runs-the-projects-own-checks:
   seen:
     status: idea
     blockers: []
-update-keeps-instructions-behind-a-symlink:
-  band: A
-  value: 5
-  valueWhy: An update silently empties every instruction of a symlinked project
-    and reports success.
-  effort: 2
-  effortWhy: Handling the symlink in take-version and one new check failure.
-  verdict: "An update silently empties every entry instruction of a symlinked
-    project and reports success. Small fix, severe failure."
-  evidence: "2026-10-29 — scripts/take-version.mjs:393-396 writes the pointer
-    through the symlink, so both files end as @AGENTS.md."
-  seen:
-    status: shaped
-    blockers: []
 update-skips-a-new-file-that-matches:
   band: B
   value: 2
@@ -723,4 +694,28 @@ version-check-tells-a-red-baseline:
     than a cheap fix."
   seen:
     status: idea
+    blockers: []
+main-is-gated-by-the-host:
+  band: A
+  value: 5
+  valueWhy: A merge went ahead on 2026-10-30 with its checks still queued; the host
+    can refuse that and was not asked to.
+  effort: 3
+  effortWhy: A ruleset file, one pipeline check, an opt-out, and workflow text.
+  bundle: main-stays-green
+  verdict: "Prevention the host already offers, and the condition for turning it on
+    here. Do it now, before a-failing-push-is-visible."
+  seen:
+    status: shaped
+    blockers: []
+release-tags-what-main-holds:
+  band: B
+  value: 3
+  valueWhy: Lets a project with a release pipeline turn the gate on with no bypass.
+  effort: 3
+  effortWhy: Reworks the release step FW-030 designed, and its guard.
+  verdict: "Needed before an adopter with a release pipeline can gate its main
+    branch; until then it records why it does not."
+  seen:
+    status: shaped
     blockers: []
