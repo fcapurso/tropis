@@ -17,6 +17,7 @@ import YAML from 'yaml';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
 import { inFlight, blocked, arcs, nextStep, bandOf, readyInBandOrder, hasBandRows, blockedAhead } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';
+import { mainStatus } from './main-status.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -29,6 +30,10 @@ const bandRows = existsSync(bandsPath) ? YAML.parse(readFileSync(bandsPath, 'utf
 const bands = bandRows ? bandLetters(bandRows) : null;
 const scores = bandRows ? bandScores(bandRows) : null;
 const bundles = bandRows ? bandBundles(bandRows) : {};
+
+// First, whether the main branch's pipeline is red: main-status.mjs.
+console.log(mainStatus(root).line);
+console.log('');
 
 function tag(entry) {
   return `[${entry.type}]`;

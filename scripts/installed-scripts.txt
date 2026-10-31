@@ -18,3 +18,4 @@ update.mjs
 readme-freshness.js
 pipeline.mjs
 rule-claims.js
+main-status.mjs

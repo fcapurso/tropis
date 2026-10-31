@@ -8,13 +8,17 @@
  * order of its sections.
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, symlinkSync, rmSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync, mkdirSync, copyFileSync, writeFileSync, symlinkSync, rmSync, existsSync, chmodSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
+// What the report imports, copied beside it into .tropis/scripts/ in every staged project.
+const REPORT_FILES = ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js', 'main-status.mjs'];
 
 const HEADER_ONLY_BANDS = `# Bands and verdicts, with no rows yet.
 # A header-only file is not a set of bands.
@@ -69,7 +73,7 @@ function stageReport(catalog, bands, queue) {
   const dir = mkdtempSync(join(tmpdir(), 'next-report-'));
   const fw = join(dir, '.tropis');
   mkdirSync(join(fw, 'scripts'), { recursive: true });
-  for (const file of ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js']) {
+  for (const file of REPORT_FILES) {
     copyFileSync(join(shipped, file), join(fw, 'scripts', file));
   }
   writeFileSync(join(fw, 'package.json'), '{"type":"module"}\n');
@@ -142,7 +146,7 @@ describe('backlog report', () => {
     try {
       const fw = join(dir, '.tropis');
       mkdirSync(join(fw, 'scripts'), { recursive: true });
-      for (const file of ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js']) {
+      for (const file of REPORT_FILES) {
         copyFileSync(join(shipped, file), join(fw, 'scripts', file));
       }
       writeFileSync(join(fw, 'package.json'), '{"type":"module"}\n');
@@ -169,7 +173,7 @@ describe('backlog report', () => {
     try {
       const fw = join(dir, '.tropis');
       mkdirSync(join(fw, 'scripts'), { recursive: true });
-      for (const file of ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js']) {
+      for (const file of REPORT_FILES) {
         copyFileSync(join(shipped, file), join(fw, 'scripts', file));
       }
       writeFileSync(join(fw, 'package.json'), '{"type":"module"}\n');
@@ -198,7 +202,7 @@ describe('backlog report', () => {
     try {
       const fw = join(dir, '.tropis');
       mkdirSync(join(fw, 'scripts'), { recursive: true });
-      for (const file of ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js']) {
+      for (const file of REPORT_FILES) {
         copyFileSync(join(shipped, file), join(fw, 'scripts', file));
       }
       writeFileSync(join(fw, 'package.json'), '{"type":"module"}\n');
@@ -239,8 +243,11 @@ Last flushed: 2026-10-01
 
   // Captured from origin/main's next.mjs and next-work.js against UNCHANGED_CATALOG.
   // A project with no bands file, and one whose bands file is only a header, must
-  // keep printing this byte for byte.
-  const UNCHANGED_WITHOUT_BANDS = `Next step: ready-step (docs/specs/arc-design.md)
+  // keep printing this byte for byte. The first line is the main branch's status, which
+  // cannot be asked for in a staged project with no origin.
+  const UNCHANGED_WITHOUT_BANDS = `Main branch: could not tell — no remote named origin.
+
+Next step: ready-step (docs/specs/arc-design.md)
 
 Building (catalog status)
   (none)
@@ -534,7 +541,7 @@ ${extra}`;
     try {
     const fw = join(dir, '.tropis');
     mkdirSync(join(fw, 'scripts'), { recursive: true });
-    for (const file of ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js']) {
+    for (const file of REPORT_FILES) {
       copyFileSync(join(shipped, file), join(fw, 'scripts', file));
     }
     writeFileSync(join(fw, 'package.json'), '{"type":"module"}\n');
@@ -631,5 +638,42 @@ ${extra}`;
     expect(status).toBe(0);
     expect(stderr).toBe('');
     expect(stdout).toContain('not found. Run /refresh-readme.');
+  });
+
+  it('says on its first line when the main branch is red', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'next-red-'));
+    try {
+      const fw = join(dir, '.tropis');
+      mkdirSync(join(fw, 'scripts'), { recursive: true });
+      for (const file of REPORT_FILES) copyFileSync(join(shipped, file), join(fw, 'scripts', file));
+      writeFileSync(join(fw, 'package.json'), '{"type":"module"}\n');
+      writeFileSync(join(dir, 'feature-catalog.yaml'), CATALOG);
+      symlinkSync(resolve(here, '../node_modules'), join(fw, 'node_modules'));
+      spawnSync('git', ['init', '-q'], { cwd: dir });
+      spawnSync('git', ['remote', 'add', 'origin', 'https://github.com/acme/example.git'], { cwd: dir });
+      // A stub gh first on PATH: nothing here reaches GitHub.
+      mkdirSync(join(dir, 'bin'));
+      writeFileSync(join(dir, 'bin/gh'), `#!/usr/bin/env bash
+case "$1 $2" in
+  "api repos/{owner}/{repo}") echo '{"default_branch":"main"}' ;;
+  "run list") echo '[{"status":"completed","conclusion":"failure","headSha":"bad0000aaaa","url":"https://github.com/acme/example/actions/runs/1","createdAt":"2026-10-31T11:00:00Z","displayTitle":"break it"}]' ;;
+  *) echo "stub gh: unexpected call: $*" >&2; exit 99 ;;
+esac
+`);
+      chmodSync(join(dir, 'bin/gh'), 0o755);
+      const { stdout, stderr } = spawnSync('node', [join(fw, 'scripts/next.mjs')], {
+        cwd: dir,
+        env: { ...process.env, PATH: `${join(dir, 'bin')}:${process.env.PATH}` },
+        encoding: 'utf8',
+      });
+      expect(stderr).toBe('');
+      expect(stdout.split('\n').slice(0, 3)).toEqual([
+        'Main branch: red — the pipeline failed on bad0000 (break it). Run: https://github.com/acme/example/actions/runs/1',
+        '',
+        'Next step: second-step (docs/specs/example-design.md)',
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
