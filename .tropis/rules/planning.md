@@ -129,13 +129,13 @@ says so, and pins the plugin path instead of going without lint. A fresh worktre
 the project's own setup before its suite, and never borrows the parent checkout's test
 binary: that passes, and hides that the worktree was never set up.
 
-Do not read `.claude/worktrees/` being skipped by `guards/doc-currency.test.js` as
+Do not read `.claude/worktrees/` being skipped by `.tropis/guards/doc-currency.test.js` as
 permission: that scan steps around a directory that exists in the wild so it does not
 walk into another checkout's documents. Tolerating a directory is not endorsing it as a
 plan's declared isolation.
 
-**The table is checked, not merely required.** `guards/plan-dispatchable.test.js` reads
-every plan carrying a `## Repositories` heading and fails the build on one that would be
+**The table is checked, not merely required.** `.tropis/guards/plan-dispatchable.test.js` reads
+every plan carrying a `## Repositories` heading and no handover report and fails the build on one that would be
 refused at dispatch: a missing heading, no row anyone may edit, or isolation that is not a
 sibling worktree. A plan with no such heading is not claiming to be dispatchable and is
 skipped.
@@ -328,7 +328,7 @@ Usually that is the reviewing session. **Where a plan carries self-merge authori
 is no reviewing session, and the obligation does not disappear — it moves to the executor,
 who writes the record as part of merging.** Say so in the plan when granting self-merge.
 
-This is not ceremony for its own sake. `review-record.test.js` requires a record for any
+This is not ceremony for its own sake. `.tropis/guards/review-record.test.js` requires a record for any
 plan whose handover report is on `main`, so a self-merge without one leaves the main
 branch red — and not on the executor's own suite, which was green because its handover was
 still on a branch. It surfaces on the next branch to rebase. That happened once, and the

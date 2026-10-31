@@ -17,6 +17,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { validateDispatchable, isSiblingWorktree, checkoutName } from './plan-binding.js';
+import { mainStatus } from './main-status.mjs';
 
 const planArg = process.argv[2];
 if (!planArg) {
@@ -69,6 +70,9 @@ for (const row of v.repos) {
   }
   targets.push({ isolation: row.isolation, cwd });
 }
+
+// Before any worktree: whether the main branch is red. It informs; isolation goes on.
+process.stdout.write(`${mainStatus(repoRoot).line}\n`);
 
 for (const { isolation, cwd } of targets) {
   const r = spawnSync(isolation, { cwd, shell: true, encoding: 'utf8' });

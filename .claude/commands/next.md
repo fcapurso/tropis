@@ -6,6 +6,11 @@ description: Show what is in flight, ready, and blocked
 Run `npm --prefix .tropis run next` and report its output.
 <!-- project-owned: end -->
 
+Its first line says whether the main branch's last finished pipeline run passed or
+failed, or that it could not tell and why. Report that line first, as it stands. A red
+main branch comes before anything in the backlog: say so before suggesting any entry,
+and that repairing it, through a pull request, is the next piece of work.
+
 Then — because the backlog cannot know these — also check:
 
 ```bash
