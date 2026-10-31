@@ -1252,3 +1252,177 @@ Worktree: `../tropis-gate`, created by `isolate-for-plan.sh`, on
   committed). The reviewer decides.
 - **Proposal — the set-up-project version test above**: make it independent of where it
   runs (a backlog entry or a small fix). The reviewer decides.
+
+## Review record
+
+Reviewed by the specifying session, in a Claude Code cloud session on Linux x86_64, with
+git 2.43.0, Node v22.23.4 and curl 8.5.0.
+
+### Checks re-run
+
+- **Rebase.** The branch was rebased onto `origin/main` at `1e3fa2f` (two catalog and plan
+  commits had landed since the executor's base `a4127eb`). No conflicts. Nine commits,
+  each with a body.
+- **Scope.** `git diff --stat origin/main...HEAD`: 22 files, 1074 insertions, 141
+  deletions. Every file is in the File Structure table. `.claude/commands/release.md`
+  changes only between its project-owned markers.
+- **Guard files** (Task 0's command, on the rebased tree): `guards/pipeline.test.js`
+  `Tests: 99 passed, 99 total`; `guards/release.test.js` `Tests: 65 passed, 65 total`;
+  `guards/set-up-project.test.js` `Tests: 1 failed, 17 passed, 18 total`. The one
+  failure is `set-up-project.sh › records every shipped file at version unknown`.
+- **That failure is not in this diff.** In a worktree of `origin/main` (`1e3fa2f`) the
+  same file gives the same single failure, `1 failed, 17 passed, 18 total`. The diagnosis
+  is correct: `scripts/set-up-project.sh` line 128 records
+  `git describe --tags --always`, which in a checkout gives `v0.6.0-17-g1e3fa2f`, and
+  falls back to `unknown` only where there is no `.git`, as in the self-check's
+  `git archive` export. The self-check runs it there and passes.
+- `npm --prefix .tropis test`: `Test Suites: 6 passed, 6 total`,
+  `Tests: 33 passed, 33 total`. The installed-files check passes with the edit to the
+  project-owned block.
+- `bash scripts/check-blueprint.sh` on the rebased `HEAD` before this record: last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.`
+- **Every guard the plan added, broken again.** Each mutation was reverted at once. Jest
+  reads the working tree. The hook is run only by the self-check, so its mutations were
+  throwaway commits, each dropped with `git reset --hard HEAD~1`.
+  - Ruleset context `pipeline / gates` → 1 failed of 99 (the ruleset test).
+  - `gateCommand` returns 0 when held → 2 failed (the two held tests).
+  - No-plan branch disabled → 1 failed (the no-plan test).
+  - `allow_auto_merge: false` not counted as a gap → 1 failed.
+  - `GITHUB_ACTIONS` check removed from the dispatch → 1 failed (case 1).
+  - `host` job given `needs: plan` → 1 failed (the workflow test).
+  - Setup not copying the ruleset → `set-up-project` 3 failed of 18 (the two new
+    assertions plus the existing failure).
+  - `workflow.md` without "Nothing retries a failed check automatically" → `the gate in
+    the workflow › retries no failed check automatically`.
+  - bootstrap without `never run it yourself` → `asks bootstrap for the gate, and never
+    applies it`.
+  - update without the ruleset path → `asks the update for the gate when the release
+    brings the ruleset`.
+  - refresh-board without `merges itself` → `release and refresh-board use a pull
+    request on a gated main`.
+  - Guide without `"ungated": "<the reason>"` → `the operator guide says how to apply the
+    gate and how to opt out`.
+  - `ci.yml` pushing `HEAD:main` with the tag → `commits nothing, pushes only the tag, and
+    checks before it tags`.
+  - `ci.yml` with the self-check moved after the tag step → that test and `pushes nothing
+    when the self-check fails`.
+  - `checkReleased` accepting unpromoted notes → `refuses notes whose Unreleased section
+    still holds notes`.
+  - The notes step not failing on an existing tag → `refuses a version already tagged`.
+  - Hook with `ungated=yes` forced (throwaway commit; self-check `Self-check FAILED:
+    conformance or the clean baseline`) → `a blank ungated counts as gated`, `on a gated
+    main names docs too`, and `on a gated main names the backlog and says to use a pull
+    request that merges itself`.
+  - Hook with `ungated=no` forced (throwaway commit; self-check failed the same way) → the
+    four `stays silent on main for … when a reason is recorded` tests. These tests pass
+    against the old hook by construction, and this shows they can still fail.
+- **(a) The gate's exit.** On `origin/main`, `gateCommand`'s doc comment reads "Exit 0"
+  and the function ends `return 0` unconditionally, so the claim that the gate was always
+  green is correct. On the branch it returns 1 when the decision is `held`, and 1 with no
+  `deploy=` line when any stage is missing from the plan. A run that passes still gets a
+  green gate. `gateDecision` returns `held` only when `stagesThatDidNotPass` is non-empty,
+  meaning a stage `failure`/`cancelled`, or a stage planned `run` without `success`. A pull
+  request whose stages all pass is decided `skipped` or `run`, so the gate exits 0. A
+  prose-only pull request plans its stages `skipped` and gets `skipped` results, which are
+  not `run`, so its gate also exits 0. The same goes for stages planned `empty`. The test
+  `skips deploy on a green pull request and runs it for the same results on a push`
+  asserts status 0 for these cases, and the return-1-always mutation turned it red. In
+  the template, `deploy` needs `needs.gate.outputs.deploy == 'run'`. A failing gate step
+  writes no output, so the deploy is skipped, as it already was for a held deploy.
+- **(b) `GITHUB_TOKEN` and the two endpoints.** docs.github.com refuses CONNECT from this
+  environment too (curl: `CONNECT tunnel failed, response 403`). I read the `github/docs`
+  source on raw.githubusercontent.com. `data/reusables/actions/github-token-available-permissions.md`
+  lists the settable permissions, and `metadata` is not among them. It also says "If you
+  specify the access for any of these permissions, all of those that are not specified
+  are set to `none`." Nor did I find an explicit sentence saying the token always holds
+  metadata read: searched in `content/actions/reference/workflows-and-actions/workflow-syntax.md`,
+  `content/actions/concepts/security/github_token.md` and
+  `content/actions/tutorials/authenticate-with-github_token.md` (no hits for
+  metadata-always wording). So the conclusion holds as an inference, which is how the
+  executor reported it. Both endpoints are classed under Metadata: read in the
+  permissions data. Metadata cannot be set through `permissions:`, so no block can grant
+  it or take it away. For a public repository both endpoints answer unauthenticated
+  anyway: the executor saw that and the plan's specifying probe did too. The private
+  case is the one still to observe, on the first real run (*Outstanding disposition*).
+- **Fresh-agent check (Task 10 commit body).** It was aimed at the clause it targets, the
+  first new *Branching* bullet. The task (an idea to land on `main`) is one the bullet
+  changes, and the subject is invented and declared a probe. A control with
+  `"ungated"` recorded took the old direct-to-`main` path, so the check discriminates. It
+  records the tool (Claude Code 2.1.316), how it ran (`claude -p` in each scratch
+  project), the platform, and that no user-level instructions loaded. One limit: the
+  scratch project's commit hook also speaks on a gated `main`, so the pass shows that the
+  workflow and the hook together steer an agent, not the bullet alone. That is the
+  delivered system, so I accept it as the check. Not re-run.
+
+### Found
+
+Public exposure: the full diff was read for private material (people's names, customers,
+other projects' names or internals, home paths, hostnames, session ids, email addresses
+other than the GitHub Actions bot's noreply address). It holds nothing of that kind. It
+names only `fcapurso/tropis`, this public repository.
+
+- **No defect found in the code or the prose.** Nothing was fixed on the branch.
+- **The interval before the ruleset is applied, here and in an adopter.** An agent treats
+  `main` as gated as soon as `.claude/project.json` records no `ungated`. That covers this
+  repository from this merge on, through its `/release` block, and after `/update`
+  through the workflow and the hook. But until the developer applies the ruleset, nothing
+  requires a check. On such a host `gh pr merge <N> --auto --squash` either merges at once
+  or is refused, because auto-merge is not allowed here. It does not wait for checks. The
+  workflow's existing paragraph *Where the host marks no check as required, its
+  auto-merge merges at once* still governs: wait for green before running it. This is the
+  intended transitional state, and the red `host` job announces it on every run. It is
+  not a defect. The developer's step (1) below is affected.
+- The handover's diagnoses were checked and hold: the set-up-project failure (see
+  *Checks re-run*), the unreachable documentation host (same refusal here), and the
+  inference about the token.
+
+### Outstanding disposition
+
+- **The developer's post-merge order. This stays with the developer.** (1) `/release`.
+  Its new project-owned block promotes the notes before the notes commit and prints
+  `gh workflow run ci.yml --ref main -f version=<version>`. The notes commit goes through
+  a pull request; until the ruleset exists, wait for its checks to finish green before
+  `gh pr merge`, as *Found* says. (2) `/update` here, so this repository's installed
+  pipeline carries the red gate and the `host` job. From then until (3), the `host` job
+  is red on every run. (3) Apply the ruleset to `fcapurso/tropis` with the printed
+  `gh api … rulesets -X POST` command. Turn on *Allow auto-merge* and *Automatically
+  delete head branches*. (4) The specifying session updates `AGENTS.md`'s *What GitHub
+  enforces here*, with the date checked.
+- **The `host` job and the red gate have not run on GitHub.** The developer watches the
+  first pipeline run after step (2), its `host` job summary and its gate, and again
+  after step (3), where `host` should turn green. For this public repository the token
+  question is moot (both endpoints answer unauthenticated). The first private adopter's
+  run is what observes the Metadata: read inference. No entry: an observation of a
+  shipped criterion, owned by the developer at step (2).
+- **The first release under the new job.** Exercised at step (1) by the developer. No
+  entry: it is the release itself.
+- **Proposal: `npm --prefix .tropis ci` fails in a freshly set-up project.** Setup
+  writes `.tropis/package.json` and no lockfile. Both probe agents fell back to
+  `npm install`. This is real and not this plan's change. **Needs a catalog entry.**
+  Proposed: id `set-up-project-installs-first-time`, "A freshly set-up project can run
+  its documented install command the first time": setup ships a lockfile with
+  `.tropis/package.json`, or the documented command is `npm install` until one is
+  committed. Not added here. The catalog is edited only as this plan's own diff does.
+- **Proposal: the set-up-project version test depends on where it runs.** Confirmed on
+  `origin/main` (above). In any checkout it is red, so every executor reports the same
+  pre-existing failure, and a real regression in that test would read as the known
+  one. **Needs a catalog entry.** Proposed: id `set-up-project-version-test-runs-anywhere`,
+  "The setup's version test passes in a checkout as in the self-check's export": the test
+  copies the blueprint without `.git`, or asserts the recorded version equals what
+  `git describe` gives for the source, or `unknown` without one. Not added here.
+
+### Learnings routed
+
+- The plan's lesson about the template byte-comparison guard (pinned to `main` for an
+  earlier plan's criterion, red in every worktree that changes the template) was resolved
+  by deleting that assertion, as *Decision 3* specified. Nothing further to route.
+- The set-up-project version test, which is red in every checkout, is routed as the
+  proposed entry above. No rule: it is a defect to fix, not a constraint to remember.
+- Nothing else generalises beyond this plan.
+
+### Merged because
+
+The rebased branch passes the self-check and the installed checks. Every guard it adds
+turns red under its defect. The gate is red only when it holds the deploy or gets no
+plan. The diff matches the File Structure table. The one failing test predates the diff.
