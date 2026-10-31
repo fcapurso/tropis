@@ -40,6 +40,7 @@ plain-reply:rule-delivery
 unpromoted-delivery:catalog-drift
 future-dated-plan:catalog-drift
 silent-shelf:catalog-drift
+silent-drop:catalog-drift
 undispatchable-plan:plan-dispatchable
 unpaired-projection:plan-dispatchable
 incomplete-entry:catalog-entries
