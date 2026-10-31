@@ -159,12 +159,14 @@ lets nobody bypass it. Apply it with
 and turn on *Allow auto-merge* and *Automatically delete head branches* under Settings →
 General → Pull Requests. If you renamed the job in `pipeline.yml` or the gate, apply a
 copy with the check's name changed. The pipeline's `host` job fails on every run until
-the main branch requires a pull request and a check and auto-merge is allowed, or until
-`.claude/project.json` says why not, as `"ungated": "<the reason>"` — a private
+the main branch requires a pull request and a check and auto-merge is not turned off, or
+until `.claude/project.json` says why not, as `"ungated": "<the reason>"` — a private
 repository on GitHub's free plan cannot have rulesets, for one; the run summary then
 carries the reason. Only rulesets are read: a classic branch protection rule does not
-count. A release pipeline that pushes to the main branch cannot run behind the gate,
-because nothing bypasses it; such a project records why it is ungated for now.
+count. GitHub does not tell the pipeline whether auto-merge is allowed, so the job checks
+it only where GitHub says, and turning it on stays your step. A release pipeline that
+pushes to the main branch cannot run behind the gate, because nothing bypasses it; such
+a project records why it is ungated for now.
 
 Tropis ships the pipeline and replaces its copy on update. To own the pipeline,
 copy `.github/workflows/tropis-pipeline.yml` to
