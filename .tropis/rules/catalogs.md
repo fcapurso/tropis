@@ -41,8 +41,8 @@ the documents generated from it are not to be edited by hand.
   shipped on an unbacked criterion. The check had in fact been run and reported in
   conversation; nothing wrote it down, so three separate records said outstanding while
   the developer believed it closed.
-- Comments are part of the record. Say why an entry was re-pointed, shelved, or ordered
-  the way it is, in a comment above the key it explains.
+- Comments are part of the record. Say why an entry was re-pointed, shelved, dropped, or
+  ordered the way it is, in a comment above the key it explains.
 - **`refs` names the design the entry belongs to, and nothing else.** The backlog report
   treats every spec cited by more than one entry as an arc and reports how far it has
   got, so a grooming or review spec cited on each entry it touched shows as a false arc
@@ -86,10 +86,12 @@ Status changes hands at fixed moments, not whenever it feels right:
 - `building` → `shipped` **when its plan merges**, in the same commit as the regenerated
   documentation.
 - `building` → `shaped` if the plan is abandoned; nothing stays `building` without a plan.
+- `idea` or `shaped` → `dropped` when it is decided the work will not be done (see
+  *Dropping*).
 
 **A promotion to `shipped` removes `blockedBy`.** An entry that has landed cannot be
-waiting for anything, and the catalog check rejects any shipped entry that still records
-a blocker, where the project has one — whether or not that blocker has itself shipped.
+waiting for anything, and `.tropis/guards/catalog-entries.test.js` rejects any shipped
+entry that still records a blocker, whether or not that blocker has itself shipped.
 Delete the field as part of the promotion, in the same edit.
 
 `after` is not touched. It records the order the work was designed in, which stays true
@@ -117,19 +119,54 @@ then.
   **not** delete the original: specs and plans cite ids and those citations must keep
   resolving. A superseded entry is not work anyone can pick up, and must not also be
   `shipped`.
+- `after`, `blockedBy` and `supersededBy` name entries in this catalog, and the catalog
+  check fails on one that does not. An order that depends on another repository's entry
+  goes in a comment above the entry, naming that repository and the id.
+
+`.tropis/guards/catalog-entries.test.js` checks that every entry has the required fields,
+and that no two entries share an id; that `after`, `blockedBy` and `supersededBy` name
+only entries in this catalog, and `blockedBy` and `after` together form no cycle; that no
+shipped entry records a blocker or is superseded; that `shelved` is `true` or absent, and
+only on an `idea` or `shaped` entry; that a spike has no modules; and that every module of
+a shipped entry exists.
 
 ## Shelving
 
 `shelved: true` is a flag beside the status, not a status. It says: this is shaped,
-understood, and deliberately not scheduled — nobody is expected to pick it up.
+understood, and parked until something changes — nobody is expected to pick it up until
+then.
 
-- Set it when work is parked on purpose rather than blocked. `blockedBy` says *cannot
-  start*; `shelved` says *could start, and we have decided not to*.
+- Set it when work is parked on purpose rather than blocked or abandoned. `blockedBy`
+  says *cannot start*; `shelved` says *could start, and we are waiting for a reason to*;
+  `dropped` says *will not be done*.
 - The entry keeps the status it earned. Un-shelving is deleting the line, not working out
   which status to restore.
 - Only `idea` and `shaped` entries may carry it. An entry that is `building` has a plan
   running and one that is `shipped` has landed; neither is something anyone can decline
   to schedule.
 - Never write `shelved: false`. Absent means not shelved, exactly as with `blockedBy`.
-- Say **why** it is shelved in the entry's `value`, and keep the plan or spec in `refs`.
-  A shelf with no reason on it is indistinguishable from something forgotten.
+- Say **why** it is shelved, and what would bring it back, in the entry's `value`, and
+  keep the plan or spec in `refs`. A shelf with no reason on it is indistinguishable from
+  something forgotten.
+- **A shelved entry is still open.** The board puts it in band D, marked shelved, and an
+  arc with nothing else left reads as parked, not done.
+
+## Dropping
+
+`status: dropped` closes an entry that will not be done: the work is not needed, was
+done elsewhere with no entry to point at, or was decided against. It is closed the way
+`shipped` and `supersededBy` are: out of the bands, listed under Closed on the board,
+and left out of an arc's count.
+
+- **Dropped or shelved?** If you can name what would make the work worth doing, and it
+  might happen, shelve it. If not, drop it.
+- When another entry did the work, set `supersededBy` to it instead: a pointer says more
+  than a reason.
+- Only an `idea` or `shaped` entry is dropped. Remove `shelved` in the same edit.
+- Say **why** in the entry's `value`, starting `Dropped <date> -`. A drop with no reason
+  reads as forgotten, like a shelf with none.
+- Remove the id from every other entry's `blockedBy`, in the same edit: a dropped entry
+  never ships, so an entry blocked by it would wait forever. `after` stays, as it does
+  for a shipped entry.
+- Do not delete the entry: specs and plans cite ids, and its reason is the record that
+  this was decided.

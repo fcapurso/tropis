@@ -28,15 +28,15 @@ export function openBlockers(entry, catalog) {
  * @param {{id: string, status: string, blockedBy?: string[]}[]} catalog
  * @param {Record<string, {seen?: {status?: string, blockers?: string[]}}>} bands
  * @returns {{id: string, reason: string}[]} in bands.yaml order. A band with no `seen`
- *   is `never stamped`; a band whose entry has shipped, been replaced, been shelved or gone
- *   is skipped — the build reports those as stale already.
+ *   is `never stamped`; a band whose entry has shipped, been dropped, been replaced, been
+ *   shelved or gone is skipped — the build reports those as stale already.
  */
 export function movedBands(catalog, bands) {
   const byId = new Map(catalog.map((e) => [e.id, e]));
   const moved = [];
   for (const [id, band] of Object.entries(bands)) {
     const entry = byId.get(id);
-    if (!entry || entry.status === 'shipped' || entry.shelved || (entry.supersededBy ?? []).length) continue;
+    if (!entry || entry.status === 'shipped' || entry.status === 'dropped' || entry.shelved || (entry.supersededBy ?? []).length) continue;
     if (!band.seen) {
       moved.push({ id, reason: 'never stamped' });
       continue;

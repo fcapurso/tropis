@@ -1061,7 +1061,7 @@ then check less than it claims.
 
 ## FW-034: The backlog is ranked by value over effort inside four bands
 
-**Date:** 2026-10-30 · **Status:** Accepted
+**Date:** 2026-10-30 · **Status:** Accepted. Its sentence on shelved entries is superseded by FW-038
 
 **Decision:** There are four bands, each with a written meaning: A do now (high value,
 and urgent or blocking other work), B do next (worth doing, no deadline), C decide first
@@ -1105,3 +1105,107 @@ large.
 **Consequences:** A grooming pass is judgment, so its findings are not tested; the
 mechanics around it (the bundle field, the page tag, the one-row report, the `/next` line)
 are.
+
+---
+
+## FW-036: A branch's environment is never a permanent one
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** `branch create`, `branch deploy` and `branch remove` refuse, before listing
+origin or running any project script, a branch whose environment name is on the
+project's permanent list. The list is pipeline/branch/permanent.txt, one name per line,
+trimmed and lowercased, and is compared with the environment name derived from the
+branch, so `Production` and `production/` are refused when `production` is listed. When
+the file exists it replaces the default list; when it does not, the list is production,
+staging and development. An empty slot is still empty, and `environment` still prints
+any name.
+
+**Evidence:** first-adopter's upstream flush of 2026-10-29, from its queue entry of
+2026-10-26: a branch named like a permanent environment would deploy over it and remove
+it when its pull request closed, and the project guarded against that by hand.
+
+**Rejected:** Extending the default with the file's names, because a project could then
+never take a default name back, and one that writes its own list has said what is
+permanent. Comparing the branch name, because `Production` and `production/` name the
+same environment as `production`. Refusing in `environment`, because it touches no
+environment and the workflow calls it for every pull request to name its concurrency
+group.
+
+**Consequences:** A project whose permanent environments have other names must list
+them, and a list drops any default it does not repeat. Closing a pull request from a
+refused branch fails its remove job, having touched nothing. `deploy.sh` may still find
+no environment; the operator guide says it must fail, not create one.
+
+---
+
+## FW-037: A project's main branch is gated by its host, or the project records why not
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** Tropis does not prevent a red merge itself; the host does. Tropis ships a
+GitHub ruleset for the default branch — a pull request with no approval required, the
+check `pipeline / gate` passing on a branch up to date with the main branch, no force
+push, no deletion, and nobody able to bypass it — and the one command that applies it,
+which a developer runs and an agent never does. The pipeline's `host` job asks GitHub on
+every run whether the default branch requires a pull request and any check, whatever its
+name, and whether the repository allows auto-merge, and fails, naming what is missing,
+the command and the opt-out, until `.claude/project.json` records `"ungated"` with a
+reason, which every run then repeats in its summary. The gate job fails when it holds the
+deploy, so the required check means the run passed. Where a project records no reason,
+every change reaches the main branch through a pull request that merges itself once
+green, and the commit hook says so at any commit on main. This repository's release tags
+a commit the main branch already holds and pushes only the tag.
+
+**Evidence:** On 2026-10-30 a pull request here merged with its checks still queued: no
+check was required, so the host's auto-merge merged at once. The gate job exited 0
+whatever the stages did, so no check said a run had passed. Read from GitHub's API on
+2026-10-31, unauthenticated, for this public repository: a branch's rules come back as
+typed objects, `[]` for a branch with none, and the repository's answer carries
+`allow_auto_merge`. With auto-merge, gh 2.89.0 deletes neither branch.
+
+**Rejected:** A hook asking the host on every push — a network call per command. A
+workflow opening an issue when the gate is missing or the main branch is red — it lands
+in notifications nobody reads. Detecting whether the account's plan allows rulesets —
+one message with an opt-out covers both cannot and will not. Requiring a check by name —
+a project that renamed its job would fail for nothing. A GitHub App or a deploy key that
+bypasses the ruleset for the release — a bypass is a way around the gate for whoever
+holds it, so this repository's release became a tag instead. Reading classic branch
+protection — its pull-request requirement is visible only to administrators.
+
+**Consequences:** Until a project applies the ruleset or records a reason, its pipeline
+is red on every run; setup and the update ask at that moment. A private repository on
+GitHub's free plan cannot have the gate and records why. A project whose release pipeline
+pushes to the main branch stays ungated until its release only tags. A project protected
+by a classic rule moves to the ruleset or records that rule as its reason. The gate job
+is now red when a stage failed, as the run already was. A pull request behind the main
+branch waits until it is rebased.
+
+---
+
+## FW-038: An entry that will not be done is dropped; a shelved one is only parked
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** `dropped` is a catalog status, reached from `idea` or `shaped`, for an
+entry that will not be done; its value says why. It is closed like `shipped` and
+`supersededBy`: out of the bands, under Closed on the board, left out of an arc's count.
+`shelved` means only parked until something changes. A shelved entry is open: the board
+puts it in band D, marked shelved, and it needs no row in the bands file. One function,
+`arcs()`, gives every arc a state — under way, not started, parked or done — and the
+board and the backlog report both use it.
+
+**Evidence:** the board showed the harness sidecar arc as in progress though both its
+entries were shelved: it left replaced entries out of an arc's count and kept shelved
+ones in, while listing shelved entries as closed everywhere else. Two of this
+repository's three shelved entries recorded work that was not needed, which the catalog
+had no other way to say.
+
+**Rejected:** Counting shelved as closed, since a parked entry is not resolved and an arc
+holding one is not done. A flag beside the status for dropped, since there is no earlier
+status to restore. A Parked section on the board, since band D already means nothing to
+do until something happens.
+
+**Consequences:** A project's shelved entries keep their meaning, but any that recorded
+work nobody will do should be dropped by hand; nothing converts them. A band row on a
+shelved entry is reported stale. `/next` still does not offer shelved entries.

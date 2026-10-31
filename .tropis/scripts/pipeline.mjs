@@ -624,11 +624,46 @@ function closedPlan(root) {
   return 0;
 }
 
+const PERMANENT_DEFAULT = Object.freeze(['production', 'staging', 'development']);
+
+/**
+ * The refusal for a branch whose environment is permanent, or null. When
+ * pipeline/branch/permanent.txt exists its names replace the default list,
+ * so a file with no names refuses nothing. A missing or nameless branch is
+ * left to resolveEnvironment, which reports it.
+ * @param {string} root
+ * @param {string | undefined} branch
+ * @returns {string | null}
+ */
+function permanentRefusal(root, branch) {
+  if (!branch) return null;
+  let name;
+  try {
+    name = environmentName(branch);
+  } catch {
+    return null;
+  }
+  const listPath = join(root, 'pipeline', 'branch', 'permanent.txt');
+  const listed = existsSync(listPath);
+  const names = listed
+    ? readFileSync(listPath, 'utf8')
+      .split('\n')
+      .map((line) => line.trim().toLowerCase())
+      .filter((line) => line !== '' && !line.startsWith('#'))
+    : PERMANENT_DEFAULT;
+  if (!names.includes(name)) return null;
+  const why = listed
+    ? 'listed in pipeline/branch/permanent.txt'
+    : 'a default permanent name; list yours in pipeline/branch/permanent.txt';
+  return `branch: ${branch} would use the environment ${name}, which is permanent (${why}) — rename the branch.\n`;
+}
+
 /**
  * Runs `pipeline/branch/<action>.sh` with the stage environment plus
  * `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH`. Remove does not check for a
- * colliding name: the environment may already exist to be deleted. An
- * empty slot prints one line and exits 0.
+ * colliding name: the environment may already exist to be deleted. All three
+ * refuse a branch whose environment is permanent, before origin is listed or
+ * any script runs. An empty slot prints one line and exits 0.
  * @param {string} root
  * @param {string | undefined} action
  * @param {string | undefined} branch
@@ -647,6 +682,11 @@ function branchCommand(root, action, branch) {
   if (slot.slot === 'empty') {
     process.stdout.write('branch: empty — no pipeline/branch/\n');
     return 0;
+  }
+  const refusal = permanentRefusal(root, branch);
+  if (refusal) {
+    process.stderr.write(refusal);
+    return 1;
   }
   const resolved = resolveEnvironment(root, branch, { checkCollision: action !== 'remove' });
   if (resolved.message) process.stderr.write(resolved.message);
@@ -769,15 +809,157 @@ function readPlan(text) {
   return plan;
 }
 
-/** One stdout line, and the summary table appended to a file or written to stderr. Exit 0. */
+/**
+ * One stdout line, and the summary table appended to a file or written to
+ * stderr. Exits 1 when it holds the deploy, so the gate job is the run's
+ * required check: green means the run passed. A plan missing any stage means
+ * the plan job did not finish; that is said on stderr and in the summary, no
+ * `deploy=` line is printed, and it exits 1.
+ */
 function gateCommand({ event, summary, results, branch }) {
   const plan = readPlan(readFileSync(0, 'utf8'));
+  if (STAGES.some((stage) => plan[stage] === undefined)) {
+    const line = 'gate: no plan — the plan job did not finish, so this run cannot pass.\n';
+    process.stderr.write(line);
+    if (summary) appendFileSync(summary, line);
+    return 1;
+  }
   const decision = gateDecision({ plan, results, event, branch });
   const table = summaryTable({ plan, results, event, branch });
   if (summary) appendFileSync(summary, table);
   else process.stderr.write(table);
   process.stdout.write(`deploy=${decision}\n`);
-  return 0;
+  return decision === 'held' ? 1 : 0;
+}
+
+const HOST_OUTSIDE_ACTIONS =
+  'host: whether the main branch is gated is read from GitHub, in the pipeline; nothing to check here.';
+
+/**
+ * Why the project's main branch is not gated, from `ungated` in
+ * `.claude/project.json`. A missing, unreadable or non-object file, or no key,
+ * is no reason. A key that is not a string with words in it is an error.
+ * @returns {{ reason: string | null } | { error: string }}
+ */
+export function ungatedReason(root) {
+  let doc;
+  try {
+    doc = JSON.parse(readFileSync(join(root, '.claude', 'project.json'), 'utf8'));
+  } catch {
+    return { reason: null };
+  }
+  if (doc === null || typeof doc !== 'object' || Array.isArray(doc) || !('ungated' in doc)) {
+    return { reason: null };
+  }
+  if (typeof doc.ungated !== 'string' || doc.ungated.trim() === '') {
+    return { error: 'host: "ungated" in .claude/project.json must say why the main branch is not gated, in words.' };
+  }
+  return { reason: doc.ungated.trim() };
+}
+
+/**
+ * What keeps the default branch from being gated, in order. Any required check
+ * counts, whatever its name, so a renamed job is not punished.
+ * @param {{ allow_auto_merge?: unknown }} repository GitHub's answer for the repository
+ * @param {Array<{ type?: string }>} rules GitHub's active rules for the default branch
+ * @returns {string[]}
+ */
+export function gateGaps(repository, rules) {
+  const types = new Set(rules.map((rule) => rule && rule.type));
+  const gaps = [];
+  if (!types.has('pull_request')) gaps.push('no pull request is required');
+  if (!types.has('required_status_checks')) gaps.push('no check is required');
+  if (repository.allow_auto_merge === false) gaps.push('auto-merge is not allowed');
+  else if (typeof repository.allow_auto_merge !== 'boolean') gaps.push('GitHub did not say whether auto-merge is allowed');
+  return gaps;
+}
+
+function parseHostArgs(argv) {
+  if (argv.length === 0) return {};
+  if (argv.length === 2 && argv[0] === '--summary' && argv[1] !== '') return { summary: argv[1] };
+  return { error: 'host: the only argument is --summary <file>' };
+}
+
+function askGitHub(args) {
+  const result = spawnSync('gh', args, { encoding: 'utf8' });
+  const failure = (why) => ({ error: `could not ask GitHub (gh ${args.join(' ')}): ${why}` });
+  if (result.error) return failure(result.error.message);
+  if (result.status !== 0) {
+    const line = (result.stderr || '').split('\n').map((l) => l.trim()).find((l) => l !== '');
+    return failure(line || `gh exited ${result.status}`);
+  }
+  try {
+    return { value: JSON.parse(result.stdout) };
+  } catch (error) {
+    return failure(error.message);
+  }
+}
+
+function readHost(repo) {
+  const answer = askGitHub(['api', `repos/${repo}`]);
+  if (answer.error) return answer;
+  const repository = answer.value;
+  if (repository === null || typeof repository !== 'object' || typeof repository.default_branch !== 'string') {
+    return { error: `could not ask GitHub (gh api repos/${repo}): the answer has no default_branch` };
+  }
+  const branch = repository.default_branch;
+  const rulesArgs = ['api', `repos/${repo}/rules/branches/${encodeURIComponent(branch)}?per_page=100`];
+  const rules = askGitHub(rulesArgs);
+  if (rules.error) return { branch, error: rules.error };
+  if (!Array.isArray(rules.value)) {
+    return { branch, error: `could not ask GitHub (gh ${rulesArgs.join(' ')}): the answer is not a list of rules` };
+  }
+  return { branch, gaps: gateGaps(repository, rules.value) };
+}
+
+function notGatedText(repo, branch, gaps) {
+  const subject = branch ? `the main branch ${branch}` : 'the main branch';
+  return [
+    `host: ${subject} is not gated: ${gaps.join('; ')}.`,
+    'Only rulesets are read: a classic branch protection rule does not count.',
+    'If your plan allows it (a public repository, or a private one on GitHub Pro, Team or Enterprise), apply the ruleset Tropis ships:',
+    `  gh api repos/${repo}/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
+    'and turn on Settings → General → Pull Requests → Allow auto-merge.',
+    'Otherwise record why in .claude/project.json, as "ungated": "<the reason>".',
+    '',
+  ].join('\n');
+}
+
+/**
+ * Whether the default branch is gated by GitHub, or the project has said why
+ * not. Fails until the branch requires a pull request and a check and the
+ * repository allows auto-merge, or `.claude/project.json` records `ungated`.
+ */
+function hostCommand(root, { summary }) {
+  const recorded = ungatedReason(root);
+  if (recorded.error) {
+    process.stderr.write(`${recorded.error}\n`);
+    return 1;
+  }
+  if (recorded.reason !== null) {
+    process.stdout.write(`host: the main branch is not gated — ${recorded.reason} (.claude/project.json)\n`);
+    if (summary) {
+      appendFileSync(summary, `**The main branch is not gated.** ${recorded.reason} — recorded in .claude/project.json.\n`);
+    }
+    return 0;
+  }
+  const repo = process.env.GITHUB_REPOSITORY || '';
+  if (repo === '') {
+    process.stderr.write('host: GITHUB_REPOSITORY is not set\n');
+    return 1;
+  }
+  const answer = readHost(repo);
+  const gaps = answer.error ? [answer.error] : answer.gaps;
+  if (gaps.length === 0) {
+    const line = `host: ${answer.branch} requires a pull request and a passing check, and auto-merge is allowed.\n`;
+    process.stdout.write(line);
+    if (summary) appendFileSync(summary, line);
+    return 0;
+  }
+  const text = notGatedText(repo, answer.branch, gaps);
+  process.stderr.write(text);
+  if (summary) appendFileSync(summary, text);
+  return 1;
 }
 
 /** Commands for a host that has no wiring file, each with when to run it. */
@@ -907,6 +1089,22 @@ if (ranDirectly) {
       process.exitCode = 1;
     } else {
       process.exitCode = environmentCommand(root, args);
+    }
+  } else if (command === 'host') {
+    const parsed = parseHostArgs(args);
+    if (parsed.error) {
+      process.stderr.write(`${parsed.error}\n`);
+      process.exitCode = 2;
+    } else if (process.env.GITHUB_ACTIONS !== 'true') {
+      process.stdout.write(`${HOST_OUTSIDE_ACTIONS}\n`);
+    } else {
+      const root = projectRoot();
+      if (!root) {
+        process.stderr.write('pipeline: not a git repository\n');
+        process.exitCode = 1;
+      } else {
+        process.exitCode = hostCommand(root, parsed);
+      }
     }
   } else if (command === 'commands') {
     process.stdout.write(commandList());

@@ -14,9 +14,14 @@
 - **Length:** a short list.
 
 ## Who it is for
-- **Job:** who it fits and who it does not, so a reader can rule themselves in or out.
+- **Job:** who it fits and who it does not, so a reader can rule themselves in or out. What it needs to work goes under What it needs, not here.
 - **Facts from:** the project brief, the decision record.
 - **Length:** two short paragraphs.
+
+## What it needs
+- **Job:** what someone must have for it to work, at a high level: tools, accounts, services, platforms. Each is marked required or optional, with what is lost without an optional one. This is the only section that lists them; Getting started shows how to set them up.
+- **Facts from:** the setup scripts and package files, the CI configuration, the architecture document, the project brief.
+- **Length:** a short list.
 
 ## Getting started
 - **Job:** the shortest path to a first success, as numbered steps that work as written.
@@ -34,7 +39,7 @@
 - **Length:** a short section.
 
 ## Where it stands
-- **Job:** what works today and the known limits, honestly.
+- **Job:** what works today and the known limits, honestly. A requirement goes under What it needs; a limit here is something not supported yet.
 - **Facts from:** the catalog (shipped, building, shelved), the release notes.
 - **Length:** a short list.
 

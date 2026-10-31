@@ -6,7 +6,9 @@
 # Fires when a commit is about to carry a change the workflow says belongs on
 # a branch. The instruction layer (.claude/rules/, .claude/rule-additions/,
 # .claude/framework/) and commands are named on every branch. On main, every
-# other path outside the project-owned list is named too. Those files are
+# other path is named too: all of them where .claude/project.json records no
+# "ungated", since a gated main takes nothing but pull requests, and those
+# outside the project-owned list where it records a reason. Those files are
 # executed by every later session, so workflow.md requires the instruction
 # layer to arrive on a branch and to state what its fresh-agent check found.
 #
@@ -71,8 +73,27 @@ elsewhere=$(printf '%s\n' "$changed" | grep -E -v '^\.claude/(rules|rule-additio
 # bootstrapped from the blueprint is in.
 branch=$(git branch --show-current 2>/dev/null || echo "")
 
+# Whether .claude/project.json records why main is not gated: "ungated" as a
+# string with words in it. No repository root, or any failure, is no reason.
+top=$(git rev-parse --show-toplevel 2>/dev/null || true)
+ungated=no
+if [ -n "$top" ]; then
+  ungated=$(python3 -c "
+import json, sys
+try:
+    with open(sys.argv[1], encoding='utf-8') as f:
+        data = json.load(f)
+    value = data.get('ungated') if isinstance(data, dict) else None
+    print('yes' if isinstance(value, str) and value.strip() else 'no')
+except Exception:
+    print('no')
+" "$top/.claude/project.json" 2>/dev/null || echo no)
+fi
+
 if [ "$branch" != "main" ]; then
   elsewhere=
+elif [ "$ungated" != yes ]; then
+  elsewhere=$(printf '%s\n' "$changed" | grep -E -v '^\.claude/(rules|rule-additions|framework|commands)/' | grep -E -v '^$' || true)
 fi
 if [ -z "$instruction" ] && [ -z "$commands" ] && [ -z "$elsewhere" ]; then
   exit 0
@@ -130,11 +151,20 @@ if [ -n "$elsewhere" ]; then
   echo "You are on main, and this commit carries files the workflow says belong on a branch:"
   printf '%s\n' "$elsewhere" | sed 's/^/  /'
   echo
-  cat <<'EOF'
+  if [ "$ungated" != yes ]; then
+    cat <<'EOF'
+This project's main branch is gated: .claude/project.json records no "ungated", so
+nothing reaches main except through a pull request (workflow.md, Branching). Commit on
+a branch, push it, open a pull request, and run gh pr merge <N> --auto --squash with
+--subject and --body; it merges itself once its checks pass.
+EOF
+  else
+    cat <<'EOF'
 What may go directly to main is the backlog, generated documentation, plan and spec
 files, the release notes, the README, and prose under docs/ (workflow.md, Branching). Commit these
 on a branch.
 EOF
+  fi
 fi
 
 exit 0
