@@ -1438,4 +1438,25 @@ describe('GitHub workflow', () => {
     expect(callerText).toContain('gh workflow run candidate.yml --ref main -f commit=<commit>');
     expect(callerText).toContain('never by an agent');
   });
+
+  it('the ruleset requires a pull request and the gate, and lets nobody bypass it', () => {
+    const ruleset = JSON.parse(readFileSync(join(blueprint, 'templates/github/main-branch-ruleset.json'), 'utf8'));
+    const caller = YAML.parse(readFileSync(join(blueprint, 'templates/pipeline-caller.yml'), 'utf8'));
+    const template = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8'));
+    expect(template.jobs.gate).toBeDefined();
+    expect(ruleset.enforcement).toBe('active');
+    expect(ruleset.bypass_actors).toEqual([]);
+    expect(ruleset.conditions.ref_name.include).toEqual(['~DEFAULT_BRANCH']);
+    const rule = (type) => ruleset.rules.find((r) => r.type === type);
+    expect(ruleset.rules.map((r) => r.type).sort()).toEqual([
+      'deletion',
+      'non_fast_forward',
+      'pull_request',
+      'required_status_checks',
+    ]);
+    expect(rule('pull_request').parameters.required_approving_review_count).toBe(0);
+    const checks = rule('required_status_checks').parameters;
+    expect(checks.strict_required_status_checks_policy).toBe(true);
+    expect(checks.required_status_checks.map((c) => c.context)).toEqual([`${Object.keys(caller.jobs)[0]} / gate`]);
+  });
 });
