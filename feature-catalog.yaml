@@ -1823,7 +1823,12 @@
 # (first-adopter-harness:docs/superpowers/specs/2026-08-14-harness-sidecar-design.md) as work
 # in progress. Inherited from first-adopter's builder (scripts/build-backlog-board.mjs, its
 # unbanded list) and from arcs() in scripts/next-work.js, which both read.
+# 2026-10-31, closed by the refresh-board grooming: work-that-will-not-be-done-reads-as-closed
+# did this work. arcs() leaves replaced and dropped entries out of an arc's count, the
+# board asks for no band on a closed entry, and an arc with only shelved work reads as parked.
 - id: next-leaves-replaced-entries-out-of-arcs
+  supersededBy:
+    - work-that-will-not-be-done-reads-as-closed
   title: Replaced and shelved entries are not counted as work still to do
   status: idea
   value: Someone reading how far an arc has got, or banding the backlog board, sees only

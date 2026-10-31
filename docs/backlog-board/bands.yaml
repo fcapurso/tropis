@@ -30,6 +30,7 @@ an-update-never-hangs-unpacking-a-version:
   effort: 3
   effortWhy: The cause is not known; it needs a reproduction before a fix, then a
     timeout or a streamed pipe in take-version.
+  bundle: self-check
   verdict: "Worth fixing, but it has no criteria yet. Decide first: is a bounded
     timeout that reports the stuck step enough, or must the cause be found?"
   evidence: "2026-10-31 — scripts/take-version.mjs:52 runs every child through
@@ -250,20 +251,6 @@ living-documents-stay-current:
     which documents count as living, and what refreshes each, are undecided.
     Shape it before anyone builds; finishing the arc does not lift it while that
     is open."
-  seen:
-    status: idea
-    blockers: []
-next-leaves-replaced-entries-out-of-arcs:
-  band: B
-  value: 2
-  valueWhy: Arc progress in /next counts replaced entries as unfinished.
-  effort: 1
-  effortWhy: A filter in arcs().
-  bundle: next-report
-  verdict: "The board half is done: replaced entries left the bands with the
-    ranked board. The backlog report still counts them as unfinished in an arc."
-  evidence: 2026-10-30 — scripts/next-work.js arcs() counts every entry citing a
-    spec, superseded ones included.
   seen:
     status: idea
     blockers: []
