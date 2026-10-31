@@ -116,4 +116,14 @@ describe('catalog drift', () => {
       .map((e) => e.id);
     expect(silent).toEqual([]);
   });
+
+  it('every dropped entry says it was dropped, and why, in its value', () => {
+    if (!existsSync(catalogPath)) return;
+    const featureCatalog = YAML.parse(readFileSync(catalogPath, 'utf8'));
+    const silent = featureCatalog
+      .filter((e) => e.status === 'dropped')
+      .filter((e) => !/dropped/i.test(e.value ?? ''))
+      .map((e) => e.id);
+    expect(silent).toEqual([]);
+  });
 });
