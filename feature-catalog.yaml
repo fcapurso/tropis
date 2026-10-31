@@ -4049,9 +4049,12 @@
 # steps, /next and the flush use the gh command. A section in the outline, rather than a
 # patch to the page, is what survives /refresh-readme; the default outline is what
 # set-up projects receive.
+# Shipped by docs/superpowers/plans/2026-10-31-readme-says-what-it-needs.md. Criteria 1, 2
+# and 3: readme-usable.test.js, "both README outlines list requirements once, under What
+# it needs", which reads both outlines.
 - id: readme-says-what-it-needs
   title: The README says in one place what the project needs to work
-  status: building
+  status: shipped
   value: Someone deciding whether to adopt a project sees what it needs before they start,
     in one section of its README. Today Tropis's README splits that across two sections and
     leaves out the gh command, and the default outline gives set-up projects no place for it.
@@ -4066,7 +4069,10 @@
       requirements there too.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - templates/readme-skeleton.md
+    - docs/readme/skeleton.md
+    - guards/readme-usable.test.js
   refs: []
 # 2026-10-31, found while writing the plan for readme-says-what-it-needs. The prerequisite
 # check accepts any node 18, but the Jest it installs (30.5.2) declares engines.node
