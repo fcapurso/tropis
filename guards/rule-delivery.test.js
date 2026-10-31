@@ -621,6 +621,175 @@ describe('rule delivery', () => {
     });
   });
 
+  describe('branch-in-worktree refuses a branch created in the main checkout', () => {
+    // A refusal is exit 2 with the message on stderr and nothing on stdout: measured to
+    // stop the call and reach the agent in both tools (harness-scripts.md).
+    const branchHook = resolve(root, '.tropis/hooks/branch-in-worktree.sh');
+    const settingsTemplate = resolve(here, '../templates/settings.json');
+    const installedHooks = resolve(here, '../scripts/installed-hooks.txt');
+    const tmps = [];
+    const git = (cwd, ...args) => {
+      const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
+      if (r.status !== 0) throw new Error(`git ${args.join(' ')}: ${r.stderr}`);
+      return r.stdout.trim();
+    };
+
+    afterAll(() => {
+      for (const d of tmps) rmSync(d, { recursive: true, force: true });
+    });
+
+    /**
+     * A main checkout named `main-checkout` inside its own scratch folder, with one commit
+     * and, unless `origin` is false, a bare repository as origin with main pushed.
+     * @param {{ origin?: boolean }} [options]
+     */
+    function checkout({ origin = true } = {}) {
+      const parent = mkdtempSync(join(tmpdir(), 'branch-hook-'));
+      tmps.push(parent);
+      const dir = join(parent, 'main-checkout');
+      mkdirSync(dir);
+      git(dir, 'init', '-q', '-b', 'main');
+      git(dir, 'config', 'user.email', 'probe@example.test');
+      git(dir, 'config', 'user.name', 'Probe');
+      writeFileSync(join(dir, 'a.txt'), 'a\n');
+      git(dir, 'add', '.');
+      git(dir, 'commit', '-q', '-m', 'a');
+      if (origin) {
+        const bare = join(parent, 'origin.git');
+        git(parent, 'init', '-q', '--bare', bare);
+        git(dir, 'remote', 'add', 'origin', bare);
+        git(dir, 'push', '-q', 'origin', 'main');
+      }
+      return { parent, dir };
+    }
+
+    function runBranchHook(command, cwd) {
+      const payload = JSON.stringify({ tool_name: 'Bash', tool_input: { command } });
+      const r = spawnSync('bash', [branchHook], { input: payload, cwd, encoding: 'utf8' });
+      if (r.error) throw r.error;
+      return { stdout: r.stdout, stderr: r.stderr, status: r.status };
+    }
+
+    const refused = [
+      'git checkout -b feature/x',
+      'git checkout -B feature/x',
+      'git switch -c feature/x',
+      'git switch --create feature/x',
+      'git switch --create=feature/x',
+      'git branch feature/x',
+      'git branch feature/x main',
+      'git -C . checkout -b feature/x',
+      'git fetch origin && git checkout -b feature/x',
+    ];
+    const LINE = 'git worktree add ../main-checkout-x -b feature/x';
+
+    for (const command of refused) {
+      it(`refuses ${command}`, () => {
+        const { dir } = checkout();
+        const r = runBranchHook(command, dir);
+        expect(r.status).toBe(2);
+        expect(r.stdout).toBe('');
+        expect(r.stderr).toContain('This is the main checkout of main-checkout.');
+        expect(r.stderr).toContain('based on origin/main');
+        expect(r.stderr).toContain(`  git fetch origin && ${LINE} origin/main\n`);
+      });
+    }
+
+    it('refuses from a subdirectory of the main checkout', () => {
+      const { dir } = checkout();
+      mkdirSync(join(dir, 'src/deep'), { recursive: true });
+      const r = runBranchHook('git switch -c feature/x', join(dir, 'src/deep'));
+      expect(r.status).toBe(2);
+      expect(r.stderr).toContain('This is the main checkout of main-checkout.');
+    });
+
+    it('says main, not origin/main, when there is no origin', () => {
+      const { dir } = checkout({ origin: false });
+      const r = runBranchHook('git checkout -b feature/x', dir);
+      expect(r.status).toBe(2);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain('based on main');
+      expect(r.stderr).not.toContain('origin/main');
+      expect(r.stderr).toContain(`  ${LINE} main\n`);
+    });
+
+    it('is silent in a linked worktree', () => {
+      const { parent, dir } = checkout();
+      const linked = join(parent, 'linked');
+      git(dir, 'worktree', 'add', '-q', linked, '-b', 'other');
+      for (const command of refused) {
+        const r = runBranchHook(command, linked);
+        expect({ command, ...r }).toEqual({ command, status: 0, stdout: '', stderr: '' });
+      }
+    });
+
+    const allowed = [
+      'git checkout main',
+      'git switch main',
+      'git branch',
+      'git branch -d x',
+      'git branch -D x',
+      'git branch -m a b',
+      "git branch --list 'p*'",
+      'git branch --show-current',
+      'git branch -a',
+      'git worktree add ../y -b y origin/main',
+      'git commit -m "git checkout -b x"',
+      'grep -rn "git switch -c" .',
+      'git status',
+    ];
+    for (const command of allowed) {
+      it(`is silent in the main checkout on ${command}`, () => {
+        const { dir } = checkout();
+        const r = runBranchHook(command, dir);
+        expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+      });
+    }
+
+    it('is silent outside a repository', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'branch-hook-none-'));
+      tmps.push(dir);
+      const r = runBranchHook('git checkout -b feature/x', dir);
+      expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+    });
+
+    it('prints a command that bases the branch on origin/main, not on the checked-out branch', () => {
+      const { parent, dir } = checkout();
+      const a = git(dir, 'rev-parse', 'HEAD');
+      git(dir, 'switch', '-q', '-c', 'other');
+      writeFileSync(join(dir, 'b.txt'), 'b\n');
+      git(dir, 'add', '.');
+      git(dir, 'commit', '-q', '-m', 'b');
+      const b = git(dir, 'rev-parse', 'HEAD');
+      const r = runBranchHook('git checkout -b feature/x', dir);
+      const line = r.stderr.split('\n').find((l) => l.startsWith('  git fetch origin'));
+      expect(line).toBeDefined();
+      const run = spawnSync('bash', ['-c', line.trim()], { cwd: dir, encoding: 'utf8' });
+      expect(run.status).toBe(0);
+      const worktree = join(parent, 'main-checkout-x');
+      expect(existsSync(worktree)).toBe(true);
+      expect(git(worktree, 'rev-parse', 'HEAD')).toBe(a);
+      expect(git(dir, 'rev-parse', 'HEAD')).toBe(b);
+      expect(git(dir, 'branch', '--show-current')).toBe('other');
+      git(dir, 'worktree', 'remove', '--force', worktree);
+    });
+
+    it('is wired once, under the Bash matcher with no if, between the commit check and the exposure check', () => {
+      const settings = JSON.parse(readFileSync(settingsTemplate, 'utf8'));
+      const bash = settings.hooks.PreToolUse.find((g) => g.matcher === 'Bash');
+      const commands = bash.hooks.map((h) => h.command);
+      const index = commands.indexOf('bash .tropis/hooks/branch-in-worktree.sh');
+      expect(index).toBeGreaterThan(-1);
+      expect(commands.indexOf('bash .tropis/hooks/framework-commit-check.sh')).toBe(index - 1);
+      expect(commands.indexOf('bash .tropis/hooks/public-exposure-check.sh')).toBe(index + 1);
+      expect(bash.hooks[index]).not.toHaveProperty('if');
+      const wired = settings.hooks.PreToolUse.flatMap((g) => g.hooks ?? [])
+        .filter((h) => h.command.includes('branch-in-worktree.sh'));
+      expect(wired).toHaveLength(1);
+      expect(readFileSync(installedHooks, 'utf8').split('\n')).toContain('branch-in-worktree.sh');
+    });
+  });
+
   describe('framework documents are reachable', () => {
     const FRAMEWORK_DIR = resolve(root, '.claude/framework');
 
