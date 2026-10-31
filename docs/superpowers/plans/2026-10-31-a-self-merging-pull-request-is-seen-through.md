@@ -625,3 +625,66 @@ Every file is in *File Structure*.
 - **A hang in the self-check, not recorded in the backlog.** The `take-version.mjs`
   test hang described under *Verification results* needs a backlog entry with both runs.
   It is outside this plan's files, so it is left to the reviewing session.
+
+## Review record
+
+### Checks re-run
+
+Run by the reviewing session in Claude Code 2.1.300, with git 2.49.0, node v22.15.0 and
+gh 2.103.2, on macOS (Darwin) arm64, in the worktree `../tropis-see-through`.
+
+- `bash scripts/check-blueprint.sh` on `a8a6a0d`, first run: hung. After about 7 minutes
+  the log stood at `Clean baseline: every guard must pass`, every Jest worker was idle,
+  and the only process doing anything was a `take-version.test.js` run of
+  `take-version.mjs … --from v0.2.0`, whose `tar -x` child had been waiting on its
+  standard input for over 5 minutes after `git archive` had exited. Stopped by hand.
+- `bash scripts/check-blueprint.sh` on `a8a6a0d` again, nothing changed: `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.` in about 3 minutes.
+- Pull request CI on `a8a6a0d`: `pipeline / plan`, `host`, `framework / checks`, `unit`
+  and `gate` all succeeded.
+- The scope check, `git diff --stat origin/main...HEAD`: the eleven files in *File
+  Structure*, nothing else.
+- The handover's diagnosis of the hang matches what I saw. It is the same process, the
+  same child, at the same phase. It does not touch this plan's files: `take-version.mjs`
+  and its test are not in the diff.
+
+### Found
+
+Public exposure: I read the diff for people's names, other projects' names, home paths,
+hostnames and email addresses: nothing.
+
+I read the code against *Decisions 1–3*: the order of the poll, the lines word for word,
+the exits, the parser refusing `--wait` together with `--pull-request`, and that no
+local git change is made. Nothing differs from the plan except the two judgment calls the
+handover names, and both are right: GitHub's `gh api` prints its errors starting `gh: `,
+and an open pull request's `merge_commit_sha` is a test merge. I read the documentation
+against *Decision 4*, and it matches. The guards pinned in *Traps* still hold.
+
+Nothing else turned up.
+
+### Outstanding disposition
+
+- **The update-branch path has not run against the real host.** That happens when this
+  pull request merges: it is set to merge itself, and the worktree's
+  `scripts/main-status.mjs --pull-request 55` sees it through. Whether it was behind
+  `main`, and what the command printed, is reported to the developer at merge. If the
+  update path breaks there, that goes into a new backlog entry.
+- **The self-check hang.** It goes to `self-check-clean-baseline-flake`. This branch adds
+  the four runs above, two hangs and two passes, as a comment on that entry, and names
+  the hung process but not its cause, which is untested.
+
+### Learnings routed
+
+- **The hang** goes to the backlog entry above. It is a check that passes on a rerun with
+  nothing changed, which the workflow says to record as a defect.
+- **Running the self-check in the background tells you nothing until it ends**, so a hang
+  looks like a slow run. Not routed: the per-test timeout the backlog comment names as the
+  next step would fix it where it belongs, in the check.
+- Nothing else generalises beyond this plan.
+
+### Merged because
+
+The command, its tests and the text do what the plan decided. CI and a self-check run on
+the final commit are green. The one failure seen was a hang in a part the plan does not
+touch, now recorded with its evidence.
