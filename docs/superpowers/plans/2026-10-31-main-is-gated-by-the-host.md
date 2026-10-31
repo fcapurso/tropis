@@ -1260,9 +1260,14 @@ git 2.43.0, Node v22.23.4 and curl 8.5.0.
 
 ### Checks re-run
 
-- **Rebase.** The branch was rebased onto `origin/main` at `1e3fa2f` (two catalog and plan
-  commits had landed since the executor's base `a4127eb`). No conflicts. Nine commits,
-  each with a body.
+- **Rebase.** Two catalog and plan commits had landed on `origin/main` since the
+  executor's base `a4127eb`. For review, the branch was rebased locally onto `1e3fa2f`.
+  There were no conflicts, and all nine commits have a body. Every check below ran on
+  that rebased tree. Pushing the rebase needed a force push, which this session may not
+  do. So the pushed branch instead merges `origin/main` (`1e3fa2f`) into the executor's
+  head and adds this record on top. Its tree is byte-identical to the rebased one
+  (`git rev-parse <tip>^{tree}` gives `a033ad7…` for both, before this correction). The
+  squash-merge lands that tree.
 - **Scope.** `git diff --stat origin/main...HEAD`: 22 files, 1074 insertions, 141
   deletions. Every file is in the File Structure table. `.claude/commands/release.md`
   changes only between its project-owned markers.
