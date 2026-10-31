@@ -4207,3 +4207,35 @@
   modules:
     - scripts/pipeline.mjs
   refs: []
+# 2026-10-31, found landing the board refresh (PR #47): the agent set auto-merge and moved
+# on. Main moved under it (the v0.7.1 update), the ruleset requires a branch up to date
+# with main, auto-merge does not update a branch, and the pull request sat behind main
+# until the developer noticed. The workflow's gated merge says the command returns at once
+# and to pull main once the pull request says merged; that a branch behind main must be
+# rebased is said only in Branching, and nothing watches a pull request the way
+# main-status.mjs --wait watches main, so each agent writes its own wait loop.
+- id: a-self-merging-pull-request-is-seen-through
+  title: An agent that sets a pull request to merge itself stays until it has merged and main is green
+  status: shaped
+  value: Work an agent hands to auto-merge reaches main, or the agent says why it did not.
+    Today the agent sets auto-merge and considers the job done, so a pull request that
+    falls behind main, fails a check or hits a conflict sits unmerged with nobody told,
+    until the developer goes to look.
+  acceptanceCriteria:
+    - One command, given a pull request, waits until it has merged and then waits for the
+      run its merge started on the main branch, printing one line for the outcome, as
+      main-status.mjs --wait does for the main branch today.
+    - When the pull request falls behind the main branch while it waits, the command brings
+      it up to date and keeps waiting, so a pull request whose only obstacle is a moved main
+      branch merges with nobody stepping in.
+    - When the update would conflict, a check fails, or auto-merge is turned off, it stops
+      and exits non-zero, naming the pull request and which of these happened.
+    - The workflow's gated merge sequence, dispatch's status change and /release each name
+      the command as the step after setting auto-merge, and say the work is not done until
+      it reports the main branch green.
+  type: bug
+  layer: product
+  after:
+    - main-is-gated-by-the-host
+  modules: []
+  refs: []
