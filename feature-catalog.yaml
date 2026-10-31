@@ -4145,3 +4145,30 @@
   layer: product
   modules: []
   refs: []
+# 2026-10-31, found while releasing v0.7.0. main-is-gated-by-the-host made this
+# repository's release tag-only: the notes reach main promoted under the version, and
+# the job tags whatever main holds when the developer starts it. A merge that lands
+# between the notes and the trigger is released without being in its notes, unless it
+# also writes to the Unreleased section. The old flow had the same gap. An adopter's
+# release closes it through the candidate (FW-030, release-tags-what-main-holds); this
+# is the same promise for this repository.
+- id: release-tags-the-notes-commit
+  title: This repository's release tags the commit that carries its notes, and nothing merged after it
+  status: shaped
+  value: A release holds exactly what its notes describe. Today the release job tags the
+    head of the main branch when it is started, so work merged after the notes - by
+    another agent while the developer is reading them - is released unannounced.
+  acceptanceCriteria:
+    - The release trigger names the commit to tag as well as the version, and /release
+      prints it with the commit that carries the promoted notes filled in.
+    - The job tags that commit, and refuses when it is not on the main branch or its
+      notes do not name the version, saying which.
+    - Work merged after that commit is in no tag until the next release.
+  type: improvement
+  layer: product
+  after:
+    - main-is-gated-by-the-host
+  modules:
+    - .github/workflows/ci.yml
+    - .github/scripts/release.mjs
+  refs: []
