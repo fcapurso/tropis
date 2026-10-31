@@ -611,23 +611,24 @@ and merges.
 ## Handover report
 
 Executed by a dispatched agent in the worktree `../tropis-dropped` on branch
-`plan/work-that-will-not-be-done-reads-as-closed`, on top of `main` at `1e3fa2f`.
+`plan/work-that-will-not-be-done-reads-as-closed`, dispatched on `main` at `1e3fa2f` and rebased onto `main` at `a00f4bd` before the pull
+request (see *Judgment calls*).
 Environment for every check: git 2.49.0, Node v22.15.0, macOS (Darwin), arm64.
 
 ### Task completion
 
 - **Task 0.** Worktree created by the isolate helper; `npm --prefix .tropis ci`; tree
   clean; `bash scripts/check-blueprint.sh` on `1e3fa2f` ended `Self-check passed`.
-- **Task 1** (`50c7330`). Board tests written first and run red: 10 failed, 16 passed.
+- **Task 1** (`81c2e8a`). Board tests written first and run red: 10 failed, 16 passed.
   Then *Decisions 1, 3 and 4*; green. One commit.
-- **Task 2** (`e6e0f57`). The two report tests failed (2 failed, 24 passed), then
+- **Task 2** (`85632ee`). The two report tests failed (2 failed, 24 passed), then
   *Decision 2*; green, with `UNCHANGED_WITHOUT_BANDS` unchanged.
-- **Task 3** (`f915730`). Every *Decision 5* edit. `cmp` of the two bands files prints
+- **Task 3** (`e3df2df`). Every *Decision 5* edit. `cmp` of the two bands files prints
   nothing.
-- **Task 4** (`f0da338` red, `e2b5308` green). The red commit's self-check printed
+- **Task 4** (`e6797a2` red, `7ffb40f` green; hashes after the rebase). The red commit's self-check printed
   `NOT CAUGHT  silent-drop            catalog-drift passed against a broken project` and
   `Self-check FAILED`. After the guard: see *Verification results*.
-- **Task 5** (`39b3022`). Two entries dropped, `harness-does-not-need-node` left
+- **Task 5** (`e795f9f`). Two entries dropped, `harness-does-not-need-node` left
   shelved, this plan's entry promoted to `shipped` with its modules and the comment
   naming each criterion's check. Built with the source scripts (see *What the plan got
   wrong*), the arc `2026-08-14-harness-sidecar-design` has `state` `parked`, `shipped` 0,
@@ -653,14 +654,18 @@ probe was not following its own copy of the rule.
 
 ### Verification results
 
-- `npm --prefix .tropis test`, on `39b3022`: `Tests:       33 passed, 33 total`.
-- `bash scripts/check-blueprint.sh`, on `e2b5308` (the last commit that changes a
-  checked file before the catalog edit):
+- `npm --prefix .tropis test`, on the catalog commit: `Tests:       33 passed, 33 total`.
+- `bash scripts/check-blueprint.sh`, on the guard commit before the rebase:
   `caught      silent-shelf           catalog-drift`,
   `caught      silent-drop            catalog-drift`, `ok          clean baseline`, last
   line `Self-check passed: every guard caught its defect, the clean baseline passed, and
-  the framework repository's own guards passed.` It is run again on the commit holding
-  this report; the pull request body gives that result.
+  the framework repository's own guards passed.` Run again on the handover commit
+  before the rebase, the same lines and `Self-check passed`, with `TMPDIR` set to a
+  folder of its own. Two runs on that commit with the shared temporary folder failed the
+  clean baseline on one test, `take-version` *removes its scratch folder on every exit
+  path*. That test counts take-version folders in the temporary folder, and two other
+  sessions' self-checks were running there at the same time. It is run again on the
+  rebased head; the pull request gives that result.
 - The source guards touched here, run against the working tree with the self-check's
   test tools (`backlog-board`, `board-bands`, `next-report`, `next-work`): 52 passed.
 - `npm --prefix .tropis run next`: an `Arcs under way` section is present, listing the
@@ -679,8 +684,8 @@ probe was not following its own copy of the rule.
 
 ### Scope
 
-`git diff --stat origin/main...HEAD`, before this report, lists 18 files. With this plan
-file that is 19, every row of *File Structure* and nothing else:
+`git diff --stat origin/main...HEAD`, taken before this report was written, lists 18
+files. With this plan file that is 19, every row of *File Structure* and nothing else:
 
 ```
  commands/feature.md                               | 17 +++--
@@ -722,6 +727,11 @@ Worktree: `../tropis-dropped`.
   first line is longer than its neighbours because the plan's text opens with a span.
 - **FW-034's status line** keeps its date and is written exactly as the plan gives it,
   with no closing full stop, matching FW-008 and FW-021.
+- **Rebased, and the decision renumbered FW-038.** `main` took FW-037 for the gate
+  decision while this branch was open, and the pull request conflicted. The branch was
+  rebased onto `a00f4bd`; the only conflict was the appended record, kept after FW-037 as
+  FW-038, and FW-034's status line and the docs commit's body now name FW-038. The plan's
+  own text above still says FW-037.
 - **The `learnings-can-be-declined` comment** is wrapped as two lines at the entry's
   indentation, same words as the plan.
 
@@ -751,6 +761,11 @@ Worktree: `../tropis-dropped`.
   `learnings-can-be-declined` and `entry-file-says-how-rules-arrive` are under Closed
   reading `dropped`. Note that `npm --prefix .tropis run board` here builds with the
   installed release, so it will not show this until a release is installed.
+- **`entry-template-says-how-rules-load` is `supersededBy` an entry that is now
+  dropped.** It still reads as closed (replaced), which is right, since its work was done
+  either way; but its pointer now leads to an entry that says the work was done
+  elsewhere. Proposal: leave it, with this line as the reason. Re-pointing a replaced
+  entry is grooming, and the catalog rule says a pointer says more than a reason.
 - **The fresh-agent check found nothing to fix.** Proposal: no backlog entry, since the
   clause it exercised did what it said on the first run.
 - **This repository's `bands.yaml`** has no row for any of the three entries re-sorted
