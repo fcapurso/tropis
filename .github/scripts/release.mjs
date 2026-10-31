@@ -1,6 +1,6 @@
-// This repository's release job: the next version, and the notes promotion.
-// Called by the release job in ci.yml; tested by guards/release.test.js.
-// Not shipped to projects.
+// This repository's release: the next version and the notes promotion, which
+// /release runs before its notes commit, and the check the release job in ci.yml
+// runs before it tags. Tested by guards/release.test.js. Not shipped to projects.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
@@ -51,6 +51,31 @@ export function promote(text, version, date) {
   return [...lines.slice(0, start), ...section, ...lines.slice(end)].join('\n');
 }
 
+/**
+ * Throws unless the notes have already been promoted to `version`: an empty
+ * Unreleased section, and `version` the newest section below it.
+ * @param {string} text the notes
+ * @param {string} version X.Y.Z, without the v
+ */
+export function checkReleased(text, version) {
+  if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`"${version}" is not a version of the form X.Y.Z.`);
+  const lines = text.split('\n');
+  const start = lines.indexOf('## [Unreleased]');
+  if (start === -1) throw new Error('The notes have no "## [Unreleased]" section.');
+  let end = start + 1;
+  while (end < lines.length && !lines[end].startsWith('## [') && lines[end] !== '---') end++;
+  const body = lines.slice(start + 1, end).join('\n').trim();
+  if (body !== '' && body !== PLACEHOLDER) {
+    throw new Error('The Unreleased section still holds notes: promote them under the version first.');
+  }
+  const next = lines.slice(start + 1).find((l) => l.startsWith('## ['));
+  if (next === undefined) throw new Error('The notes have no version section below Unreleased.');
+  if (!next.startsWith(`## [${version}]`)) {
+    const found = /^## \[([^\]]*)\]/.exec(next)[1];
+    throw new Error(`The newest version in the notes is ${found}, not ${version}.`);
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command, ...args] = process.argv.slice(2);
   if (command === 'version') {
@@ -58,8 +83,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   } else if (command === 'promote') {
     const [file, version, date] = args;
     writeFileSync(file, promote(readFileSync(file, 'utf8'), version, date));
+  } else if (command === 'check') {
+    const [file, version] = args;
+    try {
+      checkReleased(readFileSync(file, 'utf8'), version);
+    } catch (error) {
+      console.error(error.message);
+      process.exit(1);
+    }
   } else {
-    console.error('usage: release.mjs version <bump> [<lastTag>] | promote <file> <version> <date>');
+    console.error(
+      'usage: release.mjs version <bump> [<lastTag>] | promote <file> <version> <date> | check <file> <version>',
+    );
     process.exit(2);
   }
 }

@@ -2958,6 +2958,7 @@
 # commit unchecked. The check runs on the promoted commit, before the tag and the push.
 # Plan: docs/superpowers/plans/2026-10-27-release-job-checks-the-commit-it-tags.md.
 # Handover report: docs/superpowers/plans/2026-10-27-release-job-checks-the-commit-it-tags.md
+# 2026-10-31: its third criterion is superseded by main-is-gated-by-the-host; the release job now pushes only the tag.
 - id: release-job-checks-the-commit-it-tags
   title: The release job checks the commit it tags, so a release cannot leave main red
   status: shipped
@@ -3861,9 +3862,16 @@
 # miss. The ruleset has no bypass, which is why this repository's release becomes a tag
 # of what the main branch holds; an adopter's release does the same under
 # release-tags-what-main-holds.
+# Criteria to tests. 1: the ruleset test in guards/pipeline.test.js ('GitHub workflow')
+# and the installed list in guards/set-up-project.test.js. 2: guards/pipeline.test.js
+# 'host', cases 2 to 9. 3: 'host', case 1. 4: the bootstrap and update tests in 'the
+# pipeline offer', guards/release.test.js. 5: 'the gate in the workflow' and the release
+# and refresh-board test in guards/release.test.js, and the gated commit-hook tests in
+# guards/rule-delivery.test.js. 6: the rerun and retry tests in 'the gate in the
+# workflow'. 7: 'the release job' and 'checkReleased' in guards/release.test.js.
 - id: main-is-gated-by-the-host
   title: A project's main branch is gated by its host, or the project has said why not
-  status: building
+  status: shipped
   value: A pull request with failing or unfinished checks cannot merge, two pull
     requests that pass alone cannot break the main branch together, and nothing reaches
     it except through a pull request. On 2026-10-30 a pull request merged here with its
@@ -3891,8 +3899,18 @@
       nothing to the branch.
   type: feature
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - templates/github/main-branch-ruleset.json
+    - scripts/pipeline.mjs
+    - templates/github/tropis-pipeline.yml
+    - scripts/framework-commit-check.sh
+    - framework/workflow.md
+    - commands/bootstrap.md
+    - commands/update.md
+    - .github/workflows/ci.yml
+    - .github/scripts/release.mjs
+  refs:
+    - docs/superpowers/plans/2026-10-31-main-is-gated-by-the-host.md
 # 2026-10-31, split from main-is-gated-by-the-host. FW-030 has the release pipeline
 # commit the version and notes on top of the candidate and merge that into the main
 # branch, which a gated branch refuses. Moving that commit into a pull request keeps
