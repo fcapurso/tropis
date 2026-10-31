@@ -661,3 +661,97 @@ npm 10.9.9, jest 30.5.2, Linux x86_64.
   by its relative path throughout. The self-check's private-material guard passed on the
   committed content at `76a3351`; it does not cover this file's wording, so the read is the
   check for it.
+
+## Review record
+
+Reviewed by a separate session, at the developer's request: the plan granted self-merge,
+and the executor was told to stop after the handover report and the pull request. Every
+check below ran in a Claude Code cloud session with git 2.43.0, Node v22.23.4 and Jest
+30.5.2, on Linux x86_64, against the branch head `93b4225` in a worktree of its own.
+
+### Checks re-run
+
+- **The guard file** (`guards/pipeline.test.js`, Task 0's command):
+  `Tests: 87 passed, 87 total`, `Test Suites: 1 passed, 1 total`.
+- **`npm --prefix .tropis test`:** `Test Suites: 6 passed, 6 total`,
+  `Tests: 33 passed, 33 total`.
+- **`bash scripts/check-blueprint.sh`** on `93b4225`: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+- **Each new guard re-broken.** Five mutations of the code or guide, each reverted, with
+  the guard file run against each:
+  1. the list extends the default instead of replacing it — 2 failed: `a permanent.txt
+     replaces the default list`, `an empty permanent.txt refuses nothing`;
+  2. `remove` exempted — 1 failed: `remove refuses production by default and runs
+     nothing`;
+  3. the branch name compared instead of the environment name — 1 failed: `refuses
+     staging and development by their environment names`;
+  4. the refusal moved after `resolveEnvironment` — 1 failed (`refuses before listing
+     origin`);
+  5. "close and reopen the pull request" dropped from the guide — 1 failed: `the
+     operator guide names the list and what deploy.sh does with no environment`.
+
+  Mutation 2 was also committed as a throwaway and the self-check run on it: exit 1,
+  `Self-check FAILED: conformance or the clean baseline`, naming `remove refuses
+  production by default and runs nothing`. The throwaway commit was reset away.
+  The handover's own three mutations (Task 2) cover the three tests that pass against
+  the old code; together they show every new test can fail.
+- **Scope:** `git diff --stat origin/main...HEAD` lists six files —
+  `feature-catalog.yaml`, `framework/DECISIONS.md`, `guards/pipeline.test.js`,
+  `scripts/pipeline.mjs`, `templates/README.md` and this plan — exactly the File
+  Structure table. The code, guide and decision text match *Decisions 3–5* as written.
+- **The handover's diagnoses.** *The baseline is out of date*: `d270b72` is an ancestor
+  of `f575fa1`, and between them only the two plan files and `feature-catalog.yaml`
+  (status lines) changed, so the plan's line references still held, as the handover says.
+  *The branch already existed with no commits*: the branch's first commit, `d4792ed`, has
+  `f575fa1` as its only parent, consistent with that account.
+- **The pull request's checks** on `93b4225`: `plan`, `framework / checks`, `unit` and
+  `gate` succeeded; the rest were skipped by the plan job, as for any change with no
+  pipeline slots filled.
+
+### Found
+
+Public exposure: the whole diff was read for private material — people's names,
+customers, other projects' names or internals, home paths, hostnames, addresses. The
+only other project named is `first-adopter`, the pseudonym; the worktree is named by its
+relative path. Nothing found.
+
+- **FW-036 cited the wrong queue entry date, and the plan was the source.** *Decision 5*
+  gave the evidence as first-adopter's "queue entry of 2026-10-28"; the catalog comment
+  above this entry, and the flush commit that shaped it (`e3d53d6`), both give
+  2026-10-26. 2026-10-28 is the date of the next entry's queue item
+  (`update-keeps-instructions-behind-a-symlink`), so the specifying session copied the
+  neighbour's date. **Fixed on the branch by this review** — one date in
+  `framework/DECISIONS.md`, understood and mechanical; nothing else changed.
+- Nothing else beyond what the handover reports.
+
+No fresh-agent check is owed, as Task 5 says: nothing an agent is told to follow
+changed — `framework/DECISIONS.md` is a record, and the rest is a refusal in a script
+and operator prose, each guarded. No manual check is owed either: the change has no
+screen.
+
+### Outstanding disposition
+
+- *No review record and no merge* — done by this review; nothing carried forward.
+- *The pull request's checks* — waited on and green (above); dropped.
+- *Private-material read* — repeated by this review (Found); dropped.
+- *The isolation command cannot cope with a branch that already exists* (from *What the
+  plan got wrong*) — dropped: the executor's session started with the branch already
+  created at `main`'s commit, and the sibling plan dispatched alongside it
+  (`update-keeps-instructions-behind-a-symlink`) reports the same, so it came from how
+  the two sessions were started, not from the plan. Reusing the branch lost nothing. If a
+  later dispatch meets it, it belongs with `/dispatch`.
+- No criterion here needs the developer to observe it.
+
+### Learnings routed
+
+None generalises. The date slip is a copying mistake in one plan, caught by reading the
+cited source; the guards here would not and should not check it. The plan's Task 2
+asserting "every test green" while the guide test waits for Task 3 is a one-plan
+ordering slip, recorded in the handover.
+
+### Merged because
+
+Every criterion is covered by a guard that goes red when its target is broken, the
+self-check and the installed checks pass on the branch, the diff is exactly the File
+Structure table, and the one defect found was a date, fixed here.

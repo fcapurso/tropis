@@ -1122,7 +1122,7 @@ staging and development. An empty slot is still empty, and `environment` still p
 any name.
 
 **Evidence:** first-adopter's upstream flush of 2026-10-29, from its queue entry of
-2026-10-28: a branch named like a permanent environment would deploy over it and remove
+2026-10-26: a branch named like a permanent environment would deploy over it and remove
 it when its pull request closed, and the project guarded against that by hand.
 
 **Rejected:** Extending the default with the file's names, because a project could then
