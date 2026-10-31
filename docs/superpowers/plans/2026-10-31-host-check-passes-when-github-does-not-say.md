@@ -214,3 +214,147 @@ and a body stating the intent, `Implements: host-check-passes-when-github-does-n
 and `Plan: docs/superpowers/plans/2026-10-31-host-check-passes-when-github-does-not-say.md`.
 If the pull request falls behind `main`, rebase it on `origin/main` and push; it merges
 once green again.
+
+## Handover report
+
+Executed by the session that also merges (self-merge authority). Tools: git 2.43.0,
+Node v22.23.4, Linux x86_64. Worktree used: `../tropis-host-unknown` on
+`plan/host-check-passes-when-github-does-not-say`, not the directory the session started in.
+
+**Task completion**
+
+- Task 0 — done. `npm --prefix .tropis ci` ran; `git status --porcelain` clean; baseline
+  self-check passed before any change.
+- Task 1 — done, commit `7270ef2`. Red run (before the fix):
+  `jest … -t host` → `Tests: 1 failed, 88 skipped, 10 passed, 99 total`. The failing test
+  was *passes, saying so, when GitHub does not say whether auto-merge is allowed*, failing
+  at `expect(result.status).toBe(0)` (Expected 0, Received 1). The run stopped at that
+  assertion, so the stderr check was not reached.
+- Task 2 — done, commit `4cce10c`. Host guard after the fix:
+  `Tests: 88 skipped, 11 passed, 99 total`; every `host` test passes.
+- Task 3 — done, commit `48880a6`. Fresh-agent probe run with `claude -p`, Claude Code
+  2.1.316, Linux x86_64, tools limited to Read, Glob and Grep, from the worktree, with the
+  probe prompt verbatim. The reply said the branch is gated and gave
+  `gh pr merge 7 --auto --squash` with a subject and body, which passes the check. The
+  reply also raised one gap (see *Outstanding*). The record is in the commit body.
+- Task 4 — done, commit `994bcd2`. Catalog entry `status: shipped`,
+  `modules: [scripts/pipeline.mjs]`, and the plan/criteria comment above it. The YAML
+  parses and the entry reads back as shipped.
+- Task 5 — this section and the review record below. Re-break done, see *Checks re-run*.
+
+**Verification results**
+
+- `bash scripts/check-blueprint.sh` on `994bcd2`: exit 0; last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test` on `994bcd2`: `Test Suites: 13 passed, 13 total`,
+  `Tests: 125 passed, 125 total`, exit 0.
+- Host guard after the fix (Task 2): `Tests: 88 skipped, 11 passed, 99 total`.
+- The task's summary line is the new pass line in `pipeline.mjs`, printed by the job
+  when GitHub does not say (see `guards/pipeline.test.js`, the host test that now passes).
+
+**Scope**
+
+`git diff --stat origin/main...HEAD` before this section was added:
+
+```
+ feature-catalog.yaml    |  8 ++++++--
+ framework/DECISIONS.md  |  6 ++++++
+ framework/workflow.md   |  2 +-
+ guards/pipeline.test.js | 10 +++++++---
+ scripts/pipeline.mjs    | 17 ++++++++++++-----
+ templates/README.md     | 10 ++++++----
+ 6 files changed, 38 insertions(+), 15 deletions(-)
+```
+
+Every file is in the File Structure table. This plan file is the sixth row; this section
+and the review record are its only change in this commit. The re-break commit was dropped
+with `git reset --hard HEAD~1` before the diff was taken, so it is not in the stat.
+
+**Judgment calls**
+
+- Task 1's test passes the default rules, not `allow_auto_merge` in `repo`, as the plan
+  says; the missing field is the case under test.
+- `templates/README.md`: rewrapped from *the main branch requires…* to the end of the
+  paragraph, the line before it left as it was. The sentence `Only rulesets are read: …`
+  was matched across its line break.
+- `framework/workflow.md`: applied as a one-line replacement, so the line is now a few
+  columns wider than the file's usual wrap. Not rewrapped, since the plan gave the words.
+- The re-break was done as a commit and dropped with a hard reset of this branch's own
+  head, which held nothing else.
+
+**What the plan got wrong**
+
+- Task 1 said the red run shows exit 1 with the old sentence on stderr. It showed exit 1
+  failing the status assertion; the stderr assertion was never reached. The plan's
+  expectation was otherwise right.
+- The plan says "paste the summary line". The guard prints a Jest summary, not a single
+  line, so the summary above is the Jest one.
+- Consequence the plan did not state: after this merges, `main` stays red. Its push run
+  executes the installed release's `pipeline.mjs`, which still has the gap. The run on
+  `d7b7d3c` (`41227427705`, job `pipeline / host`) fails with exactly the line the plan
+  quotes. The fix reaches `main`'s run only when a release installs it.
+
+**Outstanding**
+
+1. **Probe gap, not dispositioned here.** `framework/workflow.md`, *Branching*, does not
+   say what to do when `gh pr merge --auto` is refused because auto-merge is off. The
+   probe proposed stopping and reporting, not a plain `--squash` merge. This plan's file
+   list does not cover it. It needs a decision: a catalog entry, or a line in the
+   framework. Owner: the developer, through the specifying session.
+2. **`pipeline / host` on this pull request and on `main` will fail** until a release
+   installs this fix. This is expected and does not block the merge; only `pipeline / gate`
+   is required. Owner: the next release.
+3. **Criterion only the developer can observe:** a gated project's `host` job passes on
+   its next run after a release installs the fix. Owner: the developer, when that release
+   reaches a gated project.
+
+## Review record
+
+Merged by the executor under self-merge authority (the plan's *Merge authority* line).
+This is not an independent review: the same session wrote the change and runs these checks.
+
+**Checks re-run**
+
+Run on the branch head `994bcd2` before merge, same session, same tools as above:
+
+- Host guard: `Tests: 88 skipped, 11 passed, 99 total`.
+- Re-break (throwaway commit restoring the deleted `gateGaps` line): host guard
+  `Tests: 1 failed, 88 skipped, 10 passed` — the new test
+  *passes, saying so, when GitHub does not say whether auto-merge is allowed* went red.
+  The commit was then dropped.
+- Self-check: exit 0, `Self-check passed` (see Verification results).
+- Project tests: `Tests: 125 passed, 125 total`.
+- Diagnosis re-checked, not only the figures: unauthenticated
+  `GET repos/fcapurso/tropis` returns `"allow_auto_merge": true`, so the field exists
+  publicly. The `host` log of `41227427705` shows the message the plan describes,
+  `GitHub did not say whether auto-merge is allowed`, on `d7b7d3c`. The claim that the
+  pipeline's own token omits the field was not tested directly here; the log is consistent
+  with it and is the only evidence available.
+
+**Found**
+
+Public exposure: nothing. The branch diff was read for home paths, hostnames, email
+addresses, the project's own name and internals, and session ids; none found. The probe
+gap in *Outstanding* is a finding the handover also reported; it is not a new defect here.
+
+**Outstanding disposition**
+
+1. Probe gap — carried forward to the developer as a decision (catalog entry or framework
+   line). No catalog id yet; not dropped.
+2. `pipeline / host` red on this pull request and on `main` until a release installs the
+   fix — expected; carried to the next release.
+3. The gated-project pass — developer observes after that release.
+
+**Learnings routed**
+
+The probe gap generalises: a framework section that says a gate exists does not say what
+to do when the host refuses the merge it names. Routed as Outstanding item 1, to the
+developer as a decision. Not written into a rule here, because the framework files this
+plan touched are outside its file list.
+
+**Merged because**
+
+The fix is mechanical and tested: the new test was red before the fix and green after,
+the re-break goes red again, and the full installed-release suite passes. The one thing
+the merge cannot do is turn `main`'s own run green; that waits on a release, and the
+handover says so.
