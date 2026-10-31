@@ -861,6 +861,8 @@ export function ungatedReason(root) {
  * What keeps the default branch from being gated, in order. Any required check
  * counts, whatever its name, so a renamed job is not punished.
  * @param {{ allow_auto_merge?: unknown }} repository GitHub's answer for the repository
+ * A repository answer with no allow_auto_merge is not a gap: GitHub leaves it out
+ * for the pipeline's token.
  * @param {Array<{ type?: string }>} rules GitHub's active rules for the default branch
  * @returns {string[]}
  */
@@ -870,7 +872,6 @@ export function gateGaps(repository, rules) {
   if (!types.has('pull_request')) gaps.push('no pull request is required');
   if (!types.has('required_status_checks')) gaps.push('no check is required');
   if (repository.allow_auto_merge === false) gaps.push('auto-merge is not allowed');
-  else if (typeof repository.allow_auto_merge !== 'boolean') gaps.push('GitHub did not say whether auto-merge is allowed');
   return gaps;
 }
 
@@ -909,7 +910,11 @@ function readHost(repo) {
   if (!Array.isArray(rules.value)) {
     return { branch, error: `could not ask GitHub (gh ${rulesArgs.join(' ')}): the answer is not a list of rules` };
   }
-  return { branch, gaps: gateGaps(repository, rules.value) };
+  return {
+    branch,
+    gaps: gateGaps(repository, rules.value),
+    autoMergeKnown: typeof repository.allow_auto_merge === 'boolean',
+  };
 }
 
 function notGatedText(repo, branch, gaps) {
@@ -927,8 +932,8 @@ function notGatedText(repo, branch, gaps) {
 
 /**
  * Whether the default branch is gated by GitHub, or the project has said why
- * not. Fails until the branch requires a pull request and a check and the
- * repository allows auto-merge, or `.claude/project.json` records `ungated`.
+ * not. Fails until the branch requires a pull request and a check and GitHub
+ * does not say auto-merge is off, or `.claude/project.json` records `ungated`.
  */
 function hostCommand(root, { summary }) {
   const recorded = ungatedReason(root);
@@ -951,7 +956,9 @@ function hostCommand(root, { summary }) {
   const answer = readHost(repo);
   const gaps = answer.error ? [answer.error] : answer.gaps;
   if (gaps.length === 0) {
-    const line = `host: ${answer.branch} requires a pull request and a passing check, and auto-merge is allowed.\n`;
+    const line = answer.autoMergeKnown
+      ? `host: ${answer.branch} requires a pull request and a passing check, and auto-merge is allowed.\n`
+      : `host: ${answer.branch} requires a pull request and a passing check. GitHub does not tell the pipeline whether auto-merge is allowed, so that is not checked.\n`;
     process.stdout.write(line);
     if (summary) appendFileSync(summary, line);
     return 0;
