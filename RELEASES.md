@@ -7,8 +7,9 @@ under its version heading; the release job tags the commit that carries it.
 A release is breaking when a project taking it must act by hand: a file in `.claude/`
 or `.framework/` moved, renamed or removed; a command removed or renamed; a hook entry
 in `settings.json` changed; a block the project fills in changed shape; a rule's
-`paths:` header changed so the project's own paths need revisiting; or the
-pipeline's stages changed order or the deploy gate decides differently.
+`paths:` header changed so the project's own paths need revisiting; the
+pipeline's stages changed order or the deploy gate decides differently; or a new check
+fails until the project changes something only a person can change.
 
 For the full development history, see the git log.
 
@@ -17,6 +18,84 @@ For the full development history, see the git log.
 ## [Unreleased]
 
 _Nothing yet._
+
+## [0.7.0] — 2026-10-31
+
+Your main branch can now take only changes whose checks have passed. Tropis ships the
+GitHub settings that make the host refuse anything else, and when the main branch does go
+red after a merge, whoever merged and whoever starts work next are told. A project's own
+checks now enforce the backlog, plan and page rules they used to only describe, and an
+update can no longer empty a project's instructions.
+
+### After updating: what to do by hand
+
+**1. Gate your main branch, or say why not.** The pipeline gains a `host` job that fails
+on every run until the main branch requires a pull request and a passing check, and the
+repository allows auto-merge. `/update` asks you which you want. To gate it, run
+`gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
+then turn on *Allow auto-merge* and *Automatically delete head branches* under Settings →
+General → Pull Requests on GitHub. If you can't or won't, add
+`"ungated": "<the reason>"` to `.claude/project.json`; every run then repeats the reason
+in its summary. A private repository on GitHub's free plan cannot have rulesets. A
+release pipeline that pushes to the main branch cannot run behind the gate either. Older
+branch protection rules don't count, only rulesets.
+
+**2. Fix what the new checks report.** `npm --prefix .tropis test` now also checks your
+backlog against the catalog rule, merged plans and their review records, references in
+your instruction pages and docs, documents past their *Last verified* date, rule claims,
+and the upstream queue after a flush. It can fail on something that was always wrong.
+Each failure names the file and what to change.
+
+**3. Optional: list your permanent environments.** If your project gives pull requests
+their own environments and your permanent ones aren't called `production`, `staging` and
+`development`, list them in `pipeline/branch/permanent.txt`, one per line. The file
+replaces those three defaults.
+
+**4. Optional: drop backlog entries nobody will do.** An entry marked shelved that
+records work nobody will do should become `status: dropped`. Nothing converts them for
+you.
+
+### Only checked changes reach your main branch
+
+With the ruleset applied, GitHub refuses a pull request whose checks have failed or not
+finished, and one that isn't up to date with the main branch. Nothing bypasses it, and
+every change goes through a pull request that merges itself once green. The workflow,
+`/release` and `/refresh-board` follow that path where the branch is gated, and keep
+committing directly where it isn't.
+
+### A red main branch is noticed
+
+When the main branch fails its checks after a merge, the session that merged waits for
+the run, says so, and stops. `/next` opens by saying whether the last run failed, and so
+does starting work on a plan, before it creates the worktree. Where GitHub can't be asked,
+each says it couldn't tell.
+
+### Your checks enforce what your rules say
+
+The checks that guard Tropis's own repository now run in yours: the backlog's invariants,
+plans and review records, pages that point nowhere or are out of date, and the upstream
+queue after a flush. A rule that makes a claim about your code can carry an assertion,
+and a rule clause that only exists until a fix lands names that fix, so it is removed
+instead of outliving it.
+
+### Work nobody will do reads as closed
+
+A backlog entry can now be `dropped` when it will not be done. The board shows it as
+closed, and an arc whose remaining steps were dropped no longer reads as in progress.
+
+### Smaller corrections
+
+- An update no longer empties your instructions when `AGENTS.md` or `CLAUDE.md` is a
+  symlink to the other; it replaces the link with a regular file first, and says so. The
+  entry-file check now fails on an `AGENTS.md` that is a symlink or only an import line.
+- A pull request from a branch named like a permanent environment, such as `production`,
+  is refused before anything deploys over it or removes it.
+- A pipeline run whose stages failed now shows a red `gate` job too; before, `gate` was
+  green and only the stage itself was red.
+- The default README outline gives your project one section that says what it needs to
+  work.
+
+Checked on the release candidate: no — no candidate was rehearsed
 
 ## [0.6.0] — 2026-10-30
 
