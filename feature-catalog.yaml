@@ -3926,7 +3926,7 @@
 # of the two sidecar entries was dropped in all but name; the other is parked.
 - id: work-that-will-not-be-done-reads-as-closed
   title: An entry that will not be done is dropped, and reads as closed
-  status: shaped
+  status: building
   value: Someone reading the backlog can tell work nobody will do from work parked until
     something changes. Today both are shelved, so the board lists an arc whose steps were
     abandoned as in progress, and lists parked work among the closed.
