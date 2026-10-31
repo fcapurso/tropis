@@ -1076,3 +1076,56 @@ got wrong*, *Outstanding*. Put both probes' prompts, replies and tool records un
 *Verification results*. Commit, push the branch, and open a pull request against `main`
 titled `feat(workflow): a red main branch is seen by whoever merged and whoever starts
 next`, whose body carries the probes' results. Do not merge.
+
+## Handover report
+
+Tools: git 2.43.0, Node v22.23.4, gh 2.89.0, Claude Code 2.1.316, on Linux x86_64 (a Claude Code cloud session). Worktree: `../tropis-red-main`. Started from `21fe930`.
+
+### Task completion
+
+- **Task 0.** `git show origin/main:docs/superpowers/plans/2026-10-31-main-is-gated-by-the-host.md | grep -c '^## Review record'` printed `1`. After isolating and `npm --prefix .tropis ci`, `git status --porcelain` printed nothing and `bash scripts/check-blueprint.sh` ended `Self-check passed: …`. The merge sequence in `framework/workflow.md` now has an added paragraph, *Where the main branch is gated, the merge is `gh pr merge <N> --auto --squash …`*. The sequence still ends at `git checkout main && git pull origin main`, so there is a point at which the merge commit is local and the plan's edit applied as written.
+- **Task 1.** Done in two commits: tests alone, then code and list.
+- **Task 2.** Done: the workflow, `commands/next.md` and `templates/README.md`.
+- **Task 3.** Done: both probes passed (below).
+- **Task 4.** Done (below).
+- **Task 5.** Done: the entry is `shipped`, with `modules` and the criteria-to-tests comment.
+- **Task 6.** This report.
+
+### Verification results
+
+- Red run, tests only committed (the staged command, three files): `Test Suites: 3 failed, 3 total; Tests: 27 failed, 16 passed, 43 total`. This is **not** the plan's expected four failures; see *What the plan got wrong*.
+- After the code: `main-status.test` 20 passed and 1 failed (the workflow test); `next-report.test`, `dispatch.test`, `check-drift.test` and `set-up-project.test` all passed. Combined `Tests: 1 failed, 87 passed, 88 total`.
+- After Task 2, the three files: `Test Suites: 3 passed, 3 total; Tests: 64 passed, 64 total` (25 + 18 + 21).
+- `git grep -nF '.tropis/scripts/main-status.mjs' -- framework commands rules` printed `framework/workflow.md:235:node .tropis/scripts/main-status.mjs --wait HEAD   # the run this merge started`, so the planted-hit check holds. `git grep -nP '(?<![./])scripts/main-status\.mjs' -- framework commands rules` printed nothing (rc=1).
+- `npm --prefix .tropis test`: `Test Suites: 6 passed; Tests: 33 passed`, before and after Task 5.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`, before and after Task 5.
+- `node scripts/main-status.mjs` against the real host: `Main branch: green — the pipeline passed on 21fe930 (docs(catalog): the red-main plan is dispatched).`
+- `git diff --stat origin/main...HEAD` before this report: 10 files, 544 insertions, 9 deletions (`commands/next.md`, `framework/workflow.md`, `guards/dispatch.test.js`, `guards/main-status.test.js`, `guards/next-report.test.js`, `scripts/installed-scripts.txt`, `scripts/isolate-for-plan.mjs`, `scripts/main-status.mjs`, `scripts/next.mjs`, `templates/README.md`), plus `feature-catalog.yaml` after Task 5 and this plan file. All are in the File Structure table.
+
+**Fresh-agent check** (Claude Code 2.1.316, Linux x86_64, a cloud session where no user-level `~/.claude/CLAUDE.md` exists, so none could absorb the clause; a scratch project set up with `set-up-project.sh`, `gh` stubbed first on `PATH`, prompts piped on stdin). The stub's failing run was on the project's HEAD, `f05b13a`.
+
+- **Probe A**, the prompt as written in Task 3. Reply (abridged): "**Main branch is red.** The pipeline failed on `f05b13a` (feat: an invented change). Run: https://github.com/acme/example/actions/runs/4242 … **What I'd work on first:** fixing `main`. That repair is the next piece of work and goes through a pull request like any other change. Nothing from the backlog should start on top of a broken main." **Pass.**
+- **Probe B**, the prompt as written in Task 3. Reply (abridged): "The one step left was waiting for the pipeline run the merge started on `main` (`node .tropis/scripts/main-status.mjs --wait HEAD`). It reports that **`main` is red**: Commit `f05b13a` … Failed run: …/runs/4242 … Exit code: 1. The workflow says to stop here … **Next:** fixing `main` is the next piece of work, and nothing else starts until it's done," followed by steps starting with reading the run's logs and doing the fix through a plan branch and pull request. **Pass.**
+
+The scratch project was removed afterwards.
+
+### Scope
+
+All files are in the File Structure table. Nothing under `.claude/`, `.tropis/` or `.cursor/` was edited. The worktree is `../tropis-red-main`, on `plan/a-failing-push-is-visible`.
+
+### Judgment calls
+
+- The workflow edit applied unchanged to the sibling plan's text. The new wait line sits after `git checkout main && git pull origin main`, and the two paragraphs follow the section's last paragraph, after the sibling's *Where the main branch is gated…* paragraph. Neither of my paragraphs contradicts the sibling's text.
+- The workflow commit's body says the fresh-agent check is recorded in this report, not its result, because the probes ran after that commit; the results are above.
+- I wrote `.tropis/…` in the catalog and framework text only as the plan specifies.
+- Nothing was taken from an outside source: the code and tests are the plan's verbatim text.
+
+### What the plan got wrong
+
+- The plan expects that, with the tests committed alone, in `next-report.test` and `dispatch.test` "exactly these fail" (four tests). In fact every staged `next-report` test fails, because `REPORT_FILES` includes `main-status.mjs` and `copyFileSync` throws when the file does not exist yet (27 failed in total). The four named tests did fail, but not alone. The final state matches the plan.
+- The plan says `check-blueprint.sh` was run "committed" before the Task 5 catalog change; nothing else was wrong there.
+
+### Outstanding
+
+- Merge authority is parent review: a separate session reviews, writes the review record and merges. Nothing else is outstanding; both probes ran here.
+- The decision record needs nothing: the sibling's merged `framework/DECISIONS.md` already names the rejected hook on every push.
