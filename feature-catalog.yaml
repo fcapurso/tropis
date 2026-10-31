@@ -3938,3 +3938,30 @@
     - main-is-gated-by-the-host
   modules: []
   refs: []
+# 2026-10-31, raised by the developer: the board showed the harness sidecar arc as in
+# progress though both its entries were shelved. Shelved was carrying two meanings - parked
+# until something changes, and not needed at all - and nothing could tell them apart. One
+# of the two sidecar entries was dropped in all but name; the other is parked.
+- id: work-that-will-not-be-done-reads-as-closed
+  title: An entry that will not be done is dropped, and reads as closed
+  status: building
+  value: Someone reading the backlog can tell work nobody will do from work parked until
+    something changes. Today both are shelved, so the board lists an arc whose steps were
+    abandoned as in progress, and lists parked work among the closed.
+  acceptanceCriteria:
+    - An idea or shaped entry can be given the status dropped, with the reason in its
+      value, and the catalog check fails on a dropped entry whose value does not say it
+      was dropped.
+    - The board lists dropped entries under Closed beside shipped and replaced ones, and
+      lists shelved entries in band D, marked shelved, not under Closed.
+    - On the board, an arc with nothing left but dropped or replaced steps reads as done,
+      and one with nothing open left but at least one shelved step reads as parked; the
+      backlog report leaves dropped and replaced steps out of an arc's count the same way.
+    - The catalog rule, the catalog template, /feature and /refresh-board say what dropped
+      means and when to use it instead of shelved.
+    - Each of this repository's shelved entries is either dropped or left shelved, with
+      its reason.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
