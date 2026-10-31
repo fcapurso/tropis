@@ -31,6 +31,10 @@ with Jest; no package file at the root.
   do that only when the guard is inside a checkout. `npm --prefix .tropis test` is a
   different thing — the installed release's checks on this repository as a project (its
   backlog, its rule areas and generated rules, its installed files), not on the source.
+  So are `npm --prefix .tropis run board` and `run next`: they run the installed
+  release's scripts, so a change to the board or the backlog report does not show
+  through them until a release is installed. Check the source with its own guards, or by
+  running the changed scripts from a scratch copy of `.tropis/` built from the source.
 - **A framework document may name an absent file only through the integrity guard.** A
   path in backticks under `docs/`, `scripts/` or `.claude/` must exist, or
   `framework-integrity` fails the self-check. A file the framework names and no project has
