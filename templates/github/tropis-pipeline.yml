@@ -75,6 +75,20 @@ jobs:
             printf '%s\n' "$lines"
           } >> "$GITHUB_OUTPUT"
 
+  # Whether the main branch is gated by the host, or the project has said why not.
+  # Its own job: a red answer shows on every run without holding a stage or a deploy.
+  host:
+    if: ${{ github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs host --summary "$GITHUB_STEP_SUMMARY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   framework:
     needs: plan
     if: ${{ github.event.action != 'closed' }}
@@ -179,6 +193,7 @@ jobs:
           INTEGRATION: ${{ needs.integration.result }}
           END_TO_END: ${{ needs.end-to-end.result }}
           PLAN_LINES: ${{ needs.plan.outputs.lines }}
+        # The gate exits 1 when it holds the deploy, so this job is the run's required check.
         run: |
           decision=$(printf '%s\n' "$PLAN_LINES" | node .tropis/scripts/pipeline.mjs gate \
             --plan - --event "$EVENT_NAME" --branch "$BRANCH" --summary "$GITHUB_STEP_SUMMARY" \
