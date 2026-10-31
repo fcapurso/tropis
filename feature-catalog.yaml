@@ -3992,3 +3992,29 @@
     - scripts/set-up-project.sh
     - guards/set-up-project.test.js
   refs: []
+# 2026-10-31, raised by the developer: the README should say at a high level what Tropis
+# needs to work, in a way a refresh does not overwrite and set-up projects also get. The
+# facts are already on the page but split between Who it is for (the tools, the agent
+# tool) and Where it stands (CI on GitHub only), and the page never says that the merge
+# steps, /next and the flush use the gh command. A section in the outline, rather than a
+# patch to the page, is what survives /refresh-readme; the default outline is what
+# set-up projects receive.
+- id: readme-says-what-it-needs
+  title: The README says in one place what the project needs to work
+  status: shaped
+  value: Someone deciding whether to adopt a project sees what it needs before they start,
+    in one section of its README. Today Tropis's README splits that across two sections and
+    leaves out the gh command, and the default outline gives set-up projects no place for it.
+  acceptanceCriteria:
+    - The default README outline that set-up projects receive has a section What it needs,
+      directly after Who it is for and before Getting started, whose job is what the
+      product needs to work at a high level, each item marked required or optional.
+    - In the default outline, the jobs of Who it is for and Where it stands send
+      requirements to What it needs, so a refresh writes each requirement once.
+    - This repository's own README outline has the same section in the same place, naming
+      where its facts come from, and its Who it is for and Where it stands send
+      requirements there too.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
