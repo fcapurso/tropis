@@ -731,3 +731,16 @@ set-up-project-installs-from-a-lockfile:
   seen:
     status: shaped
     blockers: []
+release-tags-the-notes-commit:
+  band: B
+  value: 3
+  valueWhy: A release can carry work its notes never mention, with agents merging in
+    parallel.
+  effort: 1
+  effortWhy: One input, one check in the release job, and the trigger /release prints.
+  bundle: main-stays-green
+  verdict: "Small and closes a real gap while several agents merge at once. Do it
+    before the next release."
+  seen:
+    status: shaped
+    blockers: []
