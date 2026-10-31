@@ -114,6 +114,7 @@ describe('set-up-project.sh', () => {
         '.tropis/guards/plan-dispatchable.test.js',
         '.tropis/guards/catalog-drift.test.js',
         '.tropis/guards/rule-claims.test.js',
+        '.tropis/guards/flush-drained.test.js',
         '.tropis/guards/project-layout.test.js',
         '.tropis/installed.json',
         '.tropis/package.json',

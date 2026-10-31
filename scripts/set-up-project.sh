@@ -73,7 +73,7 @@ cp "$BP"/guards/catalog-entries.test.js "$BP"/guards/rule-areas.test.js \
    "$BP"/guards/entry-file.test.js "$BP"/guards/framework-integrity.test.js \
    "$BP"/guards/doc-currency.test.js "$BP"/guards/review-record.test.js \
    "$BP"/guards/plan-dispatchable.test.js "$BP"/guards/catalog-drift.test.js \
-   "$BP"/guards/rule-claims.test.js \
+   "$BP"/guards/rule-claims.test.js "$BP"/guards/flush-drained.test.js \
    "$PROJECT/.tropis/guards/"
 cp "$BP"/templates/project-layout.test.js "$PROJECT/.tropis/guards/"
 cp "$BP"/templates/framework-jest.config.js "$PROJECT/.tropis/jest.config.js"

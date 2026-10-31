@@ -58,6 +58,7 @@ dangling-reference:framework-integrity
 unasserted-clause:rule-claims
 clause-unknown-entry:rule-claims
 orphan-assertion:rule-claims
+undrained-flush:flush-drained
 "
 
 fail=0
