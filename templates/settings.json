@@ -7,9 +7,10 @@
     "the agent first touches a file its paths: header names, and Cursor reads the .mdc",
     "projection. Hooks speak only at moments",
     "nothing else serves. capture-at-write.sh fires on Edit and Write of a rule,",
-    "decision record or framework document. The Bash matcher carries three hooks for",
+    "decision record or framework document. The Bash matcher carries four hooks for",
     "moments no file path marks: merging a plan, committing a change to the rules or",
-    "framework, and committing or pushing in a public project. The first two are",
+    "framework, creating a branch in the main checkout, and committing or pushing in a",
+    "public project. The first two are",
     "narrowed to their command shape by an `if`; public-exposure-check.sh has two",
     "triggers, so it has no `if` and matches commit and push itself. Each re-checks the",
     "command itself. Every hook replies through .tropis/hooks/hook-reply.sh, the one",
@@ -59,6 +60,10 @@
             "type": "command",
             "command": "bash .tropis/hooks/framework-commit-check.sh",
             "if": "Bash(git commit *)"
+          },
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/branch-in-worktree.sh"
           },
           {
             "type": "command",
