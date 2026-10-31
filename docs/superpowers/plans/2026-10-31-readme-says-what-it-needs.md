@@ -333,12 +333,22 @@ From the worktree, after committing everything:
 
 ## Review record
 
-**Checks re-run.** git 2.49.0, Node v22.15.0, Jest 30.5.2, Darwin arm64. On the final commit `bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` Re-break: in a throwaway commit I deleted `## What it needs` from `docs/readme/skeleton.md`; the guard failed with `both README outlines list requirements once, under What it needs`, `"at"` true expected and false received, `"path": "docs/readme/skeleton.md"`. Dropped with `git reset --hard HEAD~1`. The pull request's checks (framework / checks, plan) passed; the other jobs were skipped.
+### Checks re-run
 
-**Found.** Public exposure: the diff was read for names, home paths and hostnames; nothing found. No defects beyond the handover's note that the self-check hides test output.
+git 2.49.0, Node v22.15.0, Jest 30.5.2, Darwin arm64. On the final commit `bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` Re-break: in a throwaway commit I deleted `## What it needs` from `docs/readme/skeleton.md`; the guard failed with `both README outlines list requirements once, under What it needs`, `"at"` true expected and false received, `"path": "docs/readme/skeleton.md"`. Dropped with `git reset --hard HEAD~1`. The pull request's checks (framework / checks, plan) passed; the other jobs were skipped.
 
-**Outstanding disposition.** Node 18.0 versus 18.14: already catalogued as `prerequisite-check-refuses-old-node`. The change has no screen, so there is no developer check. The README refresh after merge belongs to the specifying session, per Decision 3.
+### Found
 
-**Learnings routed.** Nothing generalises beyond what the plan already records; the self-check printing only the guard name is a small usability gap not worth an entry.
+Public exposure: the diff was read for names, home paths and hostnames; nothing found. No defects beyond the handover's note that the self-check hides test output.
 
-**Merged because.** Every criterion is checked by a guard that was seen failing for each outline and passing after the change, and checks are green.
+### Outstanding disposition
+
+Node 18.0 versus 18.14: already catalogued as `prerequisite-check-refuses-old-node`. The change has no screen, so there is no developer check. The README refresh after merge belongs to the specifying session, per Decision 3.
+
+### Learnings routed
+
+Nothing generalises beyond what the plan already records; the self-check printing only the guard name is a small usability gap not worth an entry.
+
+### Merged because
+
+Every criterion is checked by a guard that was seen failing for each outline and passing after the change, and checks are green.
