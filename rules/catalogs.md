@@ -88,8 +88,8 @@ Status changes hands at fixed moments, not whenever it feels right:
 - `building` → `shaped` if the plan is abandoned; nothing stays `building` without a plan.
 
 **A promotion to `shipped` removes `blockedBy`.** An entry that has landed cannot be
-waiting for anything, and the catalog check rejects any shipped entry that still records
-a blocker, where the project has one — whether or not that blocker has itself shipped.
+waiting for anything, and `.tropis/guards/catalog-entries.test.js` rejects any shipped
+entry that still records a blocker, whether or not that blocker has itself shipped.
 Delete the field as part of the promotion, in the same edit.
 
 `after` is not touched. It records the order the work was designed in, which stays true
@@ -117,6 +117,16 @@ then.
   **not** delete the original: specs and plans cite ids and those citations must keep
   resolving. A superseded entry is not work anyone can pick up, and must not also be
   `shipped`.
+- `after`, `blockedBy` and `supersededBy` name entries in this catalog, and the catalog
+  check fails on one that does not. An order that depends on another repository's entry
+  goes in a comment above the entry, naming that repository and the id.
+
+`.tropis/guards/catalog-entries.test.js` checks that every entry has the required fields,
+and that no two entries share an id; that `after`, `blockedBy` and `supersededBy` name
+only entries in this catalog, and `blockedBy` and `after` together form no cycle; that no
+shipped entry records a blocker or is superseded; that `shelved` is `true` or absent, and
+only on an `idea` or `shaped` entry; that a spike has no modules; and that every module of
+a shipped entry exists.
 
 ## Shelving
 

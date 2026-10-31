@@ -12,23 +12,21 @@
  * read this suite passing as evidence the framework is correct; it is evidence the
  * framework is internally consistent.
  *
- * ── ADOPTING THIS ────────────────────────────────────────────────────────────
- * Written for Jest with ESM; nothing here depends on Jest beyond describe/it/expect. The
- * one property it checks: every path referenced in backticks by the framework's own
+ * The one property it checks: every path referenced in backticks by the framework's own
  * documents resolves. Rule areas are checked by rule-areas.test.js.
  *
- * One thing to set on adoption: `root` below, so it resolves to the repository root from
- * wherever this file lands.
+ * Installed in every set-up project at .tropis/guards/, where it checks that project's
+ * rules, framework documents, commands and AGENTS.md. It does not scan docs/: a project's
+ * dated plans and specs name files deleted since, on purpose.
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, basename } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-// SET ON ADOPTION: levels from this file up to the repository root.
-// Pointed at fixtures/ by scripts/check-conformance.sh, so this guard can be seen to
-// fail. Unset in normal use, when it resolves to the repository root as before.
-const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../../..');
+// Installed at .tropis/guards/, two levels below the project root. Pointed at fixtures/
+// by scripts/check-conformance.sh, so this guard can be seen to fail.
+const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../..');
 
 const rulesDir = resolve(root, '.claude/rules');
 
@@ -70,7 +68,16 @@ describe('framework integrity', () => {
           ref === '.github/workflows/tropis-candidate.yml' ||
           ref === '.github/workflows/pipeline.yml' ||
           ref === '.github/workflows/candidate.yml' ||
-          ref === '.github/workflows/project-pipeline.yml'
+          ref === '.github/workflows/project-pipeline.yml' ||
+          // Written later by the project, or never; the setup creates none of them.
+          // /scope writes the brief.
+          ref === 'docs/project-brief.md' ||
+          // /capture-learning writes the queue, on the first portable lesson.
+          ref === 'docs/BLUEPRINT-UPSTREAM.md' ||
+          // The project writes it at its first module-boundary closeout.
+          ref === 'docs/architecture.md' ||
+          // The project writes it, where it keeps one.
+          ref === 'docs/playbooks/test-strategy.md'
         ) continue;
         if (!existsSync(resolve(root, ref))) dangling.push(`${basename(file)} → ${ref}`);
       }

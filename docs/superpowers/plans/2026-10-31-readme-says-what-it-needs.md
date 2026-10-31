@@ -311,3 +311,34 @@ From the worktree, after committing everything:
      --body "<what is now true: both README outlines, the default one set-up projects receive and this repository's own, have a What it needs section after Who it is for, whose job is to list requirements once, required or optional; Who it is for and Where it stands send requirements there; a check fails if either outline loses this. Then: Implements: readme-says-what-it-needs / Plan: docs/superpowers/plans/2026-10-31-readme-says-what-it-needs.md, and the attribution lines>"
    git checkout main && git pull origin main
    ```
+
+## Handover report
+
+**Task completion.** Tasks 0 to 4 done. The catalog entry read `building`, as expected.
+
+**Verification results.** Run with git 2.49.0, Node v22.15.0, Jest 30.5.2 on Darwin arm64.
+- Task 0: baseline `bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1 red: the self-check printed `FAILED readme-usable fails on the framework repository` and `Self-check FAILED`. It does not print test output, so the guard was run directly on a `git archive` of HEAD: `blueprint README usable › both README outlines list requirements once, under What it needs`, `"at": true` expected, `false` received, `"path": "templates/readme-skeleton.md"`.
+- Task 1 throwaway commit (Decision 1 only): same test failed with `"path": "docs/readme/skeleton.md"`. Dropped with `git reset --hard HEAD~1`.
+- Task 2: self-check ended `Self-check passed: ...`. The `diff` of the two outlines shows only the differences the plan lists plus the What it needs Job and Facts from lines.
+- Task 4 (after rebase onto `origin/main` 21fe930): `npm --prefix .tropis test` gave `Tests: 33 passed, 33 total`; self-check ended `Self-check passed: ...`.
+
+**Scope.** `git diff --stat origin/main...HEAD`: docs/readme/skeleton.md, feature-catalog.yaml, guards/readme-usable.test.js, templates/readme-skeleton.md (4 files, 45 insertions, 6 deletions), plus this plan file. All in File Structure. Worktree: `../tropis-readme-needs`.
+
+**Judgment calls.** Branch was rebased onto a newer `origin/main` before pushing. The red-step output was captured by running the guard directly, because the self-check hides test output.
+
+**What the plan got wrong.** Task 1 expects the self-check to show the failing test name; it shows only the guard name.
+
+**Outstanding.** The prerequisite check accepts Node 18.0 while Jest needs 18.14 (already catalogued as `prerequisite-check-refuses-old-node`). The README refresh after merge is the specifying session's (Decision 3).
+
+## Review record
+
+**Checks re-run.** git 2.49.0, Node v22.15.0, Jest 30.5.2, Darwin arm64. On the final commit `bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` Re-break: in a throwaway commit I deleted `## What it needs` from `docs/readme/skeleton.md`; the guard failed with `both README outlines list requirements once, under What it needs`, `"at"` true expected and false received, `"path": "docs/readme/skeleton.md"`. Dropped with `git reset --hard HEAD~1`. The pull request's checks (framework / checks, plan) passed; the other jobs were skipped.
+
+**Found.** Public exposure: the diff was read for names, home paths and hostnames; nothing found. No defects beyond the handover's note that the self-check hides test output.
+
+**Outstanding disposition.** Node 18.0 versus 18.14: already catalogued as `prerequisite-check-refuses-old-node`. The change has no screen, so there is no developer check. The README refresh after merge belongs to the specifying session, per Decision 3.
+
+**Learnings routed.** Nothing generalises beyond what the plan already records; the self-check printing only the guard name is a small usability gap not worth an entry.
+
+**Merged because.** Every criterion is checked by a guard that was seen failing for each outline and passing after the change, and checks are green.

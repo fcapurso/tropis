@@ -12,12 +12,26 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, join } from 'node:path';
+import { dirname, resolve, join, relative } from 'node:path';
+import { fingerprint } from '../scripts/installed-files.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
-// Pointed at fixtures/ by scripts/check-conformance.sh, so this guard can be seen to
-// fail. Unset in normal use, when it resolves to the repository root as before.
-const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../../..');
+// Installed at .tropis/guards/, two levels below the project root. Pointed at fixtures/
+// by scripts/check-conformance.sh, so this guard can be seen to fail.
+const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../..');
+
+/**
+ * Is this a file the framework installed, unchanged since? Read from
+ * .tropis/installed.json. Such a file is not the project's to re-date: editing it would
+ * turn installed-files red, so the staleness check leaves it to the next release. A file
+ * changed since it was installed is checked like any other. No record, nothing skipped.
+ */
+function installedUnchanged() {
+  const record = resolve(root, '.tropis/installed.json');
+  if (!existsSync(record)) return () => false;
+  const files = JSON.parse(readFileSync(record, 'utf8')).files ?? {};
+  return (file, text) => files[relative(root, file)] === fingerprint(text);
+}
 
 /** Markers that assert a point-in-time claim rather than a durable rule. */
 const CURRENCY_MARKERS = /✅|⚠️|❌|^Status:|\bCOMPLETED\b|\bNeeds review\b|\bWIP\b/m;
@@ -91,10 +105,13 @@ describe('framework staleness', () => {
   // them here is a separate change with separate consequences.
   it('has no framework document or model picks whose verification has gone stale', () => {
     const stale = [];
+    const installed = installedUnchanged();
     const picks = resolve(root, 'docs/model-picks.md');
     const dated = [...claudeDocs(resolve(root, '.claude')), ...(existsSync(picks) ? [picks] : [])];
     for (const file of dated) {
-      const match = readFileSync(file, 'utf8').match(LAST_VERIFIED);
+      const text = readFileSync(file, 'utf8');
+      if (installed(file, text)) continue;
+      const match = text.match(LAST_VERIFIED);
       if (!match) continue;
       const ageDays = (Date.now() - Date.parse(match[1])) / 86_400_000;
       if (ageDays > STALE_AFTER_DAYS) {

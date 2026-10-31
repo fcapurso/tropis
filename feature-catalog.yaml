@@ -220,11 +220,10 @@
 # repository criterion rests on the plan's Task 1 check and its review record (the old
 # address answered git ls-remote through GitHub's redirect); the rest on its Task 2 and 3
 # checks, re-run in review.
+# Ordered after blueprint-readme-usable in first-adopter-harness's catalog, from before the framework moved here.
 - id: blueprint-tool-agnostic-name
   title: Name the blueprint for what it is, not one agent tool
   status: shipped
-  after:
-    - blueprint-readme-usable
   value: Someone cloning or linking the blueprint sees a name that matches its
     claim — a governance layer for agent-assisted projects, not a Claude-only
     product. Today the repository is still claude-project-framework while the
@@ -449,11 +448,10 @@
 # finding docs/superpowers/specs/2026-10-15-cursor-area-rules-finding.md. The criterion on
 # framework/rule-delivery.md was also checked by a fresh agent, recorded in the body of
 # the branch commit "the Cursor measurement pointer is not a path in an adopting project".
+# Ordered after rules-load-only-for-their-area in first-adopter-harness's catalog, from before the framework moved here.
 - id: cursor-agents-receive-area-rules
   title: Find out what makes an area rule reach a Cursor agent
   status: shipped
-  after:
-    - rules-load-only-for-their-area
   value: Before any work projects rule areas for Cursor, we know a way for a Cursor agent
     working on a file to receive that file's area rule, measured from inside Cursor, or
     know there is none. Today Cursor agents get the workflow and no area rule at all, so
@@ -502,11 +500,11 @@
 # repository.
 # Shipped by plan docs/superpowers/plans/2026-10-15-rule-tooling-spike.md; finding
 # docs/superpowers/specs/2026-10-15-rule-tooling-finding.md.
+# Ordered after rules-load-only-for-their-area in first-adopter-harness's catalog, from before the framework moved here.
 - id: rule-tooling-spike
   title: Find out whether an existing rule-sync tool should replace our own projection
   status: shipped
   after:
-    - rules-load-only-for-their-area
     - cursor-agents-receive-area-rules
   value: Before the framework moves its rule areas into a project file and ships as a
     package, we know whether an existing tool that generates each agent tool's rule
@@ -605,12 +603,11 @@
 # Cursor criterion is the verification-log entry of 2026-10-15 (pass, Cursor 3.24.12); the
 # Claude Code criterion is the plan's Task 7, recorded in its handover; the pages criterion
 # also rests on the fresh-agent check in the body of the branch's handover commit.
+# Ordered after framework-claims-are-measured in first-adopter-harness's catalog, from before the framework moved here.
+# Ordered after blueprint-hooks-reach-the-agent in first-adopter-harness's catalog, from before the framework moved here.
 - id: rule-areas-are-project-data
   title: A project's rule areas live in its own file, read by every tool
   status: shipped
-  after:
-    - framework-claims-are-measured
-    - blueprint-hooks-reach-the-agent
   value: A project declares the areas of the framework's shipped rules in one file of its
     own, and the files each tool loads for those rules are generated from it — a paths
     header for Claude Code, a Cursor rule in the form measured to reach a Cursor agent.
@@ -910,9 +907,19 @@
 # installed; on 2026-10-31 a fresh set-up project failed two of them for having no plans,
 # and plan-dispatchable failed a merged plan here whose handover quotes its worktree
 # command.
+# Shipped by plan docs/superpowers/plans/2026-10-31-set-up-project-checks-what-its-rules-say.md. Criteria to tests: an executed plan's unshipped delivery,
+# missing record, unfilled placeholder and missing Learnings routed are the overlays
+# unpromoted-delivery (catalog-drift), missing-review, unfilled-placeholder and
+# unrouted-learnings (review-record); a dispatch-refused table is undispatchable-plan and
+# unpaired-projection, and the clean baseline's executed example plan, which quotes a
+# worktree command in its handover, shows an executed plan is not judged; a fresh project
+# passing is guards/set-up-project.test.js › a freshly set-up project passes its own
+# checks; full history on a pull request is guards/framework-checks-workflow.test.js, which
+# reads the template only - no GitHub run of it happened here (the plan's handover,
+# Outstanding).
 - id: set-up-project-checks-its-plans
   title: A set-up project's checks cover its plans and review records
-  status: building
+  status: shipped
   value: A project set up with the framework is told by its own checks when a merged plan
     left its entry unpromoted, lacks a review record, or cannot be dispatched — the
     failures the framework's workflow says the suite catches. Today a set-up project
@@ -931,7 +938,11 @@
     - Each check catches a planted defect in the fixture tree.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - guards/review-record.test.js
+    - guards/plan-dispatchable.test.js
+    - guards/catalog-drift.test.js
+    - templates/github/tropis-framework-checks.yml
   refs:
     - docs/superpowers/plans/2026-10-15-framework-runs-its-own-release.md
 # Found 2026-10-15: the entry-file template says Claude Code loads every area rule at
@@ -2331,9 +2342,14 @@
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). first-adopter has it as
 # .project-tools/src/__tests__/flush-currency.test.js.
+# Shipped by plan docs/superpowers/plans/2026-10-31-set-up-project-checks-what-its-rules-say.md. Criteria to tests: guards/flush-drained.test.js fails on the
+# overlay undrained-flush, naming docs/BLUEPRINT-UPSTREAM.md and the date to set; the
+# clean baseline's fixtures/base/docs/superpowers/plans/2026-01-02-flush-upstream.md has
+# no handover report and is not judged; a fresh project, with no queue and no flush plan,
+# passes by guards/set-up-project.test.js › a freshly set-up project passes its own checks.
 - id: flush-is-seen-to-drain-the-queue
   title: A check fails when an executed flush left the queue undrained
-  status: building
+  status: shipped
   value: A project whose flush plan ran but whose queue was never drained is told so by
     its own checks, with the file to edit and the date to set. Today the drain is a task
     in the flush plan and nothing observes whether it ran; in one project a flush merged
@@ -2348,7 +2364,8 @@
     - With no queue file, or no executed flush plan, the check passes.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - guards/flush-drained.test.js
   refs: []
 
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
@@ -2381,9 +2398,17 @@
 # own copies of both guards, and its reference scan is red on a fresh checkout for want of
 # the second criterion (its framework-suite-passes-on-a-fresh-checkout). Related here -
 # integrity-guard-is-green-on-a-fresh-checkout, blueprint-page-checks-run-in-the-self-check.
+# Shipped by plan docs/superpowers/plans/2026-10-31-set-up-project-checks-what-its-rules-say.md. Criteria to tests: setup installs both, asserted by
+# guards/set-up-project.test.js › sets a project up in its own repository; a fresh project
+# passes them before /scope writes the brief, by › a freshly set-up project passes its own
+# checks (the backlog board is named in backticks nowhere, so it needs no exemption); the
+# currency check leaves an unchanged installed file alone, by the clean baseline's
+# fixtures/base/.claude/commands/installed-roster.md, which is stale and fingerprinted;
+# planted defects dangling-reference (framework-integrity) and stale-verification and
+# stale-picks (doc-currency).
 - id: set-up-project-checks-its-pages
   title: A set-up project's checks find pages that point nowhere or assert stale state
-  status: building
+  status: shipped
   value: A set-up project's entry file, commands and docs are checked for references
     that point nowhere and for documents past their Last verified date, as Tropis's own
     pages are. Today Tropis runs guards/framework-integrity.test.js and
@@ -2401,7 +2426,10 @@
     - Each check catches a planted defect in the fixture tree.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - guards/framework-integrity.test.js
+    - guards/doc-currency.test.js
+    - scripts/set-up-project.sh
   refs: []
 
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
@@ -2702,9 +2730,17 @@
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). The catalog rule
 # told agents about a guard v0.3.1's setup does not install; this is that guard.
+# Shipped by plan docs/superpowers/plans/2026-10-31-set-up-project-checks-what-its-rules-say.md. Criteria to tests: each invariant is a test in
+# guards/catalog-entries.test.js › catalog invariants, caught on the overlays duplicate-id,
+# dangling-after, order-cycle, shipped-with-blocker, superseded-shipped, shelved-not-true,
+# shelf-on-building and spike-with-modules (the self-check's conformance run); the same
+# tests name the entry and the invariant in each failure line. The plan added a ninth,
+# a shipped entry's module must exist (overlay missing-module), because templates/catalog.yaml
+# already said a guard asserts it. The rule criterion is rules/catalogs.md's paragraph under
+# Order and supersession, which lists exactly what that guard checks.
 - id: set-up-project-checks-its-catalog
   title: A set-up project's catalog check enforces the invariants the catalog rule states
-  status: building
+  status: shipped
   value: A project set up with the framework is stopped by its own checks when its
     catalog breaks a rule the catalog rule states. Today the only catalog check a set-up
     project gets, catalog-entries.test.js, checks required fields, while the rule says
@@ -2721,7 +2757,10 @@
     - The catalog rule names this check only for what it checks.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - guards/catalog-entries.test.js
+    - rules/catalogs.md
+    - templates/catalog.yaml
   refs: []
 
 # Raised 2026-10-18 in first-adopter and submitted by its upstream flush of 2026-10-19
@@ -2749,9 +2788,17 @@
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). first-adopter has it as
 # .project-tools/src/__tests__/rule-text-claims.test.js and temporary-clauses.test.js, with
 # a section of its learnings rule. Two false rules were found there that nothing caught.
+# Shipped by plan docs/superpowers/plans/2026-10-31-set-up-project-checks-what-its-rules-say.md. Criteria to tests: setup installs the check, by
+# guards/set-up-project.test.js › sets a project up in its own repository; the pairing is
+# guards/rule-claims.test.js › temporary clauses are paired, caught on the overlays
+# unasserted-clause, clause-unknown-entry and orphan-assertion; the failure naming the
+# rule file and paragraph is guards/temporary-clauses.test.js › temporary › says which
+# paragraph to delete once the defect is fixed; the learnings criteria are the section
+# "A rule that says the code is a certain way is asserted" in rules/learnings.md, checked
+# by the fresh-agent check in the plan's handover report, Verification results.
 - id: rule-claims-are-held-true
   title: A rule's claims about the code are asserted, and a clause waiting on a fix retires with it
-  status: building
+  status: shipped
   value: In a set-up project, a rule that says the code is a certain way carries an
     assertion, and a clause that exists only because the code is still wrong names the
     entry it waits on and the assertion behind it, so it is deleted when the defect is
@@ -2772,7 +2819,10 @@
     - Each check catches a planted defect in the fixture tree.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - guards/rule-claims.test.js
+    - scripts/rule-claims.js
+    - rules/learnings.md
   refs: []
 # Raised 2026-10-19 by the review of plan 2026-10-19-maintainer-absorbs-contributions-in-groups.
 # The plan's script set GIT_CONFIG_GLOBAL=/dev/null and GIT_CONFIG_NOSYSTEM=1 on every git call,
@@ -4014,9 +4064,12 @@
 # steps, /next and the flush use the gh command. A section in the outline, rather than a
 # patch to the page, is what survives /refresh-readme; the default outline is what
 # set-up projects receive.
+# Shipped by docs/superpowers/plans/2026-10-31-readme-says-what-it-needs.md. Criteria 1, 2
+# and 3: readme-usable.test.js, "both README outlines list requirements once, under What
+# it needs", which reads both outlines.
 - id: readme-says-what-it-needs
   title: The README says in one place what the project needs to work
-  status: building
+  status: shipped
   value: Someone deciding whether to adopt a project sees what it needs before they start,
     in one section of its README. Today Tropis's README splits that across two sections and
     leaves out the gh command, and the default outline gives set-up projects no place for it.
@@ -4031,7 +4084,10 @@
       requirements there too.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - templates/readme-skeleton.md
+    - docs/readme/skeleton.md
+    - guards/readme-usable.test.js
   refs: []
 # 2026-10-31, found while writing the plan for readme-says-what-it-needs. The prerequisite
 # check accepts any node 18, but the Jest it installs (30.5.2) declares engines.node

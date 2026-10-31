@@ -29,6 +29,8 @@ orphan-rule:rule-areas
 stale-verification:doc-currency
 stale-picks:doc-currency
 missing-review:review-record
+unfilled-placeholder:review-record
+unrouted-learnings:review-record
 projection-drift:rules-generated
 hand-edited-rule:rules-generated
 orphan-addition:rules-generated
@@ -42,9 +44,23 @@ undispatchable-plan:plan-dispatchable
 unpaired-projection:plan-dispatchable
 incomplete-entry:catalog-entries
 idea-omits-a-field:catalog-entries
+duplicate-id:catalog-entries
+dangling-after:catalog-entries
+order-cycle:catalog-entries
+shipped-with-blocker:catalog-entries
+superseded-shipped:catalog-entries
+shelved-not-true:catalog-entries
+shelf-on-building:catalog-entries
+spike-with-modules:catalog-entries
+missing-module:catalog-entries
 entry-file-not-pointer:entry-file
 entry-agents-is-symlink:entry-file
 entry-agents-is-import:entry-file
+dangling-reference:framework-integrity
+unasserted-clause:rule-claims
+clause-unknown-entry:rule-claims
+orphan-assertion:rule-claims
+undrained-flush:flush-drained
 "
 
 fail=0

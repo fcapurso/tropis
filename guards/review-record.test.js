@@ -11,14 +11,14 @@
  * check whether a review was thorough; this checks it was written at all.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join, basename } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-// Pointed at fixtures/ by scripts/check-conformance.sh, so this guard can be seen to
-// fail. Unset in normal use, when it resolves to the repository root as before.
-const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../../..');
+// Installed at .tropis/guards/, two levels below the project root. Pointed at fixtures/
+// by scripts/check-conformance.sh, so this guard can be seen to fail.
+const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../..');
 const plansDir = resolve(root, 'docs/superpowers/plans');
 
 /**
@@ -75,7 +75,9 @@ function stripInlineCode(text) {
 /** Only the sections a human is supposed to fill after the fact. */
 const RECORD_SECTIONS = /^## (Verification record|Review record|Handover report)/m;
 
+/** A project with no plans directory yet has no plans. */
 function planFiles() {
+  if (!existsSync(plansDir)) return [];
   return readdirSync(plansDir)
     .filter((f) => f.endsWith('.md'))
     .map((f) => join(plansDir, f));

@@ -38,6 +38,12 @@ with anything but `true`, none of this happens. An update never touches the file
 
     npm --prefix .tropis test
 
+They check the backlog's fields and invariants; the rule areas and the generated rules;
+the installed files; the entry file; the references in the instruction pages; dated
+documents; plans, review records and delivered entries; rule claims and temporary
+clauses; and the upstream queue after a flush. A release that adds a check can turn this
+project's checks red on something that was always wrong; the check's message names it.
+
 `/next` opens with one line on the main branch: whether the last finished run of the
 pipeline there passed or failed, naming the commit and, when it failed, the run. The
 isolation helper that `/dispatch`'s prompt runs prints the same line before it creates a

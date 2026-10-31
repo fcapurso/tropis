@@ -1,6 +1,7 @@
 // Level: unit
 /**
  * Locks what this repository's README is guaranteed to keep when refreshed from docs/readme/skeleton.md.
+ * It also checks that both README outlines, the default one and this repository's, list requirements once, under What it needs.
  *
  * Skips when the tree under test is not the blueprint (adopting projects and
  * conformance fixtures). Those trees either have a different README or none.
@@ -71,5 +72,27 @@ describe('blueprint README usable', () => {
       (id) => !existsSync(join(root, 'commands', `${id}.md`)),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('both README outlines list requirements once, under What it needs', () => {
+    for (const path of ['templates/readme-skeleton.md', 'docs/readme/skeleton.md']) {
+      const text = readFileSync(join(root, path), 'utf8');
+      const sections = text.split(/^## /m).slice(1);
+      const headings = sections.map((s) => s.split('\n')[0].trim());
+      const body = (heading) => sections[headings.indexOf(heading)] ?? '';
+      const at = headings.indexOf('What it needs');
+      expect({ path, at: at > 0 }).toEqual({ path, at: true });
+      expect({ path, before: headings[at - 1] }).toEqual({ path, before: 'Who it is for' });
+      expect({ path, after: headings[at + 1] }).toEqual({ path, after: 'Getting started' });
+      for (const line of ['- **Job:**', '- **Facts from:**', '- **Length:**']) {
+        expect({ path, line, found: body('What it needs').includes(line) })
+          .toEqual({ path, line, found: true });
+      }
+      for (const heading of ['Who it is for', 'Where it stands']) {
+        const job = body(heading).split('\n').find((l) => l.startsWith('- **Job:**')) ?? '';
+        expect({ path, heading, sends: job.includes('What it needs') })
+          .toEqual({ path, heading, sends: true });
+      }
+    }
   });
 });
