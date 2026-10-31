@@ -136,6 +136,13 @@ Do these in order. The take's report is the list: `Next:`, then *Needs a decisio
    On a host other than GitHub (the `origin` URL does not name `github.com`),
    show `node .tropis/scripts/pipeline.mjs commands` instead, and say that those
    are the commands to put in that host's CI.
+8. **The gate, when the take's Added list includes
+   `.tropis/templates/main-branch-ruleset.json`** and `.claude/project.json` records no
+   `ungated`. From this release the pipeline fails on every run until the project
+   chooses, so ask now, as bootstrap's Stage 3b (*The gate*) does: print the command that
+   applies the ruleset and the two settings, for the developer to run once this branch
+   has merged, or write the reason they give into `.claude/project.json`, so it is
+   committed with the update. Never apply the ruleset yourself.
 
 ## Stage 7 — Check again
 

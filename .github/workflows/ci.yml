@@ -1,35 +1,22 @@
 # The release job. Pull requests and pushes to main run through pipeline.yml,
-# whose unit stage is the self-check. Here the self-check runs on the commit the
-# release starts from, and again on the commit that promotes the notes, before that
-# commit is tagged or pushed. It is started by hand, on main, by the developer —
-# never by an agent:
-#   gh workflow run ci.yml --ref main -f bump=<patch|minor|major>
+# whose unit stage is the self-check. The notes reach main already promoted
+# under the version, through /release's notes commit, so this job commits
+# nothing: it checks that the notes on main name the version and that it is not
+# tagged yet, self-checks the very commit it tags, tags it, and pushes only the
+# tag. It is started by hand, on main, by the developer — never by an agent:
+#   gh workflow run ci.yml --ref main -f version=<X.Y.Z>
 name: Self-check and release
 
 on:
   workflow_dispatch:
     inputs:
-      bump:
-        description: patch, minor or major (major means breaking; see RELEASES.md)
-        type: choice
-        options: [patch, minor, major]
+      version:
+        description: The version the notes on main were promoted to, X.Y.Z
+        type: string
         required: true
 
 jobs:
-  self-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: bash scripts/check-blueprint.sh
-
   release:
-    if: github.event_name == 'workflow_dispatch'
-    needs: self-check
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -45,29 +32,25 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - name: Work out the version
-        id: version
+      - name: The notes name this version, and it is not tagged yet
+        id: notes
         env:
-          BUMP: ${{ inputs.bump }}
+          VERSION: ${{ inputs.version }}
         run: |
-          last=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
-          echo "version=$(node .github/scripts/release.mjs version "$BUMP" "$last")" >> "$GITHUB_OUTPUT"
-      - name: Promote the notes and commit
+          node .github/scripts/release.mjs check RELEASES.md "$VERSION"
+          if git rev-parse -q --verify "refs/tags/v$VERSION" > /dev/null; then
+            echo "v$VERSION is already tagged."
+            exit 1
+          fi
+      # The commit that is tagged, checked before anything is pushed: a failure here
+      # ends the job, and the tag never leaves the runner.
+      - name: Self-check the commit to tag
+        run: bash scripts/check-blueprint.sh
+      - name: Tag and push the tag
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ inputs.version }}
         run: |
-          node .github/scripts/release.mjs promote RELEASES.md "$VERSION" "$(date -u +%F)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "chore(release): v$VERSION" \
-            -m "Promotes the release notes under $VERSION and tags the commit, so a project can be set up from this release."
-      # The commit that is tagged, checked before anything is pushed: a failure here ends
-      # the job, and neither the commit nor the tag leaves the runner.
-      - name: Self-check the release commit
-        run: bash scripts/check-blueprint.sh
-      - name: Tag and push
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
           git tag -a "v$VERSION" -m "Release v$VERSION"
-          git push --atomic origin HEAD:main "v$VERSION"
+          git push origin "v$VERSION"

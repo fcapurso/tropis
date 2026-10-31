@@ -13,13 +13,21 @@ releasing does that, after reading what you drafted.
 
 <!-- project-owned: begin — this project's release. -->
 - Run from: the root of this repository, where the backlog also lives.
-- Notes file: `RELEASES.md` at the root, with an `## [Unreleased]` section the release
-  job promotes.
+- Notes file: `RELEASES.md` at the root. Here the notes reach main already promoted: at
+  Stage 5, once the bump is confirmed, work out the version with
+  `node .github/scripts/release.mjs version <bump> <last tag>`, then run
+  `node .github/scripts/release.mjs promote RELEASES.md <version> <today, YYYY-MM-DD, UTC>`
+  before committing. The release job only tags.
+- Main branch: gated where `.claude/project.json` records no `ungated`. There Stage 1b's
+  README commit and Stage 5's notes commit each go on a branch, through a pull request
+  that merges itself (`gh pr merge <N> --auto --squash`), and the next stage waits until
+  it has merged.
 - Readers: people who set up and run projects with the framework.
 - Breaking: as `RELEASES.md` defines it — a project taking the release must act by hand.
   Below 1.0 the release job raises the middle number only for `bump=major`, and `minor`
   raises the last one: so a breaking release is `bump=major` until 1.0.
-- Trigger: `gh workflow run ci.yml --ref main -f bump=<bump>`
+- Trigger: `gh workflow run ci.yml --ref main -f version=<version>`, once the notes are
+  on main. The job checks main, tags it, and pushes only the tag.
 - Where the run is watched: https://github.com/fcapurso/tropis/actions/workflows/ci.yml
 <!-- project-owned: end -->
 

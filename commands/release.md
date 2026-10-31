@@ -56,8 +56,10 @@ Only after pre-flight has passed, so `main` is clean and equal to `origin/main`.
 `docs/readme/readme.yaml`. At `manual`, skip this stage. Otherwise — `writes`, `suggests`,
 no file, or a level that is none of these — run `/refresh-readme` as its command says.
 
-If it committed a refreshed README, push it (`git push origin main`). Pre-flight found
-nothing else unpushed, so the push carries only that commit.
+If it committed a refreshed README, push it (`git push origin main`). Where the main
+branch is gated (workflow.md, *Branching*), move that commit to a branch instead, open a
+pull request, run `gh pr merge <N> --auto --squash`, and wait until it has merged.
+Pre-flight found nothing else unpushed, so the push carries only that commit.
 
 If the refresh stopped before it could judge the page, say why. If the README is still
 behind — at `writes` the developer said no, or otherwise it reported sections behind — list
@@ -202,6 +204,9 @@ Stop if the commit would include any file other than the notes file, or if `(ask
 still in it — the pipeline promotes the section as written, and a placeholder would
 become the permanent record. Commit with
 `docs(release): draft notes for the next release`, a body line `Bump: <bump>`, and push.
+Where the main branch is gated, commit on a branch instead, open a pull request, run
+`gh pr merge <N> --auto --squash` with the same subject and body, and wait until it has
+merged; the commit Stage 6 names is then the one the merge made on `main`.
 
 ## Stage 6 — Print the next trigger. Do not run it.
 
@@ -209,7 +214,7 @@ become the permanent record. Commit with
 where the run is watched.
 
 **Filled slot.** Print the candidate trigger named above with the full hash of the
-commit Stage 5 pushed, and where the run is watched. Then say what comes next, as
+commit Stage 5 put on `main`, and where the run is watched. Then say what comes next, as
 numbered steps for the developer:
 
 1. Read the run's summary and do anything it lists under *By hand*.

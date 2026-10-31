@@ -96,8 +96,9 @@ rather than a weak finding: a pass that finds nothing reports `Grooming: nothing
 <!-- What this block is for: publishing the page somewhere else. As shipped, there is no publishing step. -->
 <!-- project-owned: end -->
 
-**6. Commit `bands.yaml`.** Directly on `main`, when step 2 changed
-it — which, after a stamp, it always has — it is a file under `docs/`, so no branch is needed. The build product is gitignored;
+**6. Commit `bands.yaml`.** When step 2 changed it — which, after a stamp, it always
+has. It is a file under `docs/`, so it goes directly on `main`, or, where the main branch
+is gated, through a pull request that merges itself (workflow.md, *Branching*). The build product is gitignored;
 the bands are the durable record of the judgment, and a band left in the working tree is
 reported as missing again by the next checkout to run the build. Do not leave this to the
 person: it was skipped once and the next refresh re-asked for four bands that already

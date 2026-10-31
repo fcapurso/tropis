@@ -118,6 +118,7 @@ describe('set-up-project.sh', () => {
         '.tropis/templates/backlog-bands.yaml',
         '.tropis/templates/pipeline-caller.yml',
         '.tropis/templates/candidate-caller.yml',
+        '.tropis/templates/main-branch-ruleset.json',
         '.github/workflows/tropis-candidate.yml',
         '.github/workflows/tropis-framework-checks.yml',
         '.github/workflows/tropis-pipeline.yml',

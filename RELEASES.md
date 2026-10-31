@@ -1,8 +1,8 @@
 # Releases
 
 What changed in each release, for the people who set up and run projects with this
-framework — not for whoever wrote it. `/release` drafts the next section; the release
-job promotes it under a version heading when it runs.
+framework — not for whoever wrote it. `/release` drafts the next section and moves it
+under its version heading; the release job tags the commit that carries it.
 
 A release is breaking when a project taking it must act by hand: a file in `.claude/`
 or `.framework/` moved, renamed or removed; a command removed or renamed; a hook entry

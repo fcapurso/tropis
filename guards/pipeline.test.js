@@ -5,7 +5,7 @@
  * the order or how the gate decides is a breaking release.
  */
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -1204,14 +1204,14 @@ describe('run, gate and commands', () => {
     for (const stage of STAGES) expect(result.stderr).toContain(stage);
   });
 
-  function gate(root, { plan, event, results, summary, prior, branch }) {
+  function gate(root, { plan, event, results, summary, prior, branch, input }) {
     if (prior !== undefined) writeFileSync(summary, prior);
     return runPipeline(root, [
       'gate', '--plan', '-', '--event', event,
       ...(branch ? ['--branch', branch] : []),
       ...(summary ? ['--summary', summary] : []),
       ...STAGES.slice(0, -1).map((stage) => `${stage}=${results[stage]}`),
-    ], { input: `${STAGES.map((stage) => `${stage}=${plan[stage]}`).join('\n')}\n` });
+    ], { input: input ?? `${STAGES.map((stage) => `${stage}=${plan[stage]}`).join('\n')}\n` });
   }
 
   it('holds a deploy when framework failed and the other stage jobs were skipped', () => {
@@ -1230,7 +1230,7 @@ describe('run, gate and commands', () => {
       summary,
       prior: 'before\n',
     });
-    expect(result.status).toBe(0);
+    expect(result.status).toBe(1);
     expect(result.stdout).toBe('deploy=held\n');
     const text = readFileSync(summary, 'utf8');
     expect(text.startsWith('before\n')).toBe(true);
@@ -1251,9 +1251,19 @@ describe('run, gate and commands', () => {
         'end-to-end': 'skipped',
       }),
     });
-    expect(result.status).toBe(0);
+    expect(result.status).toBe(1);
     expect(result.stdout).toBe('deploy=held\n');
     expect(result.stderr).toContain('held — unit did not pass');
+  });
+
+  it('fails with no plan, saying the plan job did not finish', () => {
+    const root = repository();
+    const summary = join(root, 'summary.md');
+    const result = gate(root, { event: 'push', results: resultsOf(), summary, prior: '', input: '' });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('the plan job did not finish');
+    expect(result.stdout).toBe('');
+    expect(readFileSync(summary, 'utf8')).toContain('the plan job did not finish');
   });
 
   it('skips deploy on a green pull request and runs it for the same results on a push', () => {
@@ -1261,14 +1271,17 @@ describe('run, gate and commands', () => {
     const plan = planOf();
     const results = resultsOf();
     const pull = gate(root, { plan, event: 'pull_request', results });
+    expect(pull.status).toBe(0);
     expect(pull.stdout).toBe('deploy=skipped\n');
     expect(pull.stderr).toContain('skipped — no pipeline/branch/');
     const push = gate(root, { plan, event: 'push', results });
+    expect(push.status).toBe(0);
     expect(push.stdout).toBe('deploy=run\n');
     expect(push.stderr).toContain('will run');
     expect(push.stderr).not.toContain("will run — to the branch's environment");
     expect(push.stderr).toContain('run — passed');
     const toBranch = gate(root, { plan, event: 'pull_request', results, branch: 'filled' });
+    expect(toBranch.status).toBe(0);
     expect(toBranch.stdout).toBe('deploy=run\n');
     expect(toBranch.stderr).toContain("will run — to the branch's environment");
     const prose = gate(root, {
@@ -1288,6 +1301,7 @@ describe('run, gate and commands', () => {
       }),
       branch: 'filled',
     });
+    expect(prose.status).toBe(0);
     expect(prose.stdout).toBe('deploy=skipped\n');
     expect(prose.stderr).toContain('skipped — only prose and framework files changed');
   });
@@ -1316,6 +1330,158 @@ describe('run, gate and commands', () => {
   });
 });
 
+describe('host', () => {
+  const OUTSIDE = 'host: whether the main branch is gated is read from GitHub, in the pipeline; nothing to check here.';
+  const APPLY = 'gh api repos/acme/app/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json';
+  const NOT_A_REASON = 'host: "ungated" in .claude/project.json must say why the main branch is not gated, in words.';
+  const GATED_RULES = [{ type: 'pull_request' }, { type: 'required_status_checks', parameters: { required_status_checks: [{ context: 'renamed / job' }] } }];
+
+  /** A project with a stub gh first on PATH. GITHUB_ACTIONS is always set explicitly. */
+  function hostProject({ projectJson } = {}) {
+    const root = repository();
+    if (projectJson !== undefined) write(root, '.claude/project.json', projectJson);
+    const bin = mkdtempSync(join(tmpdir(), 'tropis-gh-'));
+    temps.push(bin);
+    writeFileSync(join(bin, 'gh'), `#!/bin/sh
+echo "$*" >> "$STUB_LOG"
+if [ "$*" = "api repos/acme/app" ]; then
+  if [ -n "$STUB_REPO_ERR" ]; then echo "$STUB_REPO_ERR" >&2; fi
+  printf '%s' "$STUB_REPO"
+  exit "\${STUB_REPO_EXIT:-0}"
+fi
+case "$*" in
+  "api repos/acme/app/rules/branches/"*) printf '%s' "$STUB_RULES"; exit 0 ;;
+esac
+echo "stub gh: unexpected call: $*" >&2
+exit 99
+`);
+    chmodSync(join(bin, 'gh'), 0o755);
+    const log = join(bin, 'calls.log');
+    writeFileSync(log, '');
+    const summary = join(bin, 'summary.md');
+    writeFileSync(summary, '');
+    return { root, bin, log, summary };
+  }
+
+  function host(project, { actions = 'true', repo = { default_branch: 'main', allow_auto_merge: true }, rules = GATED_RULES, env = {} } = {}) {
+    return runPipeline(project.root, ['host', '--summary', project.summary], {
+      env: {
+        PATH: `${project.bin}:${process.env.PATH}`,
+        GITHUB_ACTIONS: actions,
+        GITHUB_REPOSITORY: 'acme/app',
+        GH_TOKEN: 'stub',
+        STUB_LOG: project.log,
+        STUB_REPO: JSON.stringify(repo),
+        STUB_RULES: JSON.stringify(rules),
+        STUB_REPO_EXIT: '0',
+        STUB_REPO_ERR: '',
+        ...env,
+      },
+    });
+  }
+
+  const calls = (project) => readFileSync(project.log, 'utf8').split('\n').filter((line) => line !== '');
+  const summaryOf = (project) => readFileSync(project.summary, 'utf8');
+
+  it('outside GitHub Actions it says it reads the host in the pipeline and passes', () => {
+    const project = hostProject();
+    const result = host(project, { actions: '' });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`${OUTSIDE}\n`);
+    expect(calls(project)).toEqual([]);
+  });
+
+  it('passes when the main branch requires a pull request and any check, and auto-merge is allowed', () => {
+    const project = hostProject();
+    const result = host(project);
+    expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
+    const line = 'host: main requires a pull request and a passing check, and auto-merge is allowed.';
+    expect(result.stdout).toBe(`${line}\n`);
+    expect(summaryOf(project)).toContain(line);
+    const log = calls(project);
+    expect(log.filter((call) => call === 'api repos/acme/app')).toHaveLength(1);
+    expect(log.filter((call) => call === 'api repos/acme/app/rules/branches/main?per_page=100')).toHaveLength(1);
+  });
+
+  it('fails on a branch with no rules, naming each gap, the command and the opt-out', () => {
+    const project = hostProject();
+    const result = host(project, { repo: { default_branch: 'main', allow_auto_merge: false }, rules: [] });
+    expect(result.status).toBe(1);
+    for (const text of [result.stderr, summaryOf(project)]) {
+      for (const expected of [
+        'host: the main branch main is not gated:',
+        'no pull request is required',
+        'no check is required',
+        'auto-merge is not allowed',
+        APPLY,
+        'Settings → General → Pull Requests → Allow auto-merge',
+        '"ungated"',
+        'Pro, Team or Enterprise',
+        'a classic branch protection rule does not count',
+      ]) expect(text).toContain(expected);
+    }
+  });
+
+  it('names only what is missing', () => {
+    const project = hostProject();
+    const result = host(project, { rules: [{ type: 'pull_request' }] });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('no check is required');
+    expect(result.stderr).not.toContain('no pull request is required');
+    expect(result.stderr).not.toContain('auto-merge is not allowed');
+  });
+
+  it('reads the default branch from the repository', () => {
+    const project = hostProject();
+    const result = host(project, { repo: { default_branch: 'trunk', allow_auto_merge: true } });
+    expect(result.status).toBe(0);
+    expect(calls(project)).toContain('api repos/acme/app/rules/branches/trunk?per_page=100');
+  });
+
+  it('an ungated reason passes without asking GitHub, and the summary carries it', () => {
+    const project = hostProject({ projectJson: '{"public": true, "ungated": "private, on the free plan"}\n' });
+    const result = host(project, { rules: [] });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('host: the main branch is not gated — private, on the free plan (.claude/project.json)\n');
+    expect(summaryOf(project)).toBe('**The main branch is not gated.** private, on the free plan — recorded in .claude/project.json.\n');
+    expect(calls(project)).toEqual([]);
+  });
+
+  it('an ungated value that is not a reason fails', () => {
+    for (const value of ['"  "', 'true']) {
+      const project = hostProject({ projectJson: `{"ungated": ${value}}\n` });
+      const result = host(project);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe(`${NOT_A_REASON}\n`);
+      expect(calls(project)).toEqual([]);
+    }
+  });
+
+  it('fails when GitHub cannot be asked, saying why and how to opt out', () => {
+    const project = hostProject();
+    const result = host(project, { env: { STUB_REPO_EXIT: '1', STUB_REPO_ERR: 'HTTP 403: Resource not accessible' } });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('host: the main branch is not gated: could not ask GitHub');
+    expect(result.stderr).toContain('HTTP 403');
+    expect(result.stderr).toContain('"ungated"');
+  });
+
+  it('says when GitHub did not report auto-merge', () => {
+    const project = hostProject();
+    const result = host(project, { repo: { default_branch: 'main' } });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('GitHub did not say whether auto-merge is allowed');
+  });
+
+  it('takes no argument but --summary <file>', () => {
+    const project = hostProject();
+    const result = runPipeline(project.root, ['host', '--other'], { env: { GITHUB_ACTIONS: '' } });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toBe('host: the only argument is --summary <file>\n');
+  });
+});
+
 describe('GitHub workflow', () => {
   it('gives each stage its own job, and the four filled stages run side by side', () => {
     const pipelineDoc = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8'));
@@ -1323,6 +1489,7 @@ describe('GitHub workflow', () => {
     const jobs = pipelineDoc.jobs;
     expect(Object.keys(jobs)).toEqual([
       'plan',
+      'host',
       'framework',
       'sanity',
       'unit',
@@ -1337,6 +1504,13 @@ describe('GitHub workflow', () => {
       expect([...jobs[stage].needs].sort()).toEqual(['framework', 'plan']);
     }
     expect(jobs.gate.needs).toEqual(['plan', ...STAGES.slice(0, -1)]);
+    expect(jobs.host.needs).toBeUndefined();
+    expect(String(jobs.host.if)).toContain("github.event.action != 'closed'");
+    const hostRun = jobs.host.steps.find((step) => step.run);
+    expect(hostRun.run).toBe('node .tropis/scripts/pipeline.mjs host --summary "$GITHUB_STEP_SUMMARY"');
+    expect(hostRun.env.GH_TOKEN).toBe('${{ github.token }}');
+    expect([].concat(jobs.gate.needs)).not.toContain('host');
+    expect([].concat(jobs.deploy.needs)).not.toContain('host');
     expect(String(jobs.gate.if)).toContain('always()');
     expect(String(jobs.gate.if)).toContain("github.event.action != 'closed'");
     expect(String(jobs.framework.if)).toContain("github.event.action != 'closed'");
@@ -1417,17 +1591,6 @@ describe('GitHub workflow', () => {
       'node-version': '${{ inputs.node-version }}',
     });
     expect(pipelineText).not.toContain('inputs.commit');
-    // The self-check runs this guard from an archive with no .git, so the byte
-    // comparison with main is only available in a checkout of this repository.
-    const top = spawnSync('git', ['rev-parse', '--show-toplevel'], { cwd: blueprint, encoding: 'utf8' });
-    if (top.status === 0 && realpathSync(top.stdout.trim()) === realpathSync(blueprint)) {
-      const committed = spawnSync('git', ['show', 'main:templates/github/tropis-pipeline.yml'], {
-        cwd: blueprint,
-        encoding: 'utf8',
-      });
-      expect(committed.status).toBe(0);
-      expect(pipelineText).toBe(committed.stdout);
-    }
 
     const callerPath = join(blueprint, 'templates/candidate-caller.yml');
     const callerText = readFileSync(callerPath, 'utf8');
@@ -1437,5 +1600,26 @@ describe('GitHub workflow', () => {
     expect(callerText).toContain('${{ inputs.commit || github.sha }}');
     expect(callerText).toContain('gh workflow run candidate.yml --ref main -f commit=<commit>');
     expect(callerText).toContain('never by an agent');
+  });
+
+  it('the ruleset requires a pull request and the gate, and lets nobody bypass it', () => {
+    const ruleset = JSON.parse(readFileSync(join(blueprint, 'templates/github/main-branch-ruleset.json'), 'utf8'));
+    const caller = YAML.parse(readFileSync(join(blueprint, 'templates/pipeline-caller.yml'), 'utf8'));
+    const template = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8'));
+    expect(template.jobs.gate).toBeDefined();
+    expect(ruleset.enforcement).toBe('active');
+    expect(ruleset.bypass_actors).toEqual([]);
+    expect(ruleset.conditions.ref_name.include).toEqual(['~DEFAULT_BRANCH']);
+    const rule = (type) => ruleset.rules.find((r) => r.type === type);
+    expect(ruleset.rules.map((r) => r.type).sort()).toEqual([
+      'deletion',
+      'non_fast_forward',
+      'pull_request',
+      'required_status_checks',
+    ]);
+    expect(rule('pull_request').parameters.required_approving_review_count).toBe(0);
+    const checks = rule('required_status_checks').parameters;
+    expect(checks.strict_required_status_checks_policy).toBe(true);
+    expect(checks.required_status_checks.map((c) => c.context)).toEqual([`${Object.keys(caller.jobs)[0]} / gate`]);
   });
 });

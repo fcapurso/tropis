@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import YAML from 'yaml';
-import { nextVersion, promote } from '../.github/scripts/release.mjs';
+import { checkReleased, nextVersion, promote } from '../.github/scripts/release.mjs';
 
 describe('nextVersion', () => {
   it('starts at 0.1.0 when nothing has been released, whatever the bump', () => {
@@ -90,34 +90,70 @@ describe('promote', () => {
   });
 });
 
-// Backs release-job-checks-the-commit-it-tags: the job's own steps, read from ci.yml and
-// run in a scratch repository whose self-check is a stub and whose origin is a bare
-// repository beside it, so nothing real is checked or pushed.
+describe('checkReleased', () => {
+  const promoted = promote(`${head}${unreleased}\n---\n`, '0.2.0', '2026-10-31');
+
+  it('passes on notes promoted to the version it is given', () => {
+    expect(() => checkReleased(promoted, '0.2.0')).not.toThrow();
+  });
+
+  it('refuses notes whose Unreleased section still holds notes', () => {
+    expect(() => checkReleased(`${head}${unreleased}\n## [0.2.0] — 2026-10-31\n\n- Old.\n`, '0.2.0')).toThrow(
+      /still holds notes/,
+    );
+  });
+
+  it('refuses a version the notes do not name as the newest', () => {
+    expect(() => checkReleased(promoted, '0.3.0')).toThrow(/newest version in the notes is 0\.2\.0, not 0\.3\.0/);
+  });
+
+  it('refuses a version not of the form X.Y.Z', () => {
+    expect(() => checkReleased(promoted, 'v0.2.0')).toThrow(/of the form X\.Y\.Z/);
+    expect(() => checkReleased(promoted, '0.2')).toThrow(/of the form X\.Y\.Z/);
+  });
+
+  it('refuses notes with no version below Unreleased', () => {
+    expect(() => checkReleased(`${head}## [Unreleased]\n\n_Nothing yet._\n\n---\n`, '0.2.0')).toThrow(
+      /no version section/,
+    );
+  });
+});
+
+// Backs main-is-gated-by-the-host (and supersedes the third criterion of
+// release-job-checks-the-commit-it-tags): the job's own steps, read from ci.yml and run in
+// a scratch repository whose self-check is a stub and whose origin is a bare repository
+// beside it, so nothing real is checked or pushed. The notes reach main already
+// promoted; the job checks them and the commit, tags it, and pushes only the tag.
 describe('the release job', () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-  const job = YAML.parse(readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8')).jobs
-    .release;
-  const after = job.steps.slice(job.steps.findIndex((s) => s.id === 'version') + 1);
-  const runs = (text) => after.filter((s) => (s.run ?? '').includes(text)).map((s) => after.indexOf(s));
-  const checkStep = after.findIndex((s) => (s.run ?? '').trim() === 'bash scripts/check-blueprint.sh');
+  const workflow = YAML.parse(readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8'));
+  const job = workflow.jobs.release;
+  const after = job.steps.slice(job.steps.findIndex((st) => String(st.uses ?? '').startsWith('actions/setup-node')) + 1);
+  const notesStep = after.findIndex((st) => st.id === 'notes');
+  const checkStep = after.findIndex((st) => (st.run ?? '').trim() === 'bash scripts/check-blueprint.sh');
+  const tagStep = after.findIndex((st) => (st.run ?? '').includes('git tag'));
 
-  it('checks the commit it tags before tagging or pushing', () => {
-    const [commit] = runs('git commit');
-    expect(commit).toBeGreaterThanOrEqual(0);
-    expect(checkStep).toBeGreaterThan(commit);
-    const later = [...runs('git tag'), ...runs('git push')];
-    expect(later.length).toBeGreaterThan(0);
-    for (const i of later) expect(checkStep).toBeLessThan(i);
-    for (const s of after.slice(commit)) {
-      expect(s).not.toHaveProperty('if');
-      expect(s).not.toHaveProperty('continue-on-error');
+  it('commits nothing, pushes only the tag, and checks before it tags', () => {
+    expect(Object.keys(workflow.jobs)).toEqual(['release']);
+    expect(Object.keys(workflow.on.workflow_dispatch.inputs)).toEqual(['version']);
+    expect(workflow.on.workflow_dispatch.inputs.version.required).toBe(true);
+    const runs = job.steps.map((st) => st.run ?? '').join('\n');
+    expect(runs).not.toContain('git commit');
+    const pushes = runs.split('\n').map((l) => l.trim()).filter((l) => l.includes('git push'));
+    expect(pushes).toEqual(['git push origin "v$VERSION"']);
+    expect(notesStep).toBeGreaterThanOrEqual(0);
+    expect(checkStep).toBeGreaterThan(notesStep);
+    expect(tagStep).toBeGreaterThan(checkStep);
+    for (const st of after.slice(notesStep)) {
+      expect(st).not.toHaveProperty('if');
+      expect(st).not.toHaveProperty('continue-on-error');
     }
     expect(job).not.toHaveProperty('continue-on-error');
   });
 
-  // Runs the job's steps after `id: version` in a fresh scratch world; the stub
-  // self-check records the commit it saw and exits with `checkExit`.
-  const release = (checkExit) => {
+  // Runs the job's steps after setup-node in a fresh scratch world whose main already
+  // carries notes promoted to 0.2.0; the stub self-check records the commit it saw.
+  const release = ({ checkExit = 0, version = '0.2.0', tagFirst = false } = {}) => {
     const dir = mkdtempSync(join(tmpdir(), 'release-job-'));
     const origin = join(dir, 'origin.git');
     const work = join(dir, 'work');
@@ -132,7 +168,7 @@ describe('the release job', () => {
     try {
       git(dir, 'init', '-q', '--bare', origin);
       git(dir, 'init', '-q', '-b', 'main', work);
-      writeFileSync(join(work, 'RELEASES.md'), `${head}${unreleased}\n---\n`);
+      writeFileSync(join(work, 'RELEASES.md'), promote(`${head}${unreleased}\n---\n`, '0.2.0', '2026-10-31'));
       mkdirSync(join(work, '.github/scripts'), { recursive: true });
       copyFileSync(join(root, '.github/scripts/release.mjs'), join(work, '.github/scripts/release.mjs'));
       mkdirSync(join(work, 'scripts'));
@@ -140,19 +176,20 @@ describe('the release job', () => {
       writeFileSync(stub, `#!/usr/bin/env bash\ngit rev-parse HEAD > "${join(dir, 'checked')}"\nexit ${checkExit}\n`);
       chmodSync(stub, 0o755);
       git(work, 'add', '-A');
-      git(work, 'commit', '-qm', 'start');
+      git(work, 'commit', '-qm', 'docs(release): draft notes for the next release');
       git(work, 'remote', 'add', 'origin', origin);
       git(work, 'push', '-q', 'origin', 'main');
+      if (tagFirst) git(work, 'tag', 'v0.2.0');
       const start = git(origin, 'rev-parse', 'main');
 
-      for (const s of after) expect(Object.keys(s.env ?? {}).filter((k) => k !== 'VERSION')).toEqual([]);
+      for (const st of after) expect(Object.keys(st.env ?? {}).filter((k) => k !== 'VERSION')).toEqual([]);
       let stoppedAt = -1;
-      for (const [i, s] of after.entries()) {
-        if (!s.run) continue;
-        const r = spawnSync('bash', ['-e', '-c', s.run], {
+      for (const [i, st] of after.entries()) {
+        if (!st.run) continue;
+        const r = spawnSync('bash', ['-e', '-c', st.run], {
           cwd: work,
           encoding: 'utf8',
-          env: { ...process.env, VERSION: '0.2.0' },
+          env: { ...process.env, VERSION: version },
         });
         if (r.status !== 0) {
           stoppedAt = i;
@@ -163,15 +200,13 @@ describe('the release job', () => {
       try {
         checked = readFileSync(join(dir, 'checked'), 'utf8').trim();
       } catch {}
-      const subject = (rev) => git(work, 'log', '-1', '--format=%s', rev);
       return {
         stoppedAt,
         start,
         checked,
-        checkedSubject: checked && subject(checked),
         workHead: git(work, 'rev-parse', 'HEAD'),
         originMain: git(origin, 'rev-parse', 'main'),
-        originTags: git(origin, 'tag', '--list', 'v0.2.0'),
+        originTags: git(origin, 'tag', '--list', 'v*'),
         originTagCommit: spawnSync('git', ['rev-parse', 'v0.2.0^{commit}'], { cwd: origin, encoding: 'utf8' })
           .stdout.trim(),
       };
@@ -180,23 +215,35 @@ describe('the release job', () => {
     }
   };
 
-  it('pushes nothing when the check of the release commit fails', () => {
-    const r = release(1);
+  it('tags the commit main holds and pushes only the tag', () => {
+    const r = release();
+    expect(r.stoppedAt).toBe(-1);
     expect(r.originMain).toBe(r.start);
-    expect(r.originTags).toBe('');
-    expect(checkStep).toBeGreaterThanOrEqual(0);
-    expect(r.stoppedAt).toBe(checkStep);
-    expect(r.checked).toBe(r.workHead);
-    expect(r.checkedSubject).toBe('chore(release): v0.2.0');
+    expect(r.workHead).toBe(r.start);
+    expect(r.checked).toBe(r.start);
+    expect(r.originTagCommit).toBe(r.start);
   });
 
-  it('pushes the checked commit and its tag together when the check passes', () => {
-    const r = release(0);
-    expect(r.stoppedAt).toBe(-1);
-    expect(r.checked).not.toBeNull();
-    expect(r.checkedSubject).toBe('chore(release): v0.2.0');
-    expect(r.originMain).toBe(r.checked);
-    expect(r.originTagCommit).toBe(r.checked);
+  it('pushes nothing when the self-check fails', () => {
+    const r = release({ checkExit: 1 });
+    expect(checkStep).toBeGreaterThanOrEqual(0);
+    expect(r.stoppedAt).toBe(checkStep);
+    expect(r.originTags).toBe('');
+    expect(r.originMain).toBe(r.start);
+  });
+
+  it('refuses a version the notes do not name, before the self-check', () => {
+    const r = release({ version: '0.3.0' });
+    expect(r.stoppedAt).toBe(notesStep);
+    expect(r.checked).toBeNull();
+    expect(r.originTags).toBe('');
+  });
+
+  it('refuses a version already tagged', () => {
+    const r = release({ tagFirst: true });
+    expect(r.stoppedAt).toBe(notesStep);
+    expect(r.checked).toBeNull();
+    expect(r.originTags).toBe('');
   });
 });
 
@@ -290,10 +337,67 @@ describe('the pipeline offer', () => {
     }
   });
 
+  it('asks bootstrap for the gate, and never applies it', () => {
+    expect(bootstrap).toContain(
+      'gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json',
+    );
+    expect(bootstrap).toContain('Allow auto-merge');
+    expect(bootstrap).toContain('"ungated": "<reason>"');
+    expect(bootstrap).toContain('never run it yourself');
+  });
+
+  it('asks the update for the gate when the release brings the ruleset', () => {
+    expect(update).toContain('.tropis/templates/main-branch-ruleset.json');
+    expect(update).toContain('Never apply the ruleset yourself');
+  });
+
+  it('release and refresh-board use a pull request on a gated main', () => {
+    for (const command of [text('commands/release.md'), text('commands/refresh-board.md')]) {
+      expect(
+        command.includes('gh pr merge <N> --auto --squash') || command.includes('merges itself'),
+      ).toBe(true);
+    }
+  });
+
   it('says an auto-merge does not wait where no check is required', () => {
     expect(workflow).toContain(
       'Where the host marks no check as required, its auto-merge merges at once.',
     );
+  });
+});
+
+describe('the gate in the workflow', () => {
+  const workflow = readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), '../framework/workflow.md'),
+    'utf8',
+  ).replace(/\s+/g, ' ');
+
+  it('says nothing goes directly to main where it is gated', () => {
+    expect(workflow).toContain('Where the main branch is gated, nothing goes directly to');
+  });
+
+  it('names the pull request that merges itself', () => {
+    expect(workflow).toContain('gh pr merge <N> --auto --squash');
+  });
+
+  it('has the dispatching session wait for the status change to merge', () => {
+    expect(workflow).toContain('waits until it has merged before the executor starts');
+  });
+
+  it('keeps the direct-to-main list for a main that is not gated', () => {
+    expect(workflow).toContain('Where it is not gated, what may go directly to');
+  });
+
+  it('calls a check that passes on a rerun with nothing changed a bug', () => {
+    expect(workflow).toContain('A check that passes on a rerun with nothing changed is a bug');
+  });
+
+  it('retries no failed check automatically', () => {
+    expect(workflow).toContain('Nothing retries a failed check automatically');
+  });
+
+  it('leaves the remote branch to the host setting, since auto-merge deletes none', () => {
+    expect(workflow).toContain('Automatically delete head branches');
   });
 });
 
@@ -352,6 +456,17 @@ describe('the /release candidate', () => {
     expect(workflow).toContain('Nothing merged after the candidate reaches production through it');
     expect(workflow).toContain('changes no other file');
     expect(workflow).toContain('Only a tag of the form `vX.Y.Z` is a release');
+  });
+
+  it('the operator guide says how to apply the gate and how to opt out', () => {
+    const guide = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), '../templates/README.md'),
+      'utf8',
+    ).replace(/\s+/g, ' ');
+    expect(guide).toContain(
+      'gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json',
+    );
+    expect(guide).toContain('"ungated": "<the reason>"');
   });
 
   it('says only a vX.Y.Z tag counts as a release in the operator guide', () => {
