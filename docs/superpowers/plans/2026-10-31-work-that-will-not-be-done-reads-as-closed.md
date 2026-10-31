@@ -605,3 +605,155 @@ Commit, push the branch, and open a pull request against `main` whose body says 
 now true, ending with the attribution lines your session gives. **Do not merge.** The
 specifying session reviews, has the developer check the board, writes the review record
 and merges.
+
+---
+
+## Handover report
+
+Executed by a dispatched agent in the worktree `../tropis-dropped` on branch
+`plan/work-that-will-not-be-done-reads-as-closed`, on top of `main` at `1e3fa2f`.
+Environment for every check: git 2.49.0, Node v22.15.0, macOS (Darwin), arm64.
+
+### Task completion
+
+- **Task 0.** Worktree created by the isolate helper; `npm --prefix .tropis ci`; tree
+  clean; `bash scripts/check-blueprint.sh` on `1e3fa2f` ended `Self-check passed`.
+- **Task 1** (`50c7330`). Board tests written first and run red: 10 failed, 16 passed.
+  Then *Decisions 1, 3 and 4*; green. One commit.
+- **Task 2** (`e6e0f57`). The two report tests failed (2 failed, 24 passed), then
+  *Decision 2*; green, with `UNCHANGED_WITHOUT_BANDS` unchanged.
+- **Task 3** (`f915730`). Every *Decision 5* edit. `cmp` of the two bands files prints
+  nothing.
+- **Task 4** (`f0da338` red, `e2b5308` green). The red commit's self-check printed
+  `NOT CAUGHT  silent-drop            catalog-drift passed against a broken project` and
+  `Self-check FAILED`. After the guard: see *Verification results*.
+- **Task 5** (`39b3022`). Two entries dropped, `harness-does-not-need-node` left
+  shelved, this plan's entry promoted to `shipped` with its modules and the comment
+  naming each criterion's check. Built with the source scripts (see *What the plan got
+  wrong*), the arc `2026-08-14-harness-sidecar-design` has `state` `parked`, `shipped` 0,
+  `counted` 1, `total` 2; the two dropped entries carry `cl` `{"k":"dropped"}`, and
+  `harness-does-not-need-node` has `cl` null and `sh` true. Neither the built page nor
+  `bands.yaml` is committed.
+- **Task 6.** Fresh-agent check, one run, passed. See below.
+- **Task 7 and 8.** This report; branch pushed; pull request opened. Not merged.
+
+**Fresh-agent check** (for the squash message). A fresh Claude Code 2.1.300 session
+(`claude -p`, macOS, arm64), in a scratch project set up from this branch with
+`set-up-project.sh` and committed, was given the plan's prompt verbatim: add
+`probe-widget-export` and `probe-widget-print`, then record that exporting will not be
+done because sharing covers it, and printing is on hold until a customer asks. It set
+the export idea to `status: dropped` with no `shelved` and a value starting
+`Dropped 2026-10-31 -` giving the reason, kept the print idea at `status: idea` with
+`shelved: true` and a value naming the customer request that brings it back, and
+committed. The scratch project's board then listed the export idea with `cl`
+`{"k":"dropped"}` and the print idea open with `sh: true`. That is what the change
+intended. Before running it, the instructions that load for every project on this
+install were read: they say nothing about catalog statuses, shelving or dropping, so the
+probe was not following its own copy of the rule.
+
+### Verification results
+
+- `npm --prefix .tropis test`, on `39b3022`: `Tests:       33 passed, 33 total`.
+- `bash scripts/check-blueprint.sh`, on `e2b5308` (the last commit that changes a
+  checked file before the catalog edit):
+  `caught      silent-shelf           catalog-drift`,
+  `caught      silent-drop            catalog-drift`, `ok          clean baseline`, last
+  line `Self-check passed: every guard caught its defect, the clean baseline passed, and
+  the framework repository's own guards passed.` It is run again on the commit holding
+  this report; the pull request body gives that result.
+- The source guards touched here, run against the working tree with the self-check's
+  test tools (`backlog-board`, `board-bands`, `next-report`, `next-work`): 52 passed.
+- `npm --prefix .tropis run next`: an `Arcs under way` section is present, listing the
+  framework updates arc (`10 of 20 shipped`) and the readme arc (`1 of 2 shipped`). That
+  is the **installed** release's script, which predates this change. The source
+  `next.mjs`, run on the same catalog, prints `10 of 17 shipped` for the updates arc,
+  marks `seed-installs-cursor-generator`, `entry-file-says-how-rules-arrive` and
+  `update-keeps-ignore-lines-in-their-own-form` with `-`, and does not list the harness
+  sidecar arc.
+- The page: built with the source scripts and opened in the desktop app's built-in
+  browser over a local server. No console errors. The arcs box lists the updates arc at
+  `10/17` with `3 set aside` and a row `Parked — nothing open, a shelved step remains:
+  harness sidecar` / `parked`; `harness-does-not-need-node` sits in a band D row tagged
+  `shelved`; with Closed expanded, `learnings-can-be-declined` and
+  `entry-file-says-how-rules-arrive` read `dropped`.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`, before this report, lists 18 files. With this plan
+file that is 19, every row of *File Structure* and nothing else:
+
+```
+ commands/feature.md                               | 17 +++--
+ commands/refresh-board.md                         |  8 +--
+ feature-catalog.yaml                              | 34 ++++++---
+ fixtures/base/docs/backlog-board/bands.yaml       | 12 ++--
+ fixtures/defects/silent-drop/feature-catalog.yaml | 23 +++++++
+ framework/DECISIONS.md                            | 31 ++++++++-
+ guards/backlog-board.test.js                      | 83 +++++++++++++++++++++--
+ guards/catalog-drift.test.js                      | 10 +++
+ guards/next-report.test.js                        | 37 ++++++++++
+ rules/catalogs.md                                 | 41 +++++++++--
+ scripts/board-bands.js                            |  6 +-
+ scripts/build-backlog-board.mjs                   | 23 ++++---
+ scripts/check-conformance.sh                      |  1 +
+ scripts/next-work.js                              | 27 ++++++--
+ scripts/next.mjs                                  | 10 +--
+ templates/backlog-bands.yaml                      | 12 ++--
+ templates/backlog-board.html                      | 72 ++++++++++----------
+ templates/catalog.yaml                            | 17 ++---
+```
+
+Worktree: `../tropis-dropped`.
+
+### Judgment calls
+
+- **The silent-drop fixture keeps the base fixture's entry and adds a second one.** A
+  copy of the silent-shelf fixture with `status: dropped` was caught on the red commit
+  for the wrong reason: the base fixture's plan delivers `example-entry`, so the
+  "every Delivers id is shipped" test failed on it. The fixture now holds `example-entry`
+  as shipped, as in the base, plus `unwanted-entry`, dropped, whose value ends `Not
+  needed, without saying why.` Confirmed by hand to pass the guard file without the new
+  test and fail with it, then by the self-check as above.
+- **Lines wrapped at 90 characters** where the verbatim text would have run past it: the
+  bands files' lines 4–5 (wrapped to three lines, same words), the new status-transition
+  bullet in `rules/catalogs.md`, the `commands/feature.md` opening line, and the
+  catalog template's *Behaviour* and *Comments* paragraphs. The words are the plan's.
+- **The footer's Arcs paragraph** keeps its `<p style="margin-top:9px">` wrapper; its
+  first line is longer than its neighbours because the plan's text opens with a span.
+- **FW-034's status line** keeps its date and is written exactly as the plan gives it,
+  with no closing full stop, matching FW-008 and FW-021.
+- **The `learnings-can-be-declined` comment** is wrapped as two lines at the entry's
+  indentation, same words as the plan.
+
+### What the plan got wrong
+
+- **`npm --prefix .tropis run board` and `run next` use the installed release**, not the
+  source scripts this plan changes. Task 5's check of `state` in the embedded `ARCS`
+  could not pass that way (`state` is absent), and Task 7's `run next` shows the old
+  counts. Both were done with the source scripts in a staged copy instead, as reported
+  above. Until the next release is installed here, this repository's own board and
+  report keep the old behaviour.
+- **`npm --prefix .tropis test -- guards/backlog-board.test.js` finds no tests**: the
+  installed suite holds only the installed guards. The source guards were run against
+  the working tree with the self-check's test tools.
+- **The silent-drop fixture as described was caught for the wrong reason** (see
+  *Judgment calls*).
+- **Two more tests than listed failed first in Task 1.** "does not ask for a band on a
+  shelved entry" failed on today's code, because `dropped-one` was then open and listed
+  as unbanded; and "reports a band outside A to D…" failed because `dropped-one`'s band
+  was counted as unscored. Both pass after the change, and neither was adjusted.
+
+### Outstanding
+
+- **The reviewer's manual check of the board page**, by the developer, on a build made
+  with this branch's scripts: the harness sidecar arc reads as parked,
+  `harness-does-not-need-node` sits in D marked shelved, and
+  `learnings-can-be-declined` and `entry-file-says-how-rules-arrive` are under Closed
+  reading `dropped`. Note that `npm --prefix .tropis run board` here builds with the
+  installed release, so it will not show this until a release is installed.
+- **The fresh-agent check found nothing to fix.** Proposal: no backlog entry, since the
+  clause it exercised did what it said on the first run.
+- **This repository's `bands.yaml`** has no row for any of the three entries re-sorted
+  here, so nothing in it goes stale. Built with this branch's scripts, the board's
+  report lists six bands whose entry moved to `building`; that is the board's own
+  upkeep, for `/refresh-board`, and not this plan's.
