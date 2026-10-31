@@ -160,8 +160,7 @@ npm --prefix .tropis test
 When it fails, do not commit. Show the failures. Offer to abort (Stage 9) or to leave
 the branch as it is for the user to finish, and say what is left: the failing checks,
 any required step not done, any `.new` still unmerged. If they leave the branch, still
-discard the clone, and leave
-the worktree in place.
+discard the clone, and leave the worktree in place.
 
 ## Stage 8 — Commit
 
@@ -208,8 +207,9 @@ Then discard the clone. Print:
 
 From any stage after the branch exists:
 
+Run these from the checkout Stage 1 ran in, not from the worktree:
+
 ```bash
-cd <this checkout>
 git worktree remove --force ../<the folder>-update-<target>
 git branch -D update/<target>
 node .tropis/scripts/update.mjs discard <clone>

@@ -119,8 +119,8 @@ when the framework half exists to serve the application half. Full rule:
   ships — and an agent treats it as gated unless `.claude/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
-  worktree of its own (above), push it, open the pull request, run `gh pr merge <N> --auto --squash` with `--subject` and
-  `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  worktree of its own (above), push it, open the pull request, run
+  `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
   requires one up to date with `main`, so a pull request that falls behind sits
