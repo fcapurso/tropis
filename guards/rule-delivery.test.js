@@ -690,7 +690,7 @@ describe('rule delivery', () => {
         expect(r.status).toBe(2);
         expect(r.stdout).toBe('');
         expect(r.stderr).toContain('This is the main checkout of main-checkout.');
-        expect(r.stderr).toContain('based on origin/main');
+        expect(r.stderr.replace(/\s+/g, ' ')).toContain('based on origin/main');
         expect(r.stderr).toContain(`  git fetch origin && ${LINE} origin/main\n`);
       });
     }
@@ -708,7 +708,7 @@ describe('rule delivery', () => {
       const r = runBranchHook('git checkout -b feature/x', dir);
       expect(r.status).toBe(2);
       expect(r.stdout).toBe('');
-      expect(r.stderr).toContain('based on main');
+      expect(r.stderr.replace(/\s+/g, ' ')).toContain('based on main');
       expect(r.stderr).not.toContain('origin/main');
       expect(r.stderr).toContain(`  ${LINE} main\n`);
     });

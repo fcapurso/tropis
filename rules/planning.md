@@ -107,7 +107,7 @@ The table has three columns, and they are these:
 
 | Checkout | Role | Isolation |
 |---|---|---|
-| `the-project` | execute here | `git worktree add ../the-project-readme-shell -b plan/readme-shell` |
+| `the-project` | execute here | `git worktree add ../the-project-readme-shell -b plan/readme-shell origin/main` |
 | `the-framework` | do not edit | |
 
 A **do not edit** row leaves its isolation cell empty: nothing is created in a checkout
