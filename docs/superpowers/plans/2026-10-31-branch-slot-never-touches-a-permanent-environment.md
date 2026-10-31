@@ -656,6 +656,8 @@ npm 10.9.9, jest 30.5.2, Linux x86_64.
   itself, so Task 5's steps 5–6 are left to it.
 - **The pull request's checks** are not waited on by this handover; they run on the pull
   request as usual.
-- **Private-material read.** The committed content was read for names, hosts, paths and
-  addresses before each commit; nothing found. The worktree is named by its relative path
-  throughout.
+- **Private-material read.** Each commit's staged diff was checked by reading it for names,
+  hosts, paths and addresses, as the commit hook asks; nothing found. The worktree is named
+  by its relative path throughout. The self-check's private-material guard passed on the
+  committed content at `76a3351`; it does not cover this file's wording, so the read is the
+  check for it.
