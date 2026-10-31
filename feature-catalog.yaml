@@ -897,7 +897,7 @@
 # command.
 - id: set-up-project-checks-its-plans
   title: A set-up project's checks cover its plans and review records
-  status: shaped
+  status: building
   value: A project set up with the framework is told by its own checks when a merged plan
     left its entry unpromoted, lacks a review record, or cannot be dispatched — the
     failures the framework's workflow says the suite catches. Today a set-up project
@@ -2318,7 +2318,7 @@
 # .project-tools/src/__tests__/flush-currency.test.js.
 - id: flush-is-seen-to-drain-the-queue
   title: A check fails when an executed flush left the queue undrained
-  status: shaped
+  status: building
   value: A project whose flush plan ran but whose queue was never drained is told so by
     its own checks, with the file to edit and the date to set. Today the drain is a task
     in the flush plan and nothing observes whether it ran; in one project a flush merged
@@ -2368,7 +2368,7 @@
 # integrity-guard-is-green-on-a-fresh-checkout, blueprint-page-checks-run-in-the-self-check.
 - id: set-up-project-checks-its-pages
   title: A set-up project's checks find pages that point nowhere or assert stale state
-  status: shaped
+  status: building
   value: A set-up project's entry file, commands and docs are checked for references
     that point nowhere and for documents past their Last verified date, as Tropis's own
     pages are. Today Tropis runs guards/framework-integrity.test.js and
@@ -2689,7 +2689,7 @@
 # told agents about a guard v0.3.1's setup does not install; this is that guard.
 - id: set-up-project-checks-its-catalog
   title: A set-up project's catalog check enforces the invariants the catalog rule states
-  status: shaped
+  status: building
   value: A project set up with the framework is stopped by its own checks when its
     catalog breaks a rule the catalog rule states. Today the only catalog check a set-up
     project gets, catalog-entries.test.js, checks required fields, while the rule says
@@ -2736,7 +2736,7 @@
 # a section of its learnings rule. Two false rules were found there that nothing caught.
 - id: rule-claims-are-held-true
   title: A rule's claims about the code are asserted, and a clause waiting on a fix retires with it
-  status: shaped
+  status: building
   value: In a set-up project, a rule that says the code is a certain way carries an
     assertion, and a clause that exists only because the code is still wrong names the
     entry it waits on and the assertion behind it, so it is deleted when the defect is
