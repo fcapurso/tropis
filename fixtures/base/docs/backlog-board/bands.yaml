@@ -1,8 +1,9 @@
 # Bands and verdicts for the backlog board — the judgment layer, kept apart from the
 # catalog so an opinion about priority never sits beside a fact about the product.
 #
-# One row per active catalog id: an entry that has not shipped, been replaced or been
-# shelved. Shipped, replaced and shelved entries have no band.
+# One row per active catalog id: an entry that has not shipped, been dropped, been
+# replaced or been shelved. Shipped, dropped and replaced entries have no band; a shelved
+# one needs none, since the board puts it in D.
 #
 # band, one of four:
 #   A  do now       high value, and urgent or blocking other work.
@@ -34,6 +35,7 @@
 #     evidence: "Optional, dated."
 #
 # npm --prefix .tropis run board reports ids that have no band, bands whose entry has
-# shipped, been replaced, been shelved or gone, bands not A to D, and bands without both
-# scores. All of it is the board going stale; none fails the build, because banding is a
-# judgment and a new idea should not turn the suite red until somebody has formed one.
+# shipped, been dropped, been replaced, been shelved or gone, bands not A to D, and bands
+# without both scores. All of it is the board going stale; none fails the build, because
+# banding is a judgment and a new idea should not turn the suite red until somebody has
+# formed one.
