@@ -44,6 +44,9 @@ things are the way they are.
 - **Your main branch takes only checked changes.** Tropis ships a GitHub ruleset that
   makes the host refuse a pull request whose checks failed or have not finished, and the
   pipeline fails until the project applies it or records why it will not.
+- **A red main branch is noticed.** If the main branch fails its checks after a merge,
+  the session that merged is told and stops, and anyone starting work next hears it
+  first: `/next` and starting a plan both open by saying so.
 - **Your project's own checks hold its records true.** They fail on a backlog that breaks
   its own rules, a page that points nowhere or is past its verified date, a merged plan
   with no review record or with its entry left unshipped, and a rule whose claim about
@@ -121,13 +124,14 @@ fixes and your scripts fill, described in the operator guide your project gets a
 
 ## Using it day to day
 
-- **`/next`** reports what is in flight, ready and blocked, and suggests what to take
-  next. `npm --prefix .tropis run board` writes the backlog as one page to open in a
-  browser. `/refresh-board` walks you through banding and scoring new entries and proposes
+- **`/next`** says first whether the main branch's last pipeline run failed, then
+  reports what is in flight, ready and blocked, and suggests what to take next.
+  `npm --prefix .tropis run board` writes the backlog as one page to open in a browser. `/refresh-board` walks you through banding and scoring new entries and proposes
   tidy-ups for you to accept or decline; `/refresh-board groom` looks across the whole
   backlog.
 - **`/idea`** adds an entry to the backlog; **`/feature`** moves it along
-  `idea → shaped → building → shipped`. An entry can also be parked on purpose.
+  `idea → shaped → building → shipped`. An entry can also be parked on purpose, or
+  dropped when nobody will do it, and the board then shows it as closed.
 - **`/dispatch`** prints the prompt that hands a plan to an executing agent, and
   **`/manual-check`** writes down a check only a person can do and records how it went.
 - **`/capture-learning`** decides where a lesson belongs: a rule, a decision, or a
@@ -150,8 +154,8 @@ fixes and your scripts fill, described in the operator guide your project gets a
   rule delivery in Claude Code and Cursor, the backlog report and board, versioned
   releases with an update command and an optional rehearsal before each one, a README
   kept current, one pipeline for every project with an optional environment per pull
-  request, and a main branch gated by its host. Tropis is developed with its own last
-  release installed.
+  request, and a main branch gated by its host, whose red is reported to whoever merged
+  and whoever starts next. Tropis is developed with its own last release installed.
 - **Before 1.0.** A release that needs you to do something by hand raises the middle
   number, and its notes say what to do first.
 - **Built from two projects, not a theory.** The layer grew in one real project and was
