@@ -14,7 +14,7 @@ above it. There is no design document; the decisions below, taken with the devel
 docs/superpowers/plans/2026-10-21-readme-rescue.md.
 
 **What the specifying session verified on 2026-10-31, against `main` at `ed45b3e`, with
-git, Node v22 and Jest 30.5.2, in Claude Code on macOS (Darwin 25.2.0) arm64:**
+git 2.49.0, Node v22.15.0 and Jest 30.5.2, in Claude Code on macOS 26.2, arm64:**
 
 - **The README is rebuilt from an outline, section by section.** `commands/refresh-readme.md`
   reads `docs/readme/skeleton.md` when it exists, otherwise
