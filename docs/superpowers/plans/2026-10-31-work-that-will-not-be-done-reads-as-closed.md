@@ -772,3 +772,80 @@ Worktree: `../tropis-dropped`.
   here, so nothing in it goes stale. Built with this branch's scripts, the board's
   report lists six bands whose entry moved to `building`; that is the board's own
   upkeep, for `/refresh-board`, and not this plan's.
+
+## Review record
+
+Reviewed by the specifying session, 2026-10-31. Every check below ran with git 2.49.0 and
+Node v22.15.0 on macOS (Darwin 25.2.0), arm64.
+
+### Checks re-run
+
+- **Scope.** `git diff --stat origin/main...HEAD` on `ef79a26`, and again after the rebase
+  onto `a5915cc`: 19 files, every one a row of *File Structure*.
+- **The diff, read in full.** The scripts and the rule text match the plan word for word;
+  the page edits match it edit by edit. FW-038 instead of FW-037, and the two-entry
+  `silent-drop` fixture, are the executor's declared judgment calls, and both are right.
+- **Self-check on `ef79a26`**, with its own `TMPDIR`: `caught      silent-shelf`,
+  `caught      silent-drop`, `ok          clean baseline`, `Self-check passed`.
+- **Guards re-broken**, in a throwaway detached worktree of `ef79a26`, one commit removing
+  the drop-reason test from `guards/catalog-drift.test.js` and the `dropped` line from
+  `closedHow` in `scripts/build-backlog-board.mjs`: `NOT CAUGHT  silent-drop
+  catalog-drift passed against a broken project`, and the clean baseline failed on four
+  board tests (`does not ask for a band on a shelved entry`, `flags closed entries…`,
+  `reports a band on a replaced, dropped or shelved entry as stale…`, `reports a band
+  outside A to D…`). `Self-check FAILED`. The worktree was removed.
+- **After the rebase, on `a166d55`:** `npm --prefix .tropis test` printed
+  `Tests:       33 passed, 33 total`; the self-check printed the same three lines and
+  `Self-check passed`, in under three minutes.
+- **The board's data**, built from the branch's four board files over the branch's
+  catalog: harness sidecar `parked`, 0 of 1 counted, 2 in all; the updates arc `under
+  way`, 10 of 17, 20 in all; `harness-does-not-need-node` open with `sh: true`; the two
+  re-sorted entries closed as `dropped`.
+- **The developer's check of the page**: `docs/verification-log.md`, entry of 2026-10-31,
+  *The backlog board tells dropped work from shelved work*, five steps, `pass`.
+
+### Found
+
+Public exposure: the diff, the handover and this record were read for names, home paths,
+hostnames and other projects' internals; nothing found.
+
+- **A self-check run hung for an hour.** The first run on the rebased head never
+  finished: a `take-version` test sat in `buildVersion` (`scripts/take-version.mjs`) for
+  52 minutes, `tar -x` blocked at `archive_read_close` reading stdin to its end, and the
+  Node process that spawned it never closed the pipe. The test uses `spawnSync`, which
+  blocks the test worker, so the test's timeout could not fire. An orphaned
+  `check-version.mjs` test process, 11 days old, was found on the same machine and
+  killed. Why Node never closed the pipe is not known. The rerun passed in under three
+  minutes. Not caused by this plan, which does not touch `take-version`.
+- The handover's diagnosis of its two failed runs, `take-version` *removes its scratch
+  folder on every exit path* failing while other sessions' self-checks shared the
+  temporary folder, is consistent with what was seen here (runs with their own `TMPDIR`
+  passed) but was not reproduced.
+
+### Outstanding disposition
+
+- **The board check:** done, `pass`, recorded.
+- **`entry-template-says-how-rules-load` points `supersededBy` at an entry now dropped:**
+  dropped, for the executor's reason: it still reads as closed, its work was done, and
+  re-pointing a replaced entry is grooming, not this plan.
+- **The fresh-agent check found nothing:** no entry; the clause did what it says on the
+  first run.
+- **This repository's `bands.yaml`:** no change owed; the six moved bands are
+  `/refresh-board` upkeep.
+- **The hung test:** put to the developer as a backlog entry after this merge. A test
+  that can hang with nothing to stop it fails silently, so it qualifies.
+
+### Learnings routed
+
+- **`npm --prefix .tropis run board` and `run next` run the installed release here, not
+  the source.** The plan told its executor to check source behaviour with them; it could
+  not. `AGENTS.md`'s gotcha already says this of `npm --prefix .tropis test` and not of
+  the other two. Put to the developer as a one-line addition to that gotcha, on a branch
+  of its own, since `AGENTS.md` is not in this plan's file list.
+- The hung test, as above.
+
+### Merged because
+
+Every criterion is backed by a test that was seen to fail without the change, a
+fresh-agent check that passed, or the developer's recorded look at the page, and the
+self-check passes on the rebased head.
