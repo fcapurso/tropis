@@ -4301,7 +4301,7 @@
 # the gated bullet of Branching.
 - id: a-session-cannot-move-another-sessions-branch
   title: A session that creates a branch does it in its own worktree, so two sessions in one checkout cannot move each other's work
-  status: shaped
+  status: building
   value: Two agent sessions open on one project at the same time each land their own
     change, on the base they meant, with nobody repairing branches afterwards. Today
     both work in the main checkout, so one session's checkout or pull moves the other's
