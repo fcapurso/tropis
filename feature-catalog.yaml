@@ -4172,3 +4172,29 @@
     - .github/workflows/ci.yml
     - .github/scripts/release.mjs
   refs: []
+# 2026-10-31, found on the first run after the ruleset was applied here: run
+# 41227062902 failed only in pipeline / host, saying GitHub did not say whether
+# auto-merge is allowed. The pipeline's token reads the branch rules, but GitHub leaves
+# allow_auto_merge out of the repository answer it gives that token. Every project that
+# applies the ruleset reads red on every run until this ships.
+- id: host-check-passes-when-github-does-not-say
+  title: The host check passes a gated branch when GitHub does not report auto-merge
+  status: building
+  value: A project whose main branch is gated reads green. Today the host job fails
+    whenever GitHub leaves auto-merge out of its answer, which it always does for the
+    pipeline's own token, so a gated project's main branch is red after every merge and
+    the warnings that report a red main branch cry wolf.
+  acceptanceCriteria:
+    - The host job passes when the main branch requires a pull request and a check and
+      GitHub does not say whether auto-merge is allowed, and says in one line that auto-merge
+      was not checked.
+    - It still fails when GitHub says auto-merge is off, and on a branch missing either
+      rule.
+    - The workflow and the operator guide say the job fails on auto-merge only when GitHub
+      says it is off.
+  type: bug
+  layer: product
+  after:
+    - main-is-gated-by-the-host
+  modules: []
+  refs: []
