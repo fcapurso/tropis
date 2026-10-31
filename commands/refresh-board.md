@@ -18,8 +18,8 @@ npm --prefix .tropis run board -- --reevaluate
 ```
 
 Either way it writes the page and reports what needs a person:
-active entries with no band, bands whose entry has shipped, been replaced, been shelved
-or gone, bundles left with one entry, bands whose entry has moved since the verdict was written — its status changed,
+active entries with no band, bands whose entry has shipped, been dropped, been replaced,
+been shelved or gone, bundles left with one entry, bands whose entry has moved since the verdict was written — its status changed,
 or a blocker it was waiting on shipped (with `--reevaluate`, every band) — bands that
 are not A to D, and bands with no value or effort score from 1 to 5. If it reports
 nothing and the developer did not ask for `groom`, skip to step 5.
@@ -72,7 +72,7 @@ developer's yes.
   every other open entry — read their value and criteria, not their titles.
 - When invoked as `/refresh-board groom` (or `/refresh-board all groom`), compare every
   open entry against every other. `all` and `groom` combine; either may be given alone.
-- Shipped, shelved and superseded entries are not compared, except as the entry that
+- Shipped, dropped, shelved and superseded entries are not compared, except as the entry that
   already did the work of an open one.
 
 Four findings, each proposed on one line:
@@ -82,7 +82,7 @@ Four findings, each proposed on one line:
 | Two entries describe the same work | `merge: <keep> absorbs <other>` | `/feature` marks the other superseded by the one kept |
 | Two entries cannot both be done as written | `conflict: <a> and <b> — <one line>` | the entry that must yield goes to band C, its verdict naming the conflict |
 | Entries are better done together | `bundle <name>: <ids>` | each row gets `bundle: <name>` in `bands.yaml`, after `effortWhy` |
-| An entry is already done, or no longer true | `close: <id> — <one line>` | `/feature` closes it: superseded by the entry that did the work, or shelved with a reason |
+| An entry is already done, or no longer true | `close: <id> — <one line>` | `/feature` closes it: superseded by the entry that did the work, or dropped with a reason |
 
 List the proposals in the report and ask the developer which to apply. The command applies
 none without a yes, and changes the catalog only through `/feature`. Propose nothing

@@ -1061,7 +1061,7 @@ then check less than it claims.
 
 ## FW-034: The backlog is ranked by value over effort inside four bands
 
-**Date:** 2026-10-30 · **Status:** Accepted
+**Date:** 2026-10-30 · **Status:** Accepted. Its sentence on shelved entries is superseded by FW-038
 
 **Decision:** There are four bands, each with a written meaning: A do now (high value,
 and urgent or blocking other work), B do next (worth doing, no deadline), C decide first
@@ -1180,3 +1180,32 @@ pushes to the main branch stays ungated until its release only tags. A project p
 by a classic rule moves to the ruleset or records that rule as its reason. The gate job
 is now red when a stage failed, as the run already was. A pull request behind the main
 branch waits until it is rebased.
+
+---
+
+## FW-038: An entry that will not be done is dropped; a shelved one is only parked
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** `dropped` is a catalog status, reached from `idea` or `shaped`, for an
+entry that will not be done; its value says why. It is closed like `shipped` and
+`supersededBy`: out of the bands, under Closed on the board, left out of an arc's count.
+`shelved` means only parked until something changes. A shelved entry is open: the board
+puts it in band D, marked shelved, and it needs no row in the bands file. One function,
+`arcs()`, gives every arc a state — under way, not started, parked or done — and the
+board and the backlog report both use it.
+
+**Evidence:** the board showed the harness sidecar arc as in progress though both its
+entries were shelved: it left replaced entries out of an arc's count and kept shelved
+ones in, while listing shelved entries as closed everywhere else. Two of this
+repository's three shelved entries recorded work that was not needed, which the catalog
+had no other way to say.
+
+**Rejected:** Counting shelved as closed, since a parked entry is not resolved and an arc
+holding one is not done. A flag beside the status for dropped, since there is no earlier
+status to restore. A Parked section on the board, since band D already means nothing to
+do until something happens.
+
+**Consequences:** A project's shelved entries keep their meaning, but any that recorded
+work nobody will do should be dropped by hand; nothing converts them. A band row on a
+shelved entry is reported stale. `/next` still does not offer shelved entries.

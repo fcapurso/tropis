@@ -8,9 +8,9 @@
 # representation provided it can produce this one — the reference tooling and the shared
 # conformance fixtures both assume it.
 #
-# Behaviour — when each status changes, what shelving means, how ordering works — is in
-# rules/catalogs.md, which is delivered at the moment you edit this file. What follows is
-# the shape only.
+# Behaviour — when each status changes, what shelving and dropping mean, how ordering
+# works — is in rules/catalogs.md, which is delivered at the moment you edit this file.
+# What follows is the shape only.
 #
 # ── REQUIRED ─────────────────────────────────────────────────────────────────
 #
@@ -18,7 +18,8 @@
 #         outcome, not the mechanism, so it survives the implementation changing. Specs,
 #         plans and decision records cite it.
 # title   Short display name.
-# status  idea | shaped | building | shipped
+# status  idea | shaped | building | shipped | dropped
+#         dropped: will not be done, and the value says why.
 # type    feature      something a user can newly do
 #         bug          something that does not work as intended
 #         improvement  existing behaviour made better, and a user notices
@@ -47,13 +48,13 @@
 # supersededBy  Ids that replaced this entry, typically when a shaping split one idea
 #               into several. The entry stays, because specs cite ids and those
 #               citations must keep resolving.
-# shelved       true when an entry is shaped and deliberately not scheduled. Only `idea`
+# shelved       true when an entry is parked until something changes. Only `idea`
 #               and `shaped` entries may carry it. Never write false.
 # externalRef   A tracker link, if the project uses one.
 #
-# Comments are part of the record. Put the reasoning for a re-pointing, a shelving or an
-# unusual decision in a `#` comment above the key it explains — that is why this is YAML
-# and not JSON.
+# Comments are part of the record. Put the reasoning for a re-pointing, a shelving, a
+# drop or an unusual decision in a `#` comment above the key it explains — that is why
+# this is YAML and not JSON.
 
 # Replace this entry with a real one, or delete it. It shows the shape of each field,
 # including acceptance criteria written as things a person could check rather than as

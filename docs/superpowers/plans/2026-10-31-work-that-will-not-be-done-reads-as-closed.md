@@ -605,3 +605,255 @@ Commit, push the branch, and open a pull request against `main` whose body says 
 now true, ending with the attribution lines your session gives. **Do not merge.** The
 specifying session reviews, has the developer check the board, writes the review record
 and merges.
+
+---
+
+## Handover report
+
+Executed by a dispatched agent in the worktree `../tropis-dropped` on branch
+`plan/work-that-will-not-be-done-reads-as-closed`, dispatched on `main` at `1e3fa2f` and rebased onto `main` at `a00f4bd` before the pull
+request (see *Judgment calls*).
+Environment for every check: git 2.49.0, Node v22.15.0, macOS (Darwin), arm64.
+
+### Task completion
+
+- **Task 0.** Worktree created by the isolate helper; `npm --prefix .tropis ci`; tree
+  clean; `bash scripts/check-blueprint.sh` on `1e3fa2f` ended `Self-check passed`.
+- **Task 1** (`81c2e8a`). Board tests written first and run red: 10 failed, 16 passed.
+  Then *Decisions 1, 3 and 4*; green. One commit.
+- **Task 2** (`85632ee`). The two report tests failed (2 failed, 24 passed), then
+  *Decision 2*; green, with `UNCHANGED_WITHOUT_BANDS` unchanged.
+- **Task 3** (`e3df2df`). Every *Decision 5* edit. `cmp` of the two bands files prints
+  nothing.
+- **Task 4** (`e6797a2` red, `7ffb40f` green; hashes after the rebase). The red commit's self-check printed
+  `NOT CAUGHT  silent-drop            catalog-drift passed against a broken project` and
+  `Self-check FAILED`. After the guard: see *Verification results*.
+- **Task 5** (`e795f9f`). Two entries dropped, `harness-does-not-need-node` left
+  shelved, this plan's entry promoted to `shipped` with its modules and the comment
+  naming each criterion's check. Built with the source scripts (see *What the plan got
+  wrong*), the arc `2026-08-14-harness-sidecar-design` has `state` `parked`, `shipped` 0,
+  `counted` 1, `total` 2; the two dropped entries carry `cl` `{"k":"dropped"}`, and
+  `harness-does-not-need-node` has `cl` null and `sh` true. Neither the built page nor
+  `bands.yaml` is committed.
+- **Task 6.** Fresh-agent check, one run, passed. See below.
+- **Task 7 and 8.** This report; branch pushed; pull request opened. Not merged.
+
+**Fresh-agent check** (for the squash message). A fresh Claude Code 2.1.300 session
+(`claude -p`, macOS, arm64), in a scratch project set up from this branch with
+`set-up-project.sh` and committed, was given the plan's prompt verbatim: add
+`probe-widget-export` and `probe-widget-print`, then record that exporting will not be
+done because sharing covers it, and printing is on hold until a customer asks. It set
+the export idea to `status: dropped` with no `shelved` and a value starting
+`Dropped 2026-10-31 -` giving the reason, kept the print idea at `status: idea` with
+`shelved: true` and a value naming the customer request that brings it back, and
+committed. The scratch project's board then listed the export idea with `cl`
+`{"k":"dropped"}` and the print idea open with `sh: true`. That is what the change
+intended. Before running it, the instructions that load for every project on this
+install were read: they say nothing about catalog statuses, shelving or dropping, so the
+probe was not following its own copy of the rule.
+
+### Verification results
+
+- `npm --prefix .tropis test`, on the catalog commit: `Tests:       33 passed, 33 total`.
+- `bash scripts/check-blueprint.sh`, on the guard commit before the rebase:
+  `caught      silent-shelf           catalog-drift`,
+  `caught      silent-drop            catalog-drift`, `ok          clean baseline`, last
+  line `Self-check passed: every guard caught its defect, the clean baseline passed, and
+  the framework repository's own guards passed.` Run again on the handover commit
+  before the rebase, the same lines and `Self-check passed`, with `TMPDIR` set to a
+  folder of its own. Two runs on that commit with the shared temporary folder failed the
+  clean baseline on one test, `take-version` *removes its scratch folder on every exit
+  path*. That test counts take-version folders in the temporary folder, and two other
+  sessions' self-checks were running there at the same time. It is run again on the
+  rebased head; the pull request gives that result.
+- The source guards touched here, run against the working tree with the self-check's
+  test tools (`backlog-board`, `board-bands`, `next-report`, `next-work`): 52 passed.
+- `npm --prefix .tropis run next`: an `Arcs under way` section is present, listing the
+  framework updates arc (`10 of 20 shipped`) and the readme arc (`1 of 2 shipped`). That
+  is the **installed** release's script, which predates this change. The source
+  `next.mjs`, run on the same catalog, prints `10 of 17 shipped` for the updates arc,
+  marks `seed-installs-cursor-generator`, `entry-file-says-how-rules-arrive` and
+  `update-keeps-ignore-lines-in-their-own-form` with `-`, and does not list the harness
+  sidecar arc.
+- The page: built with the source scripts and opened in the desktop app's built-in
+  browser over a local server. No console errors. The arcs box lists the updates arc at
+  `10/17` with `3 set aside` and a row `Parked — nothing open, a shelved step remains:
+  harness sidecar` / `parked`; `harness-does-not-need-node` sits in a band D row tagged
+  `shelved`; with Closed expanded, `learnings-can-be-declined` and
+  `entry-file-says-how-rules-arrive` read `dropped`.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`, taken before this report was written, lists 18
+files. With this plan file that is 19, every row of *File Structure* and nothing else:
+
+```
+ commands/feature.md                               | 17 +++--
+ commands/refresh-board.md                         |  8 +--
+ feature-catalog.yaml                              | 34 ++++++---
+ fixtures/base/docs/backlog-board/bands.yaml       | 12 ++--
+ fixtures/defects/silent-drop/feature-catalog.yaml | 23 +++++++
+ framework/DECISIONS.md                            | 31 ++++++++-
+ guards/backlog-board.test.js                      | 83 +++++++++++++++++++++--
+ guards/catalog-drift.test.js                      | 10 +++
+ guards/next-report.test.js                        | 37 ++++++++++
+ rules/catalogs.md                                 | 41 +++++++++--
+ scripts/board-bands.js                            |  6 +-
+ scripts/build-backlog-board.mjs                   | 23 ++++---
+ scripts/check-conformance.sh                      |  1 +
+ scripts/next-work.js                              | 27 ++++++--
+ scripts/next.mjs                                  | 10 +--
+ templates/backlog-bands.yaml                      | 12 ++--
+ templates/backlog-board.html                      | 72 ++++++++++----------
+ templates/catalog.yaml                            | 17 ++---
+```
+
+Worktree: `../tropis-dropped`.
+
+### Judgment calls
+
+- **The silent-drop fixture keeps the base fixture's entry and adds a second one.** A
+  copy of the silent-shelf fixture with `status: dropped` was caught on the red commit
+  for the wrong reason: the base fixture's plan delivers `example-entry`, so the
+  "every Delivers id is shipped" test failed on it. The fixture now holds `example-entry`
+  as shipped, as in the base, plus `unwanted-entry`, dropped, whose value ends `Not
+  needed, without saying why.` Confirmed by hand to pass the guard file without the new
+  test and fail with it, then by the self-check as above.
+- **Lines wrapped at 90 characters** where the verbatim text would have run past it: the
+  bands files' lines 4–5 (wrapped to three lines, same words), the new status-transition
+  bullet in `rules/catalogs.md`, the `commands/feature.md` opening line, and the
+  catalog template's *Behaviour* and *Comments* paragraphs. The words are the plan's.
+- **The footer's Arcs paragraph** keeps its `<p style="margin-top:9px">` wrapper; its
+  first line is longer than its neighbours because the plan's text opens with a span.
+- **FW-034's status line** keeps its date and is written exactly as the plan gives it,
+  with no closing full stop, matching FW-008 and FW-021.
+- **Rebased, and the decision renumbered FW-038.** `main` took FW-037 for the gate
+  decision while this branch was open, and the pull request conflicted. The branch was
+  rebased onto `a00f4bd`; the only conflict was the appended record, kept after FW-037 as
+  FW-038, and FW-034's status line and the docs commit's body now name FW-038. The plan's
+  own text above still says FW-037.
+- **The `learnings-can-be-declined` comment** is wrapped as two lines at the entry's
+  indentation, same words as the plan.
+
+### What the plan got wrong
+
+- **`npm --prefix .tropis run board` and `run next` use the installed release**, not the
+  source scripts this plan changes. Task 5's check of `state` in the embedded `ARCS`
+  could not pass that way (`state` is absent), and Task 7's `run next` shows the old
+  counts. Both were done with the source scripts in a staged copy instead, as reported
+  above. Until the next release is installed here, this repository's own board and
+  report keep the old behaviour.
+- **`npm --prefix .tropis test -- guards/backlog-board.test.js` finds no tests**: the
+  installed suite holds only the installed guards. The source guards were run against
+  the working tree with the self-check's test tools.
+- **The silent-drop fixture as described was caught for the wrong reason** (see
+  *Judgment calls*).
+- **Two more tests than listed failed first in Task 1.** "does not ask for a band on a
+  shelved entry" failed on today's code, because `dropped-one` was then open and listed
+  as unbanded; and "reports a band outside A to D…" failed because `dropped-one`'s band
+  was counted as unscored. Both pass after the change, and neither was adjusted.
+
+### Outstanding
+
+- **The reviewer's manual check of the board page**, by the developer, on a build made
+  with this branch's scripts: the harness sidecar arc reads as parked,
+  `harness-does-not-need-node` sits in D marked shelved, and
+  `learnings-can-be-declined` and `entry-file-says-how-rules-arrive` are under Closed
+  reading `dropped`. Note that `npm --prefix .tropis run board` here builds with the
+  installed release, so it will not show this until a release is installed.
+- **`entry-template-says-how-rules-load` is `supersededBy` an entry that is now
+  dropped.** It still reads as closed (replaced), which is right, since its work was done
+  either way; but its pointer now leads to an entry that says the work was done
+  elsewhere. Proposal: leave it, with this line as the reason. Re-pointing a replaced
+  entry is grooming, and the catalog rule says a pointer says more than a reason.
+- **The fresh-agent check found nothing to fix.** Proposal: no backlog entry, since the
+  clause it exercised did what it said on the first run.
+- **This repository's `bands.yaml`** has no row for any of the three entries re-sorted
+  here, so nothing in it goes stale. Built with this branch's scripts, the board's
+  report lists six bands whose entry moved to `building`; that is the board's own
+  upkeep, for `/refresh-board`, and not this plan's.
+
+## Review record
+
+Reviewed by the specifying session, 2026-10-31. Every check below ran with git 2.49.0 and
+Node v22.15.0 on macOS (Darwin 25.2.0), arm64.
+
+### Checks re-run
+
+- **Scope.** `git diff --stat origin/main...HEAD` on `ef79a26`, and again after each rebase,
+  onto `a5915cc` and `beae091`: 19 files, every one a row of *File Structure*.
+- **The diff, read in full.** The scripts and the rule text match the plan word for word;
+  the page edits match it edit by edit. FW-038 instead of FW-037, and the two-entry
+  `silent-drop` fixture, are the executor's declared judgment calls, and both are right.
+- **Self-check on `ef79a26`**, with its own `TMPDIR`: `caught      silent-shelf`,
+  `caught      silent-drop`, `ok          clean baseline`, `Self-check passed`.
+- **Guards re-broken**, in a throwaway detached worktree of `ef79a26`, one commit removing
+  the drop-reason test from `guards/catalog-drift.test.js` and the `dropped` line from
+  `closedHow` in `scripts/build-backlog-board.mjs`: `NOT CAUGHT  silent-drop
+  catalog-drift passed against a broken project`, and the clean baseline failed on four
+  board tests (`does not ask for a band on a shelved entry`, `flags closed entries…`,
+  `reports a band on a replaced, dropped or shelved entry as stale…`, `reports a band
+  outside A to D…`). `Self-check FAILED`. The worktree was removed.
+- **After the rebase, on `a166d55`:** `npm --prefix .tropis test` printed
+  `Tests:       33 passed, 33 total`; the self-check printed the same three lines and
+  `Self-check passed`, in under three minutes.
+- **After a second rebase, onto `beae091`**, which brought four merged plans, among them
+  new catalog checks in `guards/catalog-entries.test.js` (no status list; `shelved` only
+  on an idea or shaped entry, which the two dropped entries satisfy) and edits to
+  `rules/catalogs.md`, `next.mjs` and `guards/next-report.test.js`: no conflict. On
+  `797948d`, 19 files in the diff, `Tests:       33 passed, 33 total`, and the self-check
+  again `caught      silent-shelf`, `caught      silent-drop`, `ok          clean
+  baseline`, `Self-check passed`. The merged *Status transitions* section was read and
+  reads as one.
+- **The board's data**, built from the branch's four board files over the branch's
+  catalog: harness sidecar `parked`, 0 of 1 counted, 2 in all; the updates arc `under
+  way`, 10 of 17, 20 in all; `harness-does-not-need-node` open with `sh: true`; the two
+  re-sorted entries closed as `dropped`.
+- **The developer's check of the page**: `docs/verification-log.md`, entry of 2026-10-31,
+  *The backlog board tells dropped work from shelved work*, five steps, `pass`.
+
+### Found
+
+Public exposure: the diff, the handover and this record were read for names, home paths,
+hostnames and other projects' internals; nothing found.
+
+- **A self-check run hung for an hour.** The first run on the rebased head never
+  finished: a `take-version` test sat in `buildVersion` (`scripts/take-version.mjs`) for
+  52 minutes, `tar -x` blocked at `archive_read_close` reading stdin to its end, and the
+  Node process that spawned it never closed the pipe. The test uses `spawnSync`, which
+  blocks the test worker, so the test's timeout could not fire. An orphaned
+  `check-version.mjs` test process, 11 days old, was found on the same machine and
+  killed. Why Node never closed the pipe is not known. The rerun passed in under three
+  minutes. Not caused by this plan, which does not touch `take-version`.
+- The handover's diagnosis of its two failed runs, `take-version` *removes its scratch
+  folder on every exit path* failing while other sessions' self-checks shared the
+  temporary folder, is consistent with what was seen here (runs with their own `TMPDIR`
+  passed) but was not reproduced.
+
+### Outstanding disposition
+
+- **The board check:** done, `pass`, recorded.
+- **`entry-template-says-how-rules-load` points `supersededBy` at an entry now dropped:**
+  dropped, for the executor's reason: it still reads as closed, its work was done, and
+  re-pointing a replaced entry is grooming, not this plan.
+- **The fresh-agent check found nothing:** no entry; the clause did what it says on the
+  first run.
+- **This repository's `bands.yaml`:** no change owed; the six moved bands are
+  `/refresh-board` upkeep.
+- **The hung test:** put to the developer as a backlog entry after this merge. A test
+  that can hang with nothing to stop it fails silently, so it qualifies.
+
+### Learnings routed
+
+- **`npm --prefix .tropis run board` and `run next` run the installed release here, not
+  the source.** The plan told its executor to check source behaviour with them; it could
+  not. `AGENTS.md`'s gotcha already says this of `npm --prefix .tropis test` and not of
+  the other two. Put to the developer as a one-line addition to that gotcha, on a branch
+  of its own, since `AGENTS.md` is not in this plan's file list.
+- The hung test, as above.
+
+### Merged because
+
+Every criterion is backed by a test that was seen to fail without the change, a
+fresh-agent check that passed, or the developer's recorded look at the page, and the
+self-check passes on the head as rebased onto `beae091`.
