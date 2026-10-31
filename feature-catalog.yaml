@@ -3947,3 +3947,30 @@
   layer: product
   modules: []
   refs: []
+# 2026-10-31, raised by the executor of main-is-gated-by-the-host: both fresh-agent probes
+# in projects set up from the branch fell back to npm install. Fold in, while in these
+# files: guards/set-up-project.test.js "records every shipped file at version unknown"
+# passes only in the self-check's archive export, where git describe finds no tag, and
+# fails from a checkout, where it finds one - so every executor and reviewer meets it red
+# and has to confirm it predates their change. Make it pass in both, for example by
+# running setup from a copy of the framework with no .git. Not an entry of its own: the
+# next agent in these files fixes it once told.
+- id: set-up-project-installs-from-a-lockfile
+  title: A freshly set-up project installs the framework's dependencies with npm ci
+  status: shaped
+  value: The first command every dispatched agent is told to run works in a project that
+    was just set up. Setup writes .tropis/package.json and no lockfile, so
+    npm --prefix .tropis ci refuses to run, and an agent falls back to npm install, which
+    takes whatever versions are newest that day rather than the ones the release was
+    tested with.
+  acceptanceCriteria:
+    - Setup leaves a lockfile beside .tropis/package.json that pins what the release was
+      tested with, and npm --prefix .tropis ci succeeds in the new project.
+    - An update keeps the lockfile matching the package file it installs.
+    - A guard runs setup and then npm ci in the new project, and fails without the lockfile.
+  type: bug
+  layer: product
+  modules:
+    - scripts/set-up-project.sh
+    - guards/set-up-project.test.js
+  refs: []
