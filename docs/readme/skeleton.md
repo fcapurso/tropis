@@ -31,9 +31,14 @@ things are the way they are.
 - **Length:** a short list.
 
 ## Who it is for
-- **Job:** who it fits and who it does not, so a reader can rule themselves in or out.
+- **Job:** who it fits and who it does not, so a reader can rule themselves in or out. What it needs to work goes under What it needs, not here.
 - **Facts from:** the project brief, the decision record.
 - **Length:** two short paragraphs.
+
+## What it needs
+- **Job:** what a project must have for Tropis to work, at a high level: the tools on the developer's machine, a supported agent tool, and the code host. Each is marked required or optional, with what is lost without an optional one. This is the only section that lists them; Getting started shows how to set them up.
+- **Facts from:** scripts/check-prerequisites.sh, for what is required and what is optional; the Node versions the installed Jest accepts (the engines field in .tropis/node_modules/jest/package.json), which are stricter than that script; framework/DECISIONS.md, FW-005; the agent tools rule delivery supports, as How it works describes; commands/bootstrap.md and commands/update.md, for what GitHub adds and what happens on another host; commands/next.md and scripts/submit-upstream.sh, for where the gh command is used.
+- **Length:** a short list.
 
 ## Getting started
 - **Job:** the shortest path to a first success, as numbered steps that work as written.
@@ -51,7 +56,7 @@ things are the way they are.
 - **Length:** a short section.
 
 ## Where it stands
-- **Job:** what works today and the known limits, honestly.
+- **Job:** what works today and the known limits, honestly. A requirement goes under What it needs; a limit here is something not supported yet.
 - **Facts from:** the catalog (shipped, building, shelved), the release notes.
 - **Length:** a short list.
 
