@@ -31,6 +31,23 @@ recorded through `/manual-check`. Newest first.
 
 ## Entries
 
+### 2026-10-31 — The backlog board tells dropped work from shelved work (Setup)
+
+- **Change:** `plan/work-that-will-not-be-done-reads-as-closed` at `ef79a26`. The page is built by that branch's `build-backlog-board.mjs`, `next-work.js`, `board-bands.js` and `backlog-board.html`, staged under a scratch `.tropis/` with the branch's `feature-catalog.yaml` and this repository's `docs/backlog-board/bands.yaml`, and opened in a browser as a local file. This stands in for a scratch project from `set-up-project.sh`: the page is built by the same four files the setup copies, and this repository's catalog is the one with arcs, dropped and shelved entries to show. `npm --prefix .tropis run board` here would build with the installed release and show none of it.
+- **Pre-conditions:** already prepared by the reviewing session. The embedded data was read before the check: harness sidecar `state` parked, 0 of 1 counted; the updates arc under way, 10 of 17 counted, 20 in all; `harness-does-not-need-node` open with `sh: true`; `learnings-can-be-declined` and `entry-file-says-how-rules-arrive` closed as `dropped`. The header says 57 open, 49 shipped.
+
+| # | Step | Expected |
+|---|---|---|
+| 1 | Open the page, in light mode, and look at the arcs box at the top | Under "Arcs in progress": "framework updates like a dependency" at 10/17 with "3 set aside", and "readme stays current" at 1/2. Harness sidecar has no progress bar there. Below them, a greyed row "Parked — nothing open, a shelved step remains: harness sidecar" with "parked" on the right |
+| 2 | Scroll to band D, Leave it | `harness-does-not-need-node` is a row there with a "shelved" tag beside its other tags |
+| 3 | Expand Closed at the bottom | `learnings-can-be-declined` and `entry-file-says-how-rules-arrive` are listed, each reading "dropped". `harness-does-not-need-node` is not in the list |
+| 4 | Switch "Group by" to Arc | A "harness sidecar" group shows 0/1, with both its steps struck through on the ladder and `harness-does-not-need-node` as its one row. The updates group shows 10/17, with `entry-file-says-how-rules-arrive` struck through on its ladder |
+| 5 | Switch the system to dark mode and look at the "shelved" tag | It is readable against the card |
+
+- **Result:** pass
+- **Notes:** observed by the developer, 2026-10-31; nothing unexpected reported
+- **Closes:** `work-that-will-not-be-done-reads-as-closed` — "The board lists dropped entries under Closed beside shipped and replaced ones, and lists shelved entries in band D, marked shelved, not under Closed." (the page as rendered)
+
 ### 2026-10-30 — The backlog board tags bundles (Setup)
 
 - **Change:** `plan/backlog-is-groomed-at-refresh` at `08bba8b`, in a scratch project set up from that branch with `set-up-project.sh`, then given this repository's `feature-catalog.yaml` and `docs/backlog-board/bands.yaml` as of `a1df7bb`, opened in a browser as a local file
