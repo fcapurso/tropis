@@ -26,7 +26,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import {
-  chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync,
+  chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync,
   rmSync, statSync, unlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -378,33 +378,71 @@ function isEntryPointer(text) {
 }
 
 /**
+ * Leaves `path` a regular file or nothing, so no write below goes through a link: a
+ * symlink that leads to a file becomes a regular file holding that file's text, and one
+ * that leads nowhere — missing target or a cycle — is removed. A link to anything else
+ * is left alone. Returns the line to report, or null when nothing changed.
+ * @param {string} path
+ * @param {string} name
+ */
+function unlinkEntryFile(path, name) {
+  let link;
+  try {
+    link = lstatSync(path);
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
+  if (!link.isSymbolicLink()) return null;
+  let target;
+  try {
+    target = statSync(path);
+  } catch (e) {
+    if (e.code !== 'ENOENT' && e.code !== 'ELOOP' && e.code !== 'ENOTDIR') throw e;
+    unlinkSync(path);
+    return `Removed the dangling symlink ${name}.`;
+  }
+  if (!target.isFile()) return null;
+  const text = readFileSync(path, 'utf8');
+  unlinkSync(path);
+  writeFileSync(path, text);
+  return `Replaced the symlink ${name} with a regular file holding the text it pointed at.`;
+}
+
+/**
  * The entry pair is the project's own text, not a shipped file. An update points
  * CLAUDE.md at AGENTS.md when the two are identical or one is missing, and changes
- * neither when they differ — which lines win is the developer's call.
+ * neither when they differ — which lines win is the developer's call. A symlinked entry
+ * file is first made a regular file (or removed when it leads nowhere), and the report says so.
  * @param {string} project
  */
 function entryFiles(project) {
   const claudePath = join(project, 'CLAUDE.md');
   const agentsPath = join(project, 'AGENTS.md');
+  const reports = [];
+  for (const [path, name] of [[claudePath, 'CLAUDE.md'], [agentsPath, 'AGENTS.md']]) {
+    const line = unlinkEntryFile(path, name);
+    if (line) reports.push(line);
+  }
   const claude = readText(claudePath);
   const agents = readText(agentsPath);
   const pointer = '@AGENTS.md\n';
 
-  if (isEntryPointer(claude)) return {};
+  if (isEntryPointer(claude)) return { reports };
   if (claude !== null && agents !== null && claude === agents) {
     writeText(claudePath, pointer);
-    return { report: 'Pointed CLAUDE.md at AGENTS.md, which keeps the entry instructions.' };
+    return { reports: [...reports, 'Pointed CLAUDE.md at AGENTS.md, which keeps the entry instructions.'] };
   }
   if (claude !== null && agents === null) {
     writeText(agentsPath, claude);
     writeText(claudePath, pointer);
-    return { report: 'Moved the entry instructions from CLAUDE.md to AGENTS.md, and pointed CLAUDE.md at it.' };
+    return { reports: [...reports, 'Moved the entry instructions from CLAUDE.md to AGENTS.md, and pointed CLAUDE.md at it.'] };
   }
   if (claude === null && agents !== null) {
     writeText(claudePath, pointer);
-    return { report: 'Wrote CLAUDE.md as the single line @AGENTS.md.' };
+    return { reports: [...reports, 'Wrote CLAUDE.md as the single line @AGENTS.md.'] };
   }
-  if (claude === null) return {};
+  if (claude === null) return { reports };
 
   const diff = run(
     'git',
@@ -422,7 +460,7 @@ function entryFiles(project) {
     '  into AGENTS.md, then make CLAUDE.md the single line @AGENTS.md. The lines that differ:',
     ...lines.map((line) => `    ${line}`),
   ].join('\n');
-  return { decision };
+  return { reports, decision };
 }
 
 function apply(input) {
@@ -584,7 +622,7 @@ function apply(input) {
     ...keptButGone.map((p) => `${p} — no longer shipped, kept because you changed it`),
     ...(entry.decision ? [entry.decision] : []),
   ]);
-  if (entry.report) lines.push(entry.report, '');
+  if (entry.reports.length > 0) lines.push(...entry.reports, '');
   lines.push('Next:');
   if (packageChanged) lines.push('  npm --prefix .tropis install');
   lines.push('  npm --prefix .tropis test');

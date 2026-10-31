@@ -1105,3 +1105,34 @@ large.
 **Consequences:** A grooming pass is judgment, so its findings are not tested; the
 mechanics around it (the bundle field, the page tag, the one-row report, the `/next` line)
 are.
+
+---
+
+## FW-036: A branch's environment is never a permanent one
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** `branch create`, `branch deploy` and `branch remove` refuse, before listing
+origin or running any project script, a branch whose environment name is on the
+project's permanent list. The list is pipeline/branch/permanent.txt, one name per line,
+trimmed and lowercased, and is compared with the environment name derived from the
+branch, so `Production` and `production/` are refused when `production` is listed. When
+the file exists it replaces the default list; when it does not, the list is production,
+staging and development. An empty slot is still empty, and `environment` still prints
+any name.
+
+**Evidence:** first-adopter's upstream flush of 2026-10-29, from its queue entry of
+2026-10-26: a branch named like a permanent environment would deploy over it and remove
+it when its pull request closed, and the project guarded against that by hand.
+
+**Rejected:** Extending the default with the file's names, because a project could then
+never take a default name back, and one that writes its own list has said what is
+permanent. Comparing the branch name, because `Production` and `production/` name the
+same environment as `production`. Refusing in `environment`, because it touches no
+environment and the workflow calls it for every pull request to name its concurrency
+group.
+
+**Consequences:** A project whose permanent environments have other names must list
+them, and a list drops any default it does not repeat. Closing a pull request from a
+refused branch fails its remove job, having touched nothing. `deploy.sh` may still find
+no environment; the operator guide says it must fail, not create one.

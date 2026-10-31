@@ -12,8 +12,8 @@
  */
 import { spawnSync } from 'node:child_process';
 import {
-  cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync,
-  statSync, writeFileSync,
+  cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync,
+  statSync, symlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -788,6 +788,90 @@ describe('take-version.mjs', () => {
     expect(readFileSync(join(w.project, 'AGENTS.md'))).toEqual(Buffer.from(text));
     expect(read(w.project, 'CLAUDE.md')).toBe('@AGENTS.md\n');
     expect(r.stdout).toContain('Wrote CLAUDE.md as the single line @AGENTS.md.');
+  }), SLOW);
+
+  it('replaces a CLAUDE.md symlinked to AGENTS.md with a regular file, then points it', () => inWorld({}, (w) => {
+    const text = '# The entry\nBehind a link.\n';
+    write(w.project, 'AGENTS.md', text);
+    rmSync(join(w.project, 'CLAUDE.md'));
+    symlinkSync('AGENTS.md', join(w.project, 'CLAUDE.md'));
+    w.commit('claude symlink');
+    w.release('v0.2.1', bumpNext);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(lstatSync(join(w.project, 'CLAUDE.md')).isSymbolicLink()).toBe(false);
+    expect(lstatSync(join(w.project, 'AGENTS.md')).isSymbolicLink()).toBe(false);
+    expect(readFileSync(join(w.project, 'AGENTS.md'))).toEqual(Buffer.from(text));
+    expect(read(w.project, 'CLAUDE.md')).toBe('@AGENTS.md\n');
+    const a = r.stdout.indexOf('Replaced the symlink CLAUDE.md with a regular file holding the text it pointed at.');
+    const b = r.stdout.indexOf('Pointed CLAUDE.md at AGENTS.md, which keeps the entry instructions.');
+    expect(a).toBeGreaterThanOrEqual(0);
+    expect(b).toBeGreaterThan(a);
+  }), SLOW);
+
+  it('replaces an AGENTS.md symlinked to CLAUDE.md with a regular file, then points CLAUDE.md', () => inWorld({}, (w) => {
+    const text = '# The entry\nBehind a link.\n';
+    write(w.project, 'CLAUDE.md', text);
+    rmSync(join(w.project, 'AGENTS.md'));
+    symlinkSync('CLAUDE.md', join(w.project, 'AGENTS.md'));
+    w.commit('agents symlink');
+    w.release('v0.2.1', bumpNext);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(lstatSync(join(w.project, 'CLAUDE.md')).isSymbolicLink()).toBe(false);
+    expect(lstatSync(join(w.project, 'AGENTS.md')).isSymbolicLink()).toBe(false);
+    expect(readFileSync(join(w.project, 'AGENTS.md'))).toEqual(Buffer.from(text));
+    expect(read(w.project, 'CLAUDE.md')).toBe('@AGENTS.md\n');
+    const a = r.stdout.indexOf('Replaced the symlink AGENTS.md with a regular file holding the text it pointed at.');
+    const b = r.stdout.indexOf('Pointed CLAUDE.md at AGENTS.md, which keeps the entry instructions.');
+    expect(a).toBeGreaterThanOrEqual(0);
+    expect(b).toBeGreaterThan(a);
+  }), SLOW);
+
+  it('removes a dangling CLAUDE.md symlink and writes the AGENTS.md pointer', () => inWorld({}, (w) => {
+    const text = '# Only in agents\n';
+    write(w.project, 'AGENTS.md', text);
+    rmSync(join(w.project, 'CLAUDE.md'));
+    symlinkSync('missing.md', join(w.project, 'CLAUDE.md'));
+    w.commit('dangling symlink');
+    w.release('v0.2.1', bumpNext);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(lstatSync(join(w.project, 'CLAUDE.md')).isSymbolicLink()).toBe(false);
+    expect(read(w.project, 'CLAUDE.md')).toBe('@AGENTS.md\n');
+    expect(readFileSync(join(w.project, 'AGENTS.md'))).toEqual(Buffer.from(text));
+    expect(existsSync(join(w.project, 'missing.md'))).toBe(false);
+    expect(r.stdout).toContain('Removed the dangling symlink CLAUDE.md.');
+    expect(r.stdout).toContain('Wrote CLAUDE.md as the single line @AGENTS.md.');
+  }), SLOW);
+
+  it('reports a replaced CLAUDE.md symlink to another file even on an early return', () => inWorld({}, (w) => {
+    const agents = '# Kept aside.\n';
+    write(w.project, 'AGENTS.md', agents);
+    write(w.project, 'pointer.md', '@AGENTS.md\n');
+    rmSync(join(w.project, 'CLAUDE.md'));
+    symlinkSync('pointer.md', join(w.project, 'CLAUDE.md'));
+    w.commit('symlink to a pointer file');
+    w.release('v0.2.1', bumpNext);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(lstatSync(join(w.project, 'CLAUDE.md')).isSymbolicLink()).toBe(false);
+    expect(read(w.project, 'CLAUDE.md')).toBe('@AGENTS.md\n');
+    expect(readFileSync(join(w.project, 'AGENTS.md'))).toEqual(Buffer.from(agents));
+    expect(read(w.project, 'pointer.md')).toBe('@AGENTS.md\n');
+    expect(r.stdout).toContain('Replaced the symlink CLAUDE.md with a regular file holding the text it pointed at.');
+    expect(r.stdout).not.toContain('Pointed CLAUDE.md at AGENTS.md');
+    expect(r.stdout).not.toContain('Moved the entry instructions');
+    expect(r.stdout).not.toContain('Wrote CLAUDE.md as the single line');
+    expect(r.stdout).not.toContain('CLAUDE.md and AGENTS.md differ');
   }), SLOW);
 
   it('changes neither file when CLAUDE.md and AGENTS.md differ', () => inWorld({}, (w) => {
