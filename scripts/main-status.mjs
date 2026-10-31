@@ -1,0 +1,175 @@
+#!/usr/bin/env node
+// Shared machinery: no part of this file is project-owned.
+/**
+ * Says whether the main branch's pipeline is red, asking GitHub through `gh`.
+ *
+ * Read-only. With no arguments it prints one line about the last finished push run of
+ * the pipeline workflow (.github/workflows/pipeline.yml) on the repository's default
+ * branch, and exits 0 whatever it found. With --wait <commit> it waits for the push run
+ * on that commit to finish, prints one line, and exits 0 green, 1 red, 3 still running
+ * at the timeout. Where it cannot ask — origin not on GitHub, no gh, gh failing — it
+ * prints that it could not tell and why, and exits 0.
+ *
+ * The backlog report and the isolation helper import mainStatus; the workflow's merge
+ * sequence runs --wait. gh is never run unless origin is on GitHub, so a repository
+ * without such a remote — every test's — never reaches the network. The default branch
+ * comes from the REST API (`gh api repos/{owner}/{repo}`), not `gh repo view`, which
+ * needs GraphQL, and GraphQL is refused in some agent sessions.
+ */
+import { spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+export const WORKFLOW = 'pipeline.yml';
+const FIELDS = 'status,conclusion,headSha,url,createdAt,displayTitle';
+// A finished run counts as red on these; success is green; any other conclusion
+// (cancelled, skipped, neutral, stale, action_required) says nothing about the code.
+const RED = new Set(['failure', 'timed_out', 'startup_failure']);
+const GITHUB_REMOTE = /^(?:https:\/\/(?:[^@/\s]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)[^/\s]+\/[^/\s]+$/;
+const LINE = 'Main branch:';
+
+const short = (sha) => String(sha).slice(0, 7);
+const unknown = (reason) => ({ state: 'unknown', line: `${LINE} could not tell — ${reason}.` });
+const verdict = (run) => (RED.has(run.conclusion)
+  ? { state: 'red', line: `${LINE} red — the pipeline failed on ${short(run.headSha)} (${run.displayTitle}). Run: ${run.url}` }
+  : { state: 'green', line: `${LINE} green — the pipeline passed on ${short(run.headSha)} (${run.displayTitle}).` });
+const newestFirst = (runs) => [...runs].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+
+/** {} when origin is a GitHub repository, else { error }. Runs git only. */
+function originOnGitHub(root, env) {
+  const r = spawnSync('git', ['remote', 'get-url', 'origin'], { cwd: root, env, encoding: 'utf8' });
+  if (r.status !== 0) return { error: 'no remote named origin' };
+  const url = r.stdout.trim().replace(/\/$/, '').replace(/\.git$/, '');
+  return GITHUB_REMOTE.test(url) ? {} : { error: 'origin is not on GitHub' };
+}
+
+/** gh's answer parsed as JSON, as { value }, or { error } saying why there is none. */
+function askGh(root, args, { env, ghTimeoutMs }) {
+  const r = spawnSync('gh', args, { cwd: root, env, encoding: 'utf8', timeout: ghTimeoutMs });
+  if (r.error?.code === 'ENOENT') return { error: 'gh is not installed' };
+  if (r.error?.code === 'ETIMEDOUT') return { error: `gh did not answer within ${ghTimeoutMs / 1000} seconds` };
+  if (r.error) return { error: `gh could not run: ${r.error.message}` };
+  if (r.status !== 0) {
+    const first = (r.stderr || '').split('\n').map((l) => l.trim()).find(Boolean);
+    return { error: `gh failed: ${(first ?? `exit ${r.status}`).replace(/\.$/, '')}` };
+  }
+  try {
+    return { value: JSON.parse(r.stdout) };
+  } catch {
+    return { error: 'gh answered with something other than JSON' };
+  }
+}
+
+function runsOn(root, filter, options) {
+  const asked = askGh(root, ['run', 'list', '--workflow', WORKFLOW, ...filter, '--event', 'push',
+    '--limit', '20', '--json', FIELDS], options);
+  if (asked.error) return asked;
+  if (!Array.isArray(asked.value)) return { error: 'gh answered with something other than a list of runs' };
+  return { value: newestFirst(asked.value) };
+}
+
+/**
+ * The last finished push run of the pipeline on the default branch, as one line.
+ * @param {string} root the repository root
+ * @param {{ env?: NodeJS.ProcessEnv, ghTimeoutMs?: number }} [options]
+ * @returns {{ state: 'red' | 'green' | 'unknown', line: string }}
+ */
+export function mainStatus(root, { env = process.env, ghTimeoutMs = 20000 } = {}) {
+  const options = { env, ghTimeoutMs };
+  const origin = originOnGitHub(root, env);
+  if (origin.error) return unknown(origin.error);
+  const repo = askGh(root, ['api', 'repos/{owner}/{repo}'], options);
+  if (repo.error) return unknown(repo.error);
+  const branch = repo.value?.default_branch;
+  if (typeof branch !== 'string' || branch === '') return unknown('GitHub named no default branch');
+  const runs = runsOn(root, ['--branch', branch], options);
+  if (runs.error) return unknown(runs.error);
+  const finished = runs.value.find((run) => run.status === 'completed'
+    && (run.conclusion === 'success' || RED.has(run.conclusion)));
+  return finished ? verdict(finished) : unknown(`no finished push run of ${WORKFLOW} on ${branch}`);
+}
+
+/**
+ * Waits for the push run of the pipeline on one commit to finish.
+ * @param {string} root the repository root
+ * @param {string} sha the full commit hash
+ * @returns {Promise<{ state: string, line: string, exit: number }>}
+ */
+export async function waitForRun(root, sha, {
+  env = process.env, ghTimeoutMs = 20000, intervalMs = 30000, timeoutMs = 1800000,
+} = {}) {
+  const options = { env, ghTimeoutMs };
+  const origin = originOnGitHub(root, env);
+  if (origin.error) return { ...unknown(origin.error), exit: 0 };
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const runs = runsOn(root, ['--commit', sha], options);
+    if (runs.error) return { ...unknown(runs.error), exit: 0 };
+    const run = runs.value[0];
+    if (run?.status === 'completed') {
+      if (run.conclusion === 'success') return { ...verdict(run), exit: 0 };
+      if (RED.has(run.conclusion)) return { ...verdict(run), exit: 1 };
+      return { ...unknown(`the pipeline run on ${short(sha)} ended ${run.conclusion} (${run.url})`), exit: 0 };
+    }
+    if (Date.now() >= deadline) {
+      return {
+        state: 'waiting',
+        line: `${LINE} still running — no pipeline run on ${short(sha)} finished within ${timeoutMs / 60000} minutes.`,
+        exit: 3,
+      };
+    }
+    await new Promise((done) => { setTimeout(done, intervalMs); });
+  }
+}
+
+const USAGE = 'usage: main-status.mjs [--wait <commit> [--interval <seconds>] [--timeout <minutes>]]\n';
+
+/** The options the command line asks for, or null when it is not understood. */
+function parseArgs(argv) {
+  const opts = { intervalMs: 30000, timeoutMs: 1800000 };
+  if (argv.length === 0) return opts;
+  for (let i = 0; i < argv.length; i += 2) {
+    const flag = argv[i];
+    const value = argv[i + 1];
+    if (value === undefined || value === '') return null;
+    if (flag === '--wait' && !value.startsWith('-')) opts.commit = value;
+    else if (flag === '--interval' && Number(value) >= 0) opts.intervalMs = Number(value) * 1000;
+    else if (flag === '--timeout' && Number(value) > 0) opts.timeoutMs = Number(value) * 60000;
+    else return null;
+  }
+  return opts.commit ? opts : null;
+}
+
+const ranDirectly = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
+
+if (ranDirectly) {
+  const top = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' });
+  const root = top.status === 0 ? top.stdout.trim() : resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+  const opts = parseArgs(process.argv.slice(2));
+  if (!opts) {
+    process.stderr.write(USAGE);
+    process.exitCode = 2;
+  } else if (!opts.commit) {
+    process.stdout.write(`${mainStatus(root).line}\n`);
+  } else {
+    const resolved = spawnSync('git', ['rev-parse', '--verify', '--quiet', `${opts.commit}^{commit}`], { cwd: root, encoding: 'utf8' });
+    if (resolved.status !== 0) {
+      process.stderr.write(`main-status: ${opts.commit} is not a commit here\n`);
+      process.exitCode = 2;
+    } else {
+      const sha = resolved.stdout.trim();
+      process.stderr.write(`main-status: waiting for the pipeline run on ${short(sha)}, asking every ${opts.intervalMs / 1000} s for up to ${opts.timeoutMs / 60000} min\n`);
+      const result = await waitForRun(root, sha, opts);
+      process.stdout.write(`${result.line}\n`);
+      process.exitCode = result.exit;
+    }
+  }
+}
