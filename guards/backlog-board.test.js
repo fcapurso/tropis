@@ -12,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { bandLetters, bandScores, movedBands } from '../scripts/board-bands.js';
-import { bandOf, nextStep } from '../scripts/next-work.js';
+import { arcs, bandOf, nextStep } from '../scripts/next-work.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
@@ -136,7 +136,11 @@ describe('backlog board build', () => {
     expect(entries.find((e) => e.id === 'done').cl).toEqual({ k: 'shipped' });
     expect(entries.find((e) => e.id === 'open-a').cl).toBeNull();
     expect(arcs.length).toBeGreaterThan(0);
-    for (const a of arcs) expect(a.order.length).toBe(a.total);
+    for (const a of arcs) {
+      expect(a.order.length).toBe(a.total);
+      expect(['under way', 'not started', 'parked', 'done']).toContain(a.state);
+      expect(typeof a.counted).toBe('number');
+    }
   });
 
   it('names unbanded entries and bands whose entry is gone', () => {
@@ -216,6 +220,16 @@ const CLOSED_CATALOG = `${CATALOG}- id: replaced
   modules: []
   shelved: true
   refs: []
+- id: dropped-one
+  title: Dropped one
+  status: dropped
+  type: feature
+  layer: product
+  value: Dropped 2026-10-31 - not needed.
+  acceptanceCriteria:
+    - Not needed.
+  modules: []
+  refs: []
 - id: waiting
   title: Waiting
   status: shaped
@@ -256,6 +270,9 @@ replaced:
 parked:
   band: C
   verdict: Parked.
+dropped-one:
+  band: B
+  verdict: Dropped.
 `;
   let dir;
   let run;
@@ -265,14 +282,16 @@ parked:
   });
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-  it('reports a band on a replaced or shelved entry as stale, and not as moved', () => {
+  it('reports a band on a replaced, dropped or shelved entry as stale, and not as moved', () => {
     expect(run.status).toBe(0);
-    const stale = run.stdout.slice(run.stdout.indexOf('been replaced, been shelved or gone'));
-    expect(run.stdout).toContain('2 bands in bands.yaml for entries that have shipped, been replaced, been shelved or gone — delete them:');
+    const stale = run.stdout.slice(run.stdout.indexOf('been shelved or gone'));
+    expect(run.stdout).toContain('3 bands in bands.yaml for entries that have shipped, been dropped, been replaced, been shelved or gone — delete them:');
     expect(stale).toContain('- replaced');
     expect(stale).toContain('- parked');
+    expect(stale).toContain('- dropped-one');
     expect(run.stdout).not.toContain('- replaced —');
     expect(run.stdout).not.toContain('- parked —');
+    expect(run.stdout).not.toContain('- dropped-one —');
   });
 
   it('reports a band outside A to D, and a band with no valid scores', () => {
@@ -288,7 +307,9 @@ parked:
     const byId = Object.fromEntries(entries.map((e) => [e.id, e]));
     expect(byId.done.cl).toEqual({ k: 'shipped' });
     expect(byId.replaced.cl).toEqual({ k: 'replaced', by: ['open-a'] });
-    expect(byId.parked.cl).toEqual({ k: 'shelved' });
+    expect(byId['dropped-one'].cl).toEqual({ k: 'dropped' });
+    expect(byId.parked.cl).toBeNull();
+    expect(byId.parked.sh).toBe(true);
     expect(byId.waiting.cl).toBeNull();
     expect(byId.waiting.bb).toEqual(['open-b']);
     expect(byId.waiting.af).toEqual(['open-a']);
@@ -300,6 +321,56 @@ parked:
     expect(anno['open-a'].vw).toBe('Blocks work.');
     expect(anno.waiting.sc).toBeNull();
     expect(anno['open-b'].sc).toBeNull();
+  });
+
+  it('does not ask for a band on a shelved entry', () => {
+    const own = stage(CLOSED_CATALOG, 'open-a:\n  band: A\n');
+    try {
+      const out = build(own);
+      expect(out.status).toBe(0);
+      expect(out.stdout).toContain('2 active entries have no band');
+      expect(out.stdout).toContain('  - open-b\n  - waiting\n');
+      expect(out.stdout).not.toContain('  - parked');
+    } finally {
+      rmSync(own, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('arc state', () => {
+  const entry = (id, spec, status, flags = {}) => ({ id, status, refs: [`docs/specs/${spec}.md`], ...flags });
+  const catalog = [
+    entry('a1', 'a', 'shipped'),
+    entry('a2', 'a', 'dropped'),
+    entry('b1', 'b', 'shipped'),
+    entry('b2', 'b', 'shaped', { supersededBy: ['z'] }),
+    entry('c1', 'c', 'dropped'),
+    entry('c2', 'c', 'shaped', { shelved: true }),
+    entry('d1', 'd', 'shipped'),
+    entry('d2', 'd', 'shaped'),
+    entry('e1', 'e', 'shaped'),
+    entry('e2', 'e', 'dropped'),
+  ];
+  const of = (spec) => arcs(catalog).find((a) => a.ref === `docs/specs/${spec}.md`);
+
+  it('is done when only dropped steps are left', () => {
+    expect(of('a')).toMatchObject({ state: 'done', shipped: 1, counted: 1, total: 2 });
+  });
+
+  it('is done when only replaced steps are left', () => {
+    expect(of('b')).toMatchObject({ state: 'done', counted: 1 });
+  });
+
+  it('is parked when nothing is open but a shelved step', () => {
+    expect(of('c')).toMatchObject({ state: 'parked', shipped: 0, counted: 1 });
+  });
+
+  it('is under way when something shipped and something is open', () => {
+    expect(of('d')).toMatchObject({ state: 'under way', counted: 2 });
+  });
+
+  it('is not started when something is open and nothing shipped', () => {
+    expect(of('e')).toMatchObject({ state: 'not started', counted: 1 });
   });
 });
 

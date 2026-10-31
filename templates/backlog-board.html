@@ -162,6 +162,7 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
 .tag-wait{background:none;color:var(--crit);border:1px solid var(--crit);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
 .tag-bundle{background:var(--accent-soft);color:var(--accent);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
 .tag-after{background:none;color:var(--ink-2);border:1px solid var(--rule);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
+.tag-shelved{background:none;color:var(--ink-2);border:1px solid var(--rule);text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
 .score{font-family:var(--mono);font-size:11px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
 .score.none{color:var(--ink-3);font-style:italic}
 .caret{font-family:var(--mono);font-size:11px;color:var(--ink-3);width:12px;text-align:center}
@@ -261,17 +262,17 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
     developer can answer stands between the entry and a plan. <b>D</b> leave it — nothing to do until
     something happens. Inside a band, entries are ranked by <b>value divided by effort</b>, each scored
     1 to 5 in the bands file with a reason; an entry without both scores comes last. An entry waiting on
-    another is banded on its own value and marked with what it waits on. Shipped, replaced and shelved
-    entries are not banded: they are listed under Closed. Claims marked
+    another is banded on its own value and marked with what it waits on. Shipped, replaced and dropped
+    entries are not banded: they are listed under Closed. A shelved entry is parked until something
+    changes: it sits in D, marked shelved, and needs no row in the bands file. Claims marked
     <span class="mono">checked against the code</span> were verified against the source, not taken from
     the entry text.</p>
-    <p style="margin-top:9px"><b>Arcs</b> are derived the way <span class="mono">npm run next</span>
-    derives them — entries sharing a design spec, ordered by <span class="mono">after</span>. The board
-    then goes one step further: a <b>superseded</b> entry is left out of an arc's count, since its work
-    moved to another entry, so an arc whose only remaining step is superseded is shown as done rather
-    than in progress. <span class="mono">next</span> does not yet make that distinction and reports such
-    arcs as open. Group by Arc to see each design's full sequence: shipped steps in green, open ones
-    hollow, parked or superseded ones struck through.</p>
+    <p style="margin-top:9px"><b>Arcs</b> are derived by the same code as <span class="mono">npm run next</span>
+    — entries sharing a design spec, ordered by <span class="mono">after</span>. A <b>replaced</b> or
+    <b>dropped</b> step is set aside: it is left out of the count, since its work moved or will not be
+    done. An arc with nothing open left is <b>done</b>, or <b>parked</b> when a shelved step remains.
+    Group by Arc to see each design's full sequence: shipped steps in green, open ones hollow, shelved,
+    replaced or dropped ones struck through.</p>
   </footer>
 </div>
 
@@ -291,31 +292,24 @@ const BAND_LETTERS = ["A","B","C","D"];
 const LAYER_T = {product:"Product", framework:"Framework — this project's own tooling"};
 const STATE_T = {idea:"Idea", shaped:"Shaped", building:"Building"};
 
-// Closed entries (shipped, replaced, shelved) are not work: they leave the bands and
-// appear only in the Closed section.
+// Closed entries (shipped, replaced, dropped) are not work: they leave the bands and
+// appear only in the Closed section. A shelved entry is open, in D.
 const CLOSED = ENTRIES.filter(e => e.cl);
 const data = ENTRIES.filter(e => !e.cl).map(e => {
   const a = ANNO[e.id] || {};
-  const band = BAND_LETTERS.includes(a.b) ? a.b : "D";
+  // A shelved entry is parked on purpose: it sits in D, whatever bands.yaml says.
+  const band = e.sh ? "D" : BAND_LETTERS.includes(a.b) ? a.b : "D";
   return {...e, band, verdict:a.v||"", evidence:a.e||"", sc:a.sc||null, vw:a.vw||"", ew:a.ew||"", bn:a.bn||"",
           rank:a.sc ? a.sc.value/a.sc.effort : null};
 });
 
 const S = {q:"", groupby:"band", sortby:"rank", bands:new Set(), layers:new Set(),
            states:new Set(), arcs:new Set(), open:new Set()};
-// A superseded entry's work moved to another entry, so it sits in neither the numerator
-// nor the denominator: an arc whose only remaining step is superseded is done. The raw
-// shipped/total from the catalog would report 7/8 and 1/2 as in progress; both are
-// finished. Shelved entries stay in the total — parked is not resolved.
-for (const a of ARCS) {
-  a.effTotal = a.order.filter(o=>!o.sup).length;
-  a.effShipped = a.order.filter(o=>o.s==="shipped").length;
-  a.done = a.effShipped >= a.effTotal;
-  a.superseded = a.order.filter(o=>o.sup).length;
-}
 const ARC_BY_KEY = Object.fromEntries(ARCS.map(a=>[a.key,a]));
-const LIVE_ARCS = ARCS.filter(a=>!a.done);
-const DONE_BY_SUPERSESSION = ARCS.filter(a=>a.done && a.superseded>0);
+// Each arc's state comes from arcs() in next-work.js, the same code /next uses.
+const LIVE_ARCS = ARCS.filter(a=>a.state==="under way" || a.state==="not started");
+const PARKED_ARCS = ARCS.filter(a=>a.state==="parked");
+const DONE_SET_ASIDE = ARCS.filter(a=>a.state==="done" && a.counted<a.total);
 try{ const v=JSON.parse(localStorage.getItem("jpk-board")||"{}");
   if(v.groupby) S.groupby=v.groupby; if(v.sortby) S.sortby=v.sortby;
 }catch(_){}
@@ -349,16 +343,21 @@ document.getElementById("arcs").innerHTML =
   '<div class="ah"><span class="lbl">Arcs in progress</span>'+
   '<span class="note">entries sharing a design spec, in the order the design set — shipped over total</span></div>'+
   LIVE_ARCS.map(a => {
-    const pct = Math.round(100*a.effShipped/a.effTotal);
-    const note = a.superseded ? '<span class="sp" title="superseded entries are left out of the count">'+a.superseded+' superseded</span>' : '';
+    const pct = Math.round(100*a.shipped/a.counted);
+    const aside = a.total - a.counted;
+    const note = aside ? '<span class="sp" title="replaced or dropped steps are left out of the count">'+aside+' set aside</span>' : '';
     return '<div class="arc"><div class="an">'+esc(a.label)+'<span class="sp">'+esc(a.key)+'.md</span>'+note+'</div>'+
       '<div class="arcbar"><i style="width:'+pct+'%"></i></div>'+
-      '<div class="af">'+a.effShipped+'/'+a.effTotal+'</div></div>';
+      '<div class="af">'+a.shipped+'/'+a.counted+'</div></div>';
   }).join("") +
-  (DONE_BY_SUPERSESSION.length ? '<div class="arc arc-done"><div class="an">'+
-     'Complete once superseded entries are set aside: '+
-     DONE_BY_SUPERSESSION.map(a=>esc(a.label)+' <span class="sp">'+a.shipped+'/'+a.total+' raw</span>').join(' · ')+
-     '</div><div></div><div class="af">done</div></div>' : '');
+  (DONE_SET_ASIDE.length ? '<div class="arc arc-done"><div class="an">'+
+     'Complete once replaced or dropped steps are set aside: '+
+     DONE_SET_ASIDE.map(a=>esc(a.label)+' <span class="sp">'+a.shipped+' shipped, '+(a.total-a.counted)+' set aside</span>').join(' · ')+
+     '</div><div></div><div class="af">done</div></div>' : '') +
+  (PARKED_ARCS.length ? '<div class="arc arc-done"><div class="an">'+
+     'Parked — nothing open, a shelved step remains: '+
+     PARKED_ARCS.map(a=>esc(a.label)).join(' · ')+
+     '</div><div></div><div class="af">parked</div></div>' : '');
 
 // What /next suggests, computed by the same code from the same bands, so the board and
 // /next give one answer. Nothing banded A or B and ready leaves the suggestion empty.
@@ -405,10 +404,10 @@ const GKEY = e => S.groupby==="band" ? e.band : S.groupby==="arc" ? (e.arc[0] ||
 const ARC_POS = {}; for (const a of ARCS) a.order.forEach((o,i)=>{ ARC_POS[a.key+"|"+o.id]=i; });
 const GORDER = {band:BAND_LETTERS, l:["product","framework"],
   s:["shaped","idea","building"], ty:["bug","spike","feature","improvement","chore"],
-  arc:[...LIVE_ARCS.map(a=>a.key), ...DONE_BY_SUPERSESSION.map(a=>a.key), "_none"]};
+  arc:[...LIVE_ARCS.map(a=>a.key), ...PARKED_ARCS.map(a=>a.key), ...DONE_SET_ASIDE.map(a=>a.key), "_none"]};
 const SORTK = {band:e=>e.band, id:e=>e.id, s:e=>e.s, ty:e=>e.ty, l:e=>e.l};
-// An arc already under way: some of its entries shipped, some not.
-const UNDER_WAY = new Set(ARCS.filter(a=>a.shipped>0 && a.shipped<a.total).flatMap(a=>a.order.map(o=>o.id)));
+// An arc already under way, as arcs() decides it.
+const UNDER_WAY = new Set(ARCS.filter(a=>a.state==="under way").flatMap(a=>a.order.map(o=>o.id)));
 // The order /next suggests in: band, then value over effort (unscored last), then an arc
 // under way, then id.
 const byRank = (a,b) => BAND_LETTERS.indexOf(a.band)-BAND_LETTERS.indexOf(b.band)
@@ -428,6 +427,7 @@ function row(e){
   e.bb.forEach(id => tags.push('<span class="tag tag-wait">blocked by '+esc(id)+'</span>'));
   e.af.forEach(id => tags.push('<span class="tag tag-after">after '+esc(id)+'</span>'));
   if (e.bn) tags.push('<span class="tag tag-bundle">bundle '+esc(e.bn)+"</span>");
+  if (e.sh) tags.push('<span class="tag tag-shelved">shelved</span>');
   tags.push('<span class="tag tag-status'+(e.s==="shaped"?" tag-shaped":"")+'">'+esc(e.s)+"</span>");
   if (S.groupby!=="arc" && e.arc.length) tags.push('<span class="tag tag-arc">'+esc((ARC_BY_KEY[e.arc[0]]||{}).label||e.arc[0])+"</span>");
   tags.push('<span class="tag tag-layer">'+esc(e.l)+"</span>");
@@ -492,12 +492,12 @@ function render(){
     const arc = isArc ? ARC_BY_KEY[k] : null;
     let head;
     if (arc) {
-      head='<div class="ghead"><span class="gmark">'+arc.effShipped+'/'+arc.effTotal+"</span>"+
+      head='<div class="ghead"><span class="gmark">'+arc.shipped+'/'+arc.counted+"</span>"+
         '<span class="gtitle">'+esc(arc.label)+"</span>"+
         '<span class="gnote">'+esc(arc.key)+'.md</span>'+
         '<span class="gcount">'+items.length+" open</span></div>"+
         '<div class="ladder">'+arc.order.map((o,i)=>{
-          const cls = o.s==="shipped" ? "done" : (o.sh||o.sup) ? "parked" : "open";
+          const cls = o.s==="shipped" ? "done" : (o.sh||o.sup||o.s==="dropped") ? "parked" : "open";
           return (i?'<span class="arrow">→</span>':'')+'<span class="st '+cls+'" title="'+esc(o.t)+'">'+esc(o.id)+'</span>';
         }).join("")+"</div>";
     } else if (isArc) {

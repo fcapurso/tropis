@@ -33,6 +33,15 @@ function isSuperseded(entry) {
 }
 
 /**
+ * Closed for good: shipped, replaced by other entries, or dropped. A shelved entry is
+ * not closed — it is parked until something changes.
+ * @param {{status: string, supersededBy?: string[]}} entry
+ */
+export function isClosed(entry) {
+  return entry.status === 'shipped' || entry.status === 'dropped' || isSuperseded(entry);
+}
+
+/**
  * Order entries so each follows everything in its `after` that is also in the
  * list. Ties keep the order they already have (catalog order when the list was
  * filtered from the catalog).
@@ -119,8 +128,11 @@ export function blocked(catalog) {
 }
 
 /**
- * Entries sharing a spec path, so an arc can be shown together.
- * Entries are ordered by `after`; shipped/total is how far the arc has got.
+ * Entries sharing a spec path, so an arc can be shown together, ordered by `after`.
+ * `shipped` and `total` are raw counts. `counted` leaves out replaced and dropped
+ * entries, whose work moved or will not be done. `state` is `under way` (something
+ * shipped, something open), `not started` (something open, nothing shipped), `parked`
+ * (nothing open, at least one step shelved) or `done` (nothing open or shelved).
  */
 export function arcs(catalog) {
   const byRef = new Map();
@@ -136,7 +148,13 @@ export function arcs(catalog) {
     .map(([ref, entries]) => {
       const ordered = orderByAfter(entries);
       const shipped = ordered.filter((e) => e.status === 'shipped').length;
-      return { ref, entries: ordered, shipped, total: ordered.length };
+      const counted = ordered.filter((e) => e.status !== 'dropped' && !isSuperseded(e)).length;
+      const open = ordered.some((e) => !isClosed(e) && !e.shelved);
+      const parked = ordered.some((e) => !isClosed(e) && e.shelved);
+      const state = open
+        ? (shipped > 0 ? 'under way' : 'not started')
+        : (parked ? 'parked' : 'done');
+      return { ref, entries: ordered, shipped, total: ordered.length, counted, state };
     });
 }
 
@@ -164,8 +182,7 @@ export function hasBandRows(bands) {
 function underWayIds(catalog) {
   const ids = new Set();
   for (const arc of arcs(catalog)) {
-    const shipped = arc.entries.filter((e) => e.status === 'shipped').length;
-    if (shipped > 0 && shipped < arc.entries.length) {
+    if (arc.state === 'under way') {
       for (const entry of arc.entries) ids.add(entry.id);
     }
   }
