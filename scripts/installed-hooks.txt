@@ -2,5 +2,6 @@ hook-reply.sh
 capture-at-merge.sh
 capture-at-write.sh
 framework-commit-check.sh
+branch-in-worktree.sh
 command-at-position.py
 public-exposure-check.sh

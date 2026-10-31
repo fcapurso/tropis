@@ -409,6 +409,7 @@ describe('take-version.mjs', () => {
       'bash scripts/our-bash-guard.sh',
       'bash .tropis/hooks/capture-at-merge.sh --v021',
       'bash .tropis/hooks/framework-commit-check.sh',
+      'bash .tropis/hooks/branch-in-worktree.sh',
       'bash .tropis/hooks/public-exposure-check.sh',
     ]);
     expect(afterBash[0].hooks[1].if).toBe('Bash(gh pr merge *)');

@@ -477,3 +477,137 @@ Say where the code came from: nothing outside this repository, unless something 
 that case, name it. Commit and push. Open the pull request with a body saying what is
 now true, ending with the attribution lines your session gives. Do not set auto-merge.
 Then stop: parent review merges.
+
+## Handover report
+
+### Task completion
+
+- **Task 0** done. Started from `116137a`; pull request 55 was `MERGED`. Baseline self-check passed. git 2.49.0, Node v22.15.0, Python 3.12.10, Darwin arm64 (macOS).
+- **Task 1** done. Tests committed first; the self-check then failed on the new hook tests, the new text assertion in `release.test.js` and the take-version enumeration (and, as a side effect of the missing hook file, the capture-at-write cases that loop over the installed hooks).
+- **Task 2** done. Hook written, wired, listed. See *Judgment calls* for one test fix.
+- **Task 3** done. `commands/update.md`, `framework/workflow.md`, `rules/planning.md`, `templates/README.md`, `framework/DECISIONS.md` (FW-040). Self-check passed.
+- **Task 4** done, locally (see below).
+- **Task 5** done. Entry shipped, modules set, comment added.
+- **Task 6** this report.
+
+### Verification results
+
+All on git 2.49.0, Node v22.15.0, Python 3.12.10, Claude Code 2.1.300, macOS (Darwin) on arm64.
+
+- Red run (after Task 1): `Self-check FAILED: conformance or the clean baseline`; failing names included every `branch-in-worktree refuses a branch created in the main checkout › refuses …` case, `… › is wired once …`, `take-version.mjs › merges settings.json: the project keeps its keys and hooks, the shipped hooks follow`, and `the pipeline offer › creates every branch in a worktree of its own, never in the main checkout`.
+- After the hook (Task 2): only the refusal tests and the text assertion still failed.
+- After the text (Task 3) and again after the catalog: `bash scripts/check-blueprint.sh` last line: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total` / `Tests: 127 passed, 127 total`.
+- **Fresh-agent check.** Scratch project made with this branch's `scripts/set-up-project.sh`, bare repository as `origin` with `main` pushed, checkout on `main`. Run locally with `claude -p` (Claude Code 2.1.300, macOS arm64), permission mode `acceptEdits` with git, Read, Edit and Write allowed; the prompt was the one in Task 4. The user-level instructions that loaded say nothing about worktrees or where to create a branch. Result: **pass**. The commit `a531a3e` was on `notes/probe` in a sibling worktree started from `origin/main` (`ff94933`); the scratch checkout stayed on `main` at `ff94933`, clean. The agent's reply said the project's workflow requires a separate worktree. `-p` output does not show tool calls, so **I cannot say whether it first tried a branch command in the main checkout and was refused**; it appears to have followed the workflow text. The hook's refusal itself is covered by the tests, not by this probe. The scratch project and worktree were removed.
+- `git diff --stat origin/main...HEAD`: 12 files changed, 412 insertions, 21 deletions (the list under *Scope*), plus this report.
+
+### Scope
+
+Files: `commands/update.md`, `feature-catalog.yaml`, `framework/DECISIONS.md`, `framework/workflow.md`, `guards/release.test.js`, `guards/rule-delivery.test.js`, `guards/take-version.test.js`, `rules/planning.md`, `scripts/branch-in-worktree.sh` (new), `scripts/installed-hooks.txt`, `templates/README.md`, `templates/settings.json`, and this plan. All are in *File Structure*. `guards/set-up-project.test.js` and `scripts/take-version.mjs` needed no change. Worktree used: the sibling of the main checkout named `tropis-session-branch`.
+
+Code came from nothing outside this repository: the hook reuses `command-at-position.py` by import and follows `framework-commit-check.sh`'s shape.
+
+### Judgment calls
+
+- The refusal text wraps `based on` / `origin/main` across a line, as *Decision 2* prints it. My first tests looked for the words on one line; I changed the tests to collapse whitespace, not the message.
+- A command that cannot be tokenized exits 0 silently (the hook cannot judge it).
+- `git branch` with `-c/-C/--copy` takes the last non-option word as the name, as the plan says; `git checkout -bname` (no space) is not detected.
+- The no-origin command line omits `git fetch origin &&`, as *Decision 2* shows.
+- The `/update` worktree is named from the folder and target; Stage 5 runs `npm --prefix .tropis ci` in it, as the plan gives.
+
+### What the plan got wrong
+
+- Task 1 says only the new tests fail in the red run; the capture-at-write cases that iterate the installed hooks also failed until the hook file existed.
+- The hook's wrapped message makes a one-line `based on origin/main` assertion impossible.
+- The anchor for the gated bullet in *Decision 4b* is wrapped across two lines in the file; I matched it across the line break and re-wrapped.
+
+### Outstanding
+
+- The fresh-agent run does not show whether the hook refused anything; the specifying session may want a probe where the agent is told explicitly to use `git checkout -b` in the main checkout, to see the refusal reach it.
+- Not run on Cursor.
+- This repository's own sessions are not covered by the hook until a release carrying it is installed.
+
+## Review record
+
+Reviewed 2026-11-01 by the specifying session, in a sibling worktree of its own
+(`tropis-review-58`, detached at the pull request's head, so the executor's worktree was
+left alone), on Claude Code 2.1.300 (Opus 5.5), macOS 26.2 arm64, git 2.49.0. The
+branch was rebased onto `origin/main` at `116137a` with no conflicts.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: 13 files, all in *File Structure*
+  (`guards/set-up-project.test.js` and `scripts/take-version.mjs` were not needed).
+- `npm --prefix .tropis test`: `Tests: 127 passed, 127 total`.
+- `bash scripts/check-blueprint.sh` on the rebased head with the review fixes: `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`
+- **Re-breaking the hook.** A throwaway commit in a second worktree changed the hook's
+  final `exit 2` to `exit 0`, leaving its message. The self-check failed (`Self-check
+  FAILED: conformance or the clean baseline`) on 11 tests: every *refuses …* case, *refuses
+  from a subdirectory of the main checkout* and *says main, not origin/main, when there is
+  no origin*. The criterion-3 test passed, as it should: it checks the printed command,
+  not the refusal. The commit and worktree were discarded.
+- **The hook by hand**, on a scratch repository with a bare `origin` and a linked
+  worktree. Refused (exit 2, the right command line): `git checkout -b feat/a`,
+  `git switch -c b`, `git branch c`, `echo $(git checkout -b sub)`,
+  `if true; then git switch -c kw; fi`, `git branch -f d main`. Silent (exit 0):
+  `git checkout main`, `git checkout -- file.txt`, `git checkout -b` with no name,
+  `git log --oneline | head`, the worktree command itself, a commit message quoting
+  `git checkout -b x`, any branch command in the linked worktree, and outside a
+  repository. Known misses, matching the handover and FW-040: `git checkout -bname`
+  and `git stash branch f` pass; `cd ../proj-wt && git checkout -b e` is refused.
+- **The probe the handover could not give.** A scratch project set up with this branch's
+  `scripts/set-up-project.sh`, with a bare `origin`, checkout on `main`. `claude -p`
+  (Claude Code 2.1.300, Sonnet 5.5, macOS 26.2 arm64) with `--output-format stream-json`
+  so the tool calls show, prompted: "This is a probe; its output will be discarded. Run
+  exactly this command now: git checkout -b notes/probe …". The stream shows one call,
+  `git checkout -b notes/probe`, answered with `PreToolUse:Bash hook error: [bash
+  .tropis/hooks/branch-in-worktree.sh]: This is the main checkout of scratch. …`, and the
+  printed command creating `../scratch-probe` from `origin/main`. The agent quoted the
+  message, created nothing, and the checkout stayed on `main`. The developer's own
+  instructions that loaded say nothing about worktrees. Scratch project removed.
+
+### Found
+
+Public exposure: the diff was read for names, home paths, hostnames and other projects'
+material; nothing.
+
+Four defects, all mechanical, fixed on the branch by the reviewer in one commit
+(`fix(review): …`) rather than sent back:
+
+- `commands/update.md`, Stage 9, began with `cd <this checkout>`, a name nothing defines.
+  It now says to run the abort from the checkout Stage 1 ran in. (The text came from the
+  plan's *Decision 3*: the plan's error, not the executor's.)
+- `templates/settings.json`'s comment still said every hook replies through
+  `hook-reply.sh`. It now says that of every hook that lets the call run, and that
+  `branch-in-worktree.sh` refuses with exit 2.
+- Two paragraphs re-wrapped (Stage 7 of `update.md`, the gated bullet in `workflow.md`).
+
+No manual check through `/manual-check`: the change has no screen. The probe above is the
+use the developer's check would otherwise give.
+
+### Outstanding disposition
+
+- *The fresh-agent run does not show whether the hook refused anything*: closed by the
+  review's probe above.
+- *Not run on Cursor*: dropped. The refusal uses exit 2 on stderr, the channel
+  `rules/harness-scripts.md` measured refusing the call and reaching the agent in Cursor
+  3.23.12; the hook adds no Cursor-specific path.
+- *This repository's own sessions are not covered until a release carrying it is
+  installed*: dropped; that is how every change here reaches this repository.
+
+### Learnings routed
+
+- `claude -p --output-format stream-json --verbose` shows a probe's tool calls and hook
+  replies, which plain `-p` hides. This is what let the review see the refusal the
+  executor could not. Not routed in this merge; put to the developer as a proposed
+  addition to the fresh-agent check's guidance in `framework/workflow.md`.
+- Nothing else generalises: the plan's misses (a red count that left out the
+  capture-at-write cases, an anchor wrapped across lines, an undefined name in Stage 9)
+  are this plan's own.
+
+### Merged because
+
+Every criterion has a test that fails when its mechanism is broken, the refusal was seen
+reaching a real agent, and the review's fixes are wording only.

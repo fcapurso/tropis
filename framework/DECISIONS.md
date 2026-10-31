@@ -1244,3 +1244,29 @@ agent sessions.
 **Consequences:** A check that is not required and fails stops the command, even though
 auto-merge would still merge; the agent then reports a failure the host would have let
 through. The command makes no local git change, so the session pulls `main` afterwards.
+
+---
+
+## FW-040: A session creates its branch in a worktree of its own
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** Every session that creates a branch does it in a sibling worktree based on
+`origin/main`, and the main checkout stays on `main`. A hook refuses the branch-creating
+commands in the main checkout, and `/update` creates its branch in a worktree.
+
+**Evidence:** Two sessions in this repository's main checkout moved each other's branch,
+found only when a push carried the wrong commit (the entry
+`a-session-cannot-move-another-sessions-branch`). The workflow's worktree command had no
+base, so it branched from whatever was checked out.
+
+**Rejected:** Advising instead of refusing: the hook's reply arrives with the call, which
+still runs, so the main checkout has moved before the agent reads the advice. Refusing
+every `git checkout` and `git switch` in the main checkout: a session switching back to
+`main` is the repair, and refusing it blocks that. Exempting `/update`: the same hazard
+applies to its branch.
+
+**Consequences:** An agent that is asked to switch the main checkout to an existing branch
+is not stopped. A command that `cd`s into a worktree before creating a branch is judged by
+where the hook runs, and may be refused; the command it prints is still correct. The
+developer's own terminal is not affected.

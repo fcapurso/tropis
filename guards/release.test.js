@@ -351,6 +351,16 @@ describe('the pipeline offer', () => {
     expect(update).toContain('Never apply the ruleset yourself');
   });
 
+  it('creates every branch in a worktree of its own, never in the main checkout', () => {
+    expect(update).not.toContain('git switch -c');
+    expect(update).toContain('-b update/<target> <the starting point>');
+    expect(update).toContain('From here on, run every command in that worktree');
+    expect(workflow).toContain(
+      'A session creates its branch in a worktree of its own, never in the main checkout.',
+    );
+    expect(workflow).toContain('-b plan/<id>-<slug> origin/main');
+  });
+
   it('release and refresh-board use a pull request on a gated main', () => {
     for (const command of [text('commands/release.md'), text('commands/refresh-board.md')]) {
       expect(

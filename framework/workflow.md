@@ -102,13 +102,25 @@ when the framework half exists to serve the application half. Full rule:
 ## Branching
 
 - One branch per plan: `plan/<id>-<slug>`. Do not commit feature work directly to `main`.
+- **A session creates its branch in a worktree of its own, never in the main
+  checkout.** Two sessions open on one project share the main checkout, so one
+  session's checkout or pull moves the branch the other is working on: a commit lands
+  on the wrong branch, or starts from the other session's work, and nothing says so
+  until a push carries it. So a session about to create a branch — a plan's executor,
+  the session landing a backlog edit or a plan, the one dispatching — runs
+  `git fetch origin && git worktree add ../<repo>-<slug> -b <branch> origin/main` and
+  works there. The base is `origin/main` whatever the main checkout has checked out.
+  The main checkout stays on `main`, used only to pull and read. A hook refuses
+  `git checkout -b`, `git switch -c` and `git branch <name>` in the main checkout and
+  prints that command. Once the branch has merged, remove the worktree and delete the
+  branch, as *Merge and clean up* does.
 - **Where the main branch is gated, nothing goes directly to `main`.** It is gated when
   its host refuses a merge whose checks have not passed — on GitHub, the ruleset Tropis
   ships — and an agent treats it as gated unless `.claude/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
-  `main` through a pull request that merges itself once green: commit on a branch, push
-  it, open the pull request, run `gh pr merge <N> --auto --squash` with `--subject` and
-  `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  `main` through a pull request that merges itself once green: commit on a branch in a
+  worktree of its own (above), push it, open the pull request, run
+  `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
   requires one up to date with `main`, so a pull request that falls behind sits
@@ -187,7 +199,7 @@ when the framework half exists to serve the application half. Full rule:
   whether it had run at all.
 - **A dispatched agent always works in its own worktree**, never in the directory the
   specifying session is using:
-  `git worktree add ../<repo>-<id> -b plan/<id>-<slug>`
+  `git worktree add ../<repo>-<id> -b plan/<id>-<slug> origin/main`
   This is not only for concurrency. A shared working directory means a `git checkout` by
   either party silently redirects the other's commits onto the wrong branch.
   The `../` is load-bearing: a worktree nested inside the repository that gets its own

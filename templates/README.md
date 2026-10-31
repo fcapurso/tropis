@@ -20,6 +20,11 @@ every command, in order and one per line, in `.claude/worktree-setup.txt`, the l
 included: the file replaces it rather than adding to it. Lines starting with `#` are
 comments. An update never touches the file.
 
+An agent creates every branch in a worktree of its own beside this folder, never in this
+folder: two sessions sharing it would move each other's branch. A hook refuses
+`git checkout -b`, `git switch -c` and `git branch <name>` here and prints the command
+that creates the worktree instead. Your own commands in a terminal are not affected.
+
 **If the repository is or will be public**, say so in `.claude/project.json`, holding
 `{ "public": true }`. Setup asks and writes it; a project that goes public later writes
 the same file. Then the agent is told at every `git commit` and `git push` to read what

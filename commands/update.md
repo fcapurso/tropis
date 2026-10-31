@@ -30,7 +30,8 @@ git rev-parse HEAD
 Stop if `git status --porcelain` prints anything, and say why: an update has to be
 undoable, and a dirty tree is not. Remember the current branch as *the starting
 point*. When `git branch --show-current` prints nothing, the starting point is the
-commit from `git rev-parse HEAD` (the repository is detached).
+commit from `git rev-parse HEAD` (the repository is detached). Remember the base name of
+the repository's top folder (`git rev-parse --show-toplevel`) as *the folder*.
 
 ## Stage 2 — Fetch
 
@@ -84,13 +85,19 @@ Then ask, and go on only for the answer named here. Anything else is an abort
 ## Stage 5 — Branch and take
 
 ```bash
-git switch -c update/<target>
+git worktree add ../<the folder>-update-<target> -b update/<target> <the starting point>
+cd ../<the folder>-update-<target>
+npm --prefix .tropis ci
 node <clone>/scripts/take-version.mjs . [--accept-breaking]
 ```
 
-If `git switch -c` fails because `update/<target>` already exists, an earlier update was
-left there. Stop, say so, and leave that branch alone; discard the clone. The user decides
-whether to finish it, merge it or delete it.
+The update gets a worktree of its own, beside this checkout, so a session working in
+this checkout is not moved onto `update/<target>`. **From here on, run every command
+in that worktree**; this checkout stays as it was.
+
+If the worktree command fails because `update/<target>` already exists, an earlier
+update was left there. Stop, say so, and leave that branch alone; discard the clone.
+The user decides whether to finish it, merge it or delete it.
 
 Pass `--accept-breaking` only when `breaking` is true. Show the take's whole report.
 
@@ -153,11 +160,11 @@ npm --prefix .tropis test
 When it fails, do not commit. Show the failures. Offer to abort (Stage 9) or to leave
 the branch as it is for the user to finish, and say what is left: the failing checks,
 any required step not done, any `.new` still unmerged. If they leave the branch, still
-discard the clone, and do not switch away from `update/<target>`.
+discard the clone, and leave the worktree in place.
 
 ## Stage 8 — Commit
 
-On `update/<target>`, commit everything the update changed.
+In the worktree, on `update/<target>`, commit everything the update changed.
 
 Subject:
 
@@ -192,21 +199,22 @@ Then discard the clone. Print:
 - when the take's Replaced list includes `.github/workflows/tropis-pipeline.yml` and the
   project has `.github/workflows/project-pipeline.yml`: say that Tropis's pipeline changed
   in this release, and offer to show the difference between the two
-- how to merge, in these words: `Review the branch, then merge update/<target> the way this project merges a branch.`
+- how to merge, in these words: `Review the branch, then merge
+  update/<target> the way this project merges a branch, and remove its worktree,
+  ../<the folder>-update-<target>, once it has merged.`
 
 ## Stage 9 — Abort
 
 From any stage after the branch exists:
 
+Run these from the checkout Stage 1 ran in, not from the worktree:
+
 ```bash
-git restore --staged --worktree .
-git clean -fd
-git switch <the starting point>
+git worktree remove --force ../<the folder>-update-<target>
 git branch -D update/<target>
 node .tropis/scripts/update.mjs discard <clone>
 ```
 
-Use the commit hash as the starting point when the repository was detached. Before the
-branch exists, only discard the clone.
+Before the worktree exists, only discard the clone.
 
 Either way, say the project is as it was.
