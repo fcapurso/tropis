@@ -780,8 +780,8 @@ Node v22.15.0 on macOS (Darwin 25.2.0), arm64.
 
 ### Checks re-run
 
-- **Scope.** `git diff --stat origin/main...HEAD` on `ef79a26`, and again after the rebase
-  onto `a5915cc`: 19 files, every one a row of *File Structure*.
+- **Scope.** `git diff --stat origin/main...HEAD` on `ef79a26`, and again after each rebase,
+  onto `a5915cc` and `beae091`: 19 files, every one a row of *File Structure*.
 - **The diff, read in full.** The scripts and the rule text match the plan word for word;
   the page edits match it edit by edit. FW-038 instead of FW-037, and the two-entry
   `silent-drop` fixture, are the executor's declared judgment calls, and both are right.
@@ -797,6 +797,14 @@ Node v22.15.0 on macOS (Darwin 25.2.0), arm64.
 - **After the rebase, on `a166d55`:** `npm --prefix .tropis test` printed
   `Tests:       33 passed, 33 total`; the self-check printed the same three lines and
   `Self-check passed`, in under three minutes.
+- **After a second rebase, onto `beae091`**, which brought four merged plans, among them
+  new catalog checks in `guards/catalog-entries.test.js` (no status list; `shelved` only
+  on an idea or shaped entry, which the two dropped entries satisfy) and edits to
+  `rules/catalogs.md`, `next.mjs` and `guards/next-report.test.js`: no conflict. On
+  `797948d`, 19 files in the diff, `Tests:       33 passed, 33 total`, and the self-check
+  again `caught      silent-shelf`, `caught      silent-drop`, `ok          clean
+  baseline`, `Self-check passed`. The merged *Status transitions* section was read and
+  reads as one.
 - **The board's data**, built from the branch's four board files over the branch's
   catalog: harness sidecar `parked`, 0 of 1 counted, 2 in all; the updates arc `under
   way`, 10 of 17, 20 in all; `harness-does-not-need-node` open with `sh: true`; the two
@@ -848,4 +856,4 @@ hostnames and other projects' internals; nothing found.
 
 Every criterion is backed by a test that was seen to fail without the change, a
 fresh-agent check that passed, or the developer's recorded look at the page, and the
-self-check passes on the rebased head.
+self-check passes on the head as rebased onto `beae091`.
