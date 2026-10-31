@@ -4001,7 +4001,7 @@
 # set-up projects receive.
 - id: readme-says-what-it-needs
   title: The README says in one place what the project needs to work
-  status: shaped
+  status: building
   value: Someone deciding whether to adopt a project sees what it needs before they start,
     in one section of its README. Today Tropis's README splits that across two sections and
     leaves out the gh command, and the default outline gives set-up projects no place for it.
