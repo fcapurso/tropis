@@ -1467,11 +1467,15 @@ exit 99
     expect(result.stderr).toContain('"ungated"');
   });
 
-  it('says when GitHub did not report auto-merge', () => {
+  it('passes, saying so, when GitHub does not say whether auto-merge is allowed', () => {
     const project = hostProject();
     const result = host(project, { repo: { default_branch: 'main' } });
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('GitHub did not say whether auto-merge is allowed');
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+    const line = 'host: main requires a pull request and a passing check. GitHub does not tell the pipeline whether auto-merge is allowed, so that is not checked.';
+    expect(result.stdout).toBe(`${line}\n`);
+    expect(result.stdout).not.toContain('auto-merge is allowed.');
+    expect(summaryOf(project)).toContain(line);
   });
 
   it('takes no argument but --summary <file>', () => {

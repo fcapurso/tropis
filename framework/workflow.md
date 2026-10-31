@@ -134,7 +134,7 @@ when the framework half exists to serve the application half. Full rule:
   and the same change as its own pull request started none in 201.
 - **Say whether anything enforces this.** Tropis's pipeline asks the host on every run,
   and its `host` job fails until the main branch requires a pull request and a passing
-  check and auto-merge is allowed, or `.claude/project.json` records `"ungated"` with the
+  check and auto-merge is not turned off, or `.claude/project.json` records `"ungated"` with the
   reason, which every run then repeats in its summary. Where the project records a
   reason, also write in its own `AGENTS.md` that nothing refuses a push to `main` or a
   red merge, with the date it was checked: a reader who assumes a gate exists will trust
