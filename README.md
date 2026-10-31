@@ -39,7 +39,15 @@ things are the way they are.
   comes back at review and before a release.
 - **Every project gets the same pipeline**: checks in a fixed order, each stage filled
   by your own script, and nothing deploys unless every stage passed. An open pull request
-  can deploy to an environment of its own.
+  can deploy to an environment of its own, and a branch named like a permanent
+  environment is refused rather than deployed over it.
+- **Your main branch takes only checked changes.** Tropis ships a GitHub ruleset that
+  makes the host refuse a pull request whose checks failed or have not finished, and the
+  pipeline fails until the project applies it or records why it will not.
+- **Your project's own checks hold its records true.** They fail on a backlog that breaks
+  its own rules, a page that points nowhere or is past its verified date, a merged plan
+  with no review record or with its entry left unshipped, and a rule whose claim about
+  the code has stopped being true.
 - **Your README stays current** without every change editing it.
 - **You update to a new release with one command**, which first tells you whether it is
   safe to take and why.
@@ -57,12 +65,22 @@ a document describing a subsystem deleted months ago, a rule obeyed in a project
 assumptions it does not fit.
 
 It does not care what language your project is written in: no check reads a line of your
-code. It does need `git`, `bash`, `python3` and `node` 18.14 or later on your machine,
-though they enter none of your project's dependencies, and an agent tool that runs hooks
-before a command and reads a project instruction file. Claude Code and Cursor are
-supported today. The reasoning, and what you get without `node`, are in
-[`framework/DECISIONS.md`](framework/DECISIONS.md) under *Independent of the project's
-technology, opinionated about its own*.
+code.
+
+## What it needs
+
+- **Required on your machine:** `git`, `bash`, `python3` and `node` 18.14 or later. They
+  run Tropis's hooks and checks, and enter none of your project's dependencies. Why these
+  four, and what you get without `node`, is in
+  [`framework/DECISIONS.md`](framework/DECISIONS.md) under *Independent of the project's
+  technology, opinionated about its own*.
+- **Required: an agent tool** that runs hooks before a command and reads a project
+  instruction file. Claude Code and Cursor are supported today.
+- **Optional: GitHub.** The pipeline runs there as CI, and the host can refuse a merge
+  that has not passed it. On another host, setup prints the pipeline's commands for you to
+  put in that host's CI, and the project records why its main branch is not gated.
+- **Optional: the `gh` command.** The merge steps, `/next`'s look at open pull requests
+  and `/flush-upstream` use it; everything else works without it.
 
 ## Getting started
 
@@ -72,8 +90,8 @@ technology, opinionated about its own*.
 2. In your project, run **`/bootstrap`**. It puts Tropis in the project's `.claude/` and
    `.tropis/` folders, then holds a short conversation (`/scope`) that writes the project
    brief and the first backlog, drafts the project's instruction file and first rules for
-   you to confirm, fills in the operator guide at `.tropis/README.md`, and checks that
-   everything passes.
+   you to confirm, fills in the operator guide at `.tropis/README.md`, asks whether the
+   host should refuse unchecked merges, and checks that everything passes.
 3. Run `/next` and follow what it suggests to your first plan.
 
 If your tool cannot run `/bootstrap`, or you want to see what it does, follow
@@ -131,9 +149,9 @@ fixes and your scripts fill, described in the operator guide your project gets a
 - **Working today:** setup in a project's own repository, the plan-and-review cycle,
   rule delivery in Claude Code and Cursor, the backlog report and board, versioned
   releases with an update command and an optional rehearsal before each one, a README
-  kept current, and one pipeline for every project with an optional environment per pull
-  request. Tropis is developed with
-  its own last release installed.
+  kept current, one pipeline for every project with an optional environment per pull
+  request, and a main branch gated by its host. Tropis is developed with its own last
+  release installed.
 - **Before 1.0.** A release that needs you to do something by hand raises the middle
   number, and its notes say what to do first.
 - **Built from two projects, not a theory.** The layer grew in one real project and was
@@ -141,8 +159,6 @@ fixes and your scripts fill, described in the operator guide your project gets a
   language, a platform and a developer, which limits what that proves.
   [PORTABILITY-NOTES.md](PORTABILITY-NOTES.md) records what was kept, what was left
   behind, and what the evidence does not cover.
-- **The pipeline runs as CI on GitHub only.** On another host, setup prints the commands
-  to put in that host's CI yourself.
 - **Not yet:** running without `node`, and parking a lesson instead of turning it into a
   rule, are in the backlog and set aside for now.
 
