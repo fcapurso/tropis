@@ -6,7 +6,9 @@ import { dirname, resolve, join, basename } from 'node:path';
 import YAML from 'yaml';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '..');
+// Installed at .tropis/guards/, two levels below the project root. Pointed at fixtures/
+// by scripts/check-conformance.sh, so this guard can be seen to fail.
+const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../..');
 const plansDir = resolve(root, 'docs/superpowers/plans');
 const catalogPath = resolve(root, 'feature-catalog.yaml');
 

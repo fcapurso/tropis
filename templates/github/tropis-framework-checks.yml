@@ -16,9 +16,12 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
+      # Full history, so origin/main resolves on a pull request: the plan checks read
+      # it to tell the executing branch from a plan already merged.
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}

@@ -38,6 +38,12 @@ with anything but `true`, none of this happens. An update never touches the file
 
     npm --prefix .tropis test
 
+They check the backlog's fields and invariants; the rule areas and the generated rules;
+the installed files; the entry file; the references in the instruction pages; dated
+documents; plans, review records and delivered entries; rule claims and temporary
+clauses; and the upstream queue after a flush. A release that adds a check can turn this
+project's checks red on something that was always wrong; the check's message names it.
+
 ## Where the framework lives
 
 This project was set up from the framework at `{{BLUEPRINT_URL}}`. General adoption,

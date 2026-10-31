@@ -57,8 +57,9 @@
 
 # Replace this entry with a real one, or delete it. It shows the shape of each field,
 # including acceptance criteria written as things a person could check rather than as
-# descriptions of the implementation. Its module path does not exist in your project,
-# which the reality guard will correctly reject.
+# descriptions of the implementation. Its module, AGENTS.md, stands in for the paths of
+# what you build: at `shipped`, the catalog check fails on a module path that does not
+# exist.
 - id: example-stable-id
   title: Example entry
   status: shipped
@@ -70,6 +71,6 @@
     - A person can perform the action and observe the stated result.
     - The failure case surfaces a message naming what went wrong.
   modules:
-    - src/path/to/implementation.js
+    - AGENTS.md
   refs:
     - docs/plans/example-plan.md

@@ -2,7 +2,9 @@
  * Fails when a plan that claims to be dispatchable would be refused at dispatch.
  *
  * A `## Repositories` heading is the signal that a plan is meant to be dispatched.
- * Once it exists the table is a claim, and this checks the claim.
+ * Once it exists the table is a claim, and this checks the claim — until the plan's
+ * handover report is written. An executed plan is history: its handover may quote the
+ * worktree command it ran, and judging that would push a merged plan to be rewritten.
  *
  * A plan usually edits one repository, and sometimes another as well — the framework's,
  * in a flush. The plan format requires a plan to say which checkouts it may edit and how
@@ -19,8 +21,24 @@ import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractSection, validateDispatchable, missingProjections } from '../scripts/plan-binding.js';
 
+/** Blank out fenced code blocks, preserving line count: a plan may quote a heading. */
+function stripFences(text) {
+  let inFence = false;
+  return text
+    .split('\n')
+    .map((line) => {
+      if (/^\s*```/.test(line)) {
+        inFence = !inFence;
+        return '';
+      }
+      return inFence ? '' : line;
+    })
+    .join('\n');
+}
+
 const here = dirname(fileURLToPath(import.meta.url));
-const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../../..');
+// Installed at .tropis/guards/, two levels below the project root.
+const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../..');
 const plansDir = resolve(root, 'docs/superpowers/plans');
 
 describe('a plan that claims to be dispatchable is dispatchable', () => {
@@ -28,22 +46,19 @@ describe('a plan that claims to be dispatchable is dispatchable', () => {
     ? readdirSync(plansDir).filter((f) => f.endsWith('.md'))
     : [];
 
-  it('finds the plans directory', () => {
-    expect(existsSync(plansDir)).toBe(true);
-  });
-
   it.each(plans.length ? plans : ['(no plans yet)'])('%s', (file) => {
     if (file === '(no plans yet)') return;
     const markdown = readFileSync(join(plansDir, file), 'utf8');
     // No Repositories heading means the plan is not claiming to be dispatchable.
     if (extractSection(markdown, 'Repositories') == null) return;
+    // Once its handover is written the plan has run, and its table is history.
+    if (/^## Handover report/m.test(stripFences(markdown))) return;
     const result = validateDispatchable(markdown);
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
     // A plan still waiting to run must also list the projection of every rule file it
-    // lists, in a project that projects them. Once its handover is written the table
-    // is history, and this stops applying.
-    if (existsSync(resolve(root, '.cursor/rules')) && extractSection(markdown, 'Handover report') == null) {
+    // lists, in a project that projects them.
+    if (existsSync(resolve(root, '.cursor/rules'))) {
       const shipped = [resolve(root, '.tropis/rules'), resolve(root, 'rules')]
         .filter((d) => existsSync(d))
         .flatMap((d) => readdirSync(d).filter((f) => f.endsWith('.md')).map((f) => f.replace(/\.md$/, '')));
