@@ -75,7 +75,7 @@
 # first proposal and was dropped as costing a network call per command.
 - id: a-failing-push-is-visible
   title: A failed push is noticed before the next six land on top of it
-  status: shaped
+  status: building
   value: Whoever merged finds out when the main branch went red, and so does whoever
     starts work next. Every push runs the checks and nothing reports the answer anywhere
     the next person will be standing - so a break lasted ten days and six further
