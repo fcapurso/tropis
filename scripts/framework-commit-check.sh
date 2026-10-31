@@ -156,7 +156,8 @@ if [ -n "$elsewhere" ]; then
 This project's main branch is gated: .claude/project.json records no "ungated", so
 nothing reaches main except through a pull request (workflow.md, Branching). Commit on
 a branch, push it, open a pull request, and run gh pr merge <N> --auto --squash with
---subject and --body; it merges itself once its checks pass.
+--subject and --body; then run node .tropis/scripts/main-status.mjs --pull-request <N>,
+which waits until it has merged and says whether main is green.
 EOF
   else
     cat <<'EOF'
