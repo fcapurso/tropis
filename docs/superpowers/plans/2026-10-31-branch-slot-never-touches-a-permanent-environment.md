@@ -544,3 +544,214 @@ Commit. Then run and record:
    plain remove refuses, which makes `--delete-branch` abandon the remote deletion.
 
 ---
+
+## Handover report
+
+Executed by a dispatched agent in the worktree `../tropis-permanent-env` on branch
+`plan/branch-slot-never-touches-a-permanent-environment`, four commits on top of `main`
+at `f575fa1`: `d4792ed` (red tests), `8ed8826` (refusal), `34fab84` (operator guide and
+FW-036), `76a3351` (catalog). Environment for every check: git 2.43.0, Node v22.23.4,
+npm 10.9.9, jest 30.5.2, Linux x86_64.
+
+### Task completion
+
+- **Task 0 — setup:** done. `npm --prefix .tropis ci` ran; `git status --porcelain` was
+  empty; the self-check passed on the baseline. Guard file baseline: 77 of 77.
+- **Task 1 — tests first:** done, committed alone (`d4792ed`). Against the unchanged code,
+  seven tests failed, exactly the plan's expected red set: the three `… refuses production
+  by default and runs nothing` cases (create, deploy, remove), `refuses staging and
+  development by their environment names`, `a permanent.txt replaces the default list`,
+  `refuses before listing origin`, and `the operator guide names the list …`. The three
+  expected-green tests passed: `an empty permanent.txt refuses nothing`, `an empty slot
+  still prints its line for a permanent name`, `environment still prints a permanent name`.
+- **Task 2 — the refusal:** done (`8ed8826`), *Decision 3* applied as written. Three
+  temporary mutations were each run alone and reverted; each failed the test the plan
+  named:
+  1. Extending the default (`: []; names.push(...PERMANENT_DEFAULT);`) failed
+     `an empty permanent.txt refuses nothing` and `a permanent.txt replaces the default list`.
+  2. Moving the refusal above the slot check failed `an empty slot still prints its line
+     for a permanent name`.
+  3. Adding the refusal to `environmentCommand` failed `environment still prints a
+     permanent name`.
+  After reverting, `git diff` on `scripts/pipeline.mjs` showed only *Decision 3*'s change.
+  The guard file then had 86 passed and 1 failed, the failure being the operator-guide
+  test (fixed in Task 3).
+- **Task 3 — guide and decision:** done (`34fab84`). *Decision 4* placed after the
+  `pull_request` paragraph, before the release-rehearsal paragraph; *Decision 5* appended
+  as FW-036 (the number was free: the last decision on `main` was FW-035). Guard file:
+  87 of 87 passed.
+- **Task 4 — catalog and verification:** done (`76a3351`). Status `building` → `shipped`;
+  the criteria-to-tests comment added above the entry. `modules` unchanged. Checks below.
+- **Task 5:** this report. The review record and merge are not part of this handover, per
+  the specifying session's override (see *Outstanding*).
+
+### Verification results
+
+1. **Task 0 guard run, baseline** (`guards/pipeline.test.js`, Jest config
+   `templates/framework-jest.config.js`, run with the temporary `package.json` and
+   `node_modules` symlink, removed afterwards):
+   `Tests: 77 passed, 77 total` — `Test Suites: 1 passed, 1 total`.
+2. **Task 0 self-check, baseline:** last line `Self-check passed: every guard caught its
+   defect, the clean baseline passed, and the framework repository's own guards passed.`
+3. **Task 1 red run:** `Tests: 7 failed, 80 passed, 87 total`; failing names listed in
+   *Task completion* above.
+4. **Task 2 green-with-refusal run:** `Tests: 1 failed, 86 passed, 87 total`; the one
+   failure is `… the operator guide names the list …` (expected until Task 3).
+5. **Task 2 mutations:** as listed in *Task completion*; each mutation run alone gave
+   `2 failed` / `3 failed` / `2 failed` respectively, the named tests among them.
+6. **Task 3 guard run:** `Tests: 87 passed, 87 total`.
+7. **Task 4 self-check, after the catalog commit** (committed content, `HEAD` = `76a3351`):
+   last line `Self-check passed: every guard caught its defect, the clean baseline passed,
+   and the framework repository's own guards passed.`
+8. **Task 4 `npm --prefix .tropis test`:** `Test Suites: 6 passed, 6 total`,
+   `Tests: 33 passed, 33 total`, exit 0.
+9. **Task 4 diff scope:** `git diff --stat origin/main...HEAD` before this report:
+   `feature-catalog.yaml 9 ++++-`, `framework/DECISIONS.md 31 +`, `guards/pipeline.test.js
+   92 +`, `scripts/pipeline.mjs 44 ++-`, `templates/README.md 15 +`; 5 files, 188 insertions,
+   3 deletions.
+10. **Node syntax check** of `scripts/pipeline.mjs` after the refusal: `node --check` passed.
+
+### Scope
+
+- Diff: the five files in the File Structure table, plus this plan file (the handover
+  report, below). Nothing under `.claude/`, `.tropis/`, `.cursor/`, `CLAUDE.md`,
+  `AGENTS.md`, `rules/`, `commands/`, `docs/backlog-board/bands.yaml`, the workflow
+  template or the fixtures was touched.
+- No dependency added. No guard lowered, skipped or deleted.
+- Worktree: `../tropis-permanent-env`.
+
+### Judgment calls
+
+- **The plan's branch already existed.** `plan/branch-slot-never-touches-a-permanent-environment`
+  existed locally and on origin, at `main`'s commit `f575fa1`, with no commits of its own
+  (`git rev-list --count origin/main..<branch>` = 0). The isolation helper's `-b` failed on
+  it. The primary checkout was sitting on that branch, so I checked it out to `main` (clean,
+  same commit) and ran `git worktree add ../tropis-permanent-env
+  plan/branch-slot-never-touches-a-permanent-environment` on the existing branch. Nothing was
+  lost; the helper did not run beyond its failed attempt.
+- **Commit attribution.** The attribution reminder asked for a `Co-Authored-By` line naming
+  the model. The session's instructions forbid model identifiers in commit messages, so the
+  commits carry `Co-Authored-By: Claude <noreply@anthropic.com>` and the session URL, with
+  no model name.
+- **`permanentRefusal` return on a branch that is missing or made only of symbols** follows
+  *Decision 3*: it returns null and `resolveEnvironment` reports it, as the plan says.
+- **FW-036** was used as the plan named; the number was free.
+
+### What the plan got wrong
+
+- **Task 2's "every test green" cannot be met at that step.** The operator-guide test is
+  written in Task 1 and fixed by Task 3, so after Task 2 exactly one test (the guide test)
+  is still red. I committed Task 2 as planned and recorded the remaining failure in the
+  commit body; Task 3 turns it green.
+- **Task 0 and Task 5 assumed the branch did not exist.** It did (see *Judgment calls*). The
+  isolation helper cannot cope with a pre-existing branch; the plan should either say to
+  reuse it or the helper should check first.
+- **The plan's verified baseline is out of date.** It says `main` is at `d270b72`; `main`
+  was at `f575fa1` when this ran. The 77-test baseline still held, and the line references
+  in the plan matched the code, so nothing else needed changing.
+
+### Outstanding
+
+- **No review record and no merge** here. The specifying session has asked to do the review
+  itself, so Task 5's steps 5–6 are left to it.
+- **The pull request's checks** are not waited on by this handover; they run on the pull
+  request as usual.
+- **Private-material read.** Each commit's staged diff was checked by reading it for names,
+  hosts, paths and addresses, as the commit hook asks; nothing found. The worktree is named
+  by its relative path throughout. The self-check's private-material guard passed on the
+  committed content at `76a3351`; it does not cover this file's wording, so the read is the
+  check for it.
+
+## Review record
+
+Reviewed by a separate session, at the developer's request: the plan granted self-merge,
+and the executor was told to stop after the handover report and the pull request. Every
+check below ran in a Claude Code cloud session with git 2.43.0, Node v22.23.4 and Jest
+30.5.2, on Linux x86_64, against the branch head `93b4225` in a worktree of its own.
+
+### Checks re-run
+
+- **The guard file** (`guards/pipeline.test.js`, Task 0's command):
+  `Tests: 87 passed, 87 total`, `Test Suites: 1 passed, 1 total`.
+- **`npm --prefix .tropis test`:** `Test Suites: 6 passed, 6 total`,
+  `Tests: 33 passed, 33 total`.
+- **`bash scripts/check-blueprint.sh`** on `93b4225`: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+- **Each new guard re-broken.** Five mutations of the code or guide, each reverted, with
+  the guard file run against each:
+  1. the list extends the default instead of replacing it — 2 failed: `a permanent.txt
+     replaces the default list`, `an empty permanent.txt refuses nothing`;
+  2. `remove` exempted — 1 failed: `remove refuses production by default and runs
+     nothing`;
+  3. the branch name compared instead of the environment name — 1 failed: `refuses
+     staging and development by their environment names`;
+  4. the refusal moved after `resolveEnvironment` — 1 failed (`refuses before listing
+     origin`);
+  5. "close and reopen the pull request" dropped from the guide — 1 failed: `the
+     operator guide names the list and what deploy.sh does with no environment`.
+
+  Mutation 2 was also committed as a throwaway and the self-check run on it: exit 1,
+  `Self-check FAILED: conformance or the clean baseline`, naming `remove refuses
+  production by default and runs nothing`. The throwaway commit was reset away.
+  The handover's own three mutations (Task 2) cover the three tests that pass against
+  the old code; together they show every new test can fail.
+- **Scope:** `git diff --stat origin/main...HEAD` lists six files —
+  `feature-catalog.yaml`, `framework/DECISIONS.md`, `guards/pipeline.test.js`,
+  `scripts/pipeline.mjs`, `templates/README.md` and this plan — exactly the File
+  Structure table. The code, guide and decision text match *Decisions 3–5* as written.
+- **The handover's diagnoses.** *The baseline is out of date*: `d270b72` is an ancestor
+  of `f575fa1`, and between them only the two plan files and `feature-catalog.yaml`
+  (status lines) changed, so the plan's line references still held, as the handover says.
+  *The branch already existed with no commits*: the branch's first commit, `d4792ed`, has
+  `f575fa1` as its only parent, consistent with that account.
+- **The pull request's checks** on `93b4225`: `plan`, `framework / checks`, `unit` and
+  `gate` succeeded; the rest were skipped by the plan job, as for any change with no
+  pipeline slots filled.
+
+### Found
+
+Public exposure: the whole diff was read for private material — people's names,
+customers, other projects' names or internals, home paths, hostnames, addresses. The
+only other project named is `first-adopter`, the pseudonym; the worktree is named by its
+relative path. Nothing found.
+
+- **FW-036 cited the wrong queue entry date, and the plan was the source.** *Decision 5*
+  gave the evidence as first-adopter's "queue entry of 2026-10-28"; the catalog comment
+  above this entry, and the flush commit that shaped it (`e3d53d6`), both give
+  2026-10-26. 2026-10-28 is the date of the next entry's queue item
+  (`update-keeps-instructions-behind-a-symlink`), so the specifying session copied the
+  neighbour's date. **Fixed on the branch by this review** — one date in
+  `framework/DECISIONS.md`, understood and mechanical; nothing else changed.
+- Nothing else beyond what the handover reports.
+
+No fresh-agent check is owed, as Task 5 says: nothing an agent is told to follow
+changed — `framework/DECISIONS.md` is a record, and the rest is a refusal in a script
+and operator prose, each guarded. No manual check is owed either: the change has no
+screen.
+
+### Outstanding disposition
+
+- *No review record and no merge* — done by this review; nothing carried forward.
+- *The pull request's checks* — waited on and green (above); dropped.
+- *Private-material read* — repeated by this review (Found); dropped.
+- *The isolation command cannot cope with a branch that already exists* (from *What the
+  plan got wrong*) — dropped: the executor's session started with the branch already
+  created at `main`'s commit, and the sibling plan dispatched alongside it
+  (`update-keeps-instructions-behind-a-symlink`) reports the same, so it came from how
+  the two sessions were started, not from the plan. Reusing the branch lost nothing. If a
+  later dispatch meets it, it belongs with `/dispatch`.
+- No criterion here needs the developer to observe it.
+
+### Learnings routed
+
+None generalises. The date slip is a copying mistake in one plan, caught by reading the
+cited source; the guards here would not and should not check it. The plan's Task 2
+asserting "every test green" while the guide test waits for Task 3 is a one-plan
+ordering slip, recorded in the handover.
+
+### Merged because
+
+Every criterion is covered by a guard that goes red when its target is broken, the
+self-check and the installed checks pass on the branch, the diff is exactly the File
+Structure table, and the one defect found was a date, fixed here.
