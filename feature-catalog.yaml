@@ -4268,3 +4268,42 @@
   modules: []
   refs:
     - docs/superpowers/plans/2026-10-31-a-self-merging-pull-request-is-seen-through.md
+# 2026-10-31, found writing the plan for a-self-merging-pull-request-is-seen-through: two
+# sessions worked in this repository's main checkout at once. The board session had its
+# branch checked out when the planning session ran git checkout -b, so the plan branch
+# started from the board commit. The board session then switched the checkout to main and
+# pulled, and the plan commit landed on local main. Nobody lost work, but the first push
+# carried the wrong commit, and the repair needed a force-push and a reset of main. The
+# workflow isolates only a plan's executor (Branching, "A dispatched agent always works in
+# its own worktree"). It assumes one session in the main checkout, and on a gated main
+# every change, a backlog edit included, now goes through a branch, so every session
+# creates branches there. A rule alone arrives as one more paragraph of Branching, so
+# the moment it must reach is the branch-creating command, where the commit hook's
+# sibling can speak. The worktree's base is named as origin/main, never HEAD, so a moved
+# main checkout cannot choose it. Ordered after the self-merging entry because both edit
+# the gated bullet of Branching.
+- id: a-session-cannot-move-another-sessions-branch
+  title: A session that creates a branch does it in its own worktree, so two sessions in one checkout cannot move each other's work
+  status: shaped
+  value: Two agent sessions open on one project at the same time each land their own
+    change, on the base they meant, with nobody repairing branches afterwards. Today
+    both work in the main checkout, so one session's checkout or pull moves the other's
+    branch, and a commit lands on the wrong branch or starts from the other session's
+    work, with nothing saying so until a push carries the wrong commit.
+  acceptanceCriteria:
+    - The workflow tells a session that is about to create a branch to create it in a
+      sibling worktree of its own, based on origin/main, and leaves the main checkout on
+      the main branch, used only to pull and read.
+    - When an agent runs a branch-creating command (git checkout -b, git switch -c, git
+      branch with a new name) in the main checkout, it is told at that command to use a
+      worktree instead, with the command to run, the base origin/main included.
+    - The command it is given creates a branch whose base is origin/main even when the
+      main checkout has another branch checked out, as a test shows.
+    - Once the change has merged, the workflow has the session remove its worktree and
+      branch, as the plan merge sequence already does, so worktrees do not pile up.
+  type: bug
+  layer: product
+  after:
+    - a-self-merging-pull-request-is-seen-through
+  modules: []
+  refs: []
