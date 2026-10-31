@@ -469,3 +469,37 @@ From the worktree, after committing everything:
      --body "<what is now true: a symlinked CLAUDE.md or AGENTS.md is made a regular file before the pointer is written, and reported; AGENTS.md ends holding the instructions either way; the entry-file check fails on a symlinked or import-only AGENTS.md and says how to restore it. Then: Implements: update-keeps-instructions-behind-a-symlink / Plan: docs/superpowers/plans/2026-10-31-update-keeps-instructions-behind-a-symlink.md, and the attribution lines>"
    git checkout main && git pull origin main
    ```
+
+## Handover report
+
+### Task completion
+
+Tasks 0–4 done. Task 5 stopped at the handover: the specifying session overrode the plan's self-merge, so there is no Review record and no merge.
+
+### Verification results
+
+Platform: git 2.43.0, Node v22.23.4, GNU cp (coreutils) 9.4, Linux x86_64.
+
+- Task 0, baseline `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, …`.
+- Task 1, red run (staged command, `-t symlink`, tests committed, code unchanged): `Tests: 4 failed, 40 skipped, 44 total`. All four fail at `expect(lstatSync(CLAUDE.md or AGENTS.md).isSymbolicLink()).toBe(false)` (Received: true), earlier than the plan predicted: the link was still a link, which is the plan's stated cause. After the fix, whole file: `Tests: 44 passed, 44 total`.
+- Task 2, overlays committed, guard unchanged: `NOT CAUGHT  entry-agents-is-symlink entry-file passed against a broken project`, `NOT CAUGHT  entry-agents-is-import …`, `Self-check FAILED: conformance or the clean baseline (above).` `git ls-files -s` shows `120000` for the symlink overlay. After the guard: `caught      entry-agents-is-symlink entry-file`, `caught      entry-agents-is-import entry-file`, `caught      entry-file-not-pointer entry-file`, `ok          clean baseline`, `Self-check passed: …`.
+- Task 2, each message once (`FRAMEWORK_ROOT` scratch roots): link to a text file → `AGENTS.md is a symlink. It must be a regular file …`; `AGENTS.md` = `@AGENTS.md` → `AGENTS.md is a single import line, …`; dangling link → `AGENTS.md is a symlink. …`. Each run: `Tests: 1 failed, 1 passed, 2 total`.
+- Hand composition: `cp -R fixtures/base/. T/ && cp -R fixtures/defects/entry-agents-is-symlink/. T/` gives `lrwxrwxrwx 1 root root 21 Oct 31 10:25 AGENTS.md -> entry-instructions.md` (GNU cp 9.4; BSD cp not measured).
+- Task 4: `npm --prefix .tropis test` → `Tests: 33 passed, 33 total`; self-check passed with the three `caught      entry-…` lines and `ok          clean baseline`.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this report): 8 files, 170 insertions, 14 deletions: `feature-catalog.yaml`, the three fixture files, `guards/entry-file.test.js`, `guards/take-version.test.js`, `scripts/check-conformance.sh`, `scripts/take-version.mjs`. Every one is in *File Structure*. Worktree: `../tropis-entry-symlink`.
+
+### Judgment calls
+
+- `isolate-for-plan.sh` failed because the session had already created and checked out `plan/update-keeps-instructions-behind-a-symlink` in the starting directory. I detached HEAD there and added the worktree on the existing branch, which sat at `origin/main` (f575fa1, later than the plan's d270b72; no conflict).
+- The catalog entry read `building`; set to `shipped` as the plan says.
+
+### What the plan got wrong
+
+Nothing that blocked work. The red failures land at the symlink assertion, not on file content as predicted for tests 1–2.
+
+### Outstanding
+
+Review and merge by the specifying session. The plan's Review record (including the re-break of the `isSymbolicLink()` branch) is not written, by instruction.
