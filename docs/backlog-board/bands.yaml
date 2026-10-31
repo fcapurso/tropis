@@ -744,3 +744,15 @@ release-tags-the-notes-commit:
   seen:
     status: shaped
     blockers: []
+host-check-passes-when-github-does-not-say:
+  band: A
+  value: 5
+  valueWhy: Every gated project reads red after every merge, which trains people to
+    ignore the red-main warning.
+  effort: 1
+  effortWhy: One line in the host check, one test, three sentences of prose.
+  bundle: main-stays-green
+  verdict: "The gate's first real run found it. Do it now and release a patch."
+  seen:
+    status: building
+    blockers: []
