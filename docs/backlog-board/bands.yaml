@@ -113,8 +113,12 @@ contributors-know-how-to-contribute:
   effort: 2
   effortWhy: One page, two pointers, a closeout row and a check.
   verdict: "Shaped and plannable; one page that stops README and bootstrap each
-    half-describing the upstream path. Not urgent while contributors are few."
-  evidence: "2026-10-17 — no CONTRIBUTING.md at the repository root."
+    half-describing the upstream path. Its plan dates from 2026-10-15, before
+    flushes went out under a flush name, so re-read it against today's flush before
+    dispatching."
+  evidence: "2026-10-31 — still no CONTRIBUTING.md at the repository root;
+    docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
+    delivers it and was never dispatched."
   seen:
     status: shaped
     blockers: []
@@ -304,29 +308,40 @@ next-shows-which-work-is-planned:
   bundle: next-report
   verdict: "Small improvement to the backlog report; useful the moment several
     shaped entries have plans waiting, as now."
+  evidence: "2026-10-31 — scripts/next.mjs:52 shows a plan only when the entry's refs
+    name one; prerequisite-check-refuses-old-node has a plan written today and is
+    listed like any unplanned entry."
   seen:
     status: idea
     blockers: []
 pipeline-bills-no-job-that-decides-nothing:
-  band: B
+  band: C
   value: 2
   valueWhy: Saves minutes for private projects; this repository is public and pays
     nothing.
   effort: 3
-  effortWhy: Folding two jobs into others and adding a cache.
-  verdict: "Saves minutes on every run for private projects, and costs nothing to
-    public ones either way. Batch it with other pipeline work."
+  effortWhy: Folding the deciding jobs into others and adding a cache.
+  verdict: "Moved to decide-first: the shipped ruleset now requires a check named
+    pipeline / gate, so folding the gate into the deploy job, as the first criterion
+    asks, would leave every pull request waiting on a check that never runs. Decide
+    whether the gate stays a job of its own, and whether the new host job is folded
+    in its place."
+  evidence: "2026-10-31 — templates/github/main-branch-ruleset.json:29 requires
+    pipeline / gate; templates/github/tropis-pipeline.yml:80 adds a host job that
+    only decides; no shipped workflow turns on an npm cache."
   seen:
     status: shaped
     blockers: []
 pipeline-does-not-redo-green-work:
   band: B
-  value: 3
-  valueWhy: The most common re-runs of already-passed code.
+  value: 4
+  valueWhy: With main gated and branches required up to date, every merge to main
+    re-runs a tree that already passed.
   effort: 3
   effortWhy: Planning from the last green run, with a fallback.
-  verdict: "The most common re-runs of already-passed code, on pull requests and
-    merges to main. The release still runs the full suite."
+  verdict: "Value raised now main is gated: a branch must be up to date to merge, so
+    the push to main always carries a tree its pull request already passed, and
+    every merge pays the stages twice. The release still runs the full suite."
   seen:
     status: shaped
     blockers: []
@@ -373,9 +388,11 @@ prerequisite-check-refuses-old-node:
   effort: 1
   effortWhy: Compare the minor version as well as the major in one script, and a test.
   verdict: "Small and self-contained; it makes the check agree with what the README
-    and RELEASES.md already say. Do it when something else touches set-up."
+    and RELEASES.md already say. Its plan is written, so it is ready to dispatch."
   evidence: "2026-10-31 — scripts/check-prerequisites.sh:47 compares the major version
-    only, so any node 18 passes."
+    only, so any node 18 passes;
+    docs/superpowers/plans/2026-10-31-prerequisite-check-refuses-old-node.md delivers
+    it."
   seen:
     status: shaped
     blockers: []
@@ -387,9 +404,9 @@ project-chooses-its-repository-host:
   effort: 5
   effortWhy: Host-neutral merge steps, hooks, report and pipeline wiring.
   verdict: "Shaped with checkable criteria; today a project off GitHub silently
-    loses the merge-time reminder and the in-flight list. Worth doing next, and
-    pairs naturally with hooks-match-at-command-position since both rewrite the
-    same trigger."
+    loses the merge-time reminder and the in-flight list. The GitHub-only surface
+    has grown since it was shaped - the main-branch ruleset and the pipeline's host
+    check - so its last criterion's inventory is larger than when it was written."
   evidence: "2026-10-19 — templates/settings.json:54 gates the hook on Bash(gh pr
     merge *); scripts/capture-at-merge.sh:31 matches gh pr merge;
     commands/next.md:13 runs gh pr list."
@@ -403,9 +420,9 @@ project-has-one-display-name:
   effort: 2
   effortWhy: One stored field read in four places.
   verdict: "Confirmed: setup asks for a display name and nothing uses it — the
-    board is titled after the folder. Small and plannable once criteria are
-    firmed up; it would also settle update-keeps-the-package-name, so plan the
-    two together."
+    board is titled after the folder. Small and plannable; its draft criteria store
+    the name in a new .tropis/project.json, while the project's own settings now
+    live in .claude/project.json, so settle the file when shaping it."
   evidence: "2026-10-19 — commands/bootstrap.md:19 asks for a display name;
     scripts/build-backlog-board.mjs:101 titles the board with basename(root)."
   seen:
@@ -457,6 +474,8 @@ release-tags-the-notes-commit:
   effortWhy: One input, one check in the release job, and the trigger /release prints.
   verdict: "Small and closes a real gap while several agents merge at once. Do it
     before the next release."
+  evidence: "2026-10-31 — .github/workflows/ci.yml tags whatever main holds when the
+    job starts; it takes a version and no commit."
   seen:
     status: shaped
     blockers: []
