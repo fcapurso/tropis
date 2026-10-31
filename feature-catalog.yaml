@@ -3572,7 +3572,7 @@
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-26.
 - id: branch-slot-never-touches-a-permanent-environment
   title: A branch environment can never be a permanent one
-  status: shaped
+  status: building
   value: A pull request from a branch named like a permanent environment would deploy over
     it, and delete it when the pull request closes - one wrong branch name away from
     losing production. Today every project guards against it itself.
@@ -3595,7 +3595,7 @@
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-28.
 - id: update-keeps-instructions-behind-a-symlink
   title: An update never empties the entry instructions of a project whose entry files are symlinked
-  status: shaped
+  status: building
   value: A project set up with one entry file as a symlink to the other loses every
     instruction when it takes an update, and the update reports success. Every later
     session then works with no workflow, and nothing says so until something unrelated
