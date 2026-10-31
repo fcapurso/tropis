@@ -6,8 +6,11 @@
  * The root is the project under test: FRAMEWORK_ROOT when the self-check points it at
  * a composed fixture, otherwise two levels above this file, which is where it sits
  * once installed at `.tropis/guards/`.
+ *
+ * AGENTS.md must be a regular file holding the instructions, not a link and not an import
+ * line, because an update once emptied a project that had either.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { lstatSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,11 +20,28 @@ const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../..');
 const AGENTS_MISSING =
   'AGENTS.md is missing. It holds this project\'s entry instructions; CLAUDE.md points at it.';
 
+const AGENTS_SYMLINK =
+  'AGENTS.md is a symlink. It must be a regular file holding this project\'s entry instructions, with CLAUDE.md the single line @AGENTS.md. Replace the link with the text it points at. If an update has already left both files as @AGENTS.md, restore the instructions from the last commit before that update (git log -p -- AGENTS.md CLAUDE.md shows it), then commit.';
+
+const AGENTS_IMPORT =
+  'AGENTS.md is a single import line, so it holds none of this project\'s entry instructions. It must be a regular file holding them, with CLAUDE.md the single line @AGENTS.md. Put the instructions back in AGENTS.md; if an update emptied it, restore them from the last commit before that update (git log -p -- AGENTS.md CLAUDE.md shows it), then commit.';
+
 const CLAUDE_WRONG =
   'CLAUDE.md must be the single line @AGENTS.md. The entry instructions live in AGENTS.md: move anything else in CLAUDE.md there, then make CLAUDE.md that one line.';
 
 function agentsProblem() {
-  if (!existsSync(join(root, 'AGENTS.md'))) return AGENTS_MISSING;
+  const path = join(root, 'AGENTS.md');
+  let link;
+  try {
+    link = lstatSync(path);
+  } catch (e) {
+    if (e.code === 'ENOENT') return AGENTS_MISSING;
+    throw e;
+  }
+  if (link.isSymbolicLink()) return AGENTS_SYMLINK;
+  let text = readFileSync(path, 'utf8');
+  if (text.endsWith('\n')) text = text.slice(0, -1);
+  if (/^@\S+$/.test(text)) return AGENTS_IMPORT;
   return null;
 }
 
