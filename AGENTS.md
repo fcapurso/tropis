@@ -90,6 +90,7 @@ Do not read these at session start. Read the one that matches the work:
 | `.claude/framework/doc-architecture.md` | Before adding a document, or describing current state in prose. |
 | `RELEASES.md` | Before drafting release notes. |
 | `docs/superpowers/specs/` | The design behind an arc, before planning in it. |
+| `docs/history/` | How Tropis came to be. Nothing updates it: read it for provenance, never for how things work now. |
 
 Area rules under `.claude/rules/` reach you without asking in Claude Code: each loads
 when you first touch a file in its area, source folders included. Cursor does not attach

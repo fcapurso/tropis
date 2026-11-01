@@ -198,13 +198,13 @@ what delivery must achieve, separately from the script that achieves it here.
 
 **Evidence standard.** This claim does **not** rest on a port. It rests on a structural
 property of the artifact — no shipped guard reads project source — which is mechanically
-checkable and will be checked. That is stronger evidence than the sample of two behind
-`PORTABILITY-NOTES.md`, because it is a property of the thing rather than an observation
-about two uses of it.
+checkable and will be checked. That is stronger evidence than the sample of two behind the framework repository's
+portability notes (docs/history/PORTABILITY-NOTES.md), because it is a property of the
+thing rather than an observation about two uses of it.
 
 It rests on **no experience of an installation outside JavaScript**, and does not pretend
 otherwise. The squash-merge and single-developer assumptions remain exactly as untested as
-`PORTABILITY-NOTES.md` already says.
+the portability notes already say.
 
 **What would widen it:** a third installation in another language, testing three things
 this cannot — whether the properties are complete enough to reimplement from, whether the

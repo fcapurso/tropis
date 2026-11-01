@@ -176,7 +176,7 @@ fixes and your scripts fill, described in the operator guide your project gets a
 - **Built from two projects, not a theory.** The layer grew in one real project and was
   ported to a second; this repository is what survived the port. Both projects share a
   language, a platform and a developer, which limits what that proves.
-  [PORTABILITY-NOTES.md](PORTABILITY-NOTES.md) records what was kept, what was left
+  [docs/history/PORTABILITY-NOTES.md](docs/history/PORTABILITY-NOTES.md) records what was kept, what was left
   behind, and what the evidence does not cover.
 - **Not yet:** running without `node`, and parking a lesson instead of turning it into a
   rule, are in the backlog and set aside for now.
