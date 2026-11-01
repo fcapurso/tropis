@@ -326,9 +326,6 @@ On `fail`, the entry records it; stop as for a failed run. On `pass`, go to Stag
 
 ## Stage 7 — The promotion pull request
 
-Read the bump from the newest `Bump:` line in `git log <staged> --format=%b`, work out
-the version as Stage 4 does, and ask the developer to confirm it; wait.
-
 **First, compare with the staged commit:**
 
 ```bash
@@ -340,7 +337,10 @@ staging was checked, and production would get code nobody checked. Say which pat
 not prepare the pull request, and go to *Step 1* with `<commit>` the head of
 `origin/main`: staging must be deployed and checked again. Production waits.
 
-**Otherwise**, where the main branch is gated, in a worktree of its own:
+**Otherwise**, read the bump from the newest `Bump:` line in
+`git log <staged> --format=%b`, work out the version as Stage 4 does, and ask the
+developer to confirm it; wait. Then, where the main branch is gated, in a worktree of
+its own:
 
 ```bash
 git worktree add ../<repo>-release-<version> -b release/<version> origin/main
