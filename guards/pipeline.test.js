@@ -737,6 +737,150 @@ describe('staging deploy', () => {
   });
 });
 
+/**
+ * A main branch: a base, the staged commit, and the promotion commit that changes
+ * only the notes and the version file. A side branch holds a commit main does not.
+ */
+function promotedRepository() {
+  const root = repository();
+  write(root, 'RELEASES.md', '## [Unreleased]\n\n- A change.\n');
+  write(root, 'package.json', '{ "version": "1.0.0" }\n');
+  write(root, 'src/app.js', 'one\n');
+  const base = commit(root, 'base');
+  write(root, 'src/app.js', 'two\n');
+  const staged = commit(root, 'the staged commit');
+  write(root, 'RELEASES.md', '## [Unreleased]\n\n## [1.1.0] — 2026-11-01\n\n- A change.\n');
+  write(root, 'package.json', '{ "version": "1.1.0" }\n');
+  const promotion = commit(root, 'chore(release): 1.1.0');
+  git(root, 'checkout', '-q', '-b', 'side', base);
+  write(root, 'side.txt', 'side\n');
+  const side = commit(root, 'side work');
+  git(root, 'checkout', '-q', 'main');
+  return { root, base, staged, promotion, side };
+}
+
+const ALLOW = ['--allow', 'RELEASES.md', '--allow', 'package.json'];
+
+describe('promote check', () => {
+  it('passes a commit main holds whose change since staging is only the allowed files', () => {
+    const { root, staged, promotion } = promotedRepository();
+    fillStagingSlot(root);
+    const result = runPipeline(root, ['promote', 'check', promotion, '--staged', staged, ...ALLOW]);
+    expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`promote: ${promotion} may be tagged\n`);
+  });
+
+  it('passes a commit main holds with no --staged when the staging slot is empty', () => {
+    const { root, promotion } = promotedRepository();
+    const result = runPipeline(root, ['promote', 'check', promotion]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`promote: ${promotion} may be tagged\n`);
+  });
+
+  it('refuses a commit or a staged commit that is not a full hash', () => {
+    const { root, staged, promotion } = promotedRepository();
+    const short = runPipeline(root, ['promote', 'check', promotion.slice(0, 7)]);
+    expect(short.status).toBe(1);
+    expect(short.stderr).toBe(`promote: "${promotion.slice(0, 7)}" is not a full commit hash\n`);
+    expect(short.stdout).toBe('');
+    const upper = runPipeline(root, ['promote', 'check', promotion.toUpperCase()]);
+    expect(upper.status).toBe(1);
+    expect(upper.stderr).toBe(`promote: "${promotion.toUpperCase()}" is not a full commit hash\n`);
+    const stagedShort = runPipeline(root, ['promote', 'check', promotion, '--staged', 'HEAD~1']);
+    expect(stagedShort.status).toBe(1);
+    expect(stagedShort.stderr).toBe('promote: "HEAD~1" is not a full commit hash\n');
+    expect(staged).not.toBe(promotion);
+  });
+
+  it('refuses a full hash that names no commit here', () => {
+    const { root, promotion } = promotedRepository();
+    const missing = 'a'.repeat(40);
+    const result = runPipeline(root, ['promote', 'check', missing]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe(`promote: ${missing} is not a commit here\n`);
+    const tree = git(root, 'rev-parse', 'HEAD^{tree}');
+    const notCommit = runPipeline(root, ['promote', 'check', tree]);
+    expect(notCommit.status).toBe(1);
+    expect(notCommit.stderr).toBe(`promote: ${tree} is not a commit here\n`);
+    const stagedMissing = runPipeline(root, ['promote', 'check', promotion, '--staged', missing]);
+    expect(stagedMissing.status).toBe(1);
+    expect(stagedMissing.stderr).toBe(`promote: ${missing} is not a commit here\n`);
+  });
+
+  it('refuses a commit the main branch does not hold', () => {
+    const { root, side } = promotedRepository();
+    const result = runPipeline(root, ['promote', 'check', side]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe(`promote: ${side} is not on the main branch — tag only a commit main holds\n`);
+    expect(result.stdout).toBe('');
+  });
+
+  it('refuses to go without --staged when the project deploys to staging', () => {
+    const { root, promotion } = promotedRepository();
+    fillStagingSlot(root);
+    const result = runPipeline(root, ['promote', 'check', promotion, ...ALLOW]);
+    expect(result.status).toBe(1);
+    expect(result.stderr)
+      .toBe('promote: this project deploys to staging — give --staged <the commit staging was checked on>\n');
+  });
+
+  it('refuses a commit that does not contain the staged commit', () => {
+    const { root, base, side } = promotedRepository();
+    git(root, 'merge', '-q', '--no-ff', '-m', 'merge side', side);
+    const result = runPipeline(root, ['promote', 'check', base, '--staged', side, ...ALLOW]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe(`promote: ${base} does not contain the staged commit ${side}\n`);
+  });
+
+  it('refuses every path changed since staging that is not allowed, and names them all', () => {
+    const { root, base, staged, promotion } = promotedRepository();
+    const onlyNotes = runPipeline(root, ['promote', 'check', promotion, '--staged', staged, '--allow', 'RELEASES.md']);
+    expect(onlyNotes.status).toBe(1);
+    expect(onlyNotes.stderr)
+      .toBe(`promote: package.json changed since staging was checked — deploy ${promotion} to staging first\n`);
+    const fromBase = runPipeline(root, ['promote', 'check', promotion, '--staged', base]);
+    expect(fromBase.status).toBe(1);
+    expect(fromBase.stderr).toBe(
+      `promote: RELEASES.md, package.json, src/app.js changed since staging was checked — deploy ${promotion} to staging first\n`,
+    );
+    write(root, 'src/app.js', 'three\n');
+    const later = commit(root, 'feat: merged after staging');
+    const result = runPipeline(root, ['promote', 'check', later, '--staged', staged, ...ALLOW]);
+    expect(result.status).toBe(1);
+    expect(result.stderr)
+      .toBe(`promote: src/app.js changed since staging was checked — deploy ${later} to staging first\n`);
+  });
+
+  it('exits 2 with the usage line on a missing or unknown argument', () => {
+    const { root, promotion } = promotedRepository();
+    const usage = 'promote: use check <commit> [--staged <commit>] [--allow <path>]...\n';
+    for (const args of [
+      ['promote'],
+      ['promote', 'nope'],
+      ['promote', 'check'],
+      ['promote', 'check', promotion, '--staged'],
+      ['promote', 'check', promotion, '--allow'],
+      ['promote', 'check', promotion, '--other', 'x'],
+      ['promote', 'check', promotion, promotion],
+    ]) {
+      const result = runPipeline(root, args);
+      expect(result.status).toBe(2);
+      expect(result.stderr).toBe(usage);
+    }
+  });
+
+  it('is in the host command list, as what the promote pipeline runs before it tags', () => {
+    const root = repository();
+    const result = runPipeline(root, ['commands']);
+    expect(result.stdout.endsWith([
+      '# Promote to production: the project\'s own pipeline runs this before it tags <commit>.',
+      'node .tropis/scripts/pipeline.mjs promote check "$COMMIT" --staged "$STAGED" --allow <notes file> --allow <each version file>',
+      '',
+    ].join('\n'))).toBe(true);
+  });
+});
+
 describe('deploy gate', () => {
   const cases = [
     {
