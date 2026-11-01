@@ -284,6 +284,38 @@ describe('dispatch command', () => {
     }
   });
 
+  it('tells the executor to attach every other checkout it isolates in', () => {
+    const { parent, root } = project(plan(BOTH));
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(0);
+      const at = r.stdout.indexOf('Before isolating: ');
+      expect(at).toBeGreaterThan(-1);
+      expect(at).toBeLessThan(r.stdout.indexOf('Isolate (from'));
+      const paragraph = r.stdout.slice(at, r.stdout.indexOf('Isolate (from'));
+      expect(paragraph).toContain('clone it beside this one under exactly this directory name:\n  - example-other\n');
+      expect(paragraph).not.toContain('example-project');
+      // The prompt states a capability, never a vendor.
+      expect(paragraph).not.toMatch(/claude|cursor|codex|copilot|github|anthropic|openai/i);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('prints no attach step for one checkout', () => {
+    const doNotEdit = '| other (`example-other`) | do not edit | |';
+    for (const rows of [PROJECT_ONLY, [...PROJECT_ONLY, doNotEdit]]) {
+      const { parent, root } = project(plan(rows));
+      try {
+        const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+        expect(r.status).toBe(0);
+        expect(r.stdout).not.toContain('Before isolating');
+      } finally {
+        rmSync(parent, { recursive: true, force: true });
+      }
+    }
+  });
+
   it('reminds the executor to verify every checkout it edits', () => {
     const { parent, root } = project(plan(BOTH));
     try {
