@@ -14,9 +14,14 @@
 # Usage, from anywhere:
 #   bash scripts/check-blueprint.sh
 #
-# Its test tools are the ones a set-up project gets: what templates/package.json names
-# at HEAD, installed into .self-check/ (ignored by git) on first use and again whenever
-# that file changes. NODE_MODULES=<a folder holding jest and yaml> uses those instead.
+# Its test tools are exactly what templates/package-lock.json pins at HEAD, the lockfile
+# setup gives every project, so the versions a release was checked with are the versions
+# its projects install. They are installed into .self-check/ (ignored by git) on first use
+# and again whenever the package file or the lockfile changes. `npm ci` refuses a lockfile
+# that no longer matches templates/package.json, so a change to the package file fails the
+# self-check until the lockfile is regenerated with
+# `npm install --package-lock-only --ignore-scripts` from a copy of the package file.
+# NODE_MODULES=<a folder holding jest and yaml> uses those instead.
 # Installed with --ignore-scripts: the package's prepare script installs a project's git hooks, and this is not a project.
 #
 # Only committed content is checked. Commit first.
@@ -35,13 +40,16 @@ else
   TOOLS="$BP/.self-check"
   mkdir -p "$TOOLS"
   git -C "$BP" show HEAD:templates/package.json > "$TOOLS/package.json.next"
+  git -C "$BP" show HEAD:templates/package-lock.json > "$TOOLS/package-lock.json.next"
   if ! cmp -s "$TOOLS/package.json.next" "$TOOLS/package.json" \
+     || ! cmp -s "$TOOLS/package-lock.json.next" "$TOOLS/package-lock.json" \
      || [ ! -x "$TOOLS/node_modules/.bin/jest" ]; then
     mv "$TOOLS/package.json.next" "$TOOLS/package.json"
-    echo "Installing the self-check's test tools from templates/package.json…"
-    npm install --prefix "$TOOLS" --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null
+    mv "$TOOLS/package-lock.json.next" "$TOOLS/package-lock.json"
+    echo "Installing the self-check's test tools from templates/package-lock.json…"
+    npm ci --prefix "$TOOLS" --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null
   else
-    rm "$TOOLS/package.json.next"
+    rm "$TOOLS/package.json.next" "$TOOLS/package-lock.json.next"
   fi
   NM="$TOOLS/node_modules"
 fi

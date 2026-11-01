@@ -8,8 +8,8 @@
  *
  * Reads the template from FRAMEWORK_ROOT, and the dependent's own package.json from the
  * node_modules beside this file: the self-check's test tools, installed from that
- * template. An install resolves the newest version in range, and CI installs afresh on
- * every run, so the first run after the dependent catches up is the one that fails.
+ * template. Those tools come from templates/package-lock.json, so the guard fails on the
+ * first regeneration of that lockfile after the dependent catches up.
  * Skips outside the blueprint tree.
  */
 import { readFileSync, existsSync } from 'node:fs';
