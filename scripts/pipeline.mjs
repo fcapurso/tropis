@@ -866,14 +866,14 @@ const HOST_OUTSIDE_ACTIONS =
 
 /**
  * Why the project's main branch is not gated, from `ungated` in
- * `.claude/project.json`. A missing, unreadable or non-object file, or no key,
+ * `.tropis/project.json`. A missing, unreadable or non-object file, or no key,
  * is no reason. A key that is not a string with words in it is an error.
  * @returns {{ reason: string | null } | { error: string }}
  */
 export function ungatedReason(root) {
   let doc;
   try {
-    doc = JSON.parse(readFileSync(join(root, '.claude', 'project.json'), 'utf8'));
+    doc = JSON.parse(readFileSync(join(root, '.tropis', 'project.json'), 'utf8'));
   } catch {
     return { reason: null };
   }
@@ -881,7 +881,7 @@ export function ungatedReason(root) {
     return { reason: null };
   }
   if (typeof doc.ungated !== 'string' || doc.ungated.trim() === '') {
-    return { error: 'host: "ungated" in .claude/project.json must say why the main branch is not gated, in words.' };
+    return { error: 'host: "ungated" in .tropis/project.json must say why the main branch is not gated, in words.' };
   }
   return { reason: doc.ungated.trim() };
 }
@@ -954,7 +954,7 @@ function notGatedText(repo, branch, gaps) {
     'If your plan allows it (a public repository, or a private one on GitHub Pro, Team or Enterprise), apply the ruleset Tropis ships:',
     `  gh api repos/${repo}/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
     'and turn on Settings → General → Pull Requests → Allow auto-merge.',
-    'Otherwise record why in .claude/project.json, as "ungated": "<the reason>".',
+    'Otherwise record why in .tropis/project.json, as "ungated": "<the reason>".',
     '',
   ].join('\n');
 }
@@ -962,7 +962,7 @@ function notGatedText(repo, branch, gaps) {
 /**
  * Whether the default branch is gated by GitHub, or the project has said why
  * not. Fails until the branch requires a pull request and a check and GitHub
- * does not say auto-merge is off, or `.claude/project.json` records `ungated`.
+ * does not say auto-merge is off, or `.tropis/project.json` records `ungated`.
  */
 function hostCommand(root, { summary }) {
   const recorded = ungatedReason(root);
@@ -971,9 +971,9 @@ function hostCommand(root, { summary }) {
     return 1;
   }
   if (recorded.reason !== null) {
-    process.stdout.write(`host: the main branch is not gated — ${recorded.reason} (.claude/project.json)\n`);
+    process.stdout.write(`host: the main branch is not gated — ${recorded.reason} (.tropis/project.json)\n`);
     if (summary) {
-      appendFileSync(summary, `**The main branch is not gated.** ${recorded.reason} — recorded in .claude/project.json.\n`);
+      appendFileSync(summary, `**The main branch is not gated.** ${recorded.reason} — recorded in .tropis/project.json.\n`);
     }
     return 0;
   }

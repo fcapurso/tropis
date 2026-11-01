@@ -51,10 +51,12 @@ Ask which level the project wants: Tropis writes the README from its skeleton
 ## Stage 3b — The pipeline
 
 Ask where the repository is hosted, and whether it is or will be public. On yes, write
-`.claude/project.json` holding `{ "public": true }`. From then on the agent is told at
+`.tropis/project.json` holding `{ "public": true }`, keeping any key already there (setup
+may have written the name). From then on the agent is told at
 every `git commit` and `git push` to read what is going out for private material, a
 review record says the diff was read, and `/release` lists anything private in the window
-before drafting. On no, write nothing: a project with no such file is not public.
+before drafting. On no, write nothing: a project whose `.tropis/project.json` holds no `"public": true` is
+not public.
 
 **GitHub.** Offer to write `.github/workflows/pipeline.yml` from
 `.tropis/templates/pipeline-caller.yml`, and to create `pipeline/` holding a
@@ -71,7 +73,7 @@ and say to turn on *Allow auto-merge* and *Automatically delete head branches* u
 Settings → General → Pull Requests. The developer runs it; never run it yourself. A
 private repository on GitHub's free plan cannot have rulesets. If the developer will not
 or cannot apply it, or the host is not GitHub, ask why, and write their reason into
-`.claude/project.json` as `"ungated": "<reason>"`, keeping any key already there. Until
+`.tropis/project.json` as `"ungated": "<reason>"`, keeping any key already there. Until
 one of the two is done, the pipeline's `host` job fails on every run, by design.
 
 **Any other host.** Show the output of `node .tropis/scripts/pipeline.mjs commands`

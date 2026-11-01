@@ -329,8 +329,9 @@ describe('dispatch command', () => {
   it("prints the project's own worktree setup, in order, in place of the framework install", () => {
     const { parent, root } = project(plan(PROJECT_ONLY));
     try {
+      mkdirSync(join(root, '.tropis'), { recursive: true });
       writeFileSync(
-        join(root, '.claude/worktree-setup.txt'),
+        join(root, '.tropis/worktree-setup.txt'),
         '# Before the suite can run\ngit submodule update --init --recursive\n\nnpm ci\nnpm --prefix .tropis ci\n',
       );
       const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
@@ -349,7 +350,7 @@ describe('dispatch command', () => {
     }
   });
 
-  it('reads each checkout its own setup, and gives one without a file the framework install', () => {
+  it('reads each checkout its own setup, the old .claude/ place for a sibling on an older release, and gives one without a file the framework install', () => {
     const { parent, root } = project(plan(BOTH));
     const other = join(parent, 'example-other');
     repo(other);
@@ -364,6 +365,24 @@ describe('dispatch command', () => {
         + '  In other (`example-other`):\n'
         + '    npm ci\n',
       );
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('worktree setup in both places', () => {
+  it('prints the .tropis/ setup when a checkout holds both', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY));
+    try {
+      mkdirSync(join(root, '.tropis'), { recursive: true });
+      mkdirSync(join(root, '.claude'), { recursive: true });
+      writeFileSync(join(root, '.tropis/worktree-setup.txt'), 'npm run new-setup\n');
+      writeFileSync(join(root, '.claude/worktree-setup.txt'), 'npm run old-setup\n');
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('    npm run new-setup\n');
+      expect(r.stdout).not.toContain('old-setup');
     } finally {
       rmSync(parent, { recursive: true, force: true });
     }

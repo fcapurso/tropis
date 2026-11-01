@@ -264,7 +264,7 @@ describe('rule delivery', () => {
      * A git repository containing exactly the given paths, uncommitted.
      * @param {string[]} paths Repo-relative paths to create.
      * @param {string} [branch] Branch name to check out.
-     * @param {object} [projectJson] Written as .claude/project.json and committed first,
+     * @param {object} [projectJson] Written as .tropis/project.json and committed first,
      *   so the hook does not list it as a change.
      */
     function repoWith(paths, branch = 'plan/x', projectJson) {
@@ -272,11 +272,11 @@ describe('rule delivery', () => {
       tmps.push(dir);
       spawnSync('git', ['init', '-q', '-b', branch], { cwd: dir });
       if (projectJson !== undefined) {
-        mkdirSync(resolve(dir, '.claude'), { recursive: true });
-        writeFileSync(resolve(dir, '.claude/project.json'), `${JSON.stringify(projectJson)}\n`);
-        spawnSync('git', ['add', '.claude/project.json'], { cwd: dir });
+        mkdirSync(resolve(dir, '.tropis'), { recursive: true });
+        writeFileSync(resolve(dir, '.tropis/project.json'), `${JSON.stringify(projectJson)}\n`);
+        spawnSync('git', ['add', '.tropis/project.json'], { cwd: dir });
         const c = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'project'], { cwd: dir });
-        if (c.status !== 0) throw new Error('could not commit .claude/project.json');
+        if (c.status !== 0) throw new Error('could not commit .tropis/project.json');
       }
       for (const p of paths) {
         mkdirSync(dirname(resolve(dir, p)), { recursive: true });
@@ -433,6 +433,16 @@ describe('rule delivery', () => {
       expect(said).toContain('main branch is gated');
     });
 
+    it('a reason recorded only in the old .claude/project.json counts as gated', () => {
+      const dir = repoWith(['docs/notes.md'], 'main');
+      mkdirSync(resolve(dir, '.claude'), { recursive: true });
+      writeFileSync(resolve(dir, '.claude/project.json'), '{ "ungated": "a reason" }\n');
+      spawnSync('git', ['add', '.claude/project.json'], { cwd: dir });
+      spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'old place'], { cwd: dir });
+      const said = contextOf(runCommitHook('git commit -m "x"', dir).stdout);
+      expect(said).toContain('main branch is gated');
+    });
+
     it('a blank ungated counts as gated', () => {
       const dir = repoWith(['docs/notes.md'], 'main', { ungated: ' ' });
       const said = contextOf(runCommitHook('git commit -m "x"', dir).stdout);
@@ -498,7 +508,7 @@ describe('rule delivery', () => {
     });
 
     /**
-     * A git repository with a subdirectory, and .claude/project.json holding `declaration`
+     * A git repository with a subdirectory, and .tropis/project.json holding `declaration`
      * verbatim — or no such file when it is undefined.
      * @param {string} [declaration]
      */
@@ -509,8 +519,8 @@ describe('rule delivery', () => {
       mkdirSync(resolve(dir, 'src/deep'), { recursive: true });
       writeFileSync(resolve(dir, 'src/deep/a.js'), 'x\n');
       if (declaration !== undefined) {
-        mkdirSync(resolve(dir, '.claude'), { recursive: true });
-        writeFileSync(resolve(dir, '.claude/project.json'), declaration);
+        mkdirSync(resolve(dir, '.tropis'), { recursive: true });
+        writeFileSync(resolve(dir, '.tropis/project.json'), declaration);
       }
       return dir;
     }
@@ -540,13 +550,22 @@ describe('rule delivery', () => {
     ];
     for (const [label, declaration] of notPublic) {
       for (const command of ['git commit -m x', 'git push']) {
-        it(`says nothing on ${command} when .claude/project.json is ${label}`, () => {
+        it(`says nothing on ${command} when .tropis/project.json is ${label}`, () => {
           const { stdout, status } = runExposureHook(command, project(declaration));
           expect(status).toBe(0);
           expect(stdout).toBe('');
         });
       }
     }
+
+    it('says nothing when only the old .claude/project.json declares the project public', () => {
+      const dir = project(undefined);
+      mkdirSync(resolve(dir, '.claude'), { recursive: true });
+      writeFileSync(resolve(dir, '.claude/project.json'), PUBLIC);
+      const { stdout, status } = runExposureHook('git commit -m x', dir);
+      expect(status).toBe(0);
+      expect(stdout).toBe('');
+    });
 
     it('in a public project, tells the agent to read what a commit carries', () => {
       const { stdout, status } = runExposureHook('git commit -m x', project(PUBLIC));

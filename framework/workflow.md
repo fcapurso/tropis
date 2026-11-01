@@ -121,7 +121,7 @@ when the framework half exists to serve the application half. Full rule:
   branch, as *Merge and clean up* does.
 - **Where the main branch is gated, nothing goes directly to `main`.** It is gated when
   its host refuses a merge whose checks have not passed — on GitHub, the ruleset Tropis
-  ships — and an agent treats it as gated unless `.claude/project.json` records
+  ships — and an agent treats it as gated unless `.tropis/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
   worktree of its own (above), push it, open the pull request, run
@@ -155,7 +155,7 @@ when the framework half exists to serve the application half. Full rule:
   and the same change as its own pull request started none in 201.
 - **Say whether anything enforces this.** Tropis's pipeline asks the host on every run,
   and its `host` job fails until the main branch requires a pull request and a passing
-  check and auto-merge is not turned off, or `.claude/project.json` records `"ungated"` with the
+  check and auto-merge is not turned off, or `.tropis/project.json` records `"ungated"` with the
   reason, which every run then repeats in its summary. Where the project records a
   reason, also write in its own `AGENTS.md` that nothing refuses a push to `main` or a
   red merge, with the date it was checked: a reader who assumes a gate exists will trust

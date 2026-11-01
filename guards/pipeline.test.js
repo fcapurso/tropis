@@ -1517,13 +1517,13 @@ describe('run, gate and commands', () => {
 describe('host', () => {
   const OUTSIDE = 'host: whether the main branch is gated is read from GitHub, in the pipeline; nothing to check here.';
   const APPLY = 'gh api repos/acme/app/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json';
-  const NOT_A_REASON = 'host: "ungated" in .claude/project.json must say why the main branch is not gated, in words.';
+  const NOT_A_REASON = 'host: "ungated" in .tropis/project.json must say why the main branch is not gated, in words.';
   const GATED_RULES = [{ type: 'pull_request' }, { type: 'required_status_checks', parameters: { required_status_checks: [{ context: 'renamed / job' }] } }];
 
   /** A project with a stub gh first on PATH. GITHUB_ACTIONS is always set explicitly. */
   function hostProject({ projectJson } = {}) {
     const root = repository();
-    if (projectJson !== undefined) write(root, '.claude/project.json', projectJson);
+    if (projectJson !== undefined) write(root, '.tropis/project.json', projectJson);
     const bin = mkdtempSync(join(tmpdir(), 'tropis-gh-'));
     temps.push(bin);
     writeFileSync(join(bin, 'gh'), `#!/bin/sh
@@ -1627,9 +1627,20 @@ exit 99
     const project = hostProject({ projectJson: '{"public": true, "ungated": "private, on the free plan"}\n' });
     const result = host(project, { rules: [] });
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe('host: the main branch is not gated — private, on the free plan (.claude/project.json)\n');
-    expect(summaryOf(project)).toBe('**The main branch is not gated.** private, on the free plan — recorded in .claude/project.json.\n');
+    expect(result.stdout).toBe('host: the main branch is not gated — private, on the free plan (.tropis/project.json)\n');
+    expect(summaryOf(project)).toBe('**The main branch is not gated.** private, on the free plan — recorded in .tropis/project.json.\n');
     expect(calls(project)).toEqual([]);
+  });
+
+  it('a reason recorded only in the old .claude/project.json counts as no reason recorded', () => {
+    const old = hostProject();
+    write(old.root, '.claude/project.json', '{"ungated": "a reason"}\n');
+    const bare = hostProject();
+    const expected = host(bare, { rules: [] });
+    const result = host(old, { rules: [] });
+    expect(expected.status).toBe(1);
+    expect(result.status).toBe(expected.status);
+    expect(result.stderr).toBe(expected.stderr);
   });
 
   it('an ungated value that is not a reason fails', () => {

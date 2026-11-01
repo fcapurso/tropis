@@ -52,12 +52,12 @@ describe('framework integrity', () => {
         // Skip globs and placeholders — they are patterns, not paths.
         if (/[*<>]/.test(ref)) continue;
         // The framework names these files and ships neither. A project writes the picks by
-        // running /refresh-model-tiers, and its worktree setup only when its worktrees need
-        // more than the framework's install; until then each path is absent on purpose.
+        // running /refresh-model-tiers; until then the path is absent on purpose.
         // A project may not have its README settings or skeleton yet.
         if (
           ref === 'docs/model-picks.md' ||
-          // A project creates it when it declares itself public; until then it is absent.
+          // The places releases before FW-045 used. DECISIONS.md names them to say an update
+          // moves them to .tropis/; no project keeps either file once it has taken that update.
           ref === '.claude/project.json' ||
           ref === '.claude/worktree-setup.txt' ||
           ref === 'docs/readme/readme.yaml' ||

@@ -27,7 +27,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync,
-  rmSync, statSync, unlinkSync, writeFileSync,
+  renameSync, rmSync, statSync, unlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -366,6 +366,8 @@ export function takeVersion({ project, from = null, acceptBreaking = false }) {
   const areasPath = join(project, '.claude/rule-areas.json');
   const projectAreas = existsSync(areasPath) ? readJson(areasPath, `${project}/.claude/rule-areas.json`) : null;
 
+  const move = settingsToMove(project);
+
   const tmp = mkdtempSync(join(tmpdir(), 'take-version-'));
   try {
     const name = setupName(project, '.tropis');
@@ -376,7 +378,7 @@ export function takeVersion({ project, from = null, acceptBreaking = false }) {
     const nextFiles = recordOf(next, target).files;
     const applied = apply({
       project, target, held, fromRecord, baseline, next, nextFiles, projectSettings,
-      projectAreas,
+      projectAreas, move,
     });
     return {
       status: applied.status,
@@ -389,6 +391,42 @@ export function takeVersion({ project, from = null, acceptBreaking = false }) {
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+}
+
+/**
+ * What the update moves from `.claude/` into `.tropis/`: the project's own settings and
+ * worktree setup, which releases before FW-045 kept under `.claude/`. Refuses, before
+ * anything is written, when the old and new files disagree or are not what they should be.
+ * @returns {{ settings: object | null, setup: boolean }} `settings` is the merged object,
+ *   the new file's keys first; null when there is no old file.
+ */
+function settingsToMove(project) {
+  const oldPath = join(project, '.claude/project.json');
+  const currentPath = join(project, '.tropis/project.json');
+  let settings = null;
+  if (existsSync(oldPath)) {
+    const objectAt = (path, label) => {
+      const value = readJson(path, label);
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        refuse(`${label} is not a JSON object. Fix it, commit, and run the update again.`);
+      }
+      return value;
+    };
+    const old = objectAt(oldPath, `${project}/.claude/project.json`);
+    const current = existsSync(currentPath) ? objectAt(currentPath, `${project}/.tropis/project.json`) : {};
+    const clash = Object.keys(old).find((k) => k in current && JSON.stringify(old[k]) !== JSON.stringify(current[k]));
+    if (clash !== undefined) {
+      refuse(`${project}/.claude/project.json and ${project}/.tropis/project.json both set "${clash}", differently. Keep one value in .tropis/project.json, delete the key from .claude/project.json, commit, and run the update again.`);
+    }
+    settings = { ...current };
+    for (const [k, v] of Object.entries(old)) if (!(k in current)) settings[k] = v;
+  }
+  const oldSetup = join(project, '.claude/worktree-setup.txt');
+  const currentSetup = join(project, '.tropis/worktree-setup.txt');
+  if (existsSync(oldSetup) && existsSync(currentSetup) && readText(oldSetup) !== readText(currentSetup)) {
+    refuse(`${project}/.claude/worktree-setup.txt and ${project}/.tropis/worktree-setup.txt both exist, with different commands. Keep the one you want in .tropis/worktree-setup.txt, delete the other, commit, and run the update again.`);
+  }
+  return { settings, setup: existsSync(oldSetup) };
 }
 
 /** True when CLAUDE.md is the single line `@AGENTS.md`, with or without one trailing newline. */
@@ -489,6 +527,7 @@ function apply(input) {
     project, target, held, fromRecord, baseline, next, nextFiles, projectSettings,
   } = input;
   const projectAreas = input.projectAreas ?? {};
+  const move = input.move ?? { settings: null, setup: false };
   const replaced = [];
   const added = [];
   const deleted = [];
@@ -587,6 +626,18 @@ function apply(input) {
     writeFileSync(join(project, '.claude/rule-areas.json'), areasText(areas));
   }
 
+  const moved = [];
+  if (move.settings !== null) {
+    writeFileSync(join(project, '.tropis/project.json'), `${JSON.stringify(move.settings, null, 2)}\n`);
+    rmSync(join(project, '.claude/project.json'));
+    moved.push('.claude/project.json → .tropis/project.json');
+  }
+  if (move.setup) {
+    if (existsSync(join(project, '.tropis/worktree-setup.txt'))) rmSync(join(project, '.claude/worktree-setup.txt'));
+    else renameSync(join(project, '.claude/worktree-setup.txt'), join(project, '.tropis/worktree-setup.txt'));
+    moved.push('.claude/worktree-setup.txt → .tropis/worktree-setup.txt');
+  }
+
   for (const file of ['.gitignore', '.gitattributes']) {
     const nextText = readText(join(next, file));
     if (nextText === null) continue;
@@ -607,6 +658,7 @@ function apply(input) {
     keptButGone,
     areasAdded,
     areasRemoved,
+    moved,
     packageChanged,
     entry,
   };
@@ -635,6 +687,7 @@ function apply(input) {
   list('Deleted, no longer shipped', deleted);
   list('Rule areas added', areasAdded);
   list('Rule areas removed', areasRemoved);
+  list('Moved', moved);
   list('Needs a decision', [
     ...removedByProject.map((p) => `${p} — removed by the project, not restored`),
     ...newFiles.map((p) => `${p}.new — ${blockMismatch.includes(p)

@@ -350,6 +350,8 @@ describe('set-up-project.sh', () => {
           if (/^\.tropis\/(node_modules|package-lock\.json)/.test(ref)) continue;
           // Written only when setup is given a display name; this run gives none.
           if (ref === '.tropis/project.json') continue;
+          // Written by the project when its worktrees need more than the framework's install.
+          if (ref === '.tropis/worktree-setup.txt') continue;
           // A pattern or a placeholder, not a path.
           const next = text[m.index + ref.length] ?? '';
           if (/[*<]/.test(ref) || /[*<]/.test(next)) continue;

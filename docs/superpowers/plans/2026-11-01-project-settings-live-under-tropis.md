@@ -471,3 +471,101 @@ the handover. Delete the scratch folder afterwards.
    **Stop there.** Do not open a pull request, write a review record, set auto-merge or
    merge: `main` is gated and the dispatching session reviews, opens the pull request
    and merges. Leave the worktree in place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+All eight tasks done in the worktree `../tropis-settings`, on `plan/project-settings-live-under-tropis`, based on `origin/main` at 335c319 (the plan was verified at 03f7459; nothing the plan describes had changed). Commits, in order: tests (red), update and record, readers, documents, a restored exemption, catalog and board.
+
+### Verification results
+
+Tools: git 2.49.0, Node v22.15.0, macOS 26.2 on arm64, Claude Code 2.1.300.
+
+- **Red step (Task 1).** The self-check was not run on the tests-only commit: the machine was too loaded. Instead the four fast guard files were run against that commit's tree (jest, in band): 7 tests failed, the rest passed. Failing: `dispatch command › prints the project's own worktree setup, in order, in place of the framework install`; `worktree setup in both places › prints the .tropis/ setup when a checkout holds both`; `host › a reason recorded only in the old .claude/project.json counts as no reason recorded`; `host › an ungated reason passes without asking GitHub, and the summary carries it`; `host › an ungated value that is not a reason fails`; `record-installed.mjs › writes the record for its own project and prints nothing`; and `set-up-project.sh › a freshly set-up project passes its own checks` (it fails there because the project's own copy of the new tests runs). The reads-the-old-path-for-a-sibling dispatch test passes on the old code, as expected, since nothing changed for it. The new cases in `take-version.test.js` and `rule-delivery.test.js` were not run on the old code (slow, and `rule-delivery` needs the self-check's project-shaped tree); they test code that did not exist, so they could not pass on it.
+- **Task 5, update end to end.** In a scratch folder, the project was set up from `origin/main`'s commit (tagged `v0.2.0`, not `v0.0.1`, as the update's version parsing wants a tag like the test world's) with the name `Probe Co`, given `.claude/project.json` = `{ "public": true }`, and taken to this branch's head (tagged `v0.2.1`). The report printed `Moved:` / `.claude/project.json → .tropis/project.json`; `.tropis/project.json` read `{ "name": "Probe Co", "public": true }`; `.claude/project.json` was gone. Folder deleted.
+- **Task 6, fresh-agent check.** `claude -p --output-format stream-json --verbose --allowedTools "Read,Write,Edit,Glob,Grep" --add-dir <scratch>`, Claude Code 2.1.300, macOS 26.2 arm64, run from the worktree, prompt as in the plan. The agent read Stage 3b with a shell `grep`, listed the project, then wrote the file with a shell heredoc (its shell was permitted by the tool's own classifier although only file tools were allowed; it ran one local command, `node .tropis/scripts/pipeline.mjs commands`, and nothing against a host). Its write: `cat > .tropis/project.json <<'EOF' { "name": "Lantern", "public": true, "ungated": "Hosted on a self-hosted Gitea server, which has no way to refuse a merge that has not passed the pipeline." } EOF`. Afterwards the file parsed to name `Lantern`, public `true`, an `ungated` string giving the reason; `.claude/project.json` did not exist. It passed on the first run. The user-level instructions on this machine say nothing about project settings files. Scratch folder deleted.
+- **Installed checks.** `npm --prefix .tropis test`: `Tests:       143 passed, 143 total`.
+- **Self-check, final head.** Not green, on one cause only. Four runs on the final code: run 1 failed on `framework-integrity` (fixed, see Judgment calls) and on guards that run it inside a set-up project; runs 2, 3 and 4 failed only in `guards/main-status.test.js`, a different timing test each time (`brings a branch that is behind up to date once…`, `never asks twice to update the same head`, `does not count a cancelled or skipped check as a failure`, `waits for the run on the commit to appear…`), with the machine's load average near 28. Run alone, in band, on the head tree, `guards/main-status.test.js` passed: `Tests: 47 passed, 47 total`. Last line of the last run: `Self-check FAILED: conformance or the clean baseline (above).` Every other guard passed in run 4. I did not touch `main-status` or its test; the plan `main-status-tests-pass-under-load` addresses this. A re-run on a quiet machine is needed to see `Self-check passed`.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: 24 files, 290 insertions, 91 deletions, all in *File Structure* (`bootstrap.md`, `commands/{bootstrap,release,update}.md`, `docs/backlog-board/bands.yaml`, `feature-catalog.yaml`, `framework/{dispatch,workflow}.md`, the seven guards named, `rules/planning.md`, the seven scripts named, `templates/README.md`). Worktree: `../tropis-settings`.
+
+### Judgment calls
+
+- `guards/framework-integrity.test.js`: the plan said to keep each exemption only while a checked document names the path in backticks. `framework/DECISIONS.md` (FW-032, FW-045, and others) does, and a set-up project carries that file, so the guard failed in the self-check and in the project's own run. I first deleted both exemptions, then restored them with a comment saying they are the places releases before FW-045 used and that the decision record names them.
+- The `dispatch.mjs` read of both places loops over the two names and uses the first it can read; an unreadable new file falls to the old one, as the plan says.
+- `templates/README.md`: I wrote the folded paragraph as one opening paragraph on the file (`name`, `public`, `ungated`; an update moves an older `.claude/project.json` into it), then the display name, then the public paragraph, re-wrapped; the sentence "Without the file…" became "Without the key…".
+- Catalog entry read `building` as the plan expected.
+- The Task 5 tags are `v0.2.0` and `v0.2.1`, not `v0.0.1` and `v0.0.2`.
+- Two new tests beyond the plan's list asserting the same: an exposure-hook case and a commit-hook case for an old-path-only file are in `rule-delivery.test.js` as the plan asked; the pipeline "old path only" case compares to the no-file case with `rules: []`, so both fail the host check and the stderr is compared.
+- Source worked from: nothing in particular; written against this repository's own names.
+
+### What the plan got wrong
+
+- The exemption instruction above (the decision record keeps naming the old paths).
+- It said the tests-only self-check run "must fail"; on a loaded machine I substituted a direct run of the fast guards (see Verification).
+
+### Outstanding
+
+- A green `bash scripts/check-blueprint.sh` on a quiet machine (only `main-status` timing tests failed, and they pass alone).
+- The change has no screen, so there is no developer check.
+- No pull request, review record or merge, as instructed.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, Claude Code 2.1.300 (Opus 5.5) on
+Darwin arm64, git 2.49.0, Node v22.15.0.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD` on `0f1b422`: 25 files, every one in *File
+  Structure* (the handover's 24 left out the plan file itself).
+- `bash scripts/check-blueprint.sh` on `0f1b422`: last line `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.` This settles the handover's one outstanding item: the `main-status`
+  timing failures it saw were load, not this change.
+- `npm --prefix .tropis test`: `Tests: 143 passed, 143 total`.
+- The new guards re-broken, in a stage exported from `0f1b422` with the self-check's
+  Jest setup: `pipeline.mjs` reading `.claude/project.json` again, `dispatch.mjs` reading
+  only the new setup file, and `takeVersion` moving nothing together turned
+  `pipeline`, `dispatch` and `take-version` red, `10 failed, 180 passed`: the three host
+  cases, the dispatch sibling case, and all six new `take-version` cases (the two moves,
+  the worktree-setup move, and the three refusals).
+- The hook cases in `rule-delivery.test.js` were not re-broken here: that guard needs
+  the project-shaped tree the self-check builds, and fails wholesale in a bare stage. Each
+  asserts silence when only the old file says public or ungated, which the old code,
+  reading that file, would not keep; they pass inside the self-check above.
+
+### Found
+
+Public exposure: the diff was read for private material; it names no person, project,
+home path or hostname. Nothing found.
+
+- The executor kept the integrity guard's exemptions for `.claude/project.json` and
+  `.claude/worktree-setup.txt`, against the plan, because FW-032 and FW-045 in
+  `framework/DECISIONS.md` name them in backticks and set-up projects carry that file.
+  Correct: those are records of past and moving places, not paths a reader should find.
+  Accepted as written; no fix.
+- No defect found in `settingsToMove` or `apply`: the refusal runs before the scratch
+  folder is made, so a refused update changes nothing, and the new file's keys win only
+  where both files agree.
+
+### Outstanding disposition
+
+- "A green self-check on a quiet machine": done above.
+- Nothing is observable only by the developer: the change has no screen.
+- This repository's own `.claude/project.json` moves when the next release is installed
+  here, by that update. Nothing to track: the update does it.
+
+### Learnings routed
+
+- The plan told the executor to drop exemptions the decision record still needed. Not
+  routed: the repository's own instructions already say a plan that touches a named
+  path lists the integrity guard, and the executor caught it on the first run.
+
+### Merged because
+
+Every check was re-run and holds, the new guards go red when the move is removed, and
+the one departure from the plan was right and is declared above.

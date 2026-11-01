@@ -422,7 +422,7 @@ Five sections:
   not route it as a learning — a learning is the most durable thing a review produces and
   the most expensive to retract.
 
-  **In a public project** — one whose `.claude/project.json` says `"public": true` —
+  **In a public project** — one whose `.tropis/project.json` says `"public": true` —
   *Found* opens with a line `Public exposure:` saying the diff was read for private
   material (people's names, customers, other projects' names or internals, home paths,
   hostnames) and what was found, or `nothing`. A guard knows only the names it was

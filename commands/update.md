@@ -144,11 +144,11 @@ Do these in order. The take's report is the list: `Next:`, then *Needs a decisio
    show `node .tropis/scripts/pipeline.mjs commands` instead, and say that those
    are the commands to put in that host's CI.
 8. **The gate, when the take's Added list includes
-   `.tropis/templates/main-branch-ruleset.json`** and `.claude/project.json` records no
+   `.tropis/templates/main-branch-ruleset.json`** and `.tropis/project.json` records no
    `ungated`. From this release the pipeline fails on every run until the project
    chooses, so ask now, as bootstrap's Stage 3b (*The gate*) does: print the command that
    applies the ruleset and the two settings, for the developer to run once this branch
-   has merged, or write the reason they give into `.claude/project.json`, so it is
+   has merged, or write the reason they give into `.tropis/project.json`, so it is
    committed with the update. Never apply the ruleset yourself.
 
 ## Stage 7 — Check again
@@ -193,6 +193,9 @@ Then discard the clone. Print:
 - each optional step, with its version
 - any required step not done
 - files kept because the project changed them
+- the files the take moved, from its *Moved* list: say that the project's settings and
+  worktree setup now live under `.tropis/`, where releases before this one kept them in
+  `.claude/`
 - when the take's Replaced list includes .tropis/templates/readme-skeleton.md and the
   project has docs/readme/skeleton.md: say that the default README skeleton changed in this
   release, and offer to show the difference between the two
