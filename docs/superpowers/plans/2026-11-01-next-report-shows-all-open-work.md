@@ -634,3 +634,70 @@ constant `EXPECTED_WITHOUT_BANDS` and renamed).
   four checks, so the branch holds exactly the intended commits. Worth knowing only
   because the history shows no trace of it.
 - Merge authority is parent review: not merged, no review record written.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `95c58bd` (the branch with
+`origin/main` at `448df2a` merged in), with git 2.49.0 and Node v22.15.0 in Claude Code
+2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` after merging `origin/main`: `Self-check passed:
+  every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed`, `Tests: 133 passed`.
+- `guards/next-report.test.js`, `guards/check-drift.test.js` and
+  `guards/backlog-board.test.js` through the Task 0 snippet: `Tests: 71 passed, 71 total`.
+- Re-break, throwaway commit then dropped: Blocked worked out on a catalog filtered to the
+  layer, and the flush age threshold without its waiting-entry condition — `Tests: 2
+  failed, 69 passed`. A second: `lostTurns` never records a lost arc — `Tests: 1 failed,
+  70 passed`.
+- The source report run on a scratch copy of this repository's own catalog, bands and
+  plans: two streams, the framework one `(none)`; `prerequisite-check-refuses-old-node`
+  (the entry's evidence case) and `contributors-know-how-to-contribute` listed with their
+  plans as planned, not dispatched; seven band B ideas under To shape.
+- Scope: `git diff --stat origin/main...HEAD` lists the plan, `feature-catalog.yaml`,
+  `framework/DECISIONS.md`, `guards/next-report.test.js`, `scripts/next-work.js`,
+  `scripts/next.mjs` and `templates/README.md`, all in *File Structure*.
+- The probe was not re-run; its prompt, answer and tool are recorded above.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing (the probe's invented
+ids appear only in this report).
+
+- The handover's diagnosis that the isolation helper failed because the primary
+  checkout's `main` was behind `origin/main` holds: the plan landed on `origin/main` in
+  `aea9ea9` while the primary checkout's `main` was at `783dd62`. The kick-off prompt sent
+  the executor to the primary checkout; the helper refused rather than isolating on a
+  base without the plan. The executor fast-forwarded that `main` to `origin/main`, which
+  lost nothing (it is now an ancestor of `origin/main`).
+- Decision 3's "followed by the spec" read as applying to both actions, so a step with a
+  waiting plan and a spec reads `dispatch <plan> (<spec>)`. Accepted as is: it keeps the
+  design visible, and the probe read it right.
+- Fixed here, mechanical: FW-017's amended line ran past the record's wrap width;
+  rewrapped in `2c6beda`, no wording changed.
+
+### Outstanding disposition
+
+- The executor's reflog recovery during the red checks: dropped — the branch holds the
+  intended commits, and the checks above were re-run on it.
+- The helper refusing when the primary checkout is behind: dropped as an entry — it
+  refused out loud, which is the behaviour `isolation-refuses-a-base-without-the-plan`
+  shipped, and a fetch and fast-forward clears it.
+- The board's top box still makes one suggestion across layers: out of scope by the
+  plan, recorded in FW-042's consequences; no entry until someone finds it misleading.
+- No criterion waits on the developer: the report is terminal text checked by the guard.
+
+### Learnings routed
+
+- Test 4 as specified could pass on output lacking the heading (`indexOf` -1). The
+  planning rule already says a check must be able to fail (FW-041); nothing new to route.
+- Nothing else generalises beyond this plan; FW-042 records the design choice.
+
+### Merged because
+
+Every criterion has a test that goes red without its code, the self-check and the
+installed checks pass with `main` merged in, and the report reads right on this
+repository's own backlog.
