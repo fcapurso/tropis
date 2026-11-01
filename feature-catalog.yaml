@@ -44,8 +44,9 @@
     - first-adopter-harness:docs/superpowers/plans/2026-07-28-p13-rule-delivery-guard.md
 # Shipped by docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
 # (FW-041). Criteria are covered by the rule text in rules/planning.md and by the
-# fresh-agent probes A and B in that plan's handover report. The rule reaches a plan's
-# author through the planning area in .claude/rule-areas.json.
+# fresh-agent probe A in that plan's handover report and probe B as rerun in its
+# review record. The rule reaches a plan's author through the planning area in
+# .claude/rule-areas.json.
 - id: plan-checks-must-be-falsifiable
   title: A plan states what its checks print when they pass
   status: shipped
@@ -1357,8 +1358,9 @@
 # executor to run it again. Not the first time it happened.
 # Shipped by docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
 # (FW-041). Criteria are covered by the rule text in rules/planning.md and by the
-# fresh-agent probes A and B in that plan's handover report. The rule reaches a plan's
-# author through the planning area in .claude/rule-areas.json.
+# fresh-agent probe A in that plan's handover report and probe B as rerun in its
+# review record. The rule reaches a plan's author through the planning area in
+# .claude/rule-areas.json.
 - id: plans-are-accurate-without-a-rehearsal
   title: A plan is accurate without its author carrying it out first
   status: shipped

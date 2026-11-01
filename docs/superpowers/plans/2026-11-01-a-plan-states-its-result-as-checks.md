@@ -450,3 +450,65 @@ subject outside the README.
 
 - Probe B needs a rerun with a different subject (reviewer's call).
 - No review record written, nothing merged, as instructed.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, Claude Code 2.1.300 (Opus 5.5) on
+Darwin arm64.
+
+### Checks re-run
+
+- Task 1's seven text checks, run on the branch at `7eb392f`: the six presence checks
+  printed `1` each and the removed-sentence check printed `0`.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 128 passed,
+  128 total`.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD`: `feature-catalog.yaml`, `framework/DECISIONS.md`,
+  `framework/workflow.md`, `rules/planning.md` and this plan, all in *File Structure*.
+- The diff of `rules/planning.md`, `framework/workflow.md` and `framework/DECISIONS.md`
+  was read against *Decisions 1 to 3*: verbatim, rewrapped only in (b), as Task 1 allowed.
+- **Probe B, rerun.** The handover's diagnosis of B's failure was checked: the README
+  subject collides with step 5 of *Before finalising the table* in the same rule, which
+  says a plan does not patch the README. Rerun in a scratch project set up from this
+  branch with `scripts/set-up-project.sh` (its `.claude/rules/planning.md` contained the
+  new clause, count 1), with `docs/guide.md` holding a one-sentence wordy opening, and
+  the prompt of Task 3 with `docs/guide.md` in place of `README.md`. Run as
+  `claude -p --output-format stream-json --verbose` with the same `--allowedTools` list
+  as the handover, Claude Code 2.1.300 on Darwin arm64. The stream shows the agent
+  reading `.claude/rules/planning.md`, then calls that only read, a worktree command for
+  the plan's branch, a write of the plan, and a validation of it; no call edited
+  `docs/guide.md`. The committed plan says, under its execution protocol: "Shape chosen:
+  described for an executor, not built by the author and reviewed
+  (`.claude/rules/planning.md`, *Do not rehearse the work to write its plan*). The
+  criteria below can be stated without writing the paragraph, so the author did not."
+  Its checks name the failing output before the work (the paragraph "has 1 now", the
+  filler phrases "appear once now"). **Pass.** The scratch project was deleted.
+
+### Found
+
+Public exposure: the diff was read for private material; it names the first adopter
+only by its pseudonyms and its plans only in plain text, and carries no home path,
+hostname or name. Nothing found.
+
+- Probe A's agent put its plan on a branch in a sibling worktree rather than on `main`.
+  That is FW-040 working, not a defect.
+- **Fixed by the reviewer, mechanical:** the two catalog comments said both probes are in
+  the handover report; they now say probe B is in this record.
+
+### Outstanding disposition
+
+- "Probe B needs a rerun with a different subject": done above, passed.
+- Nothing is observable only by the developer: the change has no screen.
+
+### Learnings routed
+
+- A probe's subject can collide with another clause of the same rule and stop the agent
+  before it reaches the clause under test. The workflow already says to choose the task
+  to exercise the clause just written; this was that failure, made by the author of this
+  plan, and it needs no new text. Not routed.
+
+### Merged because
+
+Every criterion was re-run and holds, both probes pass with the calls shown, and the
+only fix was a two-line catalog comment.
