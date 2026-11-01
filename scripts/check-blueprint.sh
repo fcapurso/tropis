@@ -19,6 +19,11 @@
 # that file changes. NODE_MODULES=<a folder holding jest and yaml> uses those instead.
 #
 # Only committed content is checked. Commit first.
+#
+# Every run that counts against the self-check writes its output to a file. A run that is
+# a problem keeps it, in .self-check/logs/<UTC time>-<commit>/ (LOGS overrides the
+# folder); any other run deletes it, so a passing self-check leaves nothing. The last
+# lines of a red verdict name the folder, and on GitHub Actions print each log there.
 
 set -euo pipefail
 
@@ -45,7 +50,11 @@ if [ ! -x "$NM/.bin/jest" ]; then
 fi
 
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/blueprint-check-XXXXXX")"
+RUNLOG="$(mktemp "${TMPDIR:-/tmp}/blueprint-run-XXXXXX")"
+LOGS="${LOGS:-$BP/.self-check/logs/$(date -u +%Y%m%dT%H%M%SZ)-$(git -C "$BP" rev-parse --short HEAD)}"
+export LOGS
 cleanup() {
+  rm -f "$RUNLOG"
   rm -rf "$STAGE"
   if [ -n "${FULL:-}" ]; then rm -rf "$FULL" "$FULL.index"; fi
 }
@@ -86,10 +95,21 @@ framework=0
 echo
 echo "Framework repository: its own guards must pass here and fail on a planted defect"
 echo
-run_guard() { # <tree> <guard>
+# run_guard <tree> <guard>: the output is left in $RUNLOG for the caller to keep or drop.
+run_guard() {
   FRAMEWORK_ROOT="$1" TROPIS_EXPECT_FRAMEWORK=1 \
     node --experimental-vm-modules "$NM/.bin/jest" --config "$STAGE/jest.config.js" \
-    "guards/$2.test.js" >/dev/null 2>&1
+    "guards/$2.test.js" >"$RUNLOG" 2>&1
+}
+# keep_log <guard> <what>: the last run's output becomes $LOGS/framework-<guard>-<what>.log.
+# Runs are numbered so two plants of one kind keep both.
+kept=0
+keep_log() {
+  kept=$((kept + 1))
+  local what
+  what="$(printf '%s' "$2" | tr -c 'A-Za-z0-9\n' '-')"
+  mkdir -p "$LOGS"
+  cp "$RUNLOG" "$LOGS/framework-$1-$what-$kept.log"
 }
 for f in guards/*.test.js; do
   name="$(basename "$f" .test.js)"
@@ -104,6 +124,7 @@ done
 plant() {
   local guard="$1" file="$2" line="${3:-}" tree
   if ! run_guard "$STAGE" "$guard"; then
+    keep_log "$guard" "clean"
     echo "  FAILED      $guard fails on the framework repository"; framework=1; return
   fi
   tree="$(mktemp -d "${TMPDIR:-/tmp}/blueprint-plant-XXXXXX")"
@@ -115,6 +136,7 @@ plant() {
     rm -f "$tree/$file"
   fi
   if run_guard "$tree" "$guard"; then
+    keep_log "$guard" "$file planted"
     echo "  NOT CAUGHT  $guard passed with $file planted"; framework=1
   else
     echo "  caught      $guard: $file planted"
@@ -137,14 +159,13 @@ plant_add() {
   mkdir -p "$tree/docs/superpowers/specs"
   printf 'first line\n%s\n' "$text" >> "$tree/$file"
   if run_guard "$tree" private-material; then
+    keep_log private-material "$kind planted"
     echo "  NOT CAUGHT  private-material passed with a $kind planted"; framework=1
   else
-    out="$(FRAMEWORK_ROOT="$tree" TROPIS_EXPECT_FRAMEWORK=1 \
-      node --experimental-vm-modules "$NM/.bin/jest" --config "$STAGE/jest.config.js" \
-      "guards/private-material.test.js" 2>&1 || true)"
-    if printf '%s' "$out" | grep -qF "$file:2: $kind"; then
+    if grep -qF "$file:2: $kind" "$RUNLOG"; then
       echo "  caught      private-material: $kind planted in $file:2"
     else
+      keep_log private-material "$kind not named"
       echo "  NOT NAMED   private-material failed on a $kind but did not name $file:2"; framework=1
     fi
   fi
@@ -153,6 +174,7 @@ plant_add() {
 if run_guard "$FULL" private-material; then
   echo "  passed      private-material on the full copy of HEAD"
 else
+  keep_log private-material "full copy"
   echo "  FAILED      private-material fails on the full copy of HEAD"; framework=1
 fi
 plant_add "home path" "/Us""ers/alice/notes"
@@ -168,6 +190,17 @@ if [ "$conformance" -eq 0 ] && [ "$framework" -eq 0 ]; then
   echo "Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed."
 else
   [ "$conformance" -ne 0 ] && echo "Self-check FAILED: conformance or the clean baseline (above)."
-  [ "$framework" -ne 0 ] && echo "Self-check FAILED: the framework repository's own guards (above)."
+  if [ "$framework" -ne 0 ]; then
+    echo "Output of each failing run: $LOGS"
+    if [ "${GITHUB_ACTIONS:-}" = true ]; then
+      for log in "$LOGS"/framework-*.log; do
+        [ -f "$log" ] || continue
+        echo "::group::$(basename "$log")"
+        cat "$log"
+        echo "::endgroup::"
+      done
+    fi
+    echo "Self-check FAILED: the framework repository's own guards (above)."
+  fi
   exit 1
 fi

@@ -18,13 +18,19 @@ FIXTURES="${FIXTURES:-fixtures}"
 SCRIPTS="${SCRIPTS:-scripts}"
 WORK="${TMPDIR:-/tmp}/conformance-$$"
 
+# Where the output of a run that counts against the self-check is kept. Each run writes
+# to RUNLOG; a run that is a problem moves it to $LOGS/<name>.log, any other is deleted,
+# so a passing run creates no folder. check-blueprint.sh sets LOGS to a folder per run.
+LOGS="${LOGS:-${TMPDIR:-/tmp}/conformance-logs-$$}"
+RUNLOG="${TMPDIR:-/tmp}/conformance-run-$$.log"
+
 # Set by check-blueprint.sh to a blueprint checkout. Its shipped instruction layer then
 # replaces the base fixture's stubs, so the clean baseline reads the real rules, framework
 # documents and commands. Unset, the base fixture's stubs are what is tested.
 INSTRUCTIONS="${INSTRUCTIONS:-}"
 
 # defect directory : guard filename fragment
-CASES="
+CASES="${CASES:-
 orphan-rule:rule-areas
 stale-verification:doc-currency
 stale-picks:doc-currency
@@ -62,9 +68,15 @@ unasserted-clause:rule-claims
 clause-unknown-entry:rule-claims
 orphan-assertion:rule-claims
 undrained-flush:flush-drained
-"
+}"
 
 fail=0
+
+# keep <name>: the last run's output becomes $LOGS/<name>.log.
+keep() {
+  mkdir -p "$LOGS"
+  mv "$RUNLOG" "$LOGS/$1.log"
+}
 
 # The duplication this exists to prevent, checked before anything runs: if the base
 # fixture grows its own copy of a shipped script again, the run below stops proving
@@ -132,16 +144,20 @@ for case in $CASES; do
   defect="${case%%:*}"
   guard="${case##*:}"
   compose ""
-  if ! FRAMEWORK_ROOT="$WORK" $TEST_CMD "$guard" >/dev/null 2>&1; then
+  if ! FRAMEWORK_ROOT="$WORK" $TEST_CMD "$guard" >"$RUNLOG" 2>&1; then
+    keep "$defect-cannot-run"
     printf '  CANNOT RUN  %-22s %s fails on the clean project, so its failure proves nothing\n' "$defect" "$guard"
     fail=$((fail + 1))
     continue
   fi
+  rm -f "$RUNLOG"
   compose "$defect"
-  if FRAMEWORK_ROOT="$WORK" $TEST_CMD "$guard" >/dev/null 2>&1; then
+  if FRAMEWORK_ROOT="$WORK" $TEST_CMD "$guard" >"$RUNLOG" 2>&1; then
+    keep "$defect-not-caught"
     printf '  NOT CAUGHT  %-22s %s passed against a broken project\n' "$defect" "$guard"
     fail=$((fail + 1))
   else
+    rm -f "$RUNLOG"
     printf '  caught      %-22s %s\n' "$defect" "$guard"
   fi
 done
@@ -149,18 +165,35 @@ done
 echo
 echo "Clean baseline: every guard must pass"
 compose ""
-if FRAMEWORK_ROOT="$WORK" $TEST_CMD >/dev/null 2>&1; then
+if FRAMEWORK_ROOT="$WORK" $TEST_CMD >"$RUNLOG" 2>&1; then
+  rm -f "$RUNLOG"
   echo "  ok          clean baseline"
 else
+  keep clean-baseline
   echo "  FAILED      clean baseline — a guard fails on a project with nothing wrong"
-  FRAMEWORK_ROOT="$WORK" $TEST_CMD 2>&1 | grep -E '^  ● ' | sort -u | sed 's/^  ●/              ●/'
+  names=$(grep -E '^  ● ' "$LOGS/clean-baseline.log" | sort -u | sed 's/^  ●/              ●/' || true)
+  if [ -n "$names" ]; then
+    printf '%s\n' "$names"
+  else
+    tail -n 20 "$LOGS/clean-baseline.log" | sed 's/^/              /'
+  fi
   fail=$((fail + 1))
 fi
 
 rm -rf "$WORK"
+rm -f "$RUNLOG"
 
 echo
 if [ "$fail" -gt 0 ]; then
+  echo "Output of each failing run: $LOGS"
+  if [ "${GITHUB_ACTIONS:-}" = true ]; then
+    for log in "$LOGS"/*.log; do
+      [ -f "$log" ] || continue
+      echo "::group::$(basename "$log")"
+      cat "$log"
+      echo "::endgroup::"
+    done
+  fi
   echo "$fail problem(s). A guard that cannot fail is not evidence."
   exit 1
 fi
