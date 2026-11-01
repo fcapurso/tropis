@@ -723,6 +723,14 @@ call was `Read` of `commands/release.md`.
 | guides-through-both-steps · 6, an old slot or caller is moved, or the project is told exactly what to rename, and nothing is lost silently | `guards/pipeline.test.js` two refusal tests (slot and deploy both exit 1, naming the fix, nothing runs); `RELEASES.md` by-hand steps 1–2, which `/update` performs | Yes for the slot and the variable. The old caller is covered only by the by-hand step; nothing checks it by machine |
 | guides-through-both-steps · 7, the notes line is renamed and `/release` reads either form | `guards/release.test.js` *names all three endings…*, *resumes from the new and the old…*; probe runs 1–2 | Yes |
 
+**After rebasing on `origin/main` at `a989f1e`** (two commits landed meanwhile:
+`main-status` and the backlog; the rebase was clean): `bash scripts/check-blueprint.sh` →
+`Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`;
+`npm --prefix .tropis test` → `Test Suites: 13 passed, 13 total`,
+`Tests: 137 passed, 137 total`. The rebase rewrote this branch's commits, so the short
+hashes named in this report (`f554f58` … `6e8e314`) are those from before it; the
+subjects are unchanged.
+
 ### Scope
 
 `git diff --stat origin/main...HEAD` before this report: 17 files, 1030 insertions, 401
