@@ -10,10 +10,10 @@
  * at the timeout. With --pull-request <number> it waits for a pull request set to merge
  * itself, bringing its branch up to date whenever it falls behind, then waits for the run
  * on the merge commit as --wait does; it exits 4 naming why when the pull request did not
- * merge, naming why: a conflict, a failed check, auto-merge off, the pull request closed,
- * or a blocked pull request whose pipeline runs have all finished while a check the base
- * branch's rules require has no check run (nothing will start it). Where it cannot ask — origin not on GitHub, no gh, gh failing — it prints that it
- * could not tell and why, and exits 0.
+ * merge: a conflict, a failed check, auto-merge off, the pull request closed, or a blocked
+ * pull request whose pipeline runs have all finished while a check the base branch's rules
+ * require has no check run (nothing will start it). Where it cannot ask — origin not on
+ * GitHub, no gh, gh failing — it prints that it could not tell and why, and exits 0.
  *
  * The backlog report and the isolation helper import mainStatus; the workflow's merge
  * sequence runs --wait, and the workflow's gated merge, /release and the commit hook name
