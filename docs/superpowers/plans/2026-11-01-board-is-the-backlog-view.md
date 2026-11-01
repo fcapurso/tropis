@@ -659,3 +659,35 @@ one is in *File Structure*; this report adds the plan file.
 - The fresh-agent check is recorded here, as the commits touching `rules/` and
   `framework/` say. Doc closeout: the lesson of probe G is the only portable item; no
   other durable change beyond what the plan lists.
+
+### Review round 1
+
+Fix for probe G's finding, as instructed by the reviewing session: in
+`rules/catalogs.md` the bullet *Keep no other readable view of the backlog.* now says
+that an agent that meets such a document while changing the backlog, and finds no entry
+for its replacement, captures one with `/idea` in the same change. Commit `c2ce7db`.
+
+- Text check: `tr -s ' \n' ' ' < rules/catalogs.md | grep -cF 'An agent that meets such
+  a document while changing the backlog, and finds no entry for its replacement,
+  captures one with'` printed `1`. The other Task 3 figures were unchanged: readable
+  view `1`, keep no other `1`, never edit or commit `1`, old "Where the project
+  generates" `0`, "generated region" `1`.
+- `bash scripts/check-blueprint.sh`: last line `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+- **Probe G re-run: pass.** Fresh scratch project G set up from this branch at
+  `c2ce7db`, same seeding (`scripts/features.mjs`, `docs/features.md`, the AGENTS.md
+  line), the new sentence present in its `.claude/rules/catalogs.md` (count `1`),
+  same prompt, same flags. Claude Code 2.1.300, Darwin arm64, session model
+  `claude-opus-5-5`. The agent read `.claude/rules/catalogs.md`, committed the export
+  entry and `docs/features.md` as the project's AGENTS.md says, and also added an
+  idea entry `backlog-board-only-view`, "Backlog board is the only readable view of the
+  backlog", whose value ends "Removes scripts/features.mjs, docs/features.md and the
+  AGENTS.md instruction to run them together." Its final message: "A second idea entry,
+  `backlog-board-only-view`. The backlog rules say the backlog board should be the only
+  readable view of it. An agent that finds a second generated document like
+  `docs/features.md`, with no entry yet to remove it, must capture one in the same
+  change. Until that entry ships, regenerating the document still applies, which is why
+  I did both." It ran `scripts/features.mjs` too, as expected. Scratch project and
+  stream deleted.
+- The catalog comment above the entry now names probe B and the re-run of probe G.

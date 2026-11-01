@@ -4591,8 +4591,9 @@
 # docs/superpowers/plans/2026-11-01-board-is-the-backlog-view.md.
 # Shipped by docs/superpowers/plans/2026-11-01-board-is-the-backlog-view.md. Criteria
 # 1 to 5 are covered by guards/board-hooks.test.js, criteria 6 and 7 by that plan's
-# Task 3 checks, and criterion 8 by probe B in its handover report (probe G, a project
-# with its own generated view, is recorded there too and did not pass).
+# Task 3 checks, and criterion 8 by probe B and the re-run of probe G in its handover
+# report (the first run of probe G did not pass; the re-run, after the rule was
+# sharpened, did).
 - id: board-is-the-backlog-view
   title: The board is every project's readable view of its backlog, and keeps itself current
   status: shipped
