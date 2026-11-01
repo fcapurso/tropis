@@ -1952,14 +1952,22 @@
 # (take-version.mjs line 140, a spawnSync that passes git archive's output as input) was
 # waiting on its standard input after git archive had exited. The cause is untested.
 # Nothing names the hung test, so the next step is a per-test timeout that fails it by name.
+# 2026-11-01, decided while shaping the self-check bundle: not built. Its two suspects are
+# removed by that bundle's plan (another run's scratch folder counted as a leftover, and
+# the tar pipe that hung), and a red run now keeps its output. Nothing is
+# left to build until it recurs; if it does, the kept log names the test. Shelved.
 - id: self-check-clean-baseline-flake
   title: Find out why the self-check's clean baseline failed once and then passed
   status: idea
+  shelved: true
   value: Someone running the self-check can trust a red result to mean something is wrong.
     Once, on 2026-10-16, the clean baseline failed with nothing wrong in the project and
     passed on every later run. Until the cause is known, a real failure and this one look
     the same. The first step is to keep the failing guard's output the next time it
-    happens; the slow take-version suite is a suspect, untested.
+    happens; the slow take-version suite is a suspect, untested. Shelved 2026-11-01 -
+    the self-check bundle removes both suspects and keeps a red run's output, so there
+    is nothing to build until the clean baseline goes red again; that red, with its kept
+    log, brings it back.
   acceptanceCriteria: []
   type: bug
   layer: product
@@ -3124,17 +3132,35 @@
 # baseline on a commit whose tree had passed twice, then green on the re-run. So it is not
 # local to one machine, and the line naming the failure says only that a guard failed, not
 # which one.
+# Shaped 2026-11-01, against main at 9180850. scripts/check-conformance.sh sends every
+# test run to /dev/null, and when the clean baseline fails it runs the whole suite a second
+# time and prints the failures of that second run, so an intermittent failure prints no
+# test name at all; that is why the 2026-10-25 CI line said only that a guard failed.
+# scripts/check-blueprint.sh's run_guard discards its output the same way.
+# Plan: docs/superpowers/plans/2026-11-01-self-check-red-means-something.md.
 - id: self-check-red-runs-keep-their-output
   title: A red self-check keeps its output, so an intermittent failure can be found
-  status: idea
+  status: building
   value: Someone whose self-check goes red can find out afterwards which test failed and
     why, even when a re-run passes. Today the run's output is gone once the terminal
     scrolls, so an intermittent failure is either ignored or re-run until green, and a
     real failure that only sometimes shows looks the same as noise.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Every test run inside the self-check whose result counts against its verdict keeps
+      its full output in a file under .self-check/logs/ in the checkout, and the verdict
+      names that folder.
+    - When the clean baseline fails, the tests the self-check names are the ones that
+      failed in that run, read from its kept output, with no second run.
+    - On GitHub Actions the kept output is also printed into the job's log.
+    - A self-check that passes leaves no log behind.
+    - A guard runs the conformance script with a test command whose clean baseline fails
+      once and then passes, and fails if the failing test's name is missing from the
+      script's output or from the kept file.
   type: improvement
   layer: framework
-  modules: []
+  modules:
+    - scripts/check-conformance.sh
+    - scripts/check-blueprint.sh
   refs: []
 
 # Found releasing v0.4.1 on 2026-10-21. The release job promotes RELEASES.md, commits,
@@ -3692,21 +3718,28 @@
     - guards/pipeline.test.js
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-19.
+# 2026-11-01, checked against main at 9180850: guards/update.test.js counts tropis-update-
+# folders in the same shared folder (its clones helper, and the counts that use it), so it
+# races the same way. guards/check-version.test.js already gives its child a TMPDIR of its
+# own, the pattern both tests take.
+# Plan: docs/superpowers/plans/2026-11-01-self-check-red-means-something.md.
 - id: self-check-runs-beside-another
   title: Two self-check runs on one machine do not fail each other
-  status: shaped
+  status: building
   value: A flush with more than one submission runs a self-check per clone. Run side by
     side, one run's scratch folder reads as the other's leak, the check goes red, and an
     executor spends a batch finding out that nothing was wrong.
   acceptanceCriteria:
     - The test that take-version removes its scratch folder on every exit path looks for
-      leftovers only in a temporary folder of its own run, not the machine's shared one.
+      leftovers only in a temporary folder of its own run, not the machine's shared one,
+      and so do the tests that count update.mjs's clone folders.
     - Two runs of the self-check started together in two clones on one machine both pass.
     - Making take-version leave its scratch folder behind still turns the test red.
   type: bug
   layer: product
   modules:
     - guards/take-version.test.js
+    - guards/update.test.js
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-19.
 - id: isolation-refuses-a-base-without-the-plan
@@ -4263,17 +4296,34 @@
 # never fired. An 11-day-old check-version.mjs test process was stuck on the same machine.
 # Why the pipe was never closed is not known. Seen on macOS (Darwin 25.2.0), arm64,
 # Node v22.15.0, bsdtar.
+# Shaped 2026-11-01. Decided: the cause need not be found. The pipe that hung goes away
+# (git archive writes a file in the scratch folder and tar reads that file), and every
+# child take-version and check-version start has a time limit, so any other stuck step
+# ends in an error that names it. A reproduction would cost more than removing the pipe,
+# and a bounded failure that names its step is what someone running an update needs.
+# Plan: docs/superpowers/plans/2026-11-01-self-check-red-means-something.md.
 - id: an-update-never-hangs-unpacking-a-version
   title: Taking or checking an update never hangs unpacking a version
-  status: idea
+  status: building
   value: Someone taking an update, or checking whether one fits, gets an answer or an error
     in bounded time. Today the step that unpacks a version into a scratch folder can wait
     forever with nothing on the screen, and the framework's own checks that exercise it
     can hang for an hour, because nothing can time them out.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Unpacking a version passes nothing through a pipe; git archive writes a file in the
+      scratch folder and tar reads it.
+    - Every child process take-version and check-version start is stopped when it runs
+      past a time limit, and the command then refuses, naming the step and the limit.
+    - A guard makes tar hang and fails unless take-version refuses within the limit,
+      naming the unpacking step.
+    - Every guard that runs take-version or check-version gives the child a time limit
+      shorter than the test's own, so a hung child fails the test that started it, by
+      name.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/take-version.mjs
+    - scripts/check-version.mjs
   refs: []
 # 2026-10-31, found while releasing v0.7.0. main-is-gated-by-the-host made this
 # repository's release tag-only: the notes reach main promoted under the version, and

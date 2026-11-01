@@ -31,12 +31,12 @@ an-update-never-hangs-unpacking-a-version:
   effortWhy: The cause is not known; it needs a reproduction before a fix, then a
     timeout or a streamed pipe in take-version.
   bundle: self-check
-  verdict: "Worth fixing, but it has no criteria yet. Decide first: is a bounded
-    timeout that reports the stuck step enough, or must the cause be found?"
+  verdict: "Shaped 2026-11-01: the cause need not be found. Remove the pipe that hung
+    and put a time limit on every child, so any stuck step fails by name."
   evidence: "2026-10-31 — scripts/take-version.mjs:52 runs every child through
     spawnSync with no timeout, so nothing can stop a stuck tar."
   seen:
-    status: idea
+    status: shaped
     blockers: []
 cloud-executor-attaches-every-checkout:
   band: B
@@ -494,9 +494,9 @@ self-check-clean-baseline-flake:
   valueWhy: A failure seen once; a real one would look the same.
   effort: 2
   effortWhy: Diagnosis once it recurs with its output kept.
-  bundle: self-check
-  verdict: "Happened once. Nothing to do until it recurs, and then keep the
-    failing guard's output."
+  verdict: "Not built with the self-check bundle (2026-11-01). That bundle removes
+    both suspects and keeps a red run's output; wait for a recurrence, then read
+    the kept log."
   seen:
     status: idea
     blockers: []
@@ -513,7 +513,7 @@ self-check-red-runs-keep-their-output:
   evidence: "2026-10-20 — scripts/check-blueprint.sh writes its output only to the
     terminal; its temporary directories are for staging, not a log."
   seen:
-    status: idea
+    status: shaped
     blockers: []
 self-check-runs-beside-another:
   band: B
