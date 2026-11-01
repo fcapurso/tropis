@@ -60,3 +60,11 @@ someone is writing a test.
   the old check caught by accident: in one project a tokenizer that replaced a substring
   match missed a command after `then`, `do` or `{`, and one continued from the line
   before, so a hook went quiet on real commits until review probed beyond the table.
+- **A deadline in a test stops a hang; it is not something the code must beat.** Where a
+  test runs something that polls a fake until the fake's last answer ends it, give that
+  run a deadline it cannot reach on any machine, and pass a short one only in a test of
+  the deadline itself. A deadline the fake's sequence must beat makes the answer depend
+  on how busy the machine is: in this framework two cases that polled a stub three times
+  under a three-second deadline exited "still waiting" during busy runs and passed on the
+  rerun with nothing changed. Slow every call of the fake in one test, so a deadline
+  tightened later is caught.
