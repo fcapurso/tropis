@@ -1589,8 +1589,7 @@ The lock-form push as the take: it works, but under simultaneous pushes the lose
 fail on a storage error rather than the lock, which a taker cannot tell from a network
 failure without reading the marker; the API replies the same way each time. The API's
 delete as the release: it removes any holder's marker. A dedicated branch as the marker
-(the spec's fallback): not needed, since GitHub accepts the ref; it would also sit under
-the ruleset that governs branches. GitHub's merge queue: the pages read do not say a
+(the spec's fallback): not needed, since GitHub accepts the ref. GitHub's merge queue: the pages read do not say a
 personal account's repository can use one, and finding out would need a settings change.
 
 **Consequences:** The take needs a token that may write refs through the API, which `gh`
