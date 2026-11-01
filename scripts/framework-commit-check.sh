@@ -6,7 +6,7 @@
 # Fires when a commit is about to carry a change the workflow says belongs on
 # a branch. The instruction layer (.claude/rules/, .claude/rule-additions/,
 # .claude/framework/) and commands are named on every branch. On main, every
-# other path is named too: all of them where .claude/project.json records no
+# other path is named too: all of them where .tropis/project.json records no
 # "ungated", since a gated main takes nothing but pull requests, and those
 # outside the project-owned list where it records a reason. Those files are
 # executed by every later session, so workflow.md requires the instruction
@@ -73,7 +73,7 @@ elsewhere=$(printf '%s\n' "$changed" | grep -E -v '^\.claude/(rules|rule-additio
 # bootstrapped from the blueprint is in.
 branch=$(git branch --show-current 2>/dev/null || echo "")
 
-# Whether .claude/project.json records why main is not gated: "ungated" as a
+# Whether .tropis/project.json records why main is not gated: "ungated" as a
 # string with words in it. No repository root, or any failure, is no reason.
 top=$(git rev-parse --show-toplevel 2>/dev/null || true)
 ungated=no
@@ -87,7 +87,7 @@ try:
     print('yes' if isinstance(value, str) and value.strip() else 'no')
 except Exception:
     print('no')
-" "$top/.claude/project.json" 2>/dev/null || echo no)
+" "$top/.tropis/project.json" 2>/dev/null || echo no)
 fi
 
 if [ "$branch" != "main" ]; then
@@ -153,7 +153,7 @@ if [ -n "$elsewhere" ]; then
   echo
   if [ "$ungated" != yes ]; then
     cat <<'EOF'
-This project's main branch is gated: .claude/project.json records no "ungated", so
+This project's main branch is gated: .tropis/project.json records no "ungated", so
 nothing reaches main except through a pull request (workflow.md, Branching). Commit on
 a branch, push it, open a pull request, and run gh pr merge <N> --auto --squash with
 --subject and --body; then run node .tropis/scripts/main-status.mjs --pull-request <N>,

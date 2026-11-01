@@ -14,6 +14,7 @@ import {
   checkoutName,
   parseWorktreeSetup,
   WORKTREE_SETUP,
+  OLD_WORKTREE_SETUP,
   validateDispatchable,
   missingProjections,
   parseExecutionProtocol,
@@ -78,11 +79,16 @@ const lastVerified = picksText === null ? null : parseLastVerified(picksText);
 function setupFor(row) {
   const name = checkoutName(row.checkout);
   const dir = name === basename(root) ? root : resolve(root, '..', name);
-  try {
-    return parseWorktreeSetup(readFileSync(join(dir, WORKTREE_SETUP), 'utf8'));
-  } catch {
-    return null;
+  for (const file of [WORKTREE_SETUP, OLD_WORKTREE_SETUP]) {
+    let text;
+    try {
+      text = readFileSync(join(dir, file), 'utf8');
+    } catch {
+      continue;
+    }
+    return parseWorktreeSetup(text);
   }
+  return null;
 }
 const setups = v.repos
   .filter((row) => row.isolation)

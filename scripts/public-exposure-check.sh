@@ -4,7 +4,7 @@
 #
 # In a public project, tells the agent at `git commit` and `git push` to read what is
 # about to be committed or pushed for private material, and to ask the developer before
-# going on if it finds any. A project is public when .claude/project.json at the
+# going on if it finds any. A project is public when .tropis/project.json at the
 # repository root holds {"public": true}; absent, unreadable, or anything but true means
 # not public, and the hook says nothing.
 #
@@ -55,7 +55,7 @@ try:
     print('yes' if isinstance(data, dict) and data.get('public') is True else 'no')
 except Exception:
     print('no')
-" "$top/.claude/project.json" 2>/dev/null || echo no)
+" "$top/.tropis/project.json" 2>/dev/null || echo no)
 if [ "$public" != yes ]; then
   exit 0
 fi

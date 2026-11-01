@@ -278,7 +278,9 @@ export function picksForTier(tiersText, tier) {
 }
 
 /** A checkout's own worktree setup, read by the dispatch command. */
-export const WORKTREE_SETUP = '.claude/worktree-setup.txt';
+export const WORKTREE_SETUP = '.tropis/worktree-setup.txt';
+// A checkout on a release before this one keeps its setup here.
+export const OLD_WORKTREE_SETUP = '.claude/worktree-setup.txt';
 
 /**
  * The steps in a worktree setup file: one command per line, in order. Blank lines and
