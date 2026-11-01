@@ -136,31 +136,39 @@ request was closed while the run was going and its environment was removed. It m
 not create one there, because nothing would remove it; it should fail, saying to
 close and reopen the pull request, which creates the environment again.
 
-To rehearse a release before it is tagged, fill `pipeline/candidate/` with
-`reset.sh` and `deploy.sh`. `reset.sh` puts the pre-production environment back
-on the version production runs. It receives `TROPIS_PRODUCTION_TAG`, that
-version's tag, and `TROPIS_PRODUCTION_DIR`, a temporary directory of that tag's
-files. Only a tag of the form `vX.Y.Z`, such as `v1.4.0`, counts as a release; a
-tag such as `v1.5.0-rc.1` is not one. The version is the highest release tag. With no
-such tag there is no release yet, and `reset.sh` is not run. `deploy.sh` deploys
-the candidate. It receives `TROPIS_CANDIDATE`, the candidate's full commit hash,
-and `TROPIS_BY_HAND`, the path of an empty file. Append one line for each thing
-someone must upgrade or approve by hand; an empty file means nothing. Copy
-`.tropis/templates/candidate-caller.yml` to `.github/workflows/candidate.yml`.
-`/release` then prints the trigger that starts the rehearsal. The project's
-release pipeline must take the candidate's commit, as the workflow's release
-section says.
+A release is two steps, which `/release` walks you through: deploy to staging, then
+promote to production. To deploy to staging first, fill `pipeline/staging/` with
+`reset.sh` and `deploy.sh`. `reset.sh` puts staging back on the version production
+runs. It receives `TROPIS_PRODUCTION_TAG`, that version's tag, and
+`TROPIS_PRODUCTION_DIR`, a temporary directory of that tag's files. Only a tag of the
+form `vX.Y.Z`, such as `v1.4.0`, counts as a release; a tag such as `v1.5.0-rc.1` is not
+one. The version is the highest release tag. With no such tag there is no release yet,
+and `reset.sh` is not run. `deploy.sh` deploys the commit to staging. It receives
+`TROPIS_STAGING_COMMIT`, that commit's full hash, and `TROPIS_BY_HAND`, the path of an
+empty file. Append one line for each thing someone must upgrade or approve by hand; an
+empty file means nothing. Copy `.tropis/templates/staging-caller.yml` to
+`.github/workflows/staging.yml`; keep its `run-name`, which is how `/release` finds the
+run it asked for. `/release` then prints the trigger that starts it. A project still
+laid out as an earlier release had it is refused, with the command that fixes it.
+
+Promoting is your own pipeline: Tropis does not ship it, because version files, tags
+and production differ in every project. Before it tags, it runs
+`node .tropis/scripts/pipeline.mjs promote check <commit> --staged <staged> --allow <notes file> --allow <each version file>`
+(leave out `--staged` when `pipeline/staging/` is empty), which refuses a commit the main
+branch does not hold, or one that changed anything but the notes and version files
+since the commit staging was checked on. It then tags `<commit>`, pushes only the tag,
+and deploys the tag to production; it never commits to the main branch. The workflow's
+release section says the rest.
 
 Three things the reset meets that nothing here handles for you. A stored-data schema
-that may only grow: the pre-production environment holds every attribute the main branch
-has had, production's tag can lack some, and a platform may refuse a deploy that drops
-one, so deploy the tag's code with the candidate's schema. Submodules:
-`TROPIS_PRODUCTION_DIR` holds the tag's files without them, and an old tag's
-`.gitmodules` may name an address the runner cannot reach, so fetch each one over the
-candidate's address at the commit the tag pins. A new major version: a non-interactive
-deploy may need approving, and an installed site may stay on the old major version until
-upgraded, so approve and upgrade the pre-production install in the scripts, or append a
-line to `TROPIS_BY_HAND`.
+that may only grow: staging holds every attribute the main branch has had, production's
+tag can lack some, and a platform may refuse a deploy that drops one, so deploy the
+tag's code with the staged commit's schema. Submodules: `TROPIS_PRODUCTION_DIR` holds
+the tag's files without them, and an old tag's `.gitmodules` may name an address the
+runner cannot reach, so fetch each one over the staged commit's address at the commit
+the tag pins. A new major version: a non-interactive deploy may need approving, and an
+installed site may stay on the old major version until upgraded, so approve and upgrade
+the staging install in the scripts, or append a line to `TROPIS_BY_HAND`.
 
 On GitHub the host can refuse a pull request whose checks have not passed. Tropis ships
 the settings in `.tropis/templates/main-branch-ruleset.json`: the main branch takes
