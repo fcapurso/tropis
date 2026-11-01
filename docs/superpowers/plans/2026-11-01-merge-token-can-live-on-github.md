@@ -353,3 +353,59 @@ hand back with the ref's name.
 | 5 | Cloud credentials; merge queue | 6 |
 | 6 | Tool, version, platform; nothing left | 1, 7 |
 | 7 | The decision | 8 |
+
+## Handover report
+
+### Task completion
+
+Tasks 1 to 8 done. Task 6 is documentation only, as the plan says. The pull request and
+review record were not made, as instructed.
+
+### Verification results
+
+Run with git 2.49.0, gh 2.103.2, Node 22.15.0 on macOS 26.2, arm64.
+
+- `bash scripts/check-blueprint.sh` before the work: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` After the commit: the same line.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 146 passed, 146 total`.
+- `git diff --stat origin/main...HEAD` (before this report): `bands.yaml`, the sprint design, `feature-catalog.yaml`, `framework/DECISIONS.md`; 4 files, 222 insertions, 24 deletions.
+- `git ls-remote origin 'refs/spike/*'` after cleanup: empty (also shown in the spec's evidence section).
+- `npm --prefix .tropis run board` rewrote nothing: `docs/backlog-board/index.html` was unchanged.
+
+### Scope
+
+Only files in the File Structure table, plus this plan file. Worktree used: `../tropis-merge-token`.
+
+### Judgment calls
+
+- Decision in FW-049: take with the API create, release with the expected-value delete push. The lock-form push also locks, but its losers often fail on a GitHub storage error, which a taker cannot tell from a network failure.
+- Ran the lock-form race a second time with the objects uploaded beforehand, to separate the lock from that storage error.
+- Corrected three lines of section 3 (the lock sentence, Take, Release) because a plain push is not a lock.
+
+### What the plan got wrong
+
+- Nothing blocking. Task 3's "expect a refusal" for the plain push of a descendant was wrong: it succeeded and moved the ref, which the plan's Traps had anticipated.
+- The plan's probe snippets use `${PIPESTATUS[0]}`-style exit capture; I ran them under bash, since the login shell is zsh and gave blank statuses at first (re-run under bash).
+
+### Outstanding
+
+- Cloud session behaviour is documented, not probed: a person must paste the three-command probe (in the spec's evidence section) into a cloud session; the proxy is documented to refuse non-branch pushes and deletions.
+- The server-side check of a conditional delete under a collision was not shown; the stale-holder refusal seen was the client's `stale info`.
+- The merge queue on a personal account is unanswered: GitHub's pages read do not say, and testing would change settings.
+- The events feed never showed any push in the window, including a real push to `main`, so it says nothing about whether the spike refs show as pushes.
+- FW-049 may need renumbering at merge if another session took it.
+
+### Acceptance criteria
+
+| # | Task | Evidence subsection |
+|---|---|---|
+| 1 | 2 | Task 2 |
+| 2 | 3 | Task 3 |
+| 3 | 4 | Task 4 |
+| 4 | 5 | Task 5 |
+| 5 | 6 | Task 6 |
+| 6 | 1, 7 | header and Task 7 |
+| 7 | 8 | FW-049 |
+
+### The spike's answer
+
+GitHub accepts a ref outside branches and tags on this repository, and the API refuses to create one that exists, with exactly one of five simultaneous attempts accepted in each of nine rounds. A plain push is not a lock, and a push naming the commit it expects refuses to delete another holder's marker, while the API's delete is unconditional. The ref started no pipeline run, and cloud-session use and the merge queue are unanswered.
