@@ -145,6 +145,7 @@ describe('set-up-project.sh', () => {
       expect(readFileSync(join(dir, 'AGENTS.md'), 'utf8')).toBe(
         readFileSync(join(blueprint, 'templates/AGENTS.md'), 'utf8'),
       );
+      expect(existsSync(join(dir, 'CONTRIBUTING.md'))).toBe(false);
       expect(existsSync(join(dir, 'pipeline'))).toBe(false);
       expect(existsSync(join(dir, '.github/workflows/pipeline.yml'))).toBe(false);
       expect(existsSync(join(dir, '.github/workflows/candidate.yml'))).toBe(false);

@@ -189,7 +189,7 @@ fixes and your scripts fill, described in the operator guide your project gets a
   from going stale.
 - [RELEASES.md](RELEASES.md): what each release changed.
 - [bootstrap.md](bootstrap.md): setting a project up by hand.
-- **Contributing:** a project sends its suggestions back with `/flush-upstream`, one pull
-  request per suggestion and under the name it chooses, the same way for a project's
-  maintainer or a contributor with a fork.
+- **Contributing:** a project sends its suggestions back as pull requests with
+  `/flush-upstream`; [`CONTRIBUTING.md`](CONTRIBUTING.md) says how that works and how to
+  change the framework directly.
 - **Licence:** MIT, in [`LICENSE`](LICENSE).

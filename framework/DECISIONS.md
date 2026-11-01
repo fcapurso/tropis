@@ -409,6 +409,11 @@ already applied in its project.
 **Consequences:** A flush needs `gh` and a GitHub-hosted framework; there is no fallback
 without them. Pull requests from forks get no CI until ci.yml also runs on `pull_request`.
 
+**Amended 2026-11-01 — pull requests from forks run the pipeline.** `pipeline.yml` runs on
+`pull_request`, so the consequence above no longer holds. A first-time contributor's run
+waits for the maintainer's approval, a repository setting. `CONTRIBUTING.md` says which
+is true, and `contributing-page.test.js` holds it to `pipeline.yml`.
+
 ## FW-012: A shipped rule's area is the project's data; only shipped rules are generated
 
 **Date:** 2026-10-15 · **Status:** Accepted
