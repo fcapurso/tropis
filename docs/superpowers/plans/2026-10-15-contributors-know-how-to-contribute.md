@@ -1,75 +1,114 @@
 # A contributor can read how contributing to the framework works — Implementation Plan
 
 > **For agentic workers:** execute task by task, in order. Read the whole plan first,
-> including *Decisions* and *Traps*.
+> including *Decisions* and *Traps*. Nothing in it stops for the developer.
 
 **Goal:** `CONTRIBUTING.md` at the repository root says how a contribution reaches the
 framework — by a flush from a project, or by a change made here — and what happens to it;
 `README.md` and `bootstrap.md` point at it; the doc-closeout table makes a change to the
-contribution mechanism update it; and a guard fails when the page names something that does
-not exist or misstates whether fork pull requests get CI.
+contribution mechanism update it; and a guard, run in the self-check, fails when the page
+names something that does not exist or misstates whether fork pull requests get CI.
 
-**Spec:** none. The entry `contributors-know-how-to-contribute` in `feature-catalog.yaml`
-is the specification: its seven acceptance criteria and the comments above it. The
-mechanism the page describes is decided in `framework/DECISIONS.md` FW-011 and implemented
-in `commands/flush-upstream.md` and `scripts/submit-upstream.sh`; read all three before
-writing.
+**Spec:** the entry `contributors-know-how-to-contribute` in `feature-catalog.yaml`: its
+seven acceptance criteria and the comments above it. The mechanism the page describes is
+decided in `framework/DECISIONS.md` FW-011 (with its 2026-10-19 amendment) and implemented
+in `commands/flush-upstream.md`, `scripts/submit-upstream.sh` and, on the maintainer's
+side, `.claude/commands/absorb-flush.md`; read all four before writing.
 
-**What this delivers:** `contributors-know-how-to-contribute`, all seven criteria. See
-*Criteria and their evidence* at the end.
+**Revised 2026-11-01.** The first version of this plan (2026-10-15) was never dispatched
+and no longer matched the repository: `.framework/` is now `.tropis/`, a flush goes out
+under a flush name, the maintainer absorbs flushes in groups, the self-check now runs the
+guards that check this repository's own pages, and pull requests now run CI. This version
+replaces it.
 
-**What the specifying session verified on 2026-10-15, against `main` at `356247e`:**
+**What the specifying session verified on 2026-11-01, against `origin/main` at `9a670c4`,
+with git 2.49.0 and Node v22.15.0 in Claude Code 2.1.300 on macOS (Darwin 25.2.0) arm64:**
 
-- There is no `CONTRIBUTING.md` anywhere in the repository.
-- How a contribution travels from a project (FW-011; `commands/flush-upstream.md`): lines
-  wait in the project's upstream queue, `docs/BLUEPRINT-UPSTREAM.md`; `/flush-upstream`
-  runs `submit-upstream.sh preflight`, then puts each line to the operator — flush, hold or
-  decline — classifying it as a lesson (travels as the edit it proposes) or a capability
-  (travels as a shaped backlog entry); it drafts a plan with one task per flushed line,
-  each cloning the framework's `main` afresh, branching
-  `upstream/<project-folder>/<flush-date>-<line-slug>`, running
-  `bash scripts/check-blueprint.sh` in the clone, and opening one pull request with
-  `submit-upstream.sh open`. The branch goes to the framework repository when the
-  submitter can push there, otherwise to their fork, which is created if missing. A line
-  leaves the queue when its pull request opens. Pull requests are reviewed and merged in
-  the framework repository by its maintainer, never by the flush.
-- What a flush needs (`scripts/submit-upstream.sh`, its header): `gh` installed and signed
-  in, and the project's `.framework/README.md` line "set up from the framework at `X`"
-  naming a GitHub repository. Otherwise preflight exits 1 with one line saying what is
-  missing.
-- `.github/workflows/ci.yml` triggers on `push` and `workflow_dispatch` only; its comment
-  says the repository takes no pull requests from forks. FW-011's *Consequences*: "Pull
-  requests from forks get no CI until ci.yml also runs on `pull_request`."
-- How a change made here travels: `framework/workflow.md` (*Branching*, *Preflight*,
-  *Merge and clean up*, *Doc closeout*, the fresh-agent check), `rules/planning.md`,
-  `framework/dispatch.md`; the self-check is `bash scripts/check-blueprint.sh`. This
-  repository's `CLAUDE.md` says the source folders (`rules/`, `framework/`, `commands/`,
-  `scripts/`, `guards/`, `templates/`) are the next release and `.claude/`, `.framework/`
-  the installed one.
-- `README.md` lines 66–70 describe the flush in four sentences ("Lessons meant for every
-  adopting project wait in an upstream queue…"). `bootstrap.md` lines 278–283 tell a
-  newly set-up project about the queue and the flush.
-- The doc-closeout table is in `framework/workflow.md` under *Doc closeout — required*.
+- **There is no `CONTRIBUTING.md`** anywhere in the repository.
+- **How a contribution travels from a project** (`commands/flush-upstream.md`, FW-011): an
+  entry waits in the project's upstream queue, `docs/BLUEPRINT-UPSTREAM.md`, put there by
+  `/capture-learning` when it would be true for any project (`commands/capture-learning.md`
+  line 43). `/flush-upstream` is a sitting: it runs
+  `bash .tropis/scripts/submit-upstream.sh preflight .`; reads the queue header's
+  `Flushes as: <name>` line, asking the operator for a name if it is missing and saying the
+  name will be public; puts each entry to the operator with all its parts — flush, hold or
+  decline — saying whether it is a lesson (travels as the edit it proposes) or a capability
+  (travels as a shaped backlog entry). It drafts a plan with one task per flushed entry; after
+  `/dispatch`, each task clones the framework's current `main` afresh, branches
+  `upstream/<flush name>/<flush-date>-<entry-slug>`, makes the edit, runs
+  `bash scripts/check-blueprint.sh` in the clone (no pull request when it fails), and opens one
+  pull request with `submit-upstream.sh open`. The branch goes to the framework repository
+  when the signed-in account can push there, otherwise to the contributor's fork, created
+  if missing. A drain task removes submitted and declined entries from the queue and keeps
+  held ones with their note. The flush never merges.
+- **What a flush needs** (`scripts/submit-upstream.sh`, header): `gh` installed and signed
+  in, and the project's `.tropis/README.md` line "set up from the framework at `X`" naming a
+  GitHub repository; otherwise preflight exits 1 with one line saying what is missing.
+  `.tropis/README.md` is installed from `templates/README.md` (`scripts/set-up-project.sh`
+  line 80).
+- **What happens on the maintainer's side** (`.claude/commands/absorb-flush.md`, which lives
+  in this repository only and never ships; `framework/workflow.md`, *Merging*): the
+  maintainer lists a flush's pull requests by branch prefix, decides them a group at a
+  time — taken, taken with a stated change, or declined with a reason — and lands each group
+  as one pull request with one commit per contribution, the contributor as its author,
+  merged by rebase. Each absorbed pull request is then closed with a comment naming the
+  commit it landed as; a declined one is closed with the reason. The script it runs is
+  `.github/scripts/absorb-flush.mjs`.
+- **CI on pull requests:** `.github/workflows/pipeline.yml` triggers on `push` to `main` and
+  on `pull_request` (`types: [opened, synchronize, reopened, closed]`). `ci.yml` is now only
+  the hand-started release job. The repository's settings (this repository's `CLAUDE.md`,
+  checked 2026-10-31) make workflows from a first-time contributor's fork wait for the
+  maintainer's approval. `gh pr list --state all` shows 89 pull requests, none from a fork:
+  no fork pull request has yet run through the pipeline. FW-011's *Consequences* still says
+  "Pull requests from forks get no CI until ci.yml also runs on `pull_request`", which is no
+  longer true.
+- **What is not yet true of a flush:** the entry `flush-name-is-explained-and-unique`
+  (shaped) will make `/flush-upstream` explain the flush name and refuse one another account
+  already flushes under. Today nothing checks that. That later entry changes
+  `/flush-upstream`; this plan describes the flush as it works today and does not change it.
+- **How a change made here travels:** `framework/workflow.md` (*Branching*, *Preflight*,
+  *Scope check*, *Merge and clean up*, *Doc closeout*, the fresh-agent check),
+  `rules/planning.md`, `framework/dispatch.md`; the self-check is
+  `bash scripts/check-blueprint.sh`. This repository's `CLAUDE.md` says the source folders
+  (`rules/`, `framework/`, `commands/`, `scripts/`, `guards/`, `templates/`) are the next
+  release and `.claude/`, `.tropis/` the installed one, and that `main` takes changes only
+  through a pull request that merges itself once `pipeline / gate` is green.
+- **`README.md`** line 192–194, under *Where to go next*, is one bullet: "**Contributing:** a
+  project sends its suggestions back with `/flush-upstream`, one pull request per suggestion
+  and under the name it chooses, the same way for a project's maintainer or a contributor
+  with a fork." The README is refreshed whole by `/refresh-readme` from
+  `docs/readme/skeleton.md`, whose *Where to go next* job is "links to the deeper documents,
+  how to contribute, the licence." (line 64).
+- **`bootstrap.md`** lines 309–314 tell a newly set-up project about the queue and then
+  describe the flush in two sentences ("`/flush-upstream` drafts the porting plan; a person
+  decides what ports. The flush then submits each decided line as a pull request and needs
+  `gh` signed in.").
+- **The doc-closeout table** is in `framework/workflow.md` under *Doc closeout — required*.
   `guards/operator-page-closeout.test.js` asserts its two README rows by regex; a new row
   does not disturb those.
-- `scripts/set-up-project.sh` copies named files only; `CONTRIBUTING.md` is not among them.
-  `guards/set-up-project.test.js` › *sets a project up in its own repository* builds a
+- **How this repository's own guards run in the self-check** (`scripts/check-blueprint.sh`,
+  lines 89–150): `FRAMEWORK_GUARDS` lists them; any guard file containing
+  `isBlueprintTree` and missing from that list makes the self-check fail (`UNLISTED`);
+  `run_guard` runs one with `FRAMEWORK_ROOT` set to the staged tree and
+  `TROPIS_EXPECT_FRAMEWORK=1`, so its skip case fails there; `plant <guard> <file> [line]`
+  copies the staged tree, deletes the file or every line containing the text, and requires
+  the guard to fail. `guards/readme-usable.test.js` is the pattern: root from
+  `process.env.FRAMEWORK_ROOT ?? resolve(here, '..')`, `isBlueprintTree`, and a skip case
+  that expects `TROPIS_EXPECT_FRAMEWORK` to be empty.
+- **The staged tree is `git archive HEAD`**, which leaves out what `.gitattributes` marks
+  `export-ignore`: `.claude/`, `.tropis/`, `docs/superpowers/`, `docs/backlog-board/`,
+  `docs/BLUEPRINT-UPSTREAM.md` among them. So in the self-check, `.claude/commands/absorb-flush.md`
+  and anything under `.tropis/` do not exist; `.github/` and the root files do.
+- **`scripts/set-up-project.sh` copies named files only**; `CONTRIBUTING.md` is not among
+  them. `guards/set-up-project.test.js` › *sets a project up in its own repository* builds a
   project in a temporary directory with it.
-- **How guards run in the self-check:** `check-conformance.sh` runs every guard under
-  `guards/` with `FRAMEWORK_ROOT` set to a composed fixture tree that has no
-  `bootstrap.md` or `PORTABILITY-NOTES.md`. A guard that resolves the blueprint from
-  `FRAMEWORK_ROOT` and skips outside it therefore skips in every self-check run —
-  `readme-usable.test.js` and `operator-page-closeout.test.js` do exactly that (staged at
-  `356247e`: 10 passed against the real tree; the skip case only, with `FRAMEWORK_ROOT`
-  elsewhere). `check-blueprint.sh` puts the staged blueprint tree in `INSTRUCTIONS`,
-  which the guards inherit. Fixing the two existing guards is `blueprint-page-guards-run-in-the-self-check`; this plan's
-  guard reads `INSTRUCTIONS` so it is not born with the same defect.
 
-**Model tier: Medium.** The content is stated; the prose and a small guard are written to it.
+**Model tier: Medium.** The page's content and the guard's behaviour are stated; the prose
+and a small guard are written to them.
 
-**Requires:** any current Claude Code CLI for the fresh-agent check in Task 5 (record which).
+**Requires:** a current Claude Code CLI (`claude`) on the machine for the fresh-agent check in Task 6.
 
-**Merge authority: parent review.** An adopter-facing page and a framework document change.
+**Merge authority: parent review.** An adopter-facing page, a framework document and a decision amendment change. You stop once the pull request is open with the handover on it (Task 7): do not write the review record and do not merge.
 
 Do not store a kick-off prompt on this plan.
 
@@ -83,176 +122,311 @@ contributors-know-how-to-contribute
 
 | Checkout | Role | Isolation |
 |---|---|---|
-| framework (`tropis`) | execute here | `git worktree add ../tropis-contributing -b plan/contributors-know-how-to-contribute` |
+| `tropis` | execute here | `git worktree add ../tropis-contributing -b plan/contributors-know-how-to-contribute origin/main` |
 
 ## Global Constraints
 
 - **Describe the mechanism as it is.** Do not change `commands/flush-upstream.md`,
-  `scripts/submit-upstream.sh`, `.github/workflows/ci.yml` or FW-011. If the page cannot be
-  written truthfully without a change to one of them, stop and report.
+  `scripts/submit-upstream.sh`, `commands/capture-learning.md`, `.claude/commands/absorb-flush.md`
+  or any workflow under `.github/`. If the page cannot be written truthfully without a change
+  to one of them, stop and report.
 - **Point, do not restate.** The page links to the documents that define a step and says
   in a sentence what the step is for; it does not copy their rules.
-- **Do not edit `.claude/` or `.framework/`** — they are the installed release.
-- **Do not change `readme-usable.test.js` or `operator-page-closeout.test.js`.** Their
-  skipping in the self-check is `blueprint-page-guards-run-in-the-self-check`.
-- **No new dependency.**
-- **Do not lower, skip or delete a guard to get green.**
-- Every commit has a body. Never add `Co-Authored-By` or "Generated with" trailers.
+- **Do not edit `.claude/`, `.tropis/`, `.cursor/`, `CLAUDE.md` or `AGENTS.md`** at the root —
+  the installed release and this repository's own entry pair.
+- **Do not change `readme-usable.test.js` or `operator-page-closeout.test.js`.**
+- **No new dependency. Do not lower, skip or delete a guard or a test.** Every commit has a
+  body.
+- **Push only to this plan's branch.**
+- **This repository is public.** No home paths, hostnames, personal or computer names in
+  anything committed, the handover or the probe record. A project is named only as
+  `first-adopter`.
 
 ## Decisions
 
-Taken with the developer on 2026-10-15; do not reopen them.
+Taken by the specifying session; do not reopen them.
 
 1. **The name is `CONTRIBUTING.md`**, at the root, because GitHub links that name from a
    new pull request — where someone arriving through a flush will be.
 2. **Two ways in, one page:** a flush from a project, and a change made in this repository.
+   The maintainer's side of a flush (`/absorb-flush`) is described in a short paragraph,
+   because it is "what happens to the pull request once it is open".
 3. **`README.md` and `bootstrap.md` keep one sentence each** about contributing and point at
-   `CONTRIBUTING.md`, so the mechanism is described in one place.
-4. **Kept current like the operator and adopter pages (FW-006):** a doc-closeout row, plus a
-   guard for what can be checked mechanically — the names on the page exist, and its
-   statement about CI for fork pull requests matches `ci.yml`.
-5. **The fork-CI statement is one fixed sentence**, so the guard can find it:
-   `A pull request from a fork gets no CI run yet.` It is on the page exactly when `ci.yml`
-   has no `pull_request` trigger.
-6. **No `DECISIONS.md` entry.** Nothing is chosen between alternatives that FW-006 and
-   FW-011 have not already decided.
+   `CONTRIBUTING.md`.
+4. **The README bullet is edited by this plan, and the skeleton is changed so a refresh
+   keeps it.** The closeout table says a plan does not patch the README. That rule exists so
+   the README is not patched with new behaviour between whole-page refreshes; this edit only
+   replaces a description of the mechanism with a link to the page that now owns it, which is
+   what the next refresh would write once the skeleton asks for it. So the skeleton's
+   *Where to go next* job names `CONTRIBUTING.md`, and the README bullet is changed to match.
+   `docs/readme/readme.yaml` (`refreshedAt`) is not touched.
+5. **The fork-CI statement is one fixed sentence, chosen by the workflow, so the guard can
+   find it.** While `.github/workflows/pipeline.yml` has a `pull_request` trigger, the page
+   carries, unbroken on one line:
+   `A pull request from a fork runs the pipeline once the maintainer approves the run.`
+   and not `A pull request from a fork gets no CI run yet.`; without the trigger, the reverse.
+6. **The page's *Not yet* section says, as it stands today:** that no pull request from a
+   fork has yet run through the pipeline, so a fork's first run is the first test of it; and
+   that nothing yet checks that a flush name is not already used by another project, so a
+   contributor should pick one nobody else is likely to (plain prose — no catalog id). The
+   later entry `flush-name-is-explained-and-unique` will remove the second sentence under the
+   closeout row this plan adds.
+7. **FW-011 gets a dated amendment, not a new decision.** Its *Consequences* line about fork
+   CI is false; nothing is chosen between alternatives, so no new FW number. Append after the
+   *Consequences* paragraph of FW-011, verbatim:
+
+   ```
+   **Amended 2026-11-01 — pull requests from forks run the pipeline.** `pipeline.yml` runs on
+   `pull_request`, so the consequence above no longer holds. A first-time contributor's run
+   waits for the maintainer's approval, a repository setting. `CONTRIBUTING.md` says which
+   is true, and `contributing-page.test.js` holds it to `pipeline.yml`.
+   ```
+
+   Check that `framework-integrity` accepts `CONTRIBUTING.md` and `pipeline.yml` in that
+   paragraph (neither is under `docs/`, `scripts/` or `.claude/`). If it refuses either,
+   write that name in plain text and say so under *Judgment calls*.
 
 ## Traps
 
-- **The page names paths in two places.** Most are this repository's
-  (`commands/flush-upstream.md`); some are a project's (`docs/BLUEPRINT-UPSTREAM.md`,
-  `.framework/README.md`). The guard maps installed paths to their source
-  (`.claude/rules/` → `rules/`, `.claude/framework/` → `framework/`, `.claude/commands/` →
-  `commands/`, `.framework/scripts/` and `.framework/hooks/` → `scripts/`) and allows a short,
-  named list of project-only paths. Keep that list to what the page needs.
-- **The guard must not skip in the self-check.** Read the blueprint tree from
-  `process.env.INSTRUCTIONS`, falling back to the repository root; skip only when neither is
-  a blueprint tree. Run `bash scripts/check-blueprint.sh` and confirm, in its verbose run or
-  by a deliberate break, that the guard's real cases executed — not only a skip.
-- **The guard must be seen to fail.** It includes a case that writes a broken page into a
-  temporary blueprint-shaped directory and expects each problem reported.
+- **The page names paths of two kinds.** Most are this repository's
+  (`commands/flush-upstream.md`); some are a project's (`docs/BLUEPRINT-UPSTREAM.md`) or the
+  installed form of a source file (`.tropis/README.md`, `.tropis/scripts/submit-upstream.sh`).
+  In the staged tree `.claude/` and `.tropis/` do not exist. The guard maps installed paths
+  to their source and allows a short named list of project-only paths — see Task 4. Keep the
+  list to what the page needs.
+- **The guard runs in the self-check only if it is listed.** It calls `isBlueprintTree`, so
+  `scripts/check-blueprint.sh` fails with `UNLISTED` until `contributing-page` is in
+  `FRAMEWORK_GUARDS`, and it must be planted (Task 5).
+- **The self-check reads committed content only.** Commit before each run. A red run of an
+  uncommitted break proves nothing: make the break a throwaway commit, run, then
+  `git reset --hard HEAD~1` — only on this plan's branch, only that throwaway commit.
+- **A fixed sentence wrapped across two lines is not found.** Both the guard and the
+  self-check's line-deleting plant need Decision 5's sentence on one line.
+- **`/flush-upstream` is not in `.claude/commands/` here** (this repository is the upstream
+  and never flushes). It is `commands/flush-upstream.md`. `/absorb-flush` is the other way
+  round: only `.claude/commands/absorb-flush.md`, which the staged tree lacks.
 
 ## File Structure
 
 | File | Change |
 |---|---|
 | `CONTRIBUTING.md` | New — the page |
-| `README.md` | Lines 66–70: one sentence and a pointer |
-| `bootstrap.md` | Lines 278–283: the queue sentence kept, the flush mechanism replaced by a pointer |
+| `README.md` | The *Contributing* bullet under *Where to go next*: one sentence and a link |
+| `docs/readme/skeleton.md` | *Where to go next* job names `CONTRIBUTING.md` |
+| `bootstrap.md` | The queue sentence kept; the flush's description replaced by a pointer |
 | `framework/workflow.md` | Doc-closeout table: a row for the contribution mechanism |
-| `guards/contributing-page.test.js` | New — the page's names exist; the fork-CI sentence matches `ci.yml` |
-| `guards/set-up-project.test.js` | *Sets a project up*: `CONTRIBUTING.md` is not in the set-up project |
-| `feature-catalog.yaml` | `contributors-know-how-to-contribute` to `shipped`, at merge, by the reviewer |
+| `framework/DECISIONS.md` | FW-011: the dated amendment of Decision 7 |
+| `guards/contributing-page.test.js` | New — the page's names exist; the fork-CI sentence matches `pipeline.yml` |
+| `guards/set-up-project.test.js` | *Sets a project up in its own repository*: `CONTRIBUTING.md` is not in the set-up project |
+| `scripts/check-blueprint.sh` | `contributing-page` in `FRAMEWORK_GUARDS`, and two plants |
+| `feature-catalog.yaml` | `contributors-know-how-to-contribute` to `shipped`, with its modules |
 | `docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md` | Handover report |
 
-Doc closeout: an adopter-facing page changes, so `README.md` and `bootstrap.md` are above. A
-framework document changes, so Task 5 runs the fresh-agent check. No rule changes, so no
-Cursor projection.
+Doc closeout, decided here: an adopter-facing page changes (README, bootstrap), covered
+above; a framework document changes, so Task 6 runs the fresh-agent check; a decision is
+amended (Decision 7); no rule changes, so no rule regeneration; nothing portable is learned
+beyond what this plan ships.
 
 ---
 
-### Task 1: The page
+## Tasks
+
+### Task 0 — Setup in the worktree
+
+In the worktree: `npm --prefix .tropis ci`, then `git status --porcelain` (expected:
+nothing), then `bash scripts/check-blueprint.sh` (expected: last line starts
+`Self-check passed`). Record `git --version`, `node --version`, `claude --version` and
+`uname -sm` for the handover.
+
+### Task 1 — The page
 
 Write `CONTRIBUTING.md`, plain and short, in this order:
 
-1. **Two ways to contribute** — from a project using the framework, or by changing it here.
-   One paragraph.
-2. **From a project** — what a contributor does and what happens:
-   - a lesson or capability goes into the project's queue, `docs/BLUEPRINT-UPSTREAM.md`,
-     when it would be true for any project (point at `/capture-learning`);
-   - `/flush-upstream` is a sitting: each line is put to the operator — flush, hold or
-     decline — and a lesson travels as the edit it proposes, a capability as a shaped
-     backlog entry;
-   - the plan it drafts opens one pull request per flushed line, from a fresh clone of the
-     framework's `main`, after the framework's self-check passes in that clone; the branch
-     goes to the framework repository or, without push access, to the contributor's fork;
-   - what is needed: `gh` installed and signed in, and `.framework/README.md` naming the
-     framework's GitHub repository;
-   - what happens next: the maintainer reviews each pull request on its own and merges or
-     declines it; a declined lesson stays applied in the project that raised it.
-3. **Changing the framework here** — the path a change takes, each step one line with a
-   pointer: a backlog entry (`/idea`), a plan (`rules/planning.md`), a branch and worktree,
-   the self-check (`bash scripts/check-blueprint.sh`), a fresh-agent check for a change to
-   a rule or framework document, review, a squash-merge (`framework/workflow.md`). Say that
-   the source folders are the next release and `.claude/` and `.framework/` the installed
+1. **`# Contributing to Tropis`**, then one paragraph: two ways to contribute — from a
+   project using the framework, or by changing it here.
+2. **`## From a project`** — what a contributor does and what happens:
+   - an entry goes into the project's queue, `docs/BLUEPRINT-UPSTREAM.md`, when it would be
+     true for any project (point at `/capture-learning`);
+   - `/flush-upstream` is a sitting: each entry is put to the operator — flush, hold or
+     decline — and a lesson travels as the edit it proposes, a capability as a shaped backlog
+     entry; the flush goes out under the name in the queue's `Flushes as:` line, which is
+     public, so a private project picks one that does not identify it;
+   - the plan it drafts, once dispatched, opens one pull request per flushed entry, from a
+     fresh clone of the framework's `main`, after the framework's self-check passes in that
+     clone; the branch goes to the framework repository or, without push access, to the
+     contributor's fork;
+   - what is needed: `gh` installed and signed in, and `.tropis/README.md` naming the
+     framework's GitHub repository (`.tropis/scripts/submit-upstream.sh preflight` says which
+     is missing);
+   - what happens next — one short paragraph: the maintainer takes a flush in with
+     `/absorb-flush`, a group of related pull requests at a time; each is taken, taken with a
+     stated change, or declined with a reason; taken ones land as one commit each, with the
+     contributor as author; the original pull request is then closed with a comment naming
+     where it landed, or the reason it was declined. A declined lesson stays applied in the
+     project that raised it.
+3. **`## Changing the framework here`** — the path a change takes, each step one line with a
+   pointer, not a restatement: a backlog entry in `feature-catalog.yaml` (`/idea`); a plan
+   (`rules/planning.md`); a branch in a worktree of its own (`framework/workflow.md`,
+   *Branching*); the self-check, `bash scripts/check-blueprint.sh`; a fresh-agent check for a
+   change to a rule or framework document (`framework/workflow.md`, *Doc closeout*); review
+   and a squash-merge through a pull request, since `main` takes nothing else. Say in one
+   sentence that the source folders (`rules/`, `framework/`, `commands/`, `scripts/`,
+   `guards/`, `templates/`) are the next release and `.claude/` and `.tropis/` the installed
    one, which change only by installing a release.
-4. **Not yet** — the fixed sentence of Decision 5, and why: `ci.yml` runs on push only.
-5. **Keeping this page true** — one sentence: a change to how a contribution reaches the
-   framework updates this page in the same plan (`framework/workflow.md`, *Doc closeout*).
+4. **`## Not yet`** — Decision 5's sentence for the current `pipeline.yml` (the
+   *runs the pipeline once the maintainer approves the run* one), on its own line, then the
+   two statements of Decision 6.
+5. **`## Keeping this page true`** — one sentence: a change to how a contribution reaches
+   the framework updates this page in the same plan (`framework/workflow.md`,
+   *Doc closeout*).
 
-Every path in backticks must exist, under the mapping in *Traps*. Commit.
+Every backticked path must resolve under the guard's rules in Task 4. Commit.
 
-### Task 2: The pointers
+### Task 2 — The pointers
 
-- `README.md`, lines 66–70: replace the four sentences with one — lessons meant for every
-  adopting project are flushed back as pull requests — and a pointer to `CONTRIBUTING.md`.
-- `bootstrap.md`, lines 278–283: keep the sentence telling the project to append a portable
-  learning to `docs/BLUEPRINT-UPSTREAM.md`; replace the description of `/flush-upstream`
-  and its pull requests with a pointer to the framework's `CONTRIBUTING.md`.
+- `README.md`, the *Contributing* bullet under *Where to go next*: replace it with one
+  sentence — a project sends its suggestions back as pull requests with `/flush-upstream` —
+  followed by a link to [`CONTRIBUTING.md`](CONTRIBUTING.md) for how that works and how to
+  change the framework directly. Change nothing else in the README.
+- `docs/readme/skeleton.md`, *Where to go next*, the **Job** line: make it
+  `links to the deeper documents, how to contribute as one line linking CONTRIBUTING.md, the licence.`
+- `bootstrap.md`, lines 309–314: keep the sentences telling the project to run
+  `/capture-learning` and to append a portable learning to `docs/BLUEPRINT-UPSTREAM.md`;
+  replace the two sentences describing `/flush-upstream` with one: `/flush-upstream` sends
+  the queue back as pull requests, and the framework's CONTRIBUTING.md (plain text, not
+  backticks — a set-up project has no such file) says how and what it needs.
 
 Commit.
 
-### Task 3: The closeout row
+### Task 3 — The closeout row and the amendment
 
-In `framework/workflow.md`, *Doc closeout — required*, add after the adopter row:
+In `framework/workflow.md`, *Doc closeout — required*, add directly after the row that
+begins `| taught **or built** something portable`:
 
 ```
-| alters how a contribution reaches the framework (the upstream queue, the flush, its pull requests, CI for them) | `CONTRIBUTING.md`, in the same plan — only in a plan that executes in the framework repository |
+| alters how a contribution reaches the framework — the upstream queue, the flush, its pull requests, how the maintainer takes them in, CI for them | `CONTRIBUTING.md`, in the same plan. Only the framework's own repository has it |
 ```
 
-Commit.
+Apply Decision 7 to `framework/DECISIONS.md`. Commit.
 
-### Task 4: The guards
+### Task 4 — The guard, red then green
 
-`guards/contributing-page.test.js`, in the style of `guards/readme-usable.test.js` (header
-comment, `isBlueprintTree`), with the root from `process.env.INSTRUCTIONS`, else
-`resolve(here, '..')`. One function, `problems(root)`, returns a list of strings:
+`guards/contributing-page.test.js`, in the style of `guards/readme-usable.test.js`
+(`// Level: unit` first line, a header comment saying what it locks and that it skips
+outside the framework repository, `isBlueprintTree` as there, root from
+`process.env.FRAMEWORK_ROOT ?? resolve(here, '..')`, the same skip case expecting
+`TROPIS_EXPECT_FRAMEWORK` empty). Export nothing; define one function `problems(root)`
+returning a list of strings, one per problem:
 
-- `CONTRIBUTING.md` is missing;
-- a backticked path (contains `/`, ends in `.` plus 2–4 letters, no `*`, `<` or `>`) that
-  does not exist under the mapping in *Traps* and is not on the project-only list;
-- a backticked `/name` with no `commands/name.md`;
-- the fork-CI sentence present while `.github/workflows/ci.yml` has a `pull_request`
-  trigger, or absent while it has none.
+- `CONTRIBUTING.md is missing` when there is no page (and nothing else is checked).
+- **Paths.** Take every backticked span. Split it on whitespace. A word is a path when it has
+  none of `*<>{}`, does not start with `/` or `-`, and either contains `/` or ends in
+  `.md`, `.js`, `.mjs`, `.sh`, `.yml`, `.yaml` or `.json`; a trailing `/` is dropped (a
+  folder). Resolve it: `.claude/rules/X` → `rules/X`, `.claude/framework/X` →
+  `framework/X`, `.claude/commands/X` → `commands/X`, `.tropis/scripts/X` and
+  `.tropis/hooks/X` → `scripts/X`, `.tropis/README.md` → `templates/README.md`; anything
+  else as written. A path on the project-only list — `docs/BLUEPRINT-UPSTREAM.md` — is
+  accepted. Otherwise report `names <path>, which does not exist` when the resolved path is
+  absent under `root`.
+- **Commands.** A backticked span (or its first word) matching `^/[a-z][a-z-]*$` names a
+  command; report `names /<name>, which is not a command` unless `commands/<name>.md`
+  exists, or the name is on the repository-only list — `absorb-flush`, held to
+  `.github/scripts/absorb-flush.mjs` existing.
+- **Fork CI.** `pipeline.yml` has a trigger when `.github/workflows/pipeline.yml` has a line
+  matching `^\s+pull_request:`. With the trigger, report a problem when Decision 5's
+  *runs the pipeline* sentence is absent or the *gets no CI run yet* sentence present;
+  without it, the reverse. The problem names which sentence is expected.
 
-Cases: `problems(root)` is empty on the real tree; and on a temporary blueprint-shaped
-directory whose page names a missing script and a missing command and leaves out the
-sentence while its `ci.yml` has no `pull_request`, `problems` reports all three.
+Cases:
 
-`guards/set-up-project.test.js`, *sets a project up in its own repository*: add an
-assertion that `CONTRIBUTING.md` does not exist in the set-up project.
+1. `problems(root)` equals `[]` on the real tree.
+2. A temporary blueprint-shaped directory (the four entries `isBlueprintTree` needs, a
+   `commands/` with one command, a `.github/workflows/pipeline.yml` with no `pull_request`
+   trigger) whose page names `scripts/missing.sh` and `/nonesuch` and carries the
+   *runs the pipeline* sentence: `problems` reports exactly three problems, naming
+   `scripts/missing.sh`, `/nonesuch`, and the expected *gets no CI run yet* sentence.
+3. The same directory without a page: `problems` equals `['CONTRIBUTING.md is missing']`.
 
-Run each new or changed test immediately, red then green: break the page on purpose once,
-watch the guard fail, restore it.
+Run it red first. The page already exists (Task 1), so make a throwaway commit that renames one backticked path in
+`CONTRIBUTING.md` to a missing one, run
+`bash scripts/check-blueprint.sh` (its tools land in `.self-check/` on the first run), see case 1 fail naming that path, and drop the commit
+(*Traps*). Paste the failing line. Then green.
 
-### Task 5: Checks and fresh-agent check
+`guards/set-up-project.test.js`, *sets a project up in its own repository*: add an assertion
+that `CONTRIBUTING.md` does not exist in the set-up project directory. Run that file. Commit.
+
+To run one guard faster, `run_guard` in `scripts/check-blueprint.sh` shows how the
+self-check invokes jest on a staged tree; any way you use, say which under *Verification results*.
+
+### Task 5 — The guard in the self-check
+
+In `scripts/check-blueprint.sh`: add `contributing-page` to `FRAMEWORK_GUARDS`, and after the
+`plant readme-usable …` lines add:
 
 ```bash
-npm --prefix .framework test
-bash scripts/check-blueprint.sh
-git diff --stat origin/main...HEAD
+plant contributing-page CONTRIBUTING.md
+plant contributing-page CONTRIBUTING.md "A pull request from a fork runs the pipeline once the maintainer approves the run."
 ```
 
-Expected: both green; `contributing-page` executed its real cases in the self-check (show
-how you know); the diff stat names exactly the files in *File Structure* except
-`feature-catalog.yaml`.
+Commit. Run `bash scripts/check-blueprint.sh`. Expected: last line starts
+`Self-check passed`, and the output has two lines starting `  caught      contributing-page:`.
+Paste them. If either says `NOT CAUGHT` or `FAILED`, fix the guard or the page and run again.
 
-**Fresh-agent check** (`framework/workflow.md` changed). In a fresh clone of this branch in a
-scratch folder, start a fresh Claude Code session and give it, in one prompt:
+### Task 6 — Catalog, full verification and the fresh-agent check
 
-> This is a probe and its output will be discarded. An invented plan in this repository
-> changes `scripts/submit-upstream.sh` so that a flush submits one pull request per flush
-> instead of one per line. Using only this repository, list every document the plan must
-> update besides the script itself.
+In `feature-catalog.yaml`, on `contributors-know-how-to-contribute`: set `status: shipped`
+(it reads `building` once dispatched; if it reads anything else, set `shipped` anyway and
+say so under *Judgment calls*). Set `modules` to `CONTRIBUTING.md`,
+`guards/contributing-page.test.js` and `scripts/check-blueprint.sh`. Add directly above the
+entry's `- id:` line, below the existing comments:
 
-Pass: the answer names `CONTRIBUTING.md`, and does so because of the doc-closeout row.
-Record the prompt, the answer's gist, pass or fail, and the tool, version and machine in a
-commit body on the branch. A fail means the row is not clear enough: fix it and run again.
+```yaml
+# 2026-11-01, shipped by docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md,
+# revised that day. The fork-CI example in the criteria was out of date by then; the page
+# states what is true now, held to pipeline.yml by contributing-page.test.js.
+```
 
-### Task 6: Handover
+Do not put `: ` (colon and space) inside an unquoted YAML value. Commit.
 
-Append `## Handover report` to this file with the six sections the planning rules name, and
-commit. The reviewer promotes the entry and writes the review record.
+Then, after committing everything, from the worktree:
+
+- `npm --prefix .tropis test` — paste the `Tests:` line.
+- `bash scripts/check-blueprint.sh` — paste the last line, which must start
+  `Self-check passed`.
+- `git diff --stat origin/main...HEAD` — paste it; every file must be in *File Structure*.
+
+**Fresh-agent check** (`framework/workflow.md` changed). Push the branch first. Clone it
+into a scratch folder outside the repository (`git clone --branch plan/contributors-know-how-to-contribute <origin url> <scratch>`),
+and in that clone run:
+
+```bash
+claude -p --output-format stream-json --verbose "This is a probe and its output will be discarded. An invented plan in this repository changes scripts/submit-upstream.sh so that a flush always pushes its branch to the contributor's fork, even when the contributor could push to the framework repository. Using only this repository, list every document the plan must update besides the script itself, and say for each which rule or table makes it owed." > <scratch>/probe.jsonl
+```
+
+Pass: the final answer names `CONTRIBUTING.md` and attributes it to the doc-closeout row in
+`framework/workflow.md` (or its installed copy). Quote from `probe.jsonl` the tool call
+that read the closeout table and the answer's sentence about `CONTRIBUTING.md`. A fail means
+the row is not clear enough: fix the row, commit, push, and run again. Record the prompt,
+the quotes, pass or fail, and the tool, its version, the operating system and architecture
+— never the computer's name — in the body of an empty commit
+(`git commit --allow-empty`) titled `chore(probe): fresh-agent check of the contribution closeout row`.
+Delete the scratch clone.
+
+### Task 7 — Handover report and pull request
+
+1. Append `## Handover report` to this plan with the six sections the planning rule names:
+   Task completion, Verification results (each command, its actual output, and the tool,
+   version, operating system and architecture), Scope (diff stat, every file in
+   *File Structure*, the worktree path used), Judgment calls, What the plan got wrong,
+   Outstanding. Say in Outstanding that the change has no screen, so there is no developer
+   check. Commit and push.
+2. Open a pull request against `main` titled
+   `docs(contributing): a contributor can read how contributing to the framework works`,
+   whose body says what is now true and names the fresh-agent check's result, ending with the
+   attribution lines your session gives.
+3. Wait for its checks (`gh pr checks <N> --watch`) and report whether they are green.
+   **Stop there.** Do not write a review record, set auto-merge or merge. Leave the worktree
+   in place; the reviewer removes it.
 
 ---
 
@@ -260,16 +434,17 @@ commit. The reviewer promotes the entry and writes the review record.
 
 | Criterion (short) | Evidence |
 |---|---|
-| The page explains a flush from a project, its needs, and what happens after | `CONTRIBUTING.md`, *From a project* |
+| The page explains a flush from a project, its needs, and what happens after | `CONTRIBUTING.md`, *From a project*; names held by `contributing-page.test.js` |
 | The page gives the path of a change made here, by pointing | `CONTRIBUTING.md`, *Changing the framework here* |
-| The page says what does not work yet | The fork-CI sentence; `contributing-page.test.js` |
-| README and bootstrap point at the page | Task 2 diff |
-| Doc-closeout row | `framework/workflow.md`; Task 5 fresh-agent check |
-| A check fails on a name that does not exist | `contributing-page.test.js`, the broken-page case |
+| The page says what does not work yet | `CONTRIBUTING.md`, *Not yet*; the fork-CI sentence held to `pipeline.yml` |
+| README and bootstrap point at the page | Task 2 diff; `docs/readme/skeleton.md` keeps it through a refresh |
+| Doc-closeout row | `framework/workflow.md`; Task 6 fresh-agent check |
+| A check fails on a name that does not exist | `contributing-page.test.js` case 2; the self-check's plants |
 | Not copied into a set-up project | `set-up-project.test.js` |
 
 ## Not in this plan
 
-- **Making `readme-usable` and `operator-page-closeout` run in the self-check.**
-  `blueprint-page-guards-run-in-the-self-check`.
-- **CI for pull requests from forks.** `ci.yml` keeps running on push only; the page says so.
+- **Explaining the flush name and refusing one already in use.**
+  `flush-name-is-explained-and-unique`; it updates `CONTRIBUTING.md` under the new row.
+- **Proving a fork pull request passes the pipeline.** Nothing can until one is opened; the
+  page says so.

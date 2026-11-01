@@ -1681,9 +1681,10 @@
 # directly. README.md and bootstrap.md keep a sentence each and point at it, so the
 # mechanism is described in one place. Kept current the way the operator and adopter
 # pages are (FW-006): a doc-closeout row, plus a check for what can be checked.
+# 2026-11-01, building. Plan revised against today's flush and dispatched.
 - id: contributors-know-how-to-contribute
   title: A contributor can read how contributing to the framework works
-  status: shaped
+  status: building
   value: Someone who wants to hand an improvement back to the framework — from a project
     using it, or directly — finds one page at the repository root, CONTRIBUTING.md, that
     says how a contribution reaches the framework and what happens to it, without reading
@@ -2228,20 +2229,45 @@
 # stays in .tropis/project.json: the developer confirmed it as the one file for a
 # project's own settings, and project-settings-live-under-tropis moves .claude/project.json
 # there to join it.
+# 2026-11-01, shaped. Decisions taken here:
+# - The name is a second, optional argument to set-up-project.sh, not a prompt inside it:
+#   the script never asks anything, and /bootstrap already asks for the name in Stage 1.
+#   Without it the script writes no file and everything falls back to the folder name.
+# - The file holds a JSON object, { "name": "..." }, so project-settings-live-under-tropis
+#   can add the settings it moves as further keys of the same object.
+# - .tropis/project.json joins .tropis/README.md in the release record's exclusions.
+#   Without that the record would list it as a shipped file, and the next update would
+#   delete it as a file the new release no longer ships.
+# - Setup fills the operator guide's name itself; the agent no longer does it by hand.
+#   The guide is the project's own after setup, so an existing project's guide is left.
+# - A project set up before this keeps its package name and gets no file: renaming the
+#   package changes its lock file, and update-keeps-the-package-name exists to stop that.
+#   Its board keeps the folder name until someone writes the file by hand.
 - id: project-has-one-display-name
   title: A project's name is written once and everything the framework writes uses it
-  status: idea
+  status: shaped
   value: Someone setting up a project gives its name once — capitals, spaces, symbols and
     all — and the framework uses that name wherever it writes one, whatever the repository
     folder is called. Today the setup asks for a display name and then drops it, so the
     backlog board is titled after the folder and the framework package is named after
     the folder the project was set up in.
   acceptanceCriteria:
-    - The setup command asks for the project's display name and stores it in
-      .tropis/project.json, a file of the project's own that an update never replaces.
-    - The backlog board, the operator guide, the brief heading and the framework package
-      name all take the name from that file, and fall back to the folder name only when
-      it is absent.
+    - Running set-up-project.sh with a display name as its second argument writes
+      .tropis/project.json holding that name exactly, capitals, spaces and symbols
+      included; run without one, it writes no such file. /bootstrap passes the name it
+      asked for in Stage 1.
+    - An update leaves .tropis/project.json as the project wrote it, and the record of
+      installed files does not list it.
+    - The backlog board is titled "<name> backlog" with the name from that file, and
+      "<folder> backlog" when the file is absent, unreadable or names nothing.
+    - After setup, the operator guide .tropis/README.md opens with the display name, or
+      the folder name when none was given, and holds no {{PROJECT_NAME}} placeholder.
+    - Setup names the framework package after the display name, lowercased with every
+      run of other characters made one hyphen, and after the folder when none was given.
+      An update keeps whatever package name a project already has.
+    - /scope titles the brief with the name from that file, and /bootstrap fills the
+      heading of AGENTS.md from it, using the folder name when the file is absent.
+    - This repository records its own name, Tropis, in .tropis/project.json.
   type: improvement
   layer: product
   modules: []
@@ -4572,19 +4598,45 @@
 # and the pull request merged as 54e7eda. Cause not known: a GitHub scheduling fault is
 # the guess, not tested. The re-run is the kind of retry the workflow says hides
 # failures, which is one more reason the state should be named rather than worked round.
+# 2026-11-01, shaped. Decisions: the merge wait (main-status.mjs --pull-request) is the
+# one place that reports it, because it is the one thing waiting on the pull request.
+# The required checks come from the base branch's active rules (the REST endpoint the
+# pipeline's host job already reads), not a hard-coded pipeline / gate, so a renamed gate
+# is still found; rules it cannot read leave the wait as it was, so this never turns a
+# working wait into a failing one. It fires only once every pipeline run on the head
+# commit has finished, so a gate that is merely late is not reported. It stops with
+# exit 4, like the other states that will not merge by waiting, and never re-runs
+# anything itself. A required check that some other CI system posts, slower than the
+# pipeline, would be reported early; Tropis requires only its own gate, so that is
+# accepted. Finding why GitHub skipped the gate is out of scope.
 - id: a-run-without-its-gate-is-reported
   title: A pull request whose pipeline finished without its required gate check is reported
-  status: idea
+  status: building
   value: Whoever is waiting on a pull request's auto-merge learns, with the run's
     address, that its pipeline finished without the gate check the branch requires, and
     so will never merge until something starts the gate. Today the pull request just
     stays blocked with every check it shows green, and a wait on it times out saying
     nothing.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Waiting on a pull request with main-status.mjs --pull-request, when every pipeline
+      run on the pull request's head commit has finished and a check that the base
+      branch's rules require has no check run on that commit, the wait stops with exit 4
+      and one line naming the missing check, the head commit, and the address of the
+      pipeline run that finished without it.
+    - While any pipeline run on the head commit is still going, a missing required check
+      is not reported and the wait goes on.
+    - When the required check is present on the head commit, whatever its state, the
+      wait behaves as it did before this change.
+    - When the base branch's rules cannot be read, or require no check, the wait behaves
+      as it did before this change.
+    - The wait never re-runs a run or starts a check itself.
+    - The workflow's gated-merge paragraph names this as one of the reasons the wait
+      exits 4, and says what to do about it.
   type: bug
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-01-a-run-without-its-gate-is-reported.md
 # Raised 2026-11-01 by the developer, from the rule-text bundle's fix to
 # set-up-project-can-generate-its-catalog-document: that fix made the generated catalog
 # document conditional, while the board already rebuilds a readable page from the
