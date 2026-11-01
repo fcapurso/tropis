@@ -22,7 +22,8 @@ const script = join(blueprint, 'scripts/main-status.mjs');
 
 // Logs every call as one line. An `api` call is routed by its path: update-branch
 // answers {} (or fails when the file update-fails exists), check-runs answers
-// checks.json, and pulls/<n> answers pull-<k>.json on its k-th call when that file
+// checks.json, rules/branches/<branch> answers rules.json (or fails when the file
+// rules-fails exists), and pulls/<n> answers pull-<k>.json on its k-th call when that file
 // exists, and pull.json otherwise. Else `api repos/{owner}/{repo}` answers the default
 // branch, and `run list` answers runs-<n>.json on its n-th call when that file exists,
 // and runs.json otherwise.
@@ -36,6 +37,9 @@ if [ "$1" = api ]; then
       fi
       echo "{}"; exit 0 ;;
     *check-runs*) cat "$STUB_DIR/checks.json"; exit 0 ;;
+    *rules/branches/*)
+      if [ -f "$STUB_DIR/rules-fails" ]; then echo "gh: Not Found (HTTP 404)" >&2; exit 1; fi
+      cat "$STUB_DIR/rules.json"; exit 0 ;;
     *pulls/*)
       k=$(( $(cat "$STUB_DIR/pull-count" 2>/dev/null || echo 0) + 1 )); echo "$k" > "$STUB_DIR/pull-count"
       f="$STUB_DIR/pull-$k.json"; [ -f "$f" ] || f="$STUB_DIR/pull.json"
@@ -84,6 +88,7 @@ describe('main branch status', () => {
     writeFileSync(join(dir, 'gh.log'), '');
     runs([]);
     writeFileSync(join(dir, 'checks.json'), JSON.stringify({ total_count: 0, check_runs: [] }));
+    writeFileSync(join(dir, 'rules.json'), '[]');
     repo = join(dir, 'repo');
     mkdirSync(repo);
     git(repo, 'init', '-q', '-b', 'main');
@@ -254,6 +259,11 @@ describe('main branch status', () => {
         name, status: 'completed', conclusion, html_url: `https://github.com/acme/example/runs/${name.length}`,
       })),
     }));
+    const requires = (...contexts) => writeFileSync(join(dir, 'rules.json'), JSON.stringify([
+      { type: 'pull_request', parameters: {} },
+      { type: 'required_status_checks', parameters: { required_status_checks: contexts.map((context) => ({ context })) } },
+    ]));
+    const lines = (word) => log().split('\n').filter((l) => l.includes(word));
     const updates = () => log().split('\n').filter((l) => l.includes('/update-branch'));
     const GREEN = `Pull request #7 merged as beef000. Main branch: green — the pipeline passed on beef000 (title of beef000).\n`;
 
@@ -360,6 +370,102 @@ describe('main branch status', () => {
       const r = cli('--pull-request', '7', ...fast);
       expect(r.status).toBe(0);
       expect(r.stdout).toBe('Pull request #7: could not tell — gh failed: HTTP 401: Bad credentials.\n');
+    });
+
+    describe('a pipeline that finished without its required check', () => {
+      const GATE = 'pipeline / gate';
+      const done = (url) => run('completed', 'success', HEAD_SHA, '2026-10-31T12:00:00Z', { url });
+      const RUN_URL = 'https://github.com/acme/example/actions/runs/7700112233';
+      const LINE = 'Pull request #7: did not merge — the pipeline finished on feed000 without the required '
+        + `check ${GATE}, and nothing will start it now. Run: ${RUN_URL}\n`;
+      const mergedRun = () => run('completed', 'success', MERGED_SHA, '2026-10-31T14:00:00Z');
+      beforeEach(() => {
+        requires(GATE);
+        checks(['pipeline / host', 'success'], ['pipeline / build', 'success']);
+        runs([done(RUN_URL)]);
+      });
+
+      it('stops with exit 4 naming the check, the commit and the newest run', () => {
+        pulls(pull({}));
+        runs([{ ...done('https://github.com/acme/example/actions/runs/1'), createdAt: '2026-10-31T11:00:00Z' },
+          done(RUN_URL)]);
+        const r = cli('--pull-request', '7', ...fast);
+        expect(r.status).toBe(4);
+        expect(r.stdout).toBe(LINE);
+        expect(lines('rules/branches/main').length).toBeGreaterThan(0);
+        const listed = lines('run list');
+        expect(listed.some((l) => l.includes(`--commit ${HEAD_SHA}`) && !l.includes('--event'))).toBe(true);
+      });
+
+      it('writes nothing on GitHub', () => {
+        pulls(pull({}));
+        cli('--pull-request', '7', ...fast);
+        for (const word of ['-X', 'rerun', 'workflow run', 'update-branch']) expect(lines(word)).toEqual([]);
+      });
+
+      it('waits while a run on the head is still going, then stops', () => {
+        pulls(pull({}));
+        runs([run('in_progress', '', HEAD_SHA, '2026-10-31T12:30:00Z'), done(RUN_URL)], 1);
+        const r = cli('--pull-request', '7', ...fast);
+        expect(r.status).toBe(4);
+        expect(r.stdout).toBe(LINE);
+        expect(lines('run list').filter((l) => l.includes(HEAD_SHA)).length).toBeGreaterThan(1);
+      });
+
+      it('exits 3 at the timeout when a run on the head never finishes', () => {
+        pulls(pull({}));
+        runs([run('in_progress', '', HEAD_SHA, '2026-10-31T12:30:00Z')]);
+        const r = cli('--pull-request', '7', '--interval', '0.05', '--timeout', '0.005');
+        expect(r.status).toBe(3);
+        expect(r.stdout).toBe('Pull request #7: still open — not merged within 0.005 minutes.\n');
+      });
+
+      it('says nothing when the required check is there', () => {
+        pulls(pull({}), MERGED);
+        checks([GATE, 'success']);
+        runs([done(RUN_URL), mergedRun()]);
+        const r = cli('--pull-request', '7', ...fast);
+        expect(r.status).toBe(0);
+        expect(r.stdout).toBe(GREEN);
+        expect(lines('run list').filter((l) => l.includes(HEAD_SHA))).toEqual([]);
+      });
+
+      it('goes on waiting when the rules cannot be read, and asks only once', () => {
+        pulls(pull({}), pull({}), MERGED);
+        writeFileSync(join(dir, 'rules-fails'), '');
+        runs([mergedRun()]);
+        const r = cli('--pull-request', '7', ...fast);
+        expect(r.status).toBe(0);
+        expect(r.stdout).toBe(GREEN);
+        expect(lines('rules/branches')).toHaveLength(1);
+      });
+
+      it('goes on waiting when the rules require no check', () => {
+        pulls(pull({}), MERGED);
+        writeFileSync(join(dir, 'rules.json'), '[]');
+        runs([mergedRun()]);
+        const r = cli('--pull-request', '7', ...fast);
+        expect(r.status).toBe(0);
+        expect(r.stdout).toBe(GREEN);
+      });
+
+      it.each(['clean', 'unstable'])('does not ask the rules when the pull request is %s', (state) => {
+        pulls(pull({ mergeable_state: state }), MERGED);
+        runs([mergedRun()]);
+        const r = cli('--pull-request', '7', ...fast);
+        expect(r.status).toBe(0);
+        expect(r.stdout).toBe(GREEN);
+        expect(lines('rules/branches')).toEqual([]);
+      });
+
+      it('does not report a head that has no run', () => {
+        pulls(pull({}), MERGED);
+        runs([], 1);
+        runs([mergedRun()]);
+        const r = cli('--pull-request', '7', ...fast);
+        expect(r.status).toBe(0);
+        expect(r.stdout).toBe(GREEN);
+      });
     });
 
     it.each([[['--pull-request']], [['--pull-request', 'abc']], [['--pull-request', '0']],
