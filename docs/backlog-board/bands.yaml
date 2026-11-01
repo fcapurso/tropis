@@ -22,6 +22,20 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
+another-tools-agent-can-be-started:
+  band: A
+  value: 3
+  valueWhy: The sprint's promise that one tool can start work in another rests on
+    an answer nobody has checked against the tools themselves.
+  effort: 2
+  effortWhy: Reading three tools' documentation and a handful of short trial runs
+    in a throwaway repository; no code ships.
+  verdict: "Blocks team-members-start-in-another-tool, the sprint epic's cross-tool
+    piece. Small, and both command lines are installed and signed in where it was
+    shaped, so most of the answer can be proved by a run."
+  seen:
+    status: building
+    blockers: []
 command-slots-spike:
   band: A
   value: 5
