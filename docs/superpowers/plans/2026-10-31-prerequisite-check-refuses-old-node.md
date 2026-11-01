@@ -48,8 +48,11 @@ git 2.49.0, Node v22.15.0 and Jest 30.5.2, in Claude Code on macOS (Darwin 25.2.
 
 **Requires:** nothing beyond the repository.
 
-**Merge authority: self-merge.** Every criterion is checked by the test Task 1 writes,
-which must fail first. You write the review record (Task 4).
+**Merge authority: parent review.** Every criterion is checked by the test Task 1 writes,
+which must fail first, so self-merge would be defensible; the dispatching session reviews
+anyway because it is delivering a run of entries and merges each through the gated
+`main`. You stop once the pull request is open with the handover on it (Task 5): do not
+write the review record and do not merge.
 
 Do not store a kick-off prompt on this plan.
 
@@ -63,7 +66,7 @@ prerequisite-check-refuses-old-node
 
 | Checkout | Role | Isolation |
 |---|---|---|
-| `tropis` | execute here | `git worktree add ../tropis-prereq-node -b plan/prerequisite-check-refuses-old-node` |
+| `tropis` | execute here | `git worktree add ../tropis-prereq-node -b plan/prerequisite-check-refuses-old-node origin/main` |
 
 ## Global Constraints
 
@@ -252,8 +255,8 @@ the worktree and paste its `node` line, which must start `ok` with your own Node
 ### Task 3 — Catalog
 
 In `feature-catalog.yaml`, on `prerequisite-check-refuses-old-node`: set
-`status: shipped` (it will read `building` once dispatched; if it still reads `shaped`,
-set `shipped` anyway and say so under *Judgment calls*). Set `modules` to
+`status: shipped` (it reads `building` once dispatched; if it reads anything else, set
+`shipped` anyway and say so under *Judgment calls*). Set `modules` to
 `scripts/check-prerequisites.sh` and `guards/check-prerequisites.test.js`. Add a comment
 directly above the entry's `- id:` line, below the existing comment:
 
@@ -275,36 +278,18 @@ From the worktree, after committing everything:
   `Self-check passed`.
 - `git diff --stat origin/main...HEAD` — paste it; every file must be in *File Structure*.
 
-### Task 5 — Handover report, review record, merge
+### Task 5 — Handover report and pull request
 
 1. Append `## Handover report` to this plan with the six sections the planning rule
    names: Task completion, Verification results (each command, its actual output, and
    the tool, version, operating system and architecture — never the computer's name),
    Scope (diff stat, every file in *File Structure*, the worktree path used), Judgment
-   calls, What the plan got wrong, Outstanding. Commit, push the branch, and open a pull
-   request against `main` whose body says what is now true, ending with the attribution
-   lines your session gives.
-2. **Self-merge: you write the review record.** Wait for the pull request's checks to
-   finish (`gh pr checks <N> --watch`); they must all be green. Then append
-   `## Review record` below the handover with its five sections: *Checks re-run* (re-run
-   Task 4's self-check on the final commit, with output, tool, version, OS and
-   architecture; and re-break the test by hand — in a throwaway commit, change `-ge 14`
-   in `scripts/check-prerequisites.sh` to `-ge 0`, run the self-check, paste the failures
-   for 18.0.0 and 18.13.0, then `git reset --hard HEAD~1`), *Found* (opening with
-   `Public exposure:` and what reading the diff for names, home paths and hostnames
-   found, or `nothing`), *Outstanding disposition* (each Outstanding item with a catalog
-   id or a one-line reason to drop; say the change has no screen, so there is no
-   developer check), *Learnings routed* (or why nothing generalises), *Merged because*.
-   Commit and push, and wait for the checks again; all green.
-3. Merge, in this order. If `origin/main` moved, first `git fetch origin && git rebase
-   origin/main`, re-run Task 4 in full, push with `--force-with-lease`, and wait for
-   green. Then, from the main checkout (not the worktree):
-
-   ```bash
-   git worktree remove --force ../tropis-prereq-node
-   git branch -D plan/prerequisite-check-refuses-old-node
-   gh pr merge <N> --squash --delete-branch \
-     --subject "fix(prerequisites): the check refuses a Node the guards cannot run on" \
-     --body "<what is now true: the prerequisite check refuses node older than 18.14, the oldest the installed Jest runs on, and says which version it found and that 18.14 or newer is needed, so a machine on 18.0 to 18.13 is told at setup rather than failing at the first guard; a test runs the shipped script against stub node versions. Then: Implements: prerequisite-check-refuses-old-node / Plan: docs/superpowers/plans/2026-10-31-prerequisite-check-refuses-old-node.md, and the attribution lines>"
-   git checkout main && git pull origin main
-   ```
+   calls, What the plan got wrong, Outstanding. Say in Outstanding that the change has
+   no screen, so there is no developer check. Commit.
+2. Push the branch and open a pull request against `main` titled
+   `fix(prerequisites): the check refuses a Node the guards cannot run on`, whose body
+   says what is now true, ending with the attribution lines your session gives.
+3. Wait for the pull request's checks (`gh pr checks <N> --watch`) and report whether
+   they are green. **Stop there.** Do not write a review record, set auto-merge or merge:
+   `main` is gated and the dispatching session reviews and merges. Leave the worktree in
+   place; the reviewer removes it.
