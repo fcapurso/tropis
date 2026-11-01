@@ -10,7 +10,9 @@
  * at the timeout. With --pull-request <number> it waits for a pull request set to merge
  * itself, bringing its branch up to date whenever it falls behind, then waits for the run
  * on the merge commit as --wait does; it exits 4 naming why when the pull request did not
- * merge. Where it cannot ask — origin not on GitHub, no gh, gh failing — it prints that it
+ * merge, naming why: a conflict, a failed check, auto-merge off, the pull request closed,
+ * or a blocked pull request whose pipeline runs have all finished while a check the base
+ * branch's rules require has no check run (nothing will start it). Where it cannot ask — origin not on GitHub, no gh, gh failing — it prints that it
  * could not tell and why, and exits 0.
  *
  * The backlog report and the isolation helper import mainStatus; the workflow's merge
@@ -65,12 +67,25 @@ function askGh(root, args, { env, ghTimeoutMs }) {
   }
 }
 
-function runsOn(root, filter, options) {
-  const asked = askGh(root, ['run', 'list', '--workflow', WORKFLOW, ...filter, '--event', 'push',
+function listRuns(root, filter, options) {
+  const asked = askGh(root, ['run', 'list', '--workflow', WORKFLOW, ...filter,
     '--limit', '20', '--json', FIELDS], options);
   if (asked.error) return asked;
   if (!Array.isArray(asked.value)) return { error: 'gh answered with something other than a list of runs' };
   return { value: newestFirst(asked.value) };
+}
+
+const runsOn = (root, filter, options) => listRuns(root, [...filter, '--event', 'push'], options);
+
+/** The contexts the base branch's rules require, in order; [] when GitHub cannot say. */
+function requiredChecks(root, base, options) {
+  const asked = askGh(root, ['api', `repos/{owner}/{repo}/rules/branches/${encodeURIComponent(base)}?per_page=100`], options);
+  if (asked.error || !Array.isArray(asked.value)) return [];
+  return asked.value
+    .filter((rule) => rule?.type === 'required_status_checks')
+    .flatMap((rule) => rule.parameters?.required_status_checks ?? [])
+    .map((check) => check?.context)
+    .filter((context) => typeof context === 'string' && context !== '');
 }
 
 /**
@@ -130,7 +145,11 @@ export async function waitForRun(root, sha, {
 /**
  * Waits for a pull request set to merge itself to merge, then for the push run on its
  * merge commit. While it waits, a branch behind its base is brought up to date through
- * GitHub's update-branch endpoint, once per head commit. Makes no local git change.
+ * GitHub's update-branch endpoint, once per head commit. A blocked pull request whose
+ * pipeline runs on the head have all finished, while a check the base branch's rules
+ * require has no check run, stops with exit 4: nothing will start that check. The rules
+ * are asked once, and an answer that cannot be read means no required check. Reads only,
+ * apart from update-branch; makes no local git change.
  * @param {string} root the repository root
  * @param {number} number the pull request's number
  * @returns {Promise<{ state: string, line: string, exit: number }>}
@@ -145,6 +164,7 @@ export async function seeThrough(root, number, {
   const origin = originOnGitHub(root, env);
   if (origin.error) return cannotTell(origin.error);
   const updated = new Set();
+  let required;
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const asked = askGh(root, ['api', `repos/{owner}/{repo}/pulls/${number}`], options);
@@ -173,6 +193,18 @@ export async function seeThrough(root, number, {
       }
       updated.add(head);
       process.stderr.write(`main-status: pull request #${number} was behind ${base}; brought it up to date\n`);
+    }
+    if (pull.mergeable_state === 'blocked') {
+      required ??= requiredChecks(root, base, options);
+      const present = new Set((checks.value?.check_runs ?? []).map((check) => check.name));
+      const missing = required.find((context) => !present.has(context));
+      if (missing !== undefined) {
+        const onHead = listRuns(root, ['--commit', head], options);
+        if (!onHead.error && onHead.value.length > 0 && onHead.value.every((r) => r.status === 'completed')) {
+          return stopped(`the pipeline finished on ${short(head)} without the required check ${missing}, `
+            + `and nothing will start it now. Run: ${onHead.value[0].url}`);
+        }
+      }
     }
     if (Date.now() >= deadline) {
       return { state: 'waiting', line: `${name}: still open — not merged within ${timeoutMs / 60000} minutes.`, exit: 3 };
