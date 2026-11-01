@@ -293,3 +293,101 @@ From the worktree, after committing everything:
    they are green. **Stop there.** Do not write a review record, set auto-merge or merge:
    `main` is gated and the dispatching session reviews and merges. Leave the worktree in
    place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+- **Task 0, setup:** done. `npm --prefix .tropis ci` ran; `git status` was clean; the baseline `check-blueprint.sh` passed before any change.
+- **Task 1, the test, red:** done. `guards/check-prerequisites.test.js` committed as `71b60c9`. The self-check failed with exactly the three refusal cases failing: `refuses node 16.20.2 and says 18.14 is needed`, `refuses node 18.0.0 and says 18.14 is needed`, `refuses node 18.13.0 and says 18.14 is needed`. The four `accepts node` cases passed.
+- **Task 2, the check:** done. `scripts/check-prerequisites.sh` changed as Decision 1 states, committed as `0a84e93`. The self-check's last line started `Self-check passed`.
+- **Task 3, catalog:** done. `feature-catalog.yaml` committed as `51caf34`: status `shipped`, `modules` set to the script and the test, and the comment above the entry added.
+- **Task 4, verification:** done, below.
+- **Task 5, handover and pull request:** this section, then push and pull request.
+
+### Verification results
+
+Environment for all runs: git 2.49.0, Node v22.15.0, macOS Darwin 25.2.0, arm64.
+
+- `npm --prefix .tropis test`: `Tests:       134 passed, 134 total`
+- `bash scripts/check-blueprint.sh` on the final committed tree: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` Exit 0.
+- `bash scripts/check-blueprint.sh` on the red commit (`71b60c9`): exit 1, three failing cases as listed under Task 1.
+- `bash scripts/check-prerequisites.sh` in the worktree, after the fix: `  ok       node       22.15.0  — runs the guards and the backlog command`
+
+### Scope
+
+`git diff --stat origin/main...HEAD`:
+
+```
+ feature-catalog.yaml               |  9 +++--
+ guards/check-prerequisites.test.js | 68 ++++++++++++++++++++++++++++++++++++++
+ scripts/check-prerequisites.sh     |  6 ++--
+ 3 files changed, 79 insertions(+), 4 deletions(-)
+```
+
+Every file is in *File Structure*, apart from this handover report, which the plan names as the file it lands in. Worktree: the sibling of the main checkout named `tropis-prereq-node`, on branch `plan/prerequisite-check-refuses-old-node`.
+
+### Judgment calls
+
+- The catalog entry read `building` as the plan expected, so it was set to `shipped` without a note.
+- The first red self-check run redirected its output to a throwaway file under `/tmp` rather than the scratchpad. It was a slip on my part, not a repository change; the second run wrote its log to the scratchpad.
+
+### What the plan got wrong
+
+- Nothing material. Every command ran as written and every expected result matched.
+
+### Outstanding
+
+- The change has no screen, so there is no developer check (Workflow *Verify*, handovers 3 and 4 do not apply).
+- No review record is written and nothing is merged: the dispatching session reviews and merges through the gated `main`.
+
+## Review record
+
+Reviewed by the dispatching session, which holds parent-review authority.
+
+### Checks re-run
+
+All with git 2.49.0, Node v22.15.0 and Jest 30.5.2, in Claude Code on macOS (Darwin
+25.2.0), arm64.
+
+- `bash scripts/check-blueprint.sh` on `9656595`, the pull request's head, up to date with
+  `origin/main` at `48ce137`: exit 0, last line `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Re-broke the guard: in a scratch copy of the new test and the script, with `-ge 14`
+  changed to `-ge 0` in `scripts/check-prerequisites.sh`, run with the self-check's Jest
+  and `templates/framework-jest.config.js`: `Tests: 2 failed, 5 passed, 7 total`, the two
+  being `refuses node 18.0.0 and says 18.14 is needed` and `refuses node 18.13.0 and says
+  18.14 is needed`. With the script as committed: `Tests: 7 passed, 7 total`.
+- The script and the test match *Decision 1* and *Decision 3* character for character
+  (the test file compared with `diff` against the plan's code block: no difference).
+- Scope: `git diff --stat origin/main...HEAD` lists the four files in *File Structure*,
+  nothing else.
+- The pull request's checks: `pipeline / gate`, `unit`, `framework / checks` and `host`
+  pass; the rest are skipped by the pipeline.
+
+### Found
+
+Public exposure: read the whole diff for people's names, home paths, hostnames, other
+projects and email addresses; nothing.
+
+The handover's *Scope* diff stat shows three files because it was taken before the
+handover commit; the branch carries four, the fourth being this plan file, which
+*File Structure* lists. Nothing to fix.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- No review record or merge by the executor: settled here, as the plan said.
+- The executor's one log written under `/tmp`: dropped, it touched nothing committed.
+
+### Learnings routed
+
+Nothing generalises: the plan ran as written and the review found no defect in it or
+in the framework. The one plan-level correction, from self-merge to parent review with
+the gated merge, was made before dispatch and belongs to how this run of entries is
+delivered, not to the planning rule.
+
+### Merged because
+
+The guard fails on the defect the entry describes and passes on the fix, the self-check
+and the pull request's checks are green, and the diff is exactly the plan's.
