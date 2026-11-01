@@ -4994,20 +4994,49 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+# 2026-11-02, shaped. Probes use only tools already installed and signed in, and web
+# documentation. No tool is installed, no account or API key is created or entered, and
+# no paid cloud agent is started; a part that needs one is recorded as unproven with what
+# it would take. Answer and evidence go in the spec's section 9, where the question sits.
 - id: another-tools-agent-can-be-started
   title: Find out how a session starts another tool's agent and reads back what it did
-  status: idea
+  status: building
   value: Before a sprint session starts team members in another tool, we know, from
     each tool's own documentation and a trial run, what Cursor's and Claude Code's command
     lines and Cursor's cloud agent API take and return when started from another session,
     how the team member's final line and handover report are read back, and how
     approvals behave with nobody watching.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The sprint spec's section 9 says, for Claude Code's command line and for Cursor's,
+      the command that starts an agent with nobody watching from another session - how
+      it is given its prompt, its working directory, its model, its output format and its
+      permissions - and what it returns - exit code, output shape, where the agent's last
+      line is, and an id to resume it - each claim citing the tool's own documentation
+      with its address and the date read, and a trial run with the tool's version,
+      operating system and architecture.
+    - It shows, from a trial run of each command line in a throwaway repository, an agent
+      that commits a handover report on a branch and pushes it to a local remote, and the
+      starting session reading back both the agent's last line and that report.
+    - It says, from trial runs of each command line, what an agent does when it needs a
+      permission it was not given and nobody is there to answer - refuses and goes on,
+      stops, or waits - and which flags or settings let it run the workflow unattended,
+      with what each one allows.
+    - It says what Cursor's cloud agent API takes and returns - starting an agent on a
+      repository and branch, reading its status and its result, sending it a follow-up -
+      from Cursor's own documentation, and marks every part no run proved as unproven,
+      with what a run would take.
+    - It ends with an answer for team-members-start-in-another-tool - which ways of
+      starting a team member in another tool work, and how it is read back - and a
+      decision in framework/DECISIONS.md records the choice that answer settles, with the
+      alternatives it rejected.
+    - No claim rests on a secondary source - a blog, a third-party integration's
+      documentation, or what a model remembers.
   type: spike
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-01-another-tools-agent-can-be-started.md
 - id: team-members-start-in-another-tool
   title: A sprint started in one tool can hand entries to team members in another
   status: idea
