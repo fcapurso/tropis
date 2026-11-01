@@ -35,7 +35,8 @@ export const SHIPPED_PATHS = [
  * Left out of a release. `.tropis/node_modules` is a directory: it and everything
  * under it are skipped. The others are files. `installed.json` is this record;
  * `README.md` is the project's operator guide. `project.json` is the project's own
- * settings, written by setup when it is given a name.
+ * settings, written by setup when it is given a name; `worktree-setup.txt` is the
+ * project's own worktree setup.
  */
 export const EXCLUDED = [
   '.tropis/node_modules',
@@ -43,6 +44,7 @@ export const EXCLUDED = [
   '.tropis/installed.json',
   '.tropis/README.md',
   '.tropis/project.json',
+  '.tropis/worktree-setup.txt',
 ];
 
 /**
