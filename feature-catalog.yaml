@@ -1682,9 +1682,12 @@
 # mechanism is described in one place. Kept current the way the operator and adopter
 # pages are (FW-006): a doc-closeout row, plus a check for what can be checked.
 # 2026-11-01, building. Plan revised against today's flush and dispatched.
+# 2026-11-01, shipped by docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md,
+# revised that day. The fork-CI example in the criteria was out of date by then; the page
+# states what is true now, held to pipeline.yml by contributing-page.test.js.
 - id: contributors-know-how-to-contribute
   title: A contributor can read how contributing to the framework works
-  status: building
+  status: shipped
   value: Someone who wants to hand an improvement back to the framework — from a project
     using it, or directly — finds one page at the repository root, CONTRIBUTING.md, that
     says how a contribution reaches the framework and what happens to it, without reading
@@ -1712,7 +1715,10 @@
     - CONTRIBUTING.md is not copied into a project set up from the framework.
   type: feature
   layer: product
-  modules: []
+  modules:
+    - CONTRIBUTING.md
+    - guards/contributing-page.test.js
+    - scripts/check-blueprint.sh
   refs:
     - docs/superpowers/plans/2026-10-15-flush-opens-pull-requests-upstream.md
     - docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
