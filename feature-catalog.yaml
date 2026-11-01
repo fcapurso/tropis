@@ -4433,9 +4433,13 @@
 # and has to confirm it predates their change. Make it pass in both, for example by
 # running setup from a copy of the framework with no .git. Not an entry of its own: the
 # next agent in these files fixes it once told.
+# Shipped by docs/superpowers/plans/2026-11-01-set-up-project-installs-from-a-lockfile.md.
+# Criteria 1 and 3 - set-up-project.test.js, "leaves a lockfile npm ci installs from".
+# Criterion 2 - take-version.test.js, the three lockfile cases. The folded-in fix -
+# "records every shipped file at version unknown" now runs setup from a copy with no git.
 - id: set-up-project-installs-from-a-lockfile
   title: A freshly set-up project installs the framework's dependencies with npm ci
-  status: building
+  status: shipped
   value: The first command every dispatched agent is told to run works in a project that
     was just set up. Setup writes .tropis/package.json and no lockfile, so
     npm --prefix .tropis ci refuses to run, and an agent falls back to npm install, which
@@ -4450,6 +4454,9 @@
   layer: product
   modules:
     - scripts/set-up-project.sh
+    - scripts/take-version.mjs
+    - scripts/check-blueprint.sh
+    - templates/package-lock.json
     - guards/set-up-project.test.js
   refs: []
 # 2026-10-31, raised by the developer: the README should say at a high level what Tropis

@@ -236,18 +236,6 @@ rules-return-after-compaction:
   seen:
     status: idea
     blockers: []
-set-up-project-installs-from-a-lockfile:
-  band: B
-  value: 3
-  valueWhy: The first command of every dispatch fails in a new project, and the
-    fallback installs untested versions.
-  effort: 2
-  effortWhy: Ship or write a lockfile at setup and update, and one guard.
-  verdict: "Every new adopter meets it on their first dispatch. Small; carries the
-    setup test that fails from a checkout."
-  seen:
-    status: shaped
-    blockers: []
 setup-offers-to-create-the-repository:
   band: C
   value: 2
