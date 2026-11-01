@@ -4562,3 +4562,26 @@
   layer: product
   modules: []
   refs: []
+# Raised 2026-11-01 by the developer, from the rule-text bundle's fix to
+# set-up-project-can-generate-its-catalog-document: that fix made the generated catalog
+# document conditional, while the board already rebuilds a readable page from the
+# backlog (step 1 of /refresh-board, without banding). Set-up projects ignore
+# docs/backlog-board/index.html; this repository commits it, against the catalog rule.
+# Decided with the developer: rebuild without committing, never commit the page, and
+# converge any other readable view of the backlog onto the board.
+- id: board-is-the-backlog-view
+  title: The board is every project's readable view of its backlog, and keeps itself current
+  status: idea
+  value: Anyone who wants to read the backlog opens the board and sees the backlog as it
+    stands, because the page rebuilds itself whenever the backlog changes, without
+    banding anything and without being committed, so parallel changes to the backlog
+    never conflict over it. Every project set up with Tropis gets this one mechanism.
+    The backlog rule names the board as the readable view, instead of a generated
+    catalog document, and any other mechanism a project already has for the same
+    purpose, such as a generated catalog document or a committed copy of the page like
+    this repository's, is removed in favour of the board.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
