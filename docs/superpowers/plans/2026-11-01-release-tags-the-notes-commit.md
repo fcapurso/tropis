@@ -387,3 +387,50 @@ Nothing found. The probe noted the generic Stage 6 text says "with the confirmed
 ### Outstanding
 
 Parent review. The release job was never run and nothing was tagged; no review record written, not merged.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `2f804d2`, with git 2.49.0 and Node
+v22.15.0 in Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `guards/release.test.js` through the Task 0 snippet: `Tests: 71 passed, 71 total`.
+- Re-break: a throwaway commit removing the detach, the `merge-base --is-ancestor`
+  refusal, and the tag-by-name from `ci.yml`, then the same guard:
+  `Tests: 3 failed, 68 passed, 71 total`. Dropped.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed`, `Tests: 132 passed`.
+- Scope: `git diff --stat origin/main...HEAD` lists `.claude/commands/release.md`,
+  `.github/workflows/ci.yml`, the plan, `feature-catalog.yaml` and
+  `guards/release.test.js`, all in *File Structure*. The `.claude/commands/release.md`
+  diff is wholly between the project-owned markers.
+- The probe was not re-run; its answer and tool are recorded in the commit body of
+  `3b8ff43` and above, and the block's wording was read against the probe's pass
+  condition.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing.
+
+Nothing else. The handover's note that the shipped Stage 6 says "with the confirmed
+bump" is right and harmless here: this repository's block names both values. Changing
+the shipped Stage 6 belongs to `release-tags-what-main-holds`, which reworks projects'
+release flow.
+
+### Outstanding disposition
+
+The handover lists nothing outstanding. The job's behaviour on GitHub's runner is proven
+only by its steps run against a scratch origin; it is first exercised for real by the
+developer's next release, which no agent runs.
+
+### Learnings routed
+
+Nothing generalises: the change is this repository's own release job, and projects'
+release flow is `release-tags-what-main-holds`.
+
+### Merged because
+
+Every criterion has a test or a recorded probe, the re-break goes red, and the suite and
+self-check pass on the branch.
