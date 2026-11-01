@@ -2243,9 +2243,11 @@
 # - A project set up before this keeps its package name and gets no file: renaming the
 #   package changes its lock file, and update-keeps-the-package-name exists to stop that.
 #   Its board keeps the folder name until someone writes the file by hand.
+# 2026-11-01, dispatched. Plan
+# docs/superpowers/plans/2026-11-01-project-has-one-display-name.md.
 - id: project-has-one-display-name
   title: A project's name is written once and everything the framework writes uses it
-  status: shaped
+  status: building
   value: Someone setting up a project gives its name once — capitals, spaces, symbols and
     all — and the framework uses that name wherever it writes one, whatever the repository
     folder is called. Today the setup asks for a display name and then drops it, so the
