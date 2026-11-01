@@ -169,15 +169,45 @@ function classify(root, proseOnly) {
   return stages;
 }
 
+function readProse(root) {
+  const prosePath = join(root, 'pipeline', 'prose.txt');
+  return existsSync(prosePath) ? readFileSync(prosePath, 'utf8') : null;
+}
+
+const CODE_STAGES = STAGES.filter((stage) => stage !== 'framework' && stage !== 'deploy');
+
 /**
- * Six stage values for the diff `base...head` in `root`. `reason` is the one
- * stderr line when the result is a full run because the base is missing, all
- * zeros, unresolved, or the diff is empty.
- * @param {string} root
- * @param {{ base?: string, head?: string }} [options]
- * @returns {{ stages?: Record<string, string>, reason?: string | null, error?: string }}
+ * Narrows a plan that would run code stages when the tree about to be tested
+ * differs from `passed` only in prose and framework files. The diff is
+ * two-dot (tree against tree), not from the merge base, so a change the passed
+ * commit had and `head` dropped still counts. It only ever turns stages into
+ * skips; `deploy` keeps its value. Returns the plan unchanged, with a note on
+ * why, when the code differs or `passed` does not resolve.
  */
-export function planStages(root, { base, head = 'HEAD' } = {}) {
+function applyPassed(root, outcome, { passed, head }) {
+  if (!CODE_STAGES.some((stage) => outcome.stages[stage] === 'run')) return outcome;
+  const short = passed.slice(0, 7);
+  const resolved = git(root, ['rev-parse', '--verify', '--quiet', `${passed}^{commit}`]);
+  if (resolved.status !== 0) {
+    return { ...outcome, note: `plan: ${passed} does not resolve, so this is planned from the whole diff` };
+  }
+  const diff = git(root, ['diff', '--name-only', '--no-renames', passed, head]);
+  if (diff.status !== 0) return { error: (diff.stderr || 'plan: git diff failed').trim() };
+  const paths = diff.stdout.split('\n').filter((line) => line !== '');
+  if (paths.length > 0 && !isProseAndFramework(paths, readProse(root))) {
+    return { ...outcome, note: `plan: code changed since ${short} passed, so this is planned from the whole diff` };
+  }
+  const stages = { ...outcome.stages };
+  for (const stage of CODE_STAGES) stages[stage] = 'skipped';
+  return {
+    ...outcome,
+    stages,
+    passed: resolved.stdout.trim(),
+    note: `plan: the code passed at ${short}, so the stages are skipped`,
+  };
+}
+
+function planFromDiff(root, { base, head }) {
   if (base === undefined) return { stages: classify(root, false), reason: FULL_RUN.missingBase };
   if (/^0+$/.test(base)) return { stages: classify(root, false), reason: FULL_RUN.zeroBase };
   const resolved = git(root, ['rev-parse', '--verify', '--quiet', `${base}^{commit}`]);
@@ -188,9 +218,24 @@ export function planStages(root, { base, head = 'HEAD' } = {}) {
   if (diff.status !== 0) return { error: (diff.stderr || 'plan: git diff failed').trim() };
   const paths = diff.stdout.split('\n').filter((line) => line !== '');
   if (paths.length === 0) return { stages: classify(root, false), reason: FULL_RUN.emptyDiff };
-  const prosePath = join(root, 'pipeline', 'prose.txt');
-  const proseText = existsSync(prosePath) ? readFileSync(prosePath, 'utf8') : null;
-  return { stages: classify(root, isProseAndFramework(paths, proseText)), reason: null };
+  return { stages: classify(root, isProseAndFramework(paths, readProse(root))), reason: null };
+}
+
+/**
+ * Six stage values for the diff `base...head` in `root`. `reason` is the one
+ * stderr line when the result is a full run because the base is missing, all
+ * zeros, unresolved, or the diff is empty. With `passed` (a commit whose code
+ * already passed) the code stages are skipped when only prose and framework
+ * files differ from it; `passed` in the result is then its full hash, and
+ * `note` says what was decided either way.
+ * @param {string} root
+ * @param {{ base?: string, head?: string, passed?: string }} [options]
+ * @returns {{ stages?: Record<string, string>, reason?: string | null, passed?: string, note?: string, error?: string }}
+ */
+export function planStages(root, { base, head = 'HEAD', passed } = {}) {
+  const outcome = planFromDiff(root, { base, head });
+  if (outcome.error || passed === undefined) return outcome;
+  return applyPassed(root, outcome, { passed, head });
 }
 
 /**
@@ -211,7 +256,8 @@ function stagesThatDidNotPass(plan, results) {
 
 /**
  * `run`, `held`, `empty` or `skipped`. Held wins over everything. On a pull
- * request, prose and framework alone stays skipped; a filled branch slot
+ * request, a plan carrying `passed` (the same code already passed, and the
+ * branch's environment holds it) skips, as does prose and framework alone; a filled branch slot
  * runs; otherwise the pull request skips. `branch` defaults to `empty`, so
  * a caller that does not know about the slot decides as before. A push
  * ignores the slot and uses the deploy's own planned value.
@@ -226,6 +272,7 @@ function stagesThatDidNotPass(plan, results) {
 export function gateDecision({ plan, results, event, branch = 'empty' }) {
   if (stagesThatDidNotPass(plan, results).length > 0) return 'held';
   if (event === 'pull_request') {
+    if (plan.passed) return 'skipped';
     if (plan.deploy === 'skipped') return 'skipped';
     if (branch === 'filled') return 'run';
     return 'skipped';
@@ -235,6 +282,9 @@ export function gateDecision({ plan, results, event, branch = 'empty' }) {
 
 function plannedCell(stage, plan, results) {
   const planned = plan[stage];
+  if (planned === 'skipped' && plan.passed) {
+    return `skipped — the same code passed at \`${plan.passed.slice(0, 7)}\``;
+  }
   if (planned === 'skipped') return 'skipped — only prose and framework files changed';
   if (planned === 'empty') return `empty — no pipeline/${stage}.sh`;
   const result = results[stage];
@@ -250,6 +300,9 @@ function deployCell(plan, results, event, branch = 'empty') {
     return `held — ${stagesThatDidNotPass(plan, results).join(', ')} did not pass`;
   }
   if (event === 'pull_request') {
+    if (plan.passed) {
+      return `skipped — the same code passed at \`${plan.passed.slice(0, 7)}\`, and the environment has it`;
+    }
     if (plan.deploy === 'skipped') return 'skipped — only prose and framework files changed';
     if (branch === 'filled') return "will run — to the branch's environment";
     return 'skipped — no pipeline/branch/';
@@ -284,7 +337,7 @@ function parsePlanArgs(argv) {
   const opts = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg !== '--base' && arg !== '--head') return { error: `plan: unknown argument ${arg}` };
+    if (arg !== '--base' && arg !== '--head' && arg !== '--passed') return { error: `plan: unknown argument ${arg}` };
     const value = argv[i + 1];
     if (value === undefined) return { error: `plan: ${arg} needs a revision` };
     opts[arg.slice(2)] = value;
@@ -1079,11 +1132,131 @@ function promoteCommand(root, args) {
   return outcome.status;
 }
 
+/**
+ * Whether a run's jobs show a green gate: a job named `gate`, or ending in
+ * `/ gate` (a called workflow's jobs are named `<caller job> / <job>`), that
+ * concluded `success`. The run's own conclusion is not used: a closed pull
+ * request's run is `success` with every stage skipped.
+ * @param {{ name?: string, conclusion?: string }[]} jobs
+ * @returns {boolean}
+ */
+export function gateIsGreen(jobs) {
+  return jobs.some((job) => (job.name === 'gate' || String(job.name).endsWith('/ gate'))
+    && job.conclusion === 'success');
+}
+
+/** Runs whose head commit came from `repository` (owner/name). */
+export function runsFromRepository(runs, repository) {
+  return runs.filter((run) => run.head_repository?.full_name === repository);
+}
+
+/**
+ * The first run, newest first, with a green gate. `jobsOf(run)` returns
+ * `{ jobs }` or `{ error }`; an error ends the search.
+ * @returns {{ run?: object, error?: string }}
+ */
+export function firstGreenRun(runs, jobsOf) {
+  for (const run of runs) {
+    const answer = jobsOf(run);
+    if (answer.error) return { error: answer.error };
+    if (gateIsGreen(answer.jobs)) return { run };
+  }
+  return {};
+}
+
+const PASSED_USAGE = 'passed: use --branch <ref> --repository <owner/name>, or --merged <commit>';
+
+function parsePassedArgs(argv) {
+  const opts = {};
+  for (let i = 0; i < argv.length; i += 2) {
+    const arg = argv[i];
+    const value = argv[i + 1];
+    if (!['--branch', '--repository', '--merged', '--summary'].includes(arg)
+      || value === undefined || value === '') return { error: PASSED_USAGE };
+    opts[arg.slice(2)] = value;
+  }
+  const byBranch = opts.branch !== undefined && opts.repository !== undefined && opts.merged === undefined;
+  const byMerge = opts.merged !== undefined && opts.branch === undefined && opts.repository === undefined;
+  if (!byBranch && !byMerge) return { error: PASSED_USAGE };
+  return { opts };
+}
+
+/**
+ * Asks GitHub for a commit whose code passed this workflow, for a pull
+ * request branch or for the commit a pull request merged as. Never throws:
+ * `{ commit }` or `{ line }` only, and `line` always says what was found or
+ * why nothing was.
+ */
+function findPassed(opts, env) {
+  const nothing = (why) => ({ line: `passed: ${why}` });
+  const failed = (error) => nothing(`${error}; nothing is skipped`);
+  const repo = env.GITHUB_REPOSITORY;
+  if (env.GITHUB_ACTIONS !== 'true') return nothing('not in GitHub Actions, so nothing is skipped');
+  if (!repo) return nothing('GITHUB_REPOSITORY is not set; nothing is skipped');
+  if (!env.GITHUB_RUN_ID) return nothing('GITHUB_RUN_ID is not set; nothing is skipped');
+  const own = askGitHub(['api', `repos/${repo}/actions/runs/${env.GITHUB_RUN_ID}`]);
+  if (own.error) return failed(own.error);
+  const workflow = own.value?.workflow_id;
+  if (workflow === undefined) return failed('this run has no workflow_id');
+  const listRuns = (query) => {
+    const answer = askGitHub(['api', `repos/${repo}/actions/workflows/${workflow}/runs?event=pull_request&${query}&per_page=10`]);
+    if (answer.error) return answer;
+    if (!Array.isArray(answer.value?.workflow_runs)) return { error: 'the list of runs had an unexpected shape' };
+    return { runs: answer.value.workflow_runs };
+  };
+  const jobsOf = (run) => {
+    const answer = askGitHub(['api', `repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`]);
+    if (answer.error) return answer;
+    if (!Array.isArray(answer.value?.jobs)) return { error: 'the list of jobs had an unexpected shape' };
+    return { jobs: answer.value.jobs };
+  };
+  const short = (hash) => String(hash).slice(0, 7);
+
+  if (opts.merged === undefined) {
+    const listed = listRuns(`branch=${encodeURIComponent(opts.branch)}`);
+    if (listed.error) return failed(listed.error);
+    const found = firstGreenRun(runsFromRepository(listed.runs, opts.repository), jobsOf);
+    if (found.error) return failed(found.error);
+    if (!found.run) return nothing('no green run of this pull request, so it is planned from the whole diff');
+    return { commit: found.run.head_sha, line: `passed: run ${found.run.id} passed at ${short(found.run.head_sha)}` };
+  }
+
+  const pulls = askGitHub(['api', `repos/${repo}/commits/${opts.merged}/pulls`]);
+  if (pulls.error) return failed(pulls.error);
+  if (!Array.isArray(pulls.value)) return failed('the list of pull requests had an unexpected shape');
+  const pull = pulls.value.find((candidate) => candidate.merge_commit_sha === opts.merged);
+  if (!pull) return nothing(`${short(opts.merged)} was not merged from a pull request, so every stage runs`);
+  const head = pull.head?.sha;
+  if (!head) return failed('the pull request has no head commit');
+  const listed = listRuns(`head_sha=${encodeURIComponent(head)}`);
+  if (listed.error) return failed(listed.error);
+  const found = firstGreenRun(listed.runs, jobsOf);
+  if (found.error) return failed(found.error);
+  if (!found.run) return nothing(`pull request #${pull.number} has no green run at ${short(head)}, so every stage runs`);
+  return { commit: head, line: `passed: pull request #${pull.number} passed at ${short(head)}` };
+}
+
+function passedCommand(argv) {
+  const parsed = parsePassedArgs(argv);
+  if (parsed.error) {
+    process.stderr.write(`${parsed.error}\n`);
+    return 2;
+  }
+  const result = findPassed(parsed.opts, process.env);
+  process.stderr.write(`${result.line}\n`);
+  if (parsed.opts.summary) appendFileSync(parsed.opts.summary, `${result.line}\n\n`);
+  if (result.commit) process.stdout.write(`${result.commit}\n`);
+  return 0;
+}
+
 /** Commands for a host that has no wiring file, each with when to run it. */
 function commandList() {
   const lines = [
-    '# Always. Prints whether each stage runs, is empty, or is skipped.',
+    '# Always. Prints whether each stage runs, is empty, or is skipped. --passed "$PASSED" when the next command printed a commit.',
     'node .tropis/scripts/pipeline.mjs plan --base "$BASE" --head "$HEAD"',
+    '# On a push to a pull request, or to the main branch. Prints a commit whose code passed, or nothing.',
+    'node .tropis/scripts/pipeline.mjs passed --branch "$HEAD_REF" --repository "$HEAD_REPO" --summary "$SUMMARY"',
+    'node .tropis/scripts/pipeline.mjs passed --merged "$COMMIT" --summary "$SUMMARY"',
     '# Always, before the framework stage.',
     'npm --prefix .tropis ci',
     '# Always. Framework checks run even when the rest of the plan is skipped.',
@@ -1122,7 +1295,9 @@ function writePlan(outcome) {
     return;
   }
   if (outcome.reason) process.stderr.write(`${outcome.reason}\n`);
+  if (outcome.note) process.stderr.write(`${outcome.note}\n`);
   const lines = STAGES.map((stage) => `${stage}=${outcome.stages[stage]}`);
+  if (outcome.passed) lines.push(`passed=${outcome.passed}`);
   if (outcome.branch) lines.push(`branch=${outcome.branch}`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
@@ -1225,6 +1400,8 @@ if (ranDirectly) {
         process.exitCode = hostCommand(root, parsed);
       }
     }
+  } else if (command === 'passed') {
+    process.exitCode = passedCommand(args);
   } else if (command === 'commands') {
     process.stdout.write(commandList());
   } else if (command === 'staging') {

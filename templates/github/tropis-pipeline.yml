@@ -35,7 +35,9 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTION: ${{ github.event.action }}
+          GH_TOKEN: ${{ github.token }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PUSH_BEFORE: ${{ github.event.before }}
@@ -61,7 +63,22 @@ jobs:
             base="$PUSH_BEFORE"
             head="$PUSH_SHA"
           fi
-          lines=$(node .tropis/scripts/pipeline.mjs plan --base "$base" --head "$head")
+          # A commit whose code already passed lets the plan skip the four stages.
+          # Only a push to an open pull request (not its opening or reopening, which
+          # follow a closed run that removed the environment) and the push to main.
+          passed=""
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ]; then
+            passed=$(node .tropis/scripts/pipeline.mjs passed --branch "$HEAD_REF" --repository "$HEAD_REPO" --summary "$GITHUB_STEP_SUMMARY")
+          elif [ "$EVENT_NAME" = "push" ]; then
+            passed=$(node .tropis/scripts/pipeline.mjs passed --merged "$PUSH_SHA" --summary "$GITHUB_STEP_SUMMARY")
+          fi
+          passed_args=()
+          if [ -n "$passed" ]; then
+            # The merged branch is usually deleted by now; plan falls back if the host cannot serve the commit.
+            git fetch --no-tags --quiet origin "$passed" || true
+            passed_args=(--passed "$passed")
+          fi
+          lines=$(node .tropis/scripts/pipeline.mjs plan --base "$base" --head "$head" "${passed_args[@]}")
           branch=$(printf '%s\n' "$lines" | sed -n 's/^branch=//p')
           if [ -z "$branch" ]; then
             echo "plan: no branch line" >&2

@@ -4109,9 +4109,11 @@
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
 # 2026-11-01, value re-worded for the release flow of FW-044; the criteria stand.
+# Shipped by docs/superpowers/plans/2026-11-01-pipeline-does-not-redo-green-work.md; each
+# criterion's test or check is in that plan's handover report.
 - id: pipeline-does-not-redo-green-work
   title: A tree that already passed is not tested again
-  status: building
+  status: shipped
   value: Two common moments re-run every stage on code that already passed - a
     documents-only push to a pull request, and the push to main after a squash merge. Each
     costs minutes, and on a pull request a redeploy of its environment. Deploy to staging
@@ -4127,8 +4129,8 @@
   type: feature
   layer: product
   modules:
-    - templates/github/tropis-pipeline.yml
     - scripts/pipeline.mjs
+    - templates/github/tropis-pipeline.yml
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
 # 2026-11-01, re-shaped while planning: criterion 1 keeps earlier decision records'
