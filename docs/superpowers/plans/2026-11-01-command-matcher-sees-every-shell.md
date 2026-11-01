@@ -432,7 +432,7 @@ Verdict: probe passes. Scratch project and stream deleted.
 
 ### Scope
 
-All five changed files are in the File Structure table, plus this plan file. Worktree used: `/Users/filippo/AtlassianForge/Tropis/tropis-command-matcher-sees-every-shell`.
+All five changed files are in the File Structure table, plus this plan file. Worktree used: `../tropis-command-matcher-sees-every-shell`, a sibling of the primary checkout.
 
 Source worked from: none in particular; written against this script's own names.
 
@@ -453,3 +453,71 @@ Source worked from: none in particular; written against this script's own names.
 ### Outstanding
 
 - Nothing blocking. Not done by design: no pull request, no review record, no merge.
+
+## Review record
+
+Reviewed by the specifying session, with Python 3.12.10, git 2.49.0, Node v22.15.0 in
+Claude Code 2.1.300 on Darwin arm64, on the branch at `bef6735` and then with the two
+fixes below.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists only the six File Structure files.
+- The executor's diff of `scripts/command-at-position.py`, the rule sentence and the
+  catalog edit read line by line; the rule sentence is the verbatim text of *Decision 4*,
+  and `substring_match` is gone.
+- Extra cases piped through the branch's script and through `origin/main`'s:
+  `x="#" && git commit` and `echo "a" # it's` then `git commit` match; a nested
+  `bash <<A` whose body runs `cat <<B | sh` matches the inner command (it did not on
+  `main`); `cat <<< 'git commit'` does not match.
+- `bash scripts/check-blueprint.sh` after the fixes: see the last line recorded below.
+
+### Found
+
+Public exposure: the handover's Scope section gave the worktree as an absolute home
+path, which `private-material` refuses (the executor's self-check ran before that
+commit, so it passed). Replaced by the relative path. The branch as first pushed
+(`bef6735`) carries it; the squash leaves it off `main`. Nothing else in the diff names a
+person, host, customer or other project.
+
+**A watched command after a heredoc was missed, on `main` and on the branch.**
+`strip_heredocs` copied text only up to the operator, then jumped past the body, so the
+rest of the operator line was dropped and the line after the body was joined onto the
+command before the heredoc: `cat > f <<'EOF'`, `body`, `EOF`, `git commit -m x` exited
+1, and so did `cat > f <<'EOF' && git commit -m x` with its body. That is the entry's
+title failing in its commonest shape. **Fixed in review**, as an understood, mechanical
+change: `strip_heredocs` now works a line at a time, keeps the line with its operators
+removed, then skips the bodies, which follow in order, several operators on one line
+included. Rows 61 to 65 cover it; rows 61, 62 and 65 fail on both `main`'s script and
+the executor's, row 64 (no match) passes on all three, and row 63 happened to match
+before. This is a reviewer fixing code on the branch it then merges: small, declared
+here, and every row and hook case runs over it in the self-check.
+
+The executor's judgment calls hold: removing the operator from the stripped text is what
+keeps row 22 a non-match, and the `(?<!<)` lookbehind stops a here-string reading as an
+unclosed heredoc. `$((1<<x))` now reads as an unclosed heredoc and matches; that only
+makes a speaking hook speak, and the one refusing hook re-reads, so it stays.
+
+### Outstanding disposition
+
+- Handover Outstanding: nothing listed.
+- `$((1<<x))` matching: dropped as an entry; under *What does not become an entry*, a
+  bug of little impact (a hook speaks once more), and the one refusing hook is safe.
+- No manual check: the change has no screen; the hooks it serves are asserted by
+  running them.
+
+### Learnings routed
+
+- What a hook author needs to know (a match may mean "could not parse") is in
+  `rules/harness-scripts.md`, by this plan.
+- The missed-after-heredoc defect sits in a file the installed release also carries,
+  and it is fixed here in the source, which is the upstream; nothing to queue.
+- An executor whose handover is its last commit ran the self-check before that commit.
+  Nothing generalises beyond "run the self-check after the last commit", which the
+  self-check's own Trap already says; not routed.
+
+### Merged because
+
+Every criterion has rows that fail on `main` and pass here, the hooks' own cases pass
+through the self-check, the probe showed a fresh agent writing a refusing hook that
+re-reads, and the one defect review found is fixed and covered.
