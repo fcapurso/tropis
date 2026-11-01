@@ -272,9 +272,14 @@ last line. It waits until the pull request has merged, bringing its branch
 up to date whenever `main` moves under it, then waits for the run the merge started on
 `main`, on the merge commit itself rather than on `HEAD`. Its exits are those of
 `--wait` below, plus 4 when the pull request did not merge. Its line then names why:
-a conflict, a failed check, auto-merge off, or the pull request closed. On 4, fix what
-it names, set auto-merge again if it was off, and run it again. Pull `main` once it has
-reported.
+a conflict, a failed check, auto-merge off, the pull request closed, or a pipeline that
+finished without a check the main branch requires. On 4, fix what it names, set
+auto-merge again if it was off, and run it again. **A pipeline that finished without
+its required check** leaves nothing on the branch to fix, and nothing will start the
+check: re-run that run once by hand, with `gh run rerun` and the run id from the address
+the line gives, say so in your report with that address, and run the wait again. That
+re-run starts a check that never ran, so it hides no failure; if the check is missing
+again, stop and report both runs. Pull `main` once it has reported.
 
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's

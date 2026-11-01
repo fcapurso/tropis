@@ -4617,9 +4617,11 @@
 # anything itself. A required check that some other CI system posts, slower than the
 # pipeline, would be reported early; Tropis requires only its own gate, so that is
 # accepted. Finding why GitHub skipped the gate is out of scope.
+# Shipped by docs/superpowers/plans/2026-11-01-a-run-without-its-gate-is-reported.md;
+# each criterion's test or check is in that plan's handover report.
 - id: a-run-without-its-gate-is-reported
   title: A pull request whose pipeline finished without its required gate check is reported
-  status: building
+  status: shipped
   value: Whoever is waiting on a pull request's auto-merge learns, with the run's
     address, that its pipeline finished without the gate check the branch requires, and
     so will never merge until something starts the gate. Today the pull request just
@@ -4642,7 +4644,10 @@
       exits 4, and says what to do about it.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/main-status.mjs
+    - guards/main-status.test.js
+    - framework/workflow.md
   refs:
     - docs/superpowers/plans/2026-11-01-a-run-without-its-gate-is-reported.md
 # Raised 2026-11-01 by the developer, from the rule-text bundle's fix to
