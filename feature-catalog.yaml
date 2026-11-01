@@ -4005,9 +4005,11 @@
     - scripts/pipeline.mjs
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+# 2026-11-01, re-shaped while planning: criterion 1 keeps earlier decision records'
+# original text, which is history; FW-030 gets an amendment mapping the old names.
 - id: release-guides-through-both-steps
   title: A release is two plainly named steps, and /release stays with the developer through both
-  status: shaped
+  status: building
   value: Candidate and rehearsal read as jargon, and release names three different
     things. The industry's words, deploy to staging and promote to production, say what
     each step does, and promote names the guarantee that production gets the build that
@@ -4015,9 +4017,10 @@
     order today, and the developer has to remember the middle one. One command that
     carries them through, and picks up where it left off, removes the step people forget.
   acceptanceCriteria:
-    - Every shipped file, command, script argument, workflow and decision record calls the
-      two steps deploy to staging and promote to production, with none of the old names
-      left except in a migration note.
+    - Every shipped file, command, script argument and workflow, and every decision
+      record written from now on, calls the two steps deploy to staging and promote to
+      production, with the old names left only in a migration note and in earlier
+      decision records' original text.
     - When the project deploys to staging, after the notes are committed, /release shows
       step 1 of 2, deploy to staging, with its trigger, waits for the developer to say it
       has started, then reports the run's summary and its by-hand list.
@@ -4222,7 +4225,7 @@
 # branch leaves the gate off and records why.
 - id: release-tags-what-main-holds
   title: A project's release tags what its main branch holds, so a gated branch needs no bypass
-  status: shaped
+  status: building
   value: A project can turn on its host's gate without giving any person or token a way
     around it, because releasing no longer writes to the main branch. Today the release
     pipeline commits the version and the promoted notes and pushes them to the main

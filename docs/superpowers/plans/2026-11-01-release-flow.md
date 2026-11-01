@@ -1,0 +1,582 @@
+# A release is deploy to staging, then promote to production — Implementation Plan
+
+> **For agentic workers:** execute task by task, in order. Read the whole plan first,
+> including *Decisions* and *Traps*. Nothing in it stops for the developer.
+
+**Goal:** a release is two plainly named steps that `/release` carries the developer
+through — deploy to staging, then promote to production — and promoting tags a commit
+the main branch already holds, so no release writes to a gated main branch.
+
+**Spec:** the bundle `release-flow` in `docs/backlog-board/bands.yaml`: the entries
+`release-tags-what-main-holds` and `release-guides-through-both-steps` in
+`feature-catalog.yaml`. There is no design document; the entries' acceptance criteria and
+the decisions below are the design.
+
+**Why one plan for two entries.** The first entry says what promoting does (it tags a
+commit main holds, after a pull request carries the version and the promoted notes); the
+second names the steps and has `/release` walk through them. Both rewrite the same
+stages of `commands/release.md` and the same release section of `framework/workflow.md`,
+and the second's step 2 *is* the first's promotion. Done apart, the second plan would
+rewrite what the first had just written. One sentence states the result: the goal above.
+
+**What the specifying session verified on 2026-11-01, against `origin/main` at `191673f`:**
+
+- **`/release` today** (`commands/release.md`, 251 lines). Stage 1 runs
+  `node .tropis/scripts/pipeline.mjs candidate slot` and remembers `filled` or `empty`.
+  Stage 3 ends the notes with `Checked on the release candidate: no — no candidate was
+  rehearsed` (empty slot) or `Checked on the release candidate: (after the candidate)`
+  (filled). Stage 4 prints `Proposed bump: … (the pipeline computes the number)`. Stage 5
+  commits only the notes file (through an auto-merging pull request where main is gated).
+  Stage 6 prints, for an empty slot, the release trigger with the bump; for a filled slot,
+  the candidate trigger with the full hash, then three numbered steps for the developer
+  (read the run summary, run `/manual-check` with the *Change* line
+  ``release candidate at `<short hash>` ``, run `/release` again). Stage 7 (entered when
+  the notes end with `(after the candidate)`) reads the newest verification-log entry
+  whose *Change* names `release candidate at`, and on `pass` prints the release trigger
+  with the bump and the candidate's hash, saying the release step writes
+  `Checked on the release candidate: yes`. The project-owned block's comment lists the
+  fill-in lines *Run from*, *Notes file*, *Readers*, *Breaking*, *Trigger*, *Candidate
+  trigger*, *Where the run is watched*. The command never runs a trigger.
+- **The release section of `framework/workflow.md`** (*Optional — release*, from line
+  ~525) describes three steps: the release candidate, the check, and the release — which
+  "on top of the candidate, make[s] one commit that sets the version, promotes
+  `## [Unreleased]` … tag[s] that commit; merge[s] it into the main branch; push[es] the
+  branch and the tag together". The bullet *The tag sits one commit above the candidate*
+  explains that shape. The *Branching* section says a project whose release pipeline
+  pushes to main records why it is ungated "until its release only tags what `main`
+  holds". So today a gated project cannot release without a bypass — the problem
+  `release-tags-what-main-holds` names.
+- **The slot and its run** (`scripts/pipeline.mjs`): `CANDIDATE_SCRIPTS = ['reset.sh',
+  'deploy.sh']` under `pipeline/candidate/`; `candidateSlot(root)` returns `filled`,
+  `empty`, or an error naming the missing script; `candidateSummary(...)` writes a block
+  headed `### Release candidate` with `- Candidate:`, `- Reset:`, `- Deploy:` and
+  `- By hand:` lines; `rehearse(root, summary)` resets to the highest `vX.Y.Z` tag
+  (`reset.sh` gets `TROPIS_PRODUCTION_TAG` and `TROPIS_PRODUCTION_DIR`), then runs
+  `deploy.sh` with `TROPIS_CANDIDATE` (the head hash) and `TROPIS_BY_HAND`, and writes the
+  summary to `--summary <file>` or, without it, to stderr. `candidateCommand` takes
+  `slot` (prints `candidate=filled|empty`) and `rehearse [--summary <file>]`; usage
+  `candidate: use slot or rehearse` exits 2. The `commands` listing ends with
+  `# Release candidate. …` and `node .tropis/scripts/pipeline.mjs candidate rehearse`.
+  Tests: `guards/pipeline.test.js`, `describe('candidate slot')` and
+  `describe('candidate rehearse')`, plus mentions in `describe('GitHub workflow')`.
+- **The workflows.** `templates/github/tropis-candidate.yml` (installed as
+  `.github/workflows/tropis-candidate.yml`, replaced on update) is a `workflow_call` with
+  input `commit`, jobs `framework` (the framework checks at that ref), `stages` (matrix of
+  sanity, unit, integration, end-to-end at that ref, no gate) and `rehearse` (concurrency
+  group `tropis-candidate-${{ github.repository }}`, runs
+  `pipeline.mjs candidate rehearse --summary "$GITHUB_STEP_SUMMARY"`).
+  `templates/candidate-caller.yml` is the project-owned caller, copied by the operator to
+  `.github/workflows/candidate.yml`, started with
+  `gh workflow run candidate.yml --ref main -f commit=<commit>`.
+- **Where these names are wired:** `scripts/installed-files.js` `SHIPPED_PATHS` lists
+  `.github/workflows/tropis-candidate.yml`; `scripts/set-up-project.sh` copies
+  `templates/candidate-caller.yml` into `.tropis/templates/`;
+  `guards/framework-integrity.test.js` exempts `.github/workflows/tropis-candidate.yml`
+  and `.github/workflows/candidate.yml`; `guards/installed-files.test.js` and
+  `guards/set-up-project.test.js` name both files; `templates/README.md` (the operator
+  guide a project gets) explains the slot from "To rehearse a release before it is
+  tagged"; `guards/release.test.js` `describe('the /release drafting stage')` asserts
+  Stage 3 contains both `Checked on the release candidate` lines.
+- **An update deletes a file the new release no longer ships** (`scripts/take-version.mjs`,
+  *Deleted, no longer shipped*), so renaming `tropis-candidate.yml` removes it from a
+  project, and a caller still naming it breaks. A release note's numbered by-hand step is
+  done by `/update` (`commands/update.md`, Stage 6 item 6: "a file to create or to move, …
+  Do it when it is mechanical"). `RELEASES.md`'s `## [Unreleased]` holds `_Nothing yet._`
+  and `/release` keeps the facts of content already there (Stage 3).
+- **The search that defines "old names"** —
+  `git grep -n -i -E "release candidate|pipeline/candidate|candidate(-caller)?\.yml|TROPIS_CANDIDATE|candidate (slot|rehearse)|rehears|pre-production" -- rules framework commands scripts guards templates`
+  — finds, today: `commands/release.md`, `framework/workflow.md`, `framework/DECISIONS.md`
+  (FW-030's text, and FW-041's unrelated "rehearse the work"), `scripts/pipeline.mjs`,
+  `scripts/installed-files.js`, `scripts/set-up-project.sh`, `templates/README.md`, both
+  workflow templates, five guards, and `rules/planning.md` (its unrelated "Do not rehearse
+  the work to write its plan"). `commands/refresh-readme.md` and `scripts/next-work.js`
+  use "candidate" in an unrelated sense and are not matched.
+- **This repository's own release** (`.github/workflows/ci.yml`, `.github/scripts/`,
+  `RELEASES.md`'s released sections) is not shipped, already tags only, and is out of
+  scope. The product `README.md` mentions a rehearsal; it is refreshed by
+  `/refresh-readme` at release, never patched by a plan.
+- **The developer's user-level instructions** on the specifying session's machine say
+  nothing about releases, staging or promotion, so a local fresh-agent probe is a real
+  one.
+
+**Model tier: High.** Command prose that an agent will follow across two sittings, a script command with refusals, a rename through every shipped file with a migration, and a fresh-agent probe to set up and judge.
+
+**Merge authority: parent review.** The release flow is irreversible when a project runs it, and the real staging and promote runs cannot be exercised here. Stop after the handover report (Task 7); do not write a review record and do not merge.
+
+**Requires:** an agent command-line tool that starts a fresh session from a piped prompt, for the fresh-agent check in Task 6 (record which, and its version).
+
+Do not store a kick-off prompt on this plan.
+
+---
+
+## Delivers
+
+release-tags-what-main-holds
+release-guides-through-both-steps
+
+## Repositories
+
+| Checkout | Role | Isolation |
+|---|---|---|
+| `tropis` | execute here | `git worktree add ../tropis-release-flow -b plan/release-flow origin/main` |
+
+## Global Constraints
+
+- **Never run a release.** Do not run `gh workflow run`, `gh run rerun`, or anything that
+  starts a workflow; do not push a tag; push nothing except this plan's branch. Commands
+  that only read GitHub (`gh run list`, `gh run view`) appear in the command text as
+  things `/release` runs for the developer; you need not run them.
+- **Edit only the source folders** (`rules/`, `framework/`, `commands/`, `scripts/`,
+  `guards/`, `templates/`) and the other files in *File Structure*. Never edit `.claude/`,
+  `.tropis/`, `.cursor/`, `.github/` or `CLAUDE.md`: they are the installed release.
+- **Add no dependency. Do not lower, skip or delete a guard or a test** except where a
+  test is renamed or rewritten for the new names, which you list in the handover.
+- **Every commit has a body** saying what becomes true. The commit touching
+  `framework/` carries Task 6's fresh-agent outcome (tool, version, operating system and
+  architecture; never the computer's name).
+- **This repository is public.** No home paths, hostnames, personal or computer names in
+  anything committed or in the handover. Paths in the handover are relative to the
+  worktree, or written as `$TMPDIR/...`.
+- **Write the code yourself against this repository's own names**; say in the handover
+  which named source, if any, you worked from.
+
+## Decisions
+
+The words. **The release** is the whole thing `/release` guides. **Step 1, deploy to
+staging**: run every stage on one commit of the main branch, put staging back on
+production's version, deploy that commit there, and check it by hand. **Step 2, promote
+to production**: tag a commit the main branch holds and deploy the tag to production.
+"Staging" replaces "pre-production environment"; "the staged commit" replaces "the
+candidate"; "promote" replaces "the release" where it meant the last step. The command
+stays `/release`.
+
+### 1. The renames (every shipped file)
+
+| Old | New |
+|---|---|
+| `pipeline/candidate/` (`reset.sh`, `deploy.sh`) | `pipeline/staging/` (same two scripts) |
+| `pipeline.mjs candidate slot` → `candidate=filled\|empty` | `pipeline.mjs staging slot` → `staging=filled\|empty` |
+| `pipeline.mjs candidate rehearse [--summary f]` | `pipeline.mjs staging deploy [--summary f]` |
+| `candidateSlot`, `candidateSummary`, `rehearse…` functions | `stagingSlot`, `stagingSummary`, `deployToStaging…` (your choice of exact names) |
+| summary heading `### Release candidate`, line `- Candidate:` | `### Deploy to staging`, `- Commit:` |
+| env `TROPIS_CANDIDATE` | `TROPIS_STAGING_COMMIT` |
+| `templates/github/tropis-candidate.yml` → `.github/workflows/tropis-candidate.yml`, name `Tropis release candidate`, job `rehearse`, concurrency `tropis-candidate-…` | `templates/github/tropis-staging.yml` → `.github/workflows/tropis-staging.yml`, name `Tropis deploy to staging`, job `deploy`, concurrency `tropis-staging-…` |
+| `templates/candidate-caller.yml` → `.github/workflows/candidate.yml`, name `Release candidate` | `templates/staging-caller.yml` → `.github/workflows/staging.yml`, name `Deploy to staging`, plus `run-name: Deploy to staging ${{ inputs.commit \|\| github.sha }}` |
+| notes line `Checked on the release candidate: yes` / `no — no candidate was rehearsed` / `(after the candidate)` | `Checked on staging: yes` / `no — this project does not deploy to staging` / `(after staging)` |
+| verification-log *Change* ``release candidate at `<short hash>` `` | ``staging deploy at `<short hash>` `` |
+| project-owned fill-in *Trigger*, *Candidate trigger* | *Promote trigger*, *Staging trigger* (Decision 3) |
+
+`staging deploy` also writes its summary block to **stdout**, in addition to the summary
+file, so `/release` can read it from the run's log (Decision 3). Keep `TROPIS_PRODUCTION_TAG`
+and `TROPIS_PRODUCTION_DIR` as they are.
+
+**The slot refuses the old layout, so nothing is lost silently.** `stagingSlot` returns
+an error (exit 1 from `staging slot` and from `staging deploy`) when:
+
+- `pipeline/candidate/` exists: `staging: pipeline/candidate/ is the old name of pipeline/staging/ — run git mv pipeline/candidate pipeline/staging`;
+- any file under `pipeline/staging/` contains `TROPIS_CANDIDATE`:
+  `staging: pipeline/staging/<file> reads TROPIS_CANDIDATE, now TROPIS_STAGING_COMMIT`.
+
+These two messages, the migration step (Decision 5) and the decision record's mapping
+(Decision 6) are the only places the old names stay in shipped files.
+
+### 2. The promote check (`scripts/pipeline.mjs`)
+
+Tropis still does not ship the promote pipeline (FW-030: version files, tags and
+production differ per project). It ships the check that pipeline runs before it tags, so
+the refusal is the same everywhere and tested here:
+
+```
+node .tropis/scripts/pipeline.mjs promote check <commit> [--staged <commit>] [--allow <path>]...
+```
+
+Run from a checkout of the main branch with full history. In order, each refusal exits 1
+with one line starting `promote: `:
+
+1. `<commit>` (and `--staged` when given) is a 40-character lowercase hex hash, else
+   `promote: "<value>" is not a full commit hash`.
+2. It names a commit in this repository, else `promote: <hash> is not a commit here`.
+3. `<commit>` is an ancestor of `HEAD` (or `HEAD` itself), else
+   `promote: <hash> is not on the main branch — tag only a commit main holds`.
+4. When the staging slot is filled and `--staged` is absent:
+   `promote: this project deploys to staging — give --staged <the commit staging was checked on>`.
+5. With `--staged`: it is an ancestor of `<commit>` (or equal), else
+   `promote: <commit> does not contain the staged commit <staged>`.
+6. With `--staged`: every path in `git diff --name-only <staged> <commit>` is one of the
+   `--allow` paths, else
+   `promote: <path>, <path> changed since staging was checked — deploy <commit> to staging first`
+   (all offending paths, comma-separated).
+
+Passing prints `promote: <commit> may be tagged` and exits 0. Usage errors exit 2 with
+`promote: use check <commit> [--staged <commit>] [--allow <path>]...`. Add it to the
+`commands` listing with a comment line saying the promote pipeline runs it before it tags.
+Write it against the existing `git(root, args)` helper and the module's existing style.
+
+### 3. `/release` (`commands/release.md`)
+
+Rewrite the command so it carries the developer through both steps and resumes. Keep
+Stages 1b (README), 2 (scope) and the drafting rules of Stage 3 as they are, apart from
+the names. Every place it says the pipeline computes the number now says `/release`
+computes it. Required content, in your own wording:
+
+- **Front matter and opening.** Description: drafts the notes, guides deploy to staging
+  and promote to production, and prints each trigger; does not run them. The opening says
+  the release is two steps, deploy to staging and promote to production, and that a
+  project with an empty staging slot has only step 2. It says where to resume: if
+  `## [Unreleased]` ends with `Checked on staging: (after staging)` **or** the old
+  `Checked on the release candidate: (after the candidate)`, go to the staging stage
+  (*Step 1*, below) for the commit the notes' merge put on main; if the version's
+  section already ends with `Checked on staging: yes` (or the old `…release candidate:
+  yes`) and no tag names that version, go to *Step 2*. "Never runs a trigger, deploys, or
+  tags" stays.
+- **Project-owned block comment.** Fill-in lines: *Run from*, *Notes file*, *Readers*,
+  *Breaking*, **Version files** (each file that carries the version and where in it, e.g.
+  `package.json`'s `version` field), **Promote trigger** (the command that starts the
+  project's promote pipeline, with `<commit>` and, where the project deploys to staging,
+  `<staged>`; e.g. `gh workflow run promote.yml --ref main -f commit=<commit> -f staged=<staged>`),
+  **Staging trigger** (e.g. `gh workflow run staging.yml --ref main -f commit=<commit>`),
+  **Staging workflow** (its file name, e.g. `staging.yml`), *Where the run is watched*.
+  Say that a block filled before this release may still say *Trigger* and *Candidate
+  trigger*, read as *Promote trigger* and *Staging trigger*.
+- **Stage 1** runs `node .tropis/scripts/pipeline.mjs staging slot` and remembers
+  `filled` or `empty`; on exit 1 it shows the message (which may be the old-layout
+  refusal) and stops.
+- **Stage 4** prints `Version: <current> → <next>` computed by `/release` from the last
+  `vX.Y.Z` tag and the bump (semantic versioning; below 1.0 a breaking change raises the
+  middle number; the first release is the version the developer confirms), and
+  `Staging: step 1, then promote · none — pipeline/staging/ is empty, promote only`.
+- **Stage 5, empty slot.** One commit (one pull request where gated, merged as today and
+  waited for with `main-status.mjs --pull-request <N>`) sets the version in every
+  version file, promotes `## [Unreleased]` to `## [<version>] — <date>` with a fresh empty
+  `## [Unreleased]` above it, and ends the section with `Checked on staging: no — this
+  project does not deploy to staging`. Subject `chore(release): <version>`. Stop if the
+  commit would touch any file other than the notes file and the version files. Then
+  *Step 2* with `<commit>` = the commit that landed on main, no `<staged>`.
+- **Stage 5, filled slot.** As today: commit only the notes, ending
+  `Checked on staging: (after staging)`, with `Bump: <bump>` in the body. Then *Step 1*
+  with `<commit>` = the commit that landed on main.
+- **Step 1 of 2 — deploy to staging.** Print `Step 1 of 2 — deploy to staging`, the
+  staging trigger with the full hash, and where the run is watched. Ask the developer to
+  say when they have started it, and wait (silence is not a yes). Then find the run:
+  `gh run list --workflow <staging workflow> --event workflow_dispatch --limit 20 --json databaseId,displayTitle,status,conclusion,url,createdAt`,
+  the run whose `displayTitle` contains the full hash; where none does (a caller without
+  `run-name`), the newest one created after the developer said it started, saying so.
+  Wait for it with `gh run watch <id> --exit-status` (in the background where the tool
+  stops long commands, or run again). Then read its log, `gh run view <id> --log`, and
+  report the `### Deploy to staging` block: the commit, reset, deploy, and **By hand**
+  list, numbered. A failed run: record a verification-log entry for this commit with
+  *Result* `fail`, naming the run's URL and what the summary says failed, and stop,
+  saying that once a fix has merged `/release` starts step 1 again for the new head of
+  the main branch. The notes stay.
+- **The check, same sitting.** Draft and record the check with the developer by
+  following `/manual-check`'s stages (it decides the kind, drafts, writes the entry as
+  `pending` before anything is run, waits, records), on staging, with *Change*
+  ``staging deploy at `<short hash>` ``. The by-hand list from the run comes first in
+  the steps. On `fail`, the entry records it, and `/release` stops as for a failed run.
+  On a later run of `/release`, the newest entry whose *Change* names `staging deploy at`
+  **or** the old `release candidate at` is the one read; `pending` resumes the check,
+  `fail` starts step 1 for the head of `origin/main`.
+- **On pass — the promotion pull request.** In a worktree of its own from `origin/main`
+  (a sibling worktree on a new branch `release/<version>` from `origin/main`, as the
+  workflow's *Branching* section says; write the command into the command text in that
+  form, and say under *Traps* in your handover that the plan describes it in words
+  because the plan check refuses a worktree command outside the Repositories table):
+  set the version in every version file, promote `## [Unreleased]` to
+  `## [<version>] — <date>` with a fresh `## [Unreleased]` above, and replace the last
+  line with `Checked on staging: yes`. Refuse if `git diff --name-only <staged> HEAD`
+  then names anything but the notes file and the version files: something merged since
+  staging was checked; say so and start step 1 for the head of `origin/main`. Commit
+  `chore(release): <version>`, push, open the pull request, run
+  `gh pr merge <N> --auto --squash` with that subject, then
+  `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only once it
+  reports the main branch green. Where the main branch is not gated, commit on `main`
+  and push instead. Remove the worktree after.
+- **Step 2 of 2 — promote to production.** Print `Step 2 of 2 — promote to production`,
+  the promote trigger with `<commit>` = the full hash of the commit that pull request
+  put on main (`gh pr view <N> --json mergeCommit -q .mergeCommit.oid`, or the pushed
+  commit) and `<staged>` = the staged commit's full hash, and where the run is watched.
+  Say the promote pipeline runs `promote check` first, tags `<commit>`, pushes only the
+  tag, and deploys the tag to production; anything merged after `<commit>` waits for the
+  next release. Stop.
+- **Both steps:** the developer starts each; an agent must not run a trigger.
+
+### 4. `framework/workflow.md`, release section and branching
+
+Rewrite *Optional — release* to the new words and flow:
+
+- `/release` drafts and guides; the developer starts each step. Step 1, **deploy to
+  staging** (Tropis ships it: the project fills `pipeline/staging/`, and
+  `.github/workflows/tropis-staging.yml` runs it); the **check** on staging, drafted and
+  recorded by `/release` as `/manual-check` does; then the **promotion pull request**
+  that carries the version and the promoted notes onto the main branch; step 2,
+  **promote to production**, the project's own pipeline, which must: run
+  `node .tropis/scripts/pipeline.mjs promote check <commit> --staged <staged> --allow <notes file> --allow <each version file>`
+  (without `--staged` where the slot is empty) and stop on a refusal; run the full suite
+  as a gate; tag `<commit>`; push only the tag; deploy the tag to production; publish the
+  notes without the `Checked on staging` line; and roll back on failure. It never commits
+  and never pushes a branch.
+- Replace *The tag sits one commit above the candidate* with **the tag sits on a commit
+  the main branch holds, and its code is the staged commit's**: the promotion pull
+  request changes only the notes and the version files, and the check refuses anything
+  else, so production gets what staging was checked on, and anything merged meanwhile
+  needs a new deploy to staging.
+- Keep the `vX.Y.Z` bullet, the upgrade-rehearsal bullet (renamed: "each deploy to
+  staging is the upgrade production will receive"), the manual-production bullet and the
+  rollback bullet, in the new words.
+- *Branching*: the release-pipeline paragraph ("A release pipeline is a third writer to
+  `main`" … "until its release only tags what `main` holds") becomes: a promote pipeline
+  never writes to the main branch; the version and the notes reach it through `/release`'s
+  pull request, so a gated project needs no bypass. A project whose own release still
+  pushes to main records why it is ungated until it follows this section. The
+  where-it-is-not-gated list's "the release notes `/release` commits" becomes "the
+  release notes and version `/release` commits".
+
+### 5. Migration (`RELEASES.md`, `## [Unreleased]`)
+
+Replace `_Nothing yet._` with a by-hand section the next release's `/release` keeps and
+`/update` performs. Heading `### What to do by hand`, then numbered steps, each one
+sentence of why and the exact action, for a project that deploys to staging today:
+
+1. `git mv pipeline/candidate pipeline/staging`, and in `pipeline/staging/*.sh` replace
+   `TROPIS_CANDIDATE` with `TROPIS_STAGING_COMMIT`.
+2. `git mv .github/workflows/candidate.yml .github/workflows/staging.yml`; in it, change
+   `uses: ./.github/workflows/tropis-candidate.yml` to
+   `uses: ./.github/workflows/tropis-staging.yml`, set `name: Deploy to staging`, and add
+   `run-name: Deploy to staging ${{ inputs.commit || github.sha }}` under it.
+3. In `.claude/commands/release.md`'s project-owned block, rename *Trigger* to *Promote
+   trigger* and *Candidate trigger* to *Staging trigger*, and add *Version files* and
+   *Staging workflow*.
+4. Change the release pipeline to the promote step in the workflow's release section:
+   take `commit` and `staged`, run `promote check`, tag `commit`, push only the tag, and
+   stop committing the version and the notes — `/release` does that now.
+
+Each step says it applies only where the file named exists. Steps 1–2 are mechanical;
+step 4 needs the developer. Keep it as plain release-note prose, in the reader's terms.
+
+### 6. Decision record (`framework/DECISIONS.md`)
+
+Add `## FW-<next>: A release is deploy to staging then promote to production, and
+promoting only tags`, with Date, Status Accepted, Decision (the two steps, `/release`
+guiding both and resuming from the notes line and the verification log, the promotion
+pull request, the tag on a commit main holds, the shipped `promote check`, the rename),
+Evidence (FW-037's consequence that a project whose release pushes to main stays ungated;
+the bundle's two entries; the old names read as jargon and "release" named three
+things), Rejected (a bypass for the release pipeline, as FW-037 rejected; tagging the
+staged commit itself, which cannot carry the version; Tropis shipping the whole promote
+pipeline, as FW-030 rejected; keeping both env names), Consequences (a project that
+deploys to staging renames its slot, caller and env var, through the release's by-hand
+steps; its promote pipeline stops committing; anything merged after staging is checked
+needs a new deploy to staging before promotion). `<next>` is the number after the
+highest `FW-` heading in the file when you write it; at the time of writing that is
+FW-044, and another session may take it first — the reviewer renumbers at merge if so.
+Append to FW-030 an `**Amended 2026-11-01 — renamed, and the tag moved.**` paragraph:
+the old names map to the new (the table in Decision 1, as prose), and the tag is now
+on the promotion commit main holds, per FW-<next>. Leave FW-037 unchanged; say in the
+new record's Consequences that FW-037's "stays ungated until its release only tags" is
+now met by following the release section. FW-030's original text
+is history and keeps its words.
+
+### 7. Shaping change carried by this plan
+
+`release-guides-through-both-steps` criterion 1 already reads (re-shaped by the
+specifying session in the pull request that moved it to building): decision records
+written from now on use the new names, and the old names stay only in a migration note
+and in earlier decision records' original text. So FW-030's original text is in scope
+to keep.
+
+## Traps
+
+- **A release is never run.** Its proof is `guards/pipeline.test.js` running the slot,
+  the deploy and the promote check against scratch repositories, and the probe in Task 6.
+  `gh workflow run` appears only as text to print.
+- **`bash scripts/check-blueprint.sh` reads committed content only.** Commit before you
+  run it. For a red check, make the revert a throwaway commit, run the guard through the
+  snippet in Task 0, and drop it (`git reset --hard HEAD~1` on your own branch only).
+- **The old-names search is a check of the result, and it matches the unrelated
+  "rehearse the work" in `rules/planning.md` and FW-041.** Those, FW-030's original text
+  and amendment, the new decision's mapping, the two refusal messages and their tests are
+  the expected hits; anything else is a miss to fix.
+- **`.github/workflows/tropis-candidate.yml` exists in this repository** — it is the
+  installed release's copy. Leave it; an update removes it.
+- **The commit hook speaks at a commit touching `framework/`** only as advice in this
+  repository's source folders; still put Task 6's outcome in the body of the commit that
+  changes `framework/workflow.md`.
+- **`guards/set-up-project.test.js` "records every shipped file at version unknown"** is
+  known to pass only in the self-check's archive export and to fail from a checkout. If
+  it is the only failure in `npm --prefix .tropis test`, check it fails the same on
+  `origin/main` and record that; do not fix it here.
+- **A plan header field sits on one line** until a release after 0.7.1 is installed;
+  this plan's do. Do not rewrap them.
+- **`feature-catalog.yaml` and `docs/backlog-board/bands.yaml` are being edited by other
+  sessions.** Touch only this bundle's two entries in the catalog, and not `bands.yaml`
+  at all; rebase on `origin/main` before pushing and resolve conflicts by keeping both
+  sides.
+
+## File Structure
+
+| File | Change |
+|---|---|
+| `scripts/pipeline.mjs` | Decisions 1, 2 |
+| `guards/pipeline.test.js` | Decisions 1, 2: renamed describes, the refusals, stdout summary, promote check |
+| `templates/github/tropis-candidate.yml` → `templates/github/tropis-staging.yml` | Decision 1 (`git mv`) |
+| `templates/candidate-caller.yml` → `templates/staging-caller.yml` | Decision 1 (`git mv`) |
+| `scripts/installed-files.js` | Decision 1 |
+| `scripts/set-up-project.sh` | Decision 1 |
+| `guards/installed-files.test.js` | Decision 1 |
+| `guards/set-up-project.test.js` | Decision 1 |
+| `guards/framework-integrity.test.js` | Decision 1: the two exempted workflow paths |
+| `templates/README.md` | Decisions 1, 3: the operator guide's staging paragraph and the promote check |
+| `commands/release.md` | Decision 3 |
+| `guards/release.test.js` | Decision 3: `describe('the /release drafting stage')` and any assertion naming old text; add assertions for the new lines (step headers, both resume forms, the promotion refusal) |
+| `framework/workflow.md` | Decision 4 |
+| `framework/DECISIONS.md` | Decision 6 |
+| `RELEASES.md` | Decision 5 |
+| `feature-catalog.yaml` | Task 7: both entries to shipped |
+| `docs/superpowers/plans/2026-11-01-release-flow.md` | Task 7: the handover report |
+
+If another shipped file turns out to name the old words (the search in Task 5 finds it),
+it is in scope: change it, and list it under *What the plan got wrong*.
+
+Doc closeout, decided by the specifying session: the decision record (Decision 6), the
+workflow's release section (Decision 4), the operator guide template
+(`templates/README.md`) and the release-note migration (Decision 5) are what this change
+owes. No rule: the constraint lives where `/release` and the promote pipeline read it.
+The product `README.md` is refreshed by `/refresh-readme` at the next release, not
+patched (it names no file this plan removes). Nothing for an upstream queue: this
+repository is the upstream.
+
+## Tasks
+
+### Task 0 — Setup in the worktree
+
+Isolate (the Repositories table; run the command from the primary checkout of `tropis`,
+after `git fetch origin`). In the worktree run `npm --prefix .tropis ci`, then
+`git status --porcelain` (passes when it prints nothing), then
+`bash scripts/check-blueprint.sh` (passes when its last line starts `Self-check passed`;
+any other last line, stop and hand back). Record `git --version`, `node --version`,
+`uname -sm`, your tool and version, and the commit you started from.
+
+To run one guard on committed content outside the self-check:
+
+```bash
+S="$(mktemp -d)"; git archive HEAD | tar -x -C "$S"
+echo '{"type":"module"}' > "$S/package.json"
+cp "$S/templates/framework-jest.config.js" "$S/jest.config.js"
+ln -s "$PWD/.tropis/node_modules" "$S/node_modules"
+(cd "$S" && node --experimental-vm-modules node_modules/.bin/jest guards/pipeline.test.js); rm -rf "$S"
+```
+
+### Task 1 — The rename in the script, workflows and installers (Decision 1)
+
+Tests first: rename the describes and expectations in `guards/pipeline.test.js` and the
+guards naming the files, add tests for the two old-layout refusals and for the summary
+reaching stdout. Commit, run the snippet on `guards/pipeline.test.js`: record the
+failures (the new names and refusals must fail). Then the script, the `git mv`s, the
+installers; commit; the snippet passes when the guard reports no failed test.
+
+**Red checks**, each a throwaway commit run through the snippet and dropped; record the
+failing test names: the `pipeline/candidate/` refusal removed; the `TROPIS_CANDIDATE`
+refusal removed.
+
+### Task 2 — The promote check (Decision 2)
+
+Tests first, in `guards/pipeline.test.js`, in a scratch repository with a `main` branch:
+one test per refusal 1–6 asserting the exit code and the line, a pass with `--staged`
+and only allowed paths changed, a pass with no `--staged` and an empty slot, and usage
+exit 2. Record the red run, implement, record the green run.
+
+**Red checks** (throwaway commits): the ancestor-of-`HEAD` test removed — refusal 3's
+test must fail; the allow-list comparison removed — refusal 6's test must fail.
+
+### Task 3 — `/release` (Decision 3)
+
+Rewrite `commands/release.md`. Update `guards/release.test.js` so it asserts, in the
+command text: Stage 1 runs `pipeline.mjs staging slot`; Stage 3 has the three
+`Checked on staging` lines; both resume forms (new and old notes line, new and old
+*Change* line) are named; the strings `Step 1 of 2 — deploy to staging` and
+`Step 2 of 2 — promote to production`; the promotion refusal compares against the staged
+commit; and the command says an agent must not run a trigger. Run the snippet on
+`guards/release.test.js`: passes with no failed test. Commit.
+
+### Task 4 — The workflow, the decision, the guide, the migration (Decisions 4–6)
+
+Write them. Do not commit `framework/workflow.md` until Task 6 has run; its outcome goes
+in that commit's body. Commit the others.
+
+### Task 5 — The old names are gone
+
+```bash
+git grep -n -i -E "release candidate|pipeline/candidate|candidate(-caller)?\.yml|TROPIS_CANDIDATE|candidate (slot|rehearse)|rehears|pre-production" -- rules framework commands scripts guards templates
+```
+
+Passes when every hit is one of the expected kinds in *Traps* (list each with its kind in
+the handover). Before the work this prints hits in `commands/release.md`,
+`scripts/installed-files.js` and others, which is the failing output. Any other hit: fix
+it and re-run.
+
+### Task 6 — The fresh-agent check
+
+The change rewrites what `/release` tells an agent to do. Probe it with a fresh session
+that has only a scratch project:
+
+```bash
+P="$(mktemp -d)"; git clone -q "$PWD" "$P/tropis"; git -C "$P/tropis" remote remove origin
+```
+
+From `$P/tropis`, run the tool with read tools only (Read, Grep, Glob) and its tool calls
+visible (in Claude Code, `claude -p --output-format stream-json --verbose`), piping:
+
+> This is a probe; its output is discarded and nothing you say will be run. Read
+> `commands/release.md` and act as `/release` would in a project set up from it. The
+> project deploys to staging; its project-owned block was filled before this release and
+> still says *Trigger* and *Candidate trigger*. Its `RELEASES.md` `## [Unreleased]`
+> section ends with `Checked on the release candidate: (after the candidate)`. Its
+> `docs/verification-log.md`'s newest entry has *Change* ``release candidate at `abc1234` ``
+> and its latest round says `pass`. Since that commit, one pull request that changed
+> `src/app.js` has merged into main. The version files are `package.json`. You cannot run
+> commands. Say, in order, what you would do next and what you would print for the
+> developer, and why.
+
+**Passes when** the answer reads the old notes line and the old *Change* line as the
+staging stage and a passed check, starts preparing the promotion pull request, finds that
+`src/app.js` changed since the staged commit, and says step 1 (deploy to staging) must
+run again for the head of the main branch — without printing a promote trigger and
+without running anything. Any other answer: the command is not finished; reword, re-run,
+and record each run. Delete `$P` afterwards. Commit `framework/workflow.md` with a body
+saying what becomes true and, in one or two sentences, what the probe was asked, what it
+answered, and the tool, version, operating system and architecture.
+
+### Task 7 — Full suite, criteria, catalog, handover
+
+```bash
+bash scripts/check-blueprint.sh        # passes: last line starts "Self-check passed"
+npm --prefix .tropis test              # passes: Jest reports no failed suite (Trap's known one aside)
+```
+
+On a failure in this plan's files, fix and re-run; otherwise stop and hand back.
+
+For each acceptance criterion of both entries, name the test, text or recorded check
+that covers it and check it covers what the criterion describes; put the table in the
+handover. Mark a criterion only a real run can show (the run lookup by `run-name`, the
+log reading) as covered by the command text and outstanding for a real staging run.
+
+In `feature-catalog.yaml`, on both entries: `status: shipped`; set `modules` to the
+shipped files each changed (the first entry at least `scripts/pipeline.mjs`,
+`commands/release.md`, `framework/workflow.md`; the second as listed now with the
+template renamed to `templates/github/tropis-staging.yml`); and directly above each
+`- id:` line add:
+
+```yaml
+# Shipped by docs/superpowers/plans/2026-11-01-release-flow.md; each criterion's test
+# or check is in that plan's handover report.
+```
+
+Leave `docs/backlog-board/bands.yaml` alone. Commit, re-run the two commands, then
+`git diff --stat origin/main...HEAD` (passes: only *File Structure* files).
+
+Append `## Handover report` to this plan with the six sections the planning rule names
+(*Every plan ends with a handover report*), each check's command and its actual output,
+the red checks' failing test names, the criteria table, the old-names hits with their
+kinds, the probe's answer, and the worktree path used. Commit, push the branch, open a
+pull request against `main` whose body says what becomes true and links this plan, and
+stop. Do not write a review record and do not merge.
