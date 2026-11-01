@@ -43,6 +43,13 @@ decides.
 → Append to the upstream queue (`docs/BLUEPRINT-UPSTREAM.md` or equivalent), **and**
 apply it locally if it changes something under `.claude/framework/`.
 
+Write the entry in the framework's terms: no file, path or name of the project's own, no
+product or customer, and only the figures the point needs. What it leaves out goes in the
+project's own record: the local rule, decision or document this learning also lands in,
+or, where it lands nowhere else here, the project's `DECISIONS.md` (or its equivalent) as
+the evidence for the queue line. A queue entry the project's own records need in order to
+make sense says so by pointing at that record, not by repeating it.
+
 **Something built here that a seeded project would want** — a command, a guard, a
 script — is a queue line too. Do not skip the queue because porting it is work rather
 than prose: the flush decides that, and turns a capability line into a shaped entry submitted to

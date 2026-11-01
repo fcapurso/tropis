@@ -4147,9 +4147,10 @@
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
 # Planned in docs/superpowers/plans/2026-11-01-flush-reveals-nothing-of-the-project.md.
+# Shipped by the plan handover at docs/superpowers/plans/2026-11-01-flush-reveals-nothing-of-the-project.md.
 - id: flush-name-is-explained-and-unique
   title: A flush reveals nothing of the project, in the name it goes under or in what it sends
-  status: building
+  status: shipped
   after:
     - project-chooses-the-name-it-flushes-under
   value: An operator can flush from a private project without reading every word for
@@ -4185,6 +4186,8 @@
     - commands/flush-upstream.md
     - commands/capture-learning.md
     - scripts/submit-upstream.sh
+    - guards/submit-upstream.test.js
+    - CONTRIBUTING.md
   refs: []
 
 # 2026-10-30, raised by the developer while refreshing the board: inside a band entries

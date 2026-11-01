@@ -24,6 +24,18 @@
 #     request against main and prints its URL, and nothing else, on stdout. Refuses a
 #     branch named main.
 #
+#   bash submit-upstream.sh suggest-name
+#     Prints a generated flush name, adopter- and six lowercase hexadecimal characters,
+#     and nothing else. Uses no gh and no network.
+#
+#   bash submit-upstream.sh check-name <OWNER/NAME> <name>
+#     Exits 0 and prints nothing when <name> is a valid flush name that no other account
+#     is using. Refuses (one line on stderr, exit 1) a name that is not lowercase letters,
+#     digits and hyphens, and a name under which an account other than the signed-in one
+#     has a pull request on the framework, in any state, from a branch starting
+#     upstream/<name>/. The branch is compared as gh reports it, without a fork's owner.
+#     open makes the same check before it pushes.
+#
 # gh is needed only by the flush, at the moment it runs; check-prerequisites.sh does not
 # ask for it.
 
@@ -57,6 +69,32 @@ preflight() {
   fi
 }
 
+suggest_name() {
+  # Three bytes only: a reader that stops early would kill the writer, and pipefail
+  # would then fail the script after it had printed.
+  echo "adopter-$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')"
+}
+
+# Refuses a name another account already flushes under. headRefName is the branch
+# without the fork owner, so a pull request from a fork reads like one on the framework.
+check_name() {
+  local up="${1:?check-name needs OWNER/NAME}"
+  local name="${2:?check-name needs a name}"
+
+  [[ "$name" =~ ^[a-z0-9][a-z0-9-]*$ ]] \
+    || refuse "the flush name \"$name\" is not lowercase letters, digits and hyphens: change it"
+
+  local me prs others
+  me="$(gh api user -q .login)"
+  prs="$(gh pr list --repo "$up" --state all --limit 1000 --json headRefName,author \
+    -q '.[] | "\(.headRefName) \(.author.login)"')"
+  others="$(printf '%s\n' "$prs" \
+    | awk -v p="upstream/$name/" -v me="$me" 'index($1, p) == 1 && $2 != me { print $2 }' \
+    | sort -u | paste -sd, - | sed 's/,/, /g')"
+  [ -z "$others" ] \
+    || refuse "the flush name \"$name\" is already used on $up by $others: choose another name"
+}
+
 open_pr() {
   local root="${1:?open needs the project root}"
   local up="${2:?open needs OWNER/NAME}"
@@ -78,6 +116,8 @@ open_pr() {
   # The pull request's base is main, so a branch of that name would be a push straight
   # onto the framework's main for anyone who can write there.
   [ "$branch" != "main" ] || refuse "refusing to push to main: name the branch for the flushed line"
+
+  check_name "$up" "$flush_name"
 
   local permission
   permission="$(gh repo view "$up" --json viewerPermission -q .viewerPermission)"
@@ -116,8 +156,15 @@ case "${1:-}" in
     shift
     open_pr "$@"
     ;;
+  suggest-name)
+    suggest_name
+    ;;
+  check-name)
+    shift
+    check_name "$@"
+    ;;
   *)
-    echo "usage: submit-upstream.sh preflight <project-root> | open <project-root> <OWNER/NAME> <branch> <title> <body-file>" >&2
+    echo "usage: submit-upstream.sh suggest-name | check-name <OWNER/NAME> <name> | preflight <project-root> | open <project-root> <OWNER/NAME> <branch> <title> <body-file>" >&2
     exit 2
     ;;
 esac

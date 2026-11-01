@@ -50,20 +50,6 @@ command-slots-spike:
   seen:
     status: shaped
     blockers: []
-flush-name-is-explained-and-unique:
-  band: B
-  value: 4
-  valueWhy: A flush goes to a public repository, so a leaked name or wording
-    cannot be taken back.
-  effort: 3
-  effortWhy: Changes to two commands, a name generator and a clash check.
-  verdict: "Flushes go to a public repository, so a leaked project name or wording
-    cannot be taken back. Worth doing before the next adopter flushes."
-  evidence: "2026-10-29 — commands/flush-upstream.md:20-24 only says the name is
-    public, and :77 quotes the queue entry word for word."
-  seen:
-    status: shaped
-    blockers: []
 framework-calls-itself-one-thing:
   band: C
   value: 2
