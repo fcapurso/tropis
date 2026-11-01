@@ -361,3 +361,114 @@ names (*Every plan ends with a handover report*), each check's command with its 
 output, the criteria table, and the worktree path used. Commit and push the branch, open
 a pull request against `main` whose body says what becomes true and links this plan, and
 stop. Do not write a review record and do not merge.
+
+## Handover report
+
+Executed by Claude Code (Agent SDK, model Sonnet 5.5; the tool's own version number was
+not available to the session), git 2.49.0, Node v22.15.0, Darwin arm64. Started from
+`dc005fc`. Named source worked from: none beyond this repository; the TMPDIR pattern is
+`guards/check-version.test.js`'s own.
+
+### Task completion
+
+- Task 0 done, with one gap: the baseline `bash scripts/check-blueprint.sh` at `dc005fc`
+  did not complete. I edited `scripts/check-blueprint.sh` while that run was reading it
+  (bash reads a script as it goes), so it died with `RUNLOG: unbound variable`. The
+  self-check on the finished branch passes; no clean verdict on `dc005fc` itself was
+  recorded.
+- Task 1 done. Task 2 done. Task 3 done. Task 4 done. Task 5 done (table below).
+- Task 6 done. Task 7 done with this report, the push and the pull request.
+
+### Verification results
+
+- Guard fails on `dc005fc`'s scripts (Task 1, before the change):
+  `bash` snippet on `guards/conformance-output.test.js` printed `Tests: 2 failed, 1
+  passed, 3 total`; the red-baseline test failed on the missing log and the second
+  baseline run. After the change: `Tests: 3 passed, 3 total`.
+- Red check on the real self-check (throwaway commit adding `throwaway red`, since reset):
+  the output had `FAILED      clean baseline`, then `● throwaway red`, then
+  `Output of each failing run: <worktree>/.self-check/logs/20261101T025824Z-3486755`;
+  that folder held `clean-baseline.log` and `grep -c "throwaway red"` on it printed `4`.
+  Folder deleted afterwards.
+- Passing self-check leaves nothing: `ls .self-check/logs` printed `No such file or
+  directory` after each passing run.
+- Task 2: `grep -n "readdirSync(tmpdir())" guards/take-version.test.js
+  guards/update.test.js` prints nothing (exit 1). `guards/take-version.test.js`: 44 passed
+  (then 45 with the hang test); `guards/update.test.js`: `Tests: 7 passed, 7 total`.
+- Task 2 red check (throwaway commit removing the `rmSync` in take-version's `finally`):
+  `-t 'scratch folder'` printed `Tests: 1 failed, 43 skipped, 44 total`. Reset.
+- Task 2 two runs at once (two clones of the branch at the commit after Decision 2, run
+  together in the background): both last lines were `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` Wall time 270 s. Clones deleted.
+- Task 3 hang test before the change: failed after about 32 s (`Expected: 1  Received:
+  null`, the guard-side kill of the child). After the change: `guards/take-version.test.js`
+  `Tests: 45 passed, 45 total`; `guards/check-version.test.js` `Tests: 11 passed, 11
+  total`.
+- `grep -c "input: archive" scripts/take-version.mjs` printed `0`.
+  `grep -n "spawnSync(" scripts/take-version.mjs scripts/check-version.mjs` printed only
+  `scripts/take-version.mjs:66`, inside the exported `run`.
+- Every guard spawn of `take-version.mjs` or `check-version.mjs` passes `timeout` and
+  `killSignal: 'SIGKILL'`: `take-version.test.js` in `takeWith` (default `CHILD`, 30000
+  for the hang test) and in `takeInWorktree` (`CHILD`); `check-version.test.js` in
+  `check` (`CHILD`). Those are the only three spawns of the two scripts.
+- Task 4 and Task 6 re-run, on the final commit: `bash scripts/check-blueprint.sh` last
+  line `Self-check passed: every guard caught its defect, the clean baseline passed, and
+  the framework repository's own guards passed.`; `npm --prefix .tropis test`:
+  `Test Suites: 13 passed, 13 total`, `Tests: 130 passed, 130 total`.
+
+### Criteria and their evidence
+
+| Entry and criterion | Evidence |
+|---|---|
+| kept output 1: every counted run keeps output under `.self-check/logs/`, verdict names the folder | the Task 1 red check on the real self-check (folder named in the output, `clean-baseline.log` inside); the guard's red-baseline test |
+| kept output 2: baseline names the failing tests from that run, no second run | guard test 1 (`calls` file holds one `baseline`, name in stdout and log) |
+| kept output 3: printed into the job's log on GitHub Actions | guard test 2 (`::group::clean-baseline.log` ... `::endgroup::`). Not run on GitHub itself. |
+| kept output 4: a pass leaves no log | guard test 3 (`LOGS` absent); `ls .self-check/logs` after passing runs |
+| kept output 5: a guard with a stub that fails once | `guards/conformance-output.test.js`, failing on `dc005fc`'s scripts |
+| beside 1: leftovers looked for only in the test's own folder | the grep above; `world().tmp` and `ownTmp` |
+| beside 2: two runs in two clones both pass | the two-runs check above |
+| beside 3: leaving the scratch folder still turns the test red | the Task 2 red check |
+| hang 1: no pipe | `grep -c "input: archive"` is 0; the code reads the tarball with `tar -x -f` |
+| hang 2: every child stopped at a limit, refusal names step and limit | `run` is the only `spawnSync`; the hang test covers the unpack step. The other steps share the code path but have no test of their own. |
+| hang 3: a guard makes tar hang | the new test in `guards/take-version.test.js` |
+| hang 4: every guard spawn has a limit below the test's | the spawn read-through above |
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: `feature-catalog.yaml`,
+`guards/check-version.test.js`, `guards/conformance-output.test.js`,
+`guards/take-version.test.js`, `guards/update.test.js`, `scripts/check-blueprint.sh`,
+`scripts/check-conformance.sh`, `scripts/check-version.mjs`, `scripts/take-version.mjs`
+(9 files, 274 insertions, 37 deletions), plus this plan file now. All are in the File
+Structure table. Worktree used: `../tropis-self-check`, a sibling of the primary checkout.
+
+### Judgment calls
+
+- `check-blueprint.sh` prints `Output of each failing run` itself only when its own
+  framework guards failed; when conformance failed, conformance already printed it for the
+  same folder, so it is not repeated.
+- Kept framework logs are numbered (`framework-<guard>-<what>-<n>.log`) so two plants of
+  one kind do not overwrite each other.
+- `check-version.mjs`'s top-level catch rewrites `take-version:` to `check-version:` for a
+  refusal, so a stopped child reads `check-version: ...` and not a doubled prefix.
+- The hang test passes a 30 s guard-side limit for its own child, below `CHILD`, so the
+  failing form takes about half a minute rather than 100 s. The test exposes this through
+  a `takeWith` helper on the scratch world.
+- The unpack in the hang test fails for `v0.2.1`, not the plan's `v0.2.0`: a project with
+  a record builds only the target version.
+
+### What the plan got wrong
+
+- It named a version `v0.2.1` only as something to "adjust"; the step is the target's,
+  as above.
+- The five-minute limit now also applies to `check-version`'s nested `npm install` and
+  `npm test` of a project. A project suite that runs longer is refused as "did not finish
+  within 300 s" unless `TROPIS_STEP_TIMEOUT_MS` is raised. The plan said every child; I
+  did not exempt these.
+
+### Outstanding
+
+- The GitHub Actions log groups are tested only through `GITHUB_ACTIONS=true` locally.
+- No clean self-check verdict at `dc005fc` (see Task 0).
+- The five-minute limit on a project's own test run is for the reviewer to decide.
