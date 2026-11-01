@@ -1320,3 +1320,39 @@ catalog rule keeps for the design.
 
 **Consequences:** A project with no framework entries sees a framework stream reading
 (none). The board's top box still makes one suggestion across layers; it is unchanged.
+
+## FW-043: The board rebuilds itself through git hooks, and is the one readable view of the backlog
+
+**Date:** 2026-11-01 · **Status:** Accepted. Amends FW-017: the page is still local and
+never committed, and now keeps itself current.
+
+**Decision:** Every set-up project's readable view of its backlog is the board,
+docs/backlog-board/index.html, and nothing else: the catalog rule and the workflow's doc
+closeout ask for no generated catalog document, and a project that keeps one replaces it
+with the board through an entry of its own. The page rebuilds itself, without banding,
+from four git hooks — post-commit, post-merge, post-checkout and post-rewrite — that run
+the board's build and never fail or print. `npm --prefix .tropis install` (and `ci`)
+writes them through the framework package's `prepare` script, so setup, an update that
+changes that package, and a fresh clone's first install all install them, and one
+install covers every worktree, which share the hooks folder. A hook the project already
+has, or a hooks folder set with `core.hooksPath`, is left alone, and the install prints
+the one line to add to it.
+
+**Evidence:** Measured 2026-11-01 with npm 11.6.4 and Node v22.15.0 on Darwin arm64:
+`npm ci` and `npm install` both ran a package's `prepare` script, from the package's own
+folder. A board build of this repository's backlog took 0.22 seconds.
+
+**Rejected:** An agent-tool hook after a write to the backlog — it covers agents only,
+needs wiring once per tool, and misses a pull or a branch switch, which is how parallel
+sessions' backlog changes arrive. FW-008 and FW-009 settle that hooks do not deliver
+text to agents; this hook delivers none, but git's hooks cover more moments for every
+tool and for a person alike. A file watcher — a process somebody must keep running.
+Rebuilding inside each backlog command — an instruction, which a hand edit never reads.
+Writing `core.hooksPath` — it would take over a project's existing hooks.
+
+**Consequences:** An edit to the backlog shows on the page at the next commit, merge,
+checkout or rebase, not while it is uncommitted; `npm --prefix .tropis run board`
+rebuilds it at once. A git client that cannot find `node` on its path rebuilds nothing,
+silently. A project with its own hooks folder or hook adds the printed line by hand. The
+self-check installs its test tools with `--ignore-scripts`, so it writes no hooks into
+this repository.
