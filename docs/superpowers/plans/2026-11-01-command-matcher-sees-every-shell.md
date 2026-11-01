@@ -399,3 +399,57 @@ with its actual output, the probe's verdict with the calls quoted, the named sou
 worked from, and the worktree path used. Commit and push the branch
 (`git push -u origin plan/command-matcher-sees-every-shell`), and stop. Do not open a
 pull request, do not write a review record and do not merge.
+
+## Handover report
+
+### Task completion
+
+- Task 0: done. Worktree `../tropis-command-matcher-sees-every-shell` from `origin/main` at `1229093`; `npm --prefix .tropis ci` run; tree clean; baseline self-check ended `Self-check passed`.
+- Task 1: done (script and guard block read in full).
+- Task 2: done. Row 25 now expects 0; rows 34 to 60 added. Against the old script exactly rows 25, 34 to 43, 48, 52, 57, 58 failed (15 failures), as the plan predicted.
+- Task 3: done. All 60 rows pass; the whole self-check passes; `grep -n substring_match scripts/command-at-position.py` prints nothing. Revert proof: with the old script restored in a throwaway commit (dropped afterwards) the failing set was again 25, 34 to 43, 48, 52, 57, 58.
+- Task 4: done. Rule sentence inserted; both phrase checks print `1`. Fresh-agent check run (see Verification results).
+- Task 5: done. Entry shipped with `modules` set and the criteria comment; bands row removed.
+- Task 6: this report.
+
+### Verification results
+
+Tools: Python 3.12.10, git 2.49.0, Node v22.15.0, Claude Code 2.1.300, on Darwin arm64. Started from `1229093`.
+
+- Rows: `command-at-position` block, 60 of 60 pass after Task 3 (run in a staged copy of the working tree; the whole file only runs inside the self-check's project-shaped tree, where it passes).
+- `bash scripts/check-blueprint.sh`, run after the matcher commit and again at the end: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 138 passed, 138 total`.
+- `tr -s ' \n' ' ' < rules/harness-scripts.md | grep -cF 'A command it cannot parse, or one whose heredoc never closes, also exits 0'` prints 1; the "not settled" phrase check prints 1.
+- `git diff --stat origin/main...HEAD`: bands.yaml 15 deletions, feature-catalog.yaml 7, rule-delivery.test.js 32, harness-scripts.md 7, command-at-position.py 211 (the plan file is added by this report).
+
+Fresh-agent check (Claude Code 2.1.300, Darwin arm64, `claude -p --output-format stream-json --verbose`, scoped `--allowedTools`, the developer's user-level instructions loaded, which say nothing about shell parsing). Scratch project set up from this branch with `set-up-project.sh`; its `.claude/rules/harness-scripts.md` carried the new sentence (count 1) and `.tropis/hooks/command-at-position.py` the new header (`dash, ksh or ssh` count 1). Prompt as in Task 4. Stream: the agent ran `cat .claude/rules/harness-scripts.md` and read `.tropis/hooks/command-at-position.py` before writing the hook, so it received the rule. It created its own sibling worktree (the project's workflow), wrote `.tropis/hooks/no-force-push.sh` and wired it in `.claude/settings.json`, and committed (`feat(hooks): refuse force pushes from agent shell commands`). The hook calls the shipped matcher for `git push` and its header comment says: "command-at-position.py also matches a command it cannot parse; this script then reads the command again for the flag, and lets it through if it cannot." Running the hook by hand:
+
+- `git push --force origin main`: exit 2, message on stderr. Pass.
+- `grep -rn "git push --force" docs`: exit 0. Pass.
+- `echo "don't run git push --force` (unbalanced quote): exit 0. Pass.
+
+Verdict: probe passes. Scratch project and stream deleted.
+
+### Scope
+
+All five changed files are in the File Structure table, plus this plan file. Worktree used: `/Users/filippo/AtlassianForge/Tropis/tropis-command-matcher-sees-every-shell`.
+
+Source worked from: none in particular; written against this script's own names.
+
+### Judgment calls
+
+- `strip_heredocs` now drops the heredoc operator from its output (keeps a space). Without it, a `$(cat <<'EOF'` lifted out of a substitution (guard row 22) held an operator with no body and, under unclosed-means-match, raised. This also makes `<<'EOF' git commit` read as a command.
+- Added a `(?<!<)` lookbehind to the heredoc pattern so a here-string `<<<word` is not read as a heredoc that never closes.
+- `_shell_reads_heredoc` returns False when the operator's own line has an open quote (`"$(cat <<'EOF'`); the surrounding text is checked as commands on its own anyway.
+- `remove_comments` tracks double quotes and `$( )` nesting with a small stack, so a `#` inside a nested substitution is not cut.
+- Wherever the old code fell back to substring search, the new code raises and `main` answers 0; `is_at_position` has no `try`.
+- To run the guard rows alone I staged the working tree in a scratch directory and ran Jest there; the other tests in the file need the self-check's tree.
+
+### What the plan got wrong
+
+- Nothing that stopped the work. Task 2's predicted failing set was exact. The plan did not mention that an unclosed-heredoc-means-match rule collides with the operator left inside a lifted substitution (row 22); handled as above.
+- A heredoc operator in arithmetic such as `$((1<<x))` is read as a heredoc operator and, with no closing line, now matches. This only makes a speaking hook speak.
+
+### Outstanding
+
+- Nothing blocking. Not done by design: no pull request, no review record, no merge.
