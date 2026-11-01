@@ -38,7 +38,7 @@ with anything but `true`, none of this happens. An update never touches the file
 
     npm --prefix .tropis run next
 
-`/next` is a report. It does not start the next command. `npm --prefix .tropis run board` writes one page of the open backlog to open in a browser; `/refresh-board` walks through banding and refreshing it; with bands written, `/next` suggests by band, and by value over effort inside one. Before merging a change to
+`/next` is a report. It does not start the next command. `npm --prefix .tropis run board` writes one page of the open backlog to open in a browser; `/refresh-board` walks through banding and refreshing it; `/next` shows product work and framework work as two streams, each with its next step: dispatching the plan that is waiting, or writing one. With bands written it suggests by band, and by value over effort inside one, lists the ideas banded A or B to shape, and says when an arc under way lost its turn. It names `/flush-upstream` when the upstream queue holds three entries, or has one waiting and was last flushed more than 14 days ago. Before merging a change to
 `.claude/` or `.tropis/`, run the framework's checks:
 
     npm --prefix .tropis test
