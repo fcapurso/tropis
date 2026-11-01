@@ -12,8 +12,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import {
-  candidateSlot,
-  candidateSummary,
+  stagingSlot,
+  stagingSummary,
   environmentName,
   gateDecision,
   isProseAndFramework,
@@ -75,14 +75,14 @@ function collidingRepository() {
 }
 
 const BRANCH_SCRIPTS = ['create.sh', 'deploy.sh', 'remove.sh'];
-const CANDIDATE_SCRIPTS = ['reset.sh', 'deploy.sh'];
+const STAGING_SCRIPTS = ['reset.sh', 'deploy.sh'];
 
 function fillBranchSlot(root, body = 'exit 0\n') {
   for (const name of BRANCH_SCRIPTS) write(root, `pipeline/branch/${name}`, body);
 }
 
-function fillCandidateSlot(root, body = 'exit 0\n') {
-  for (const name of CANDIDATE_SCRIPTS) write(root, `pipeline/candidate/${name}`, body);
+function fillStagingSlot(root, body = 'exit 0\n') {
+  for (const name of STAGING_SCRIPTS) write(root, `pipeline/staging/${name}`, body);
 }
 
 function runPipeline(root, args, { env, input } = {}) {
@@ -357,54 +357,94 @@ describe('branch slot', () => {
   });
 });
 
-describe('candidate slot', () => {
-  it('prints candidate=empty with no scripts and candidate=filled when both exist', () => {
+describe('staging slot', () => {
+  it('prints staging=empty with no scripts and staging=filled when both exist', () => {
     const root = repository();
-    expect(candidateSlot(root)).toEqual({ slot: 'empty' });
-    const empty = runPipeline(root, ['candidate', 'slot']);
+    expect(stagingSlot(root)).toEqual({ slot: 'empty' });
+    const empty = runPipeline(root, ['staging', 'slot']);
     expect(empty.status).toBe(0);
-    expect(empty.stdout).toBe('candidate=empty\n');
-    fillCandidateSlot(root);
-    expect(candidateSlot(root)).toEqual({ slot: 'filled' });
-    const filled = runPipeline(root, ['candidate', 'slot']);
+    expect(empty.stdout).toBe('staging=empty\n');
+    fillStagingSlot(root);
+    expect(stagingSlot(root)).toEqual({ slot: 'filled' });
+    const filled = runPipeline(root, ['staging', 'slot']);
     expect(filled.status).toBe(0);
-    expect(filled.stdout).toBe('candidate=filled\n');
+    expect(filled.stdout).toBe('staging=filled\n');
   });
 
   it('exits 1 and names only the missing script when one of the two exists', () => {
     const missingDeploy = repository();
-    write(missingDeploy, 'pipeline/candidate/reset.sh', 'exit 0\n');
-    expect(candidateSlot(missingDeploy).error).toBe('candidate: pipeline/candidate/ is missing deploy.sh');
-    const deploy = runPipeline(missingDeploy, ['candidate', 'slot']);
+    write(missingDeploy, 'pipeline/staging/reset.sh', 'exit 0\n');
+    expect(stagingSlot(missingDeploy).error).toBe('staging: pipeline/staging/ is missing deploy.sh');
+    const deploy = runPipeline(missingDeploy, ['staging', 'slot']);
     expect(deploy.status).toBe(1);
-    expect(deploy.stderr).toBe('candidate: pipeline/candidate/ is missing deploy.sh\n');
+    expect(deploy.stderr).toBe('staging: pipeline/staging/ is missing deploy.sh\n');
 
     const missingReset = repository();
-    write(missingReset, 'pipeline/candidate/deploy.sh', 'exit 0\n');
-    expect(candidateSlot(missingReset).error).toBe('candidate: pipeline/candidate/ is missing reset.sh');
-    const reset = runPipeline(missingReset, ['candidate', 'slot']);
+    write(missingReset, 'pipeline/staging/deploy.sh', 'exit 0\n');
+    expect(stagingSlot(missingReset).error).toBe('staging: pipeline/staging/ is missing reset.sh');
+    const reset = runPipeline(missingReset, ['staging', 'slot']);
     expect(reset.status).toBe(1);
-    expect(reset.stderr).toBe('candidate: pipeline/candidate/ is missing reset.sh\n');
+    expect(reset.stderr).toBe('staging: pipeline/staging/ is missing reset.sh\n');
   });
 
-  it('exits 2 and names slot and rehearse when the subcommand is missing or unknown', () => {
+  it('refuses the old pipeline/candidate/ folder, from slot and from deploy, and names the move', () => {
     const root = repository();
-    const none = runPipeline(root, ['candidate']);
+    commit(root, 'base');
+    write(root, 'pipeline/candidate/reset.sh', 'printf ran > reset-ran.txt\n');
+    write(root, 'pipeline/candidate/deploy.sh', 'printf ran > deploy-ran.txt\n');
+    const message = 'staging: pipeline/candidate/ is the old name of pipeline/staging/ — run git mv pipeline/candidate pipeline/staging';
+    expect(stagingSlot(root).error).toBe(message);
+    const slot = runPipeline(root, ['staging', 'slot']);
+    expect(slot.status).toBe(1);
+    expect(slot.stdout).toBe('');
+    expect(slot.stderr).toBe(`${message}\n`);
+    const deploy = runPipeline(root, ['staging', 'deploy']);
+    expect(deploy.status).toBe(1);
+    expect(deploy.stderr).toBe(`${message}\n`);
+    expect(statSync(join(root, 'reset-ran.txt'), { throwIfNoEntry: false })).toBeUndefined();
+    expect(statSync(join(root, 'deploy-ran.txt'), { throwIfNoEntry: false })).toBeUndefined();
+    fillStagingSlot(root);
+    expect(stagingSlot(root).error).toBe(message);
+  });
+
+  it('refuses a staging script that still reads TROPIS_CANDIDATE, from slot and from deploy', () => {
+    const root = repository();
+    commit(root, 'base');
+    write(root, 'pipeline/staging/reset.sh', 'exit 0\n');
+    write(root, 'pipeline/staging/deploy.sh', 'printf "%s" "$TROPIS_CANDIDATE" > saw.txt\n');
+    const message = 'staging: pipeline/staging/deploy.sh reads TROPIS_CANDIDATE, now TROPIS_STAGING_COMMIT';
+    expect(stagingSlot(root).error).toBe(message);
+    const slot = runPipeline(root, ['staging', 'slot']);
+    expect(slot.status).toBe(1);
+    expect(slot.stderr).toBe(`${message}\n`);
+    const deploy = runPipeline(root, ['staging', 'deploy']);
+    expect(deploy.status).toBe(1);
+    expect(deploy.stderr).toBe(`${message}\n`);
+    expect(statSync(join(root, 'saw.txt'), { throwIfNoEntry: false })).toBeUndefined();
+    write(root, 'pipeline/staging/deploy.sh', 'exit 0\n');
+    write(root, 'pipeline/staging/lib/common.sh', 'echo "$TROPIS_CANDIDATE"\n');
+    expect(stagingSlot(root).error)
+      .toBe('staging: pipeline/staging/lib/common.sh reads TROPIS_CANDIDATE, now TROPIS_STAGING_COMMIT');
+  });
+
+  it('exits 2 and names slot and deploy when the subcommand is missing or unknown', () => {
+    const root = repository();
+    const none = runPipeline(root, ['staging']);
     expect(none.status).toBe(2);
     expect(none.stderr).toContain('slot');
-    expect(none.stderr).toContain('rehearse');
-    const unknown = runPipeline(root, ['candidate', 'nope']);
+    expect(none.stderr).toContain('deploy');
+    const unknown = runPipeline(root, ['staging', 'nope']);
     expect(unknown.status).toBe(2);
     expect(unknown.stderr).toContain('slot');
-    expect(unknown.stderr).toContain('rehearse');
+    expect(unknown.stderr).toContain('deploy');
   });
 });
 
 function summaryFor({ hash, reset, deploy, byHand }) {
   const lines = [
-    '### Release candidate',
+    '### Deploy to staging',
     '',
-    `- Candidate: \`${hash}\``,
+    `- Commit: \`${hash}\``,
     `- Reset: ${reset}`,
     `- Deploy: ${deploy}`,
   ];
@@ -432,27 +472,26 @@ function versionedRepository() {
   return root;
 }
 
-describe('candidate rehearse', () => {
+describe('staging deploy', () => {
   it('prints the empty line and records that nothing ran when the slot is empty', () => {
     const root = repository();
     const hash = commit(root, 'base');
     const summary = join(root, 'summary.md');
     writeFileSync(summary, 'prior\n');
-    const result = runPipeline(root, ['candidate', 'rehearse', '--summary', summary]);
+    const result = runPipeline(root, ['staging', 'deploy', '--summary', summary]);
     const text = summaryFor({
       hash,
-      reset: 'not run — no pipeline/candidate/',
-      deploy: 'not run — no pipeline/candidate/',
+      reset: 'not run — no pipeline/staging/',
+      deploy: 'not run — no pipeline/staging/',
       byHand: null,
     });
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe('candidate: empty — no pipeline/candidate/, so no candidate was rehearsed\n');
-    expect(result.stdout).not.toContain('### Release candidate');
+    expect(result.stdout).toBe(`staging: empty — no pipeline/staging/, so nothing was deployed to staging\n${text}`);
     expect(readFileSync(summary, 'utf8')).toBe(`prior\n${text}`);
-    expect(candidateSummary({
+    expect(stagingSummary({
       hash,
-      reset: 'not run — no pipeline/candidate/',
-      deploy: 'not run — no pipeline/candidate/',
+      reset: 'not run — no pipeline/staging/',
+      deploy: 'not run — no pipeline/staging/',
       byHand: null,
     })).toBe(text);
   });
@@ -461,40 +500,40 @@ describe('candidate rehearse', () => {
     const root = repository();
     const hash = commit(root, 'base');
     git(root, 'tag', 'not-a-release');
-    write(root, 'pipeline/candidate/reset.sh', 'printf ran > reset-ran.txt\n');
-    write(root, 'pipeline/candidate/deploy.sh', 'printf "%s" "$TROPIS_CANDIDATE" > saw-candidate.txt\n');
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    write(root, 'pipeline/staging/reset.sh', 'printf ran > reset-ran.txt\n');
+    write(root, 'pipeline/staging/deploy.sh', 'printf "%s" "$TROPIS_STAGING_COMMIT" > saw-commit.txt\n');
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.status).toBe(0);
     expect(statSync(join(root, 'reset-ran.txt'), { throwIfNoEntry: false })).toBeUndefined();
-    expect(readFileSync(join(root, 'saw-candidate.txt'), 'utf8')).toBe(hash);
-    expect(result.stderr).toBe(summaryFor({
+    expect(readFileSync(join(root, 'saw-commit.txt'), 'utf8')).toBe(hash);
+    expect(result.stdout).toBe(summaryFor({
       hash,
       reset: 'not needed — no release yet',
       deploy: 'deployed',
       byHand: [],
     }));
-    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('');
   });
 
   it('resets to the highest release tag, then deploys, and removes the archive afterwards', () => {
     const root = versionedRepository();
     const hash = git(root, 'rev-parse', 'HEAD');
-    fillCandidateSlot(root, 'exit 0\n');
-    write(root, 'pipeline/candidate/reset.sh', [
+    fillStagingSlot(root, 'exit 0\n');
+    write(root, 'pipeline/staging/reset.sh', [
       'cat "$TROPIS_PRODUCTION_DIR/version.txt" > saw-version.txt',
       'printf "%s" "$TROPIS_PRODUCTION_DIR" > saw-dir.txt',
       'printf "%s" "$TROPIS_PRODUCTION_TAG" > saw-tag.txt',
       '',
     ].join('\n'));
-    write(root, 'pipeline/candidate/deploy.sh', [
-      'printf "%s" "$TROPIS_CANDIDATE" > saw-candidate.txt',
+    write(root, 'pipeline/staging/deploy.sh', [
+      'printf "%s" "$TROPIS_STAGING_COMMIT" > saw-commit.txt',
       'if [ -n "${TROPIS_PRODUCTION_TAG+x}" ]; then printf set > saw-deploy-tag.txt; fi',
       'if [ -n "${TROPIS_PRODUCTION_DIR+x}" ]; then printf set > saw-deploy-dir.txt; fi',
       '',
     ].join('\n'));
     const summary = join(root, 'summary.md');
     writeFileSync(summary, 'prior\n');
-    const result = runPipeline(root, ['candidate', 'rehearse', '--summary', summary]);
+    const result = runPipeline(root, ['staging', 'deploy', '--summary', summary]);
     const text = summaryFor({
       hash,
       reset: 'to `v0.10.0`',
@@ -504,12 +543,13 @@ describe('candidate rehearse', () => {
     expect(result.status).toBe(0);
     expect(readFileSync(join(root, 'saw-tag.txt'), 'utf8')).toBe('v0.10.0');
     expect(readFileSync(join(root, 'saw-version.txt'), 'utf8')).toBe('v0.10.0\n');
-    expect(readFileSync(join(root, 'saw-candidate.txt'), 'utf8')).toBe(hash);
+    expect(readFileSync(join(root, 'saw-commit.txt'), 'utf8')).toBe(hash);
     const dir = readFileSync(join(root, 'saw-dir.txt'), 'utf8');
     expect(statSync(dir, { throwIfNoEntry: false })).toBeUndefined();
     expect(statSync(join(root, 'saw-deploy-tag.txt'), { throwIfNoEntry: false })).toBeUndefined();
     expect(statSync(join(root, 'saw-deploy-dir.txt'), { throwIfNoEntry: false })).toBeUndefined();
     expect(readFileSync(summary, 'utf8')).toBe(`prior\n${text}`);
+    expect(result.stdout).toBe(text);
     expect(result.stderr).toBe('');
   });
 
@@ -522,14 +562,14 @@ describe('candidate rehearse', () => {
     git(root, 'tag', 'v1.0.0');
     write(root, 'version.txt', 'later\n');
     commit(root, 'later');
-    write(root, 'pipeline/candidate/reset.sh', [
+    write(root, 'pipeline/staging/reset.sh', [
       'cat "$TROPIS_PRODUCTION_DIR/version.txt" > saw-version.txt',
       'wc -c < "$TROPIS_PRODUCTION_DIR/large.bin" | tr -d " " > saw-size.txt',
       'ls -A "$TROPIS_PRODUCTION_DIR" > saw-files.txt',
       '',
     ].join('\n'));
-    write(root, 'pipeline/candidate/deploy.sh', 'exit 0\n');
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    write(root, 'pipeline/staging/deploy.sh', 'exit 0\n');
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.stderr).not.toContain('could not read the production tag');
     expect(result.status).toBe(0);
     expect(readFileSync(join(root, 'saw-version.txt'), 'utf8')).toBe('v1.0.0\n');
@@ -550,17 +590,17 @@ describe('candidate rehearse', () => {
     git(root, 'tag', 'v1.1.0-rc.1');
     write(root, 'version.txt', 'later\n');
     const hash = commit(root, 'later');
-    write(root, 'pipeline/candidate/reset.sh', [
+    write(root, 'pipeline/staging/reset.sh', [
       'cat "$TROPIS_PRODUCTION_DIR/version.txt" > saw-version.txt',
       'printf "%s" "$TROPIS_PRODUCTION_TAG" > saw-tag.txt',
       '',
     ].join('\n'));
-    write(root, 'pipeline/candidate/deploy.sh', 'exit 0\n');
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    write(root, 'pipeline/staging/deploy.sh', 'exit 0\n');
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.status).toBe(0);
     expect(readFileSync(join(root, 'saw-tag.txt'), 'utf8')).toBe('v1.0.0');
     expect(readFileSync(join(root, 'saw-version.txt'), 'utf8')).toBe('v1.0.0\n');
-    expect(result.stderr).toBe(summaryFor({
+    expect(result.stdout).toBe(summaryFor({
       hash,
       reset: 'to `v1.0.0`',
       deploy: 'deployed',
@@ -574,12 +614,12 @@ describe('candidate rehearse', () => {
     git(root, 'tag', 'v1.0.0-rc.1');
     git(root, 'tag', 'v2');
     git(root, 'tag', 'release-1.0.0');
-    write(root, 'pipeline/candidate/reset.sh', 'printf ran > reset-ran.txt\n');
-    write(root, 'pipeline/candidate/deploy.sh', 'exit 0\n');
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    write(root, 'pipeline/staging/reset.sh', 'printf ran > reset-ran.txt\n');
+    write(root, 'pipeline/staging/deploy.sh', 'exit 0\n');
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.status).toBe(0);
     expect(statSync(join(root, 'reset-ran.txt'), { throwIfNoEntry: false })).toBeUndefined();
-    expect(result.stderr).toBe(summaryFor({
+    expect(result.stdout).toBe(summaryFor({
       hash,
       reset: 'not needed — no release yet',
       deploy: 'deployed',
@@ -590,20 +630,20 @@ describe('candidate rehearse', () => {
   it('removes the archive and skips deploy when reset.sh fails', () => {
     const root = versionedRepository();
     const hash = git(root, 'rev-parse', 'HEAD');
-    write(root, 'pipeline/candidate/reset.sh', [
+    write(root, 'pipeline/staging/reset.sh', [
       'cat "$TROPIS_PRODUCTION_DIR/version.txt" > saw-version.txt',
       'printf "%s" "$TROPIS_PRODUCTION_DIR" > saw-dir.txt',
       'exit 3',
       '',
     ].join('\n'));
-    write(root, 'pipeline/candidate/deploy.sh', 'printf ran > deploy-ran.txt\n');
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    write(root, 'pipeline/staging/deploy.sh', 'printf ran > deploy-ran.txt\n');
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.status).toBe(3);
     expect(readFileSync(join(root, 'saw-version.txt'), 'utf8')).toBe('v0.10.0\n');
     const dir = readFileSync(join(root, 'saw-dir.txt'), 'utf8');
     expect(statSync(dir, { throwIfNoEntry: false })).toBeUndefined();
     expect(statSync(join(root, 'deploy-ran.txt'), { throwIfNoEntry: false })).toBeUndefined();
-    expect(result.stderr).toBe(summaryFor({
+    expect(result.stdout).toBe(summaryFor({
       hash,
       reset: 'failed — reset.sh exited 3',
       deploy: 'not run — reset.sh failed',
@@ -614,15 +654,15 @@ describe('candidate rehearse', () => {
   it('lists by-hand lines in the order deploy.sh wrote them', () => {
     const root = versionedRepository();
     const hash = git(root, 'rev-parse', 'HEAD');
-    write(root, 'pipeline/candidate/reset.sh', 'exit 0\n');
-    write(root, 'pipeline/candidate/deploy.sh', [
+    write(root, 'pipeline/staging/reset.sh', 'exit 0\n');
+    write(root, 'pipeline/staging/deploy.sh', [
       'printf "%s\\n" "Approve the new permissions" >> "$TROPIS_BY_HAND"',
       'printf "%s\\n" "Restart the worker" >> "$TROPIS_BY_HAND"',
       '',
     ].join('\n'));
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.status).toBe(0);
-    expect(result.stderr).toBe(summaryFor({
+    expect(result.stdout).toBe(summaryFor({
       hash,
       reset: 'to `v0.10.0`',
       deploy: 'deployed',
@@ -633,16 +673,16 @@ describe('candidate rehearse', () => {
   it('does not report by-hand lines when deploy.sh fails', () => {
     const root = repository();
     const hash = commit(root, 'base');
-    write(root, 'pipeline/candidate/reset.sh', 'printf ran > reset-ran.txt\n');
-    write(root, 'pipeline/candidate/deploy.sh', [
+    write(root, 'pipeline/staging/reset.sh', 'printf ran > reset-ran.txt\n');
+    write(root, 'pipeline/staging/deploy.sh', [
       'printf "%s\\n" "Approve the new permissions" >> "$TROPIS_BY_HAND"',
       'exit 4',
       '',
     ].join('\n'));
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.status).toBe(4);
     expect(statSync(join(root, 'reset-ran.txt'), { throwIfNoEntry: false })).toBeUndefined();
-    expect(result.stderr).toBe(summaryFor({
+    expect(result.stdout).toBe(summaryFor({
       hash,
       reset: 'not needed — no release yet',
       deploy: 'failed — deploy.sh exited 4',
@@ -653,47 +693,47 @@ describe('candidate rehearse', () => {
   it('passes secret values to reset and deploy without forwarding the payload', () => {
     const root = versionedRepository();
     const hash = git(root, 'rev-parse', 'HEAD');
-    write(root, 'pipeline/candidate/reset.sh', 'printf \'%s\\n\' reset >> seen.txt\nif [ -n "${TROPIS_SECRETS+x}" ]; then printf \'%s\\n\' secrets-set >> seen.txt; else printf \'%s\\n\' secrets-unset >> seen.txt; fi\nprintf \'A=%s\\n\' "$A" >> seen.txt\nprintf \'candidate=%s\\n\' "$TROPIS_CANDIDATE" >> seen.txt\nprintf \'tag=%s\\n\' "$TROPIS_PRODUCTION_TAG" >> seen.txt\n');
-    write(root, 'pipeline/candidate/deploy.sh', `printf '%s\\n' deploy >> seen.txt\nif [ -n "\${TROPIS_SECRETS+x}" ]; then printf '%s\\n' secrets-set >> seen.txt; else printf '%s\\n' secrets-unset >> seen.txt; fi\nprintf 'A=%s\\n' "$A" >> seen.txt\nprintf 'candidate=%s\\n' "$TROPIS_CANDIDATE" >> seen.txt\n`);
-    const seen = runPipeline(root, ['candidate', 'rehearse'], {
+    write(root, 'pipeline/staging/reset.sh', 'printf \'%s\\n\' reset >> seen.txt\nif [ -n "${TROPIS_SECRETS+x}" ]; then printf \'%s\\n\' secrets-set >> seen.txt; else printf \'%s\\n\' secrets-unset >> seen.txt; fi\nprintf \'A=%s\\n\' "$A" >> seen.txt\nprintf \'commit=%s\\n\' "$TROPIS_STAGING_COMMIT" >> seen.txt\nprintf \'tag=%s\\n\' "$TROPIS_PRODUCTION_TAG" >> seen.txt\n');
+    write(root, 'pipeline/staging/deploy.sh', `printf '%s\\n' deploy >> seen.txt\nif [ -n "\${TROPIS_SECRETS+x}" ]; then printf '%s\\n' secrets-set >> seen.txt; else printf '%s\\n' secrets-unset >> seen.txt; fi\nprintf 'A=%s\\n' "$A" >> seen.txt\nprintf 'commit=%s\\n' "$TROPIS_STAGING_COMMIT" >> seen.txt\n`);
+    const seen = runPipeline(root, ['staging', 'deploy'], {
       env: { TROPIS_SECRETS: '{"A":"1"}' },
     });
     expect(seen.status).toBe(0);
     expect(readFileSync(join(root, 'seen.txt'), 'utf8')).toBe(
-      `reset\nsecrets-unset\nA=1\ncandidate=${hash}\ntag=v0.10.0\ndeploy\nsecrets-unset\nA=1\ncandidate=${hash}\n`,
+      `reset\nsecrets-unset\nA=1\ncommit=${hash}\ntag=v0.10.0\ndeploy\nsecrets-unset\nA=1\ncommit=${hash}\n`,
     );
-    const kept = runPipeline(root, ['candidate', 'rehearse'], {
+    const kept = runPipeline(root, ['staging', 'deploy'], {
       env: { A: 'kept', TROPIS_SECRETS: '{"A":"1"}' },
     });
     expect(kept.status).toBe(0);
     expect(readFileSync(join(root, 'seen.txt'), 'utf8')).toBe(
-      `reset\nsecrets-unset\nA=1\ncandidate=${hash}\ntag=v0.10.0\n`
-      + `deploy\nsecrets-unset\nA=1\ncandidate=${hash}\n`
-      + `reset\nsecrets-unset\nA=kept\ncandidate=${hash}\ntag=v0.10.0\n`
-      + `deploy\nsecrets-unset\nA=kept\ncandidate=${hash}\n`,
+      `reset\nsecrets-unset\nA=1\ncommit=${hash}\ntag=v0.10.0\n`
+      + `deploy\nsecrets-unset\nA=1\ncommit=${hash}\n`
+      + `reset\nsecrets-unset\nA=kept\ncommit=${hash}\ntag=v0.10.0\n`
+      + `deploy\nsecrets-unset\nA=kept\ncommit=${hash}\n`,
     );
   });
 
   it('exits 1 and names the missing script when the slot has only one', () => {
     const root = repository();
     commit(root, 'base');
-    write(root, 'pipeline/candidate/reset.sh', 'printf ran > reset-ran.txt\n');
-    const result = runPipeline(root, ['candidate', 'rehearse']);
+    write(root, 'pipeline/staging/reset.sh', 'printf ran > reset-ran.txt\n');
+    const result = runPipeline(root, ['staging', 'deploy']);
     expect(result.status).toBe(1);
-    expect(result.stderr).toBe('candidate: pipeline/candidate/ is missing deploy.sh\n');
+    expect(result.stderr).toBe('staging: pipeline/staging/ is missing deploy.sh\n');
     expect(statSync(join(root, 'reset-ran.txt'), { throwIfNoEntry: false })).toBeUndefined();
   });
 
-  it('ends the host command list with the candidate rehearse', () => {
+  it('lists the deploy to staging in the host command list', () => {
     const root = repository();
     const result = runPipeline(root, ['commands']);
     expect(result.status).toBe(0);
-    expect(result.stdout.endsWith([
-      '# Release candidate. Started by hand for one commit on the main branch, never on a push.',
+    expect(result.stdout).toContain([
+      '# Deploy to staging. Started by hand for one commit on the main branch, never on a push.',
       '# Every stage first, as on a push with nothing skipped; then:',
-      'node .tropis/scripts/pipeline.mjs candidate rehearse',
+      'node .tropis/scripts/pipeline.mjs staging deploy',
       '',
-    ].join('\n'))).toBe(true);
+    ].join('\n'));
   });
 });
 
@@ -1547,44 +1587,45 @@ describe('GitHub workflow', () => {
     expect(planRun).toContain('plan --closed >> "$GITHUB_OUTPUT"');
   });
 
-  it('rehearses every stage between framework and deploy on the chosen commit', () => {
-    const candidatePath = join(blueprint, 'templates/github/tropis-candidate.yml');
-    const candidateText = readFileSync(candidatePath, 'utf8');
-    const candidate = YAML.parse(candidateText);
-    expect(Object.keys(candidate.jobs)).toEqual(['framework', 'stages', 'rehearse']);
-    expect(candidate.on.workflow_call.inputs.commit.required).toBe(true);
+  it('runs every stage between framework and deploy on the commit it deploys to staging', () => {
+    const stagingPath = join(blueprint, 'templates/github/tropis-staging.yml');
+    const stagingText = readFileSync(stagingPath, 'utf8');
+    const staging = YAML.parse(stagingText);
+    expect(Object.keys(staging.jobs)).toEqual(['framework', 'stages', 'deploy']);
+    expect(staging.on.workflow_call.inputs.commit.required).toBe(true);
     const between = STAGES.filter((stage) => stage !== 'framework' && stage !== 'deploy');
-    expect(candidate.jobs.stages.strategy.matrix.stage).toEqual(between);
-    expect(candidate.jobs.stages.strategy['fail-fast']).toBe(false);
-    expect([].concat(candidate.jobs.stages.needs)).toEqual(['framework']);
-    expect([].concat(candidate.jobs.rehearse.needs)).toEqual(['stages']);
-    expect(candidate.jobs.rehearse.if).toBeUndefined();
-    expect(candidate.jobs.rehearse.concurrency).toEqual({
-      group: 'tropis-candidate-${{ github.repository }}',
+    expect(staging.jobs.stages.strategy.matrix.stage).toEqual(between);
+    expect(staging.jobs.stages.strategy['fail-fast']).toBe(false);
+    expect([].concat(staging.jobs.stages.needs)).toEqual(['framework']);
+    expect([].concat(staging.jobs.deploy.needs)).toEqual(['stages']);
+    expect(staging.jobs.deploy.if).toBeUndefined();
+    expect(staging.jobs.deploy.concurrency).toEqual({
+      group: 'tropis-staging-${{ github.repository }}',
       'cancel-in-progress': false,
     });
-    expect(candidate.jobs.framework.uses).toBe('./.github/workflows/tropis-framework-checks.yml');
-    expect(candidate.jobs.framework.with).toEqual({
+    expect(staging.name).toBe('Tropis deploy to staging');
+    expect(staging.jobs.framework.uses).toBe('./.github/workflows/tropis-framework-checks.yml');
+    expect(staging.jobs.framework.with).toEqual({
       'node-version': '${{ inputs.node-version }}',
       ref: '${{ inputs.commit }}',
     });
     const checkouts = (job) => (job.steps || []).filter((step) => String(step.uses).startsWith('actions/checkout'));
-    for (const id of ['stages', 'rehearse']) {
-      const steps = checkouts(candidate.jobs[id]);
+    for (const id of ['stages', 'deploy']) {
+      const steps = checkouts(staging.jobs[id]);
       expect(steps.length).toBeGreaterThan(0);
       for (const step of steps) expect(step.with.ref).toBe('${{ inputs.commit }}');
     }
-    const rehearseCheckout = checkouts(candidate.jobs.rehearse)[0];
-    expect(rehearseCheckout.with['fetch-depth']).toBe(0);
-    const stageRun = candidate.jobs.stages.steps.find((step) => step.run);
-    const rehearseRun = candidate.jobs.rehearse.steps.find((step) => step.run);
+    const deployCheckout = checkouts(staging.jobs.deploy)[0];
+    expect(deployCheckout.with['fetch-depth']).toBe(0);
+    const stageRun = staging.jobs.stages.steps.find((step) => step.run);
+    const deployRun = staging.jobs.deploy.steps.find((step) => step.run);
     expect(stageRun.env.TROPIS_SECRETS).toBe('${{ toJSON(secrets) }}');
-    expect(rehearseRun.env.TROPIS_SECRETS).toBe('${{ toJSON(secrets) }}');
+    expect(deployRun.env.TROPIS_SECRETS).toBe('${{ toJSON(secrets) }}');
     expect(stageRun.run).toBe('node .tropis/scripts/pipeline.mjs run ${{ matrix.stage }}');
-    expect(rehearseRun.run).toBe('node .tropis/scripts/pipeline.mjs candidate rehearse --summary "$GITHUB_STEP_SUMMARY"');
-    const stagesAt = candidateText.indexOf('\n  stages:');
-    expect(candidateText.slice(0, stagesAt)).toContain('no gate');
-    expect(candidateText.slice(0, stagesAt)).toContain('skips none');
+    expect(deployRun.run).toBe('node .tropis/scripts/pipeline.mjs staging deploy --summary "$GITHUB_STEP_SUMMARY"');
+    const stagesAt = stagingText.indexOf('\n  stages:');
+    expect(stagingText.slice(0, stagesAt)).toContain('no gate');
+    expect(stagingText.slice(0, stagesAt)).toContain('skips none');
 
     const checks = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-framework-checks.yml'), 'utf8'));
     const checksCheckout = checks.jobs.checks.steps.find((step) => String(step.uses).startsWith('actions/checkout'));
@@ -1596,13 +1637,16 @@ describe('GitHub workflow', () => {
     });
     expect(pipelineText).not.toContain('inputs.commit');
 
-    const callerPath = join(blueprint, 'templates/candidate-caller.yml');
+    const callerPath = join(blueprint, 'templates/staging-caller.yml');
     const callerText = readFileSync(callerPath, 'utf8');
     const caller = YAML.parse(callerText);
+    expect(caller.name).toBe('Deploy to staging');
+    expect(caller['run-name']).toBe('Deploy to staging ${{ inputs.commit || github.sha }}');
     expect(Object.keys(caller.on)).toEqual(['workflow_dispatch']);
     expect(caller.on.workflow_dispatch.inputs.commit.required).toBe(false);
+    expect(Object.values(caller.jobs).map((job) => job.uses)).toEqual(['./.github/workflows/tropis-staging.yml']);
     expect(callerText).toContain('${{ inputs.commit || github.sha }}');
-    expect(callerText).toContain('gh workflow run candidate.yml --ref main -f commit=<commit>');
+    expect(callerText).toContain('gh workflow run staging.yml --ref main -f commit=<commit>');
     expect(callerText).toContain('never by an agent');
   });
 

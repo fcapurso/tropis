@@ -65,9 +65,9 @@ describe('framework integrity', () => {
           // Written into a project by bootstrap or update, not present in this tree.
           ref === '.github/workflows/tropis-pipeline.yml' ||
           ref === '.github/workflows/tropis-framework-checks.yml' ||
-          ref === '.github/workflows/tropis-candidate.yml' ||
+          ref === '.github/workflows/tropis-staging.yml' ||
           ref === '.github/workflows/pipeline.yml' ||
-          ref === '.github/workflows/candidate.yml' ||
+          ref === '.github/workflows/staging.yml' ||
           ref === '.github/workflows/project-pipeline.yml' ||
           // Written later by the project, or never; the setup creates none of them.
           // /scope writes the brief.

@@ -222,11 +222,11 @@ describe('shipped pipeline workflows', () => {
       writeFileSync(join(dir, '.github/workflows/ci.yml'), 'name: own\n');
       writeFileSync(join(dir, '.github/workflows/tropis-pipeline.yml'), 'name: pipeline\n');
       writeFileSync(join(dir, '.github/workflows/tropis-framework-checks.yml'), 'name: checks\n');
-      writeFileSync(join(dir, '.github/workflows/tropis-candidate.yml'), 'name: candidate\n');
+      writeFileSync(join(dir, '.github/workflows/tropis-staging.yml'), 'name: staging\n');
       expect(shippedFiles(dir)).toEqual([
-        '.github/workflows/tropis-candidate.yml',
         '.github/workflows/tropis-framework-checks.yml',
         '.github/workflows/tropis-pipeline.yml',
+        '.github/workflows/tropis-staging.yml',
         '.tropis/a.js',
       ]);
     } finally {
