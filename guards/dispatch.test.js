@@ -20,12 +20,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const blueprint = resolve(here, '..');
 const PLAN = 'docs/superpowers/plans/2026-01-01-example.md';
 
-const plan = (rows) => `# Example plan
+const plan = (rows, header = '') => `# Example plan
 
 **Model tier: small.** Everything is specified.
 
 **Merge authority: parent review.** Somebody else merges.
-
+${header ? `\n${header}\n` : ''}
 ## Delivers
 
 None.
@@ -243,6 +243,42 @@ describe('dispatch command', () => {
       expect(r.stdout).toBe('');
       expect(r.stderr).toContain('.claude/rules/tests.md');
       expect(r.stderr).toContain('.cursor/rules/tests.mdc');
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('reads a wrapped Requires field whole', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY, '**Requires:** the developer at the\napplication for Task 4.'));
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('**Requires:** the developer at the application for Task 4.');
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('reads a Requires field whose bold spans the colon', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY, '**Requires: the developer for Task 4.**'));
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('**Requires:** the developer for Task 4.');
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a header field that reads empty, naming its line', () => {
+    const text = plan(PROJECT_ONLY, '**Requires:**');
+    const line = text.split('\n').findIndex((l) => l === '**Requires:**') + 1;
+    const { parent, root } = project(text);
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain(`Header field "Requires" on line ${line} reads empty`);
     } finally {
       rmSync(parent, { recursive: true, force: true });
     }
