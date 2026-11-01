@@ -481,10 +481,10 @@ Scratch projects in the handover are invented names under `$TMPDIR`.
   install line by its text, so switching that line to `npm ci` broke it. The executor
   changed the one string and kept its `--ignore-scripts` assertion. Accepted: the plan's
   error, a mechanical consequence of Decision 2.
-- **The decision number.** `main` took FW-045 for the settings change while the branch
-  was out. **Renumbered to FW-046 by the reviewer** in the rebase's conflict resolution,
-  which kept both entries; the handover's mention of FW-045 is the executor's record
-  and stays.
+- **The decision number.** `main` took FW-045 for the settings change and FW-046 for
+  the rule-trial decision while the branch was out. **Renumbered to FW-047 by the
+  reviewer** in the rebases' conflict resolutions, which kept every entry; the
+  handover's mention of FW-045 is the executor's record and stays.
 - **A comment in `take-version.mjs` ran past the file's width.** **Rewrapped by the
   reviewer**; no word changed.
 - The plan said the second take-version case might pass before the code; it cannot,
@@ -515,4 +515,4 @@ Scratch projects in the handover are invented names under `$TMPDIR`.
 
 Each criterion has a test that fails without its half of the change, the fresh-agent
 check passed on the first run, and the self-check and the installed checks are green on
-the rebased branch; the review renumbered the decision and rewrapped one comment.
+the rebased branch; the review renumbered the decision FW-047 and rewrapped one comment.
