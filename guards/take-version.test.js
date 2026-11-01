@@ -286,20 +286,96 @@ describe('take-version.mjs', () => {
     expect(read(w.project, '.tropis/templates/readme-skeleton.md')).toContain('A line from the next version.');
   }), SLOW);
 
-  it("keeps a project's public declaration, .claude/project.json", () => inWorld({}, (w) => {
-    // The public-exposure hook reads this file at every commit and push. Setup never
-    // writes it and no release ships it, so an update that dropped or rewrote it would
-    // silence the hook with no sign it had.
-    const declaration = '{ "public": true }\n';
-    write(w.project, '.claude/project.json', declaration);
+  it('moves .claude/project.json into .tropis/project.json, keeping the name', () => inWorld({ name: 'Example Project' }, (w) => {
+    // The hooks read the settings from .tropis/ now; an update that left the old file
+    // behind would silence the public-exposure hook with no sign it had.
+    write(w.project, '.claude/project.json', '{ "public": true, "ungated": "no gate on this host" }\n');
+    w.commit('declare the project public');
+    w.release('v0.2.1', bumpNext);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    const settings = JSON.parse(read(w.project, '.tropis/project.json'));
+    expect(settings).toEqual({ name: 'Example Project', public: true, ungated: 'no gate on this host' });
+    expect(Object.keys(settings)[0]).toBe('name');
+    expect(existsSync(join(w.project, '.claude/project.json'))).toBe(false);
+    expect(existsSync(join(w.project, '.tropis/project.json.new'))).toBe(false);
+    expect(r.stdout).toContain('Moved:');
+    expect(r.stdout).toContain('.claude/project.json → .tropis/project.json');
+    expect(Object.keys(recordOfProject(w.project).files)).not.toContain('.tropis/project.json');
+  }), SLOW);
+
+  it('moves .claude/project.json when setup wrote no name', () => inWorld({}, (w) => {
+    write(w.project, '.claude/project.json', '{ "public": true }\n');
     w.commit('declare the project public');
     w.release('v0.2.1', bumpNext);
 
     const r = w.take('v0.2.1');
     expect(r.status).toBe(0);
-    expect(read(w.project, '.claude/project.json')).toBe(declaration);
-    expect(existsSync(join(w.project, '.claude/project.json.new'))).toBe(false);
-    expect(read(w.project, '.claude/commands/next.md')).toContain('A line from the next version.');
+    expect(JSON.parse(read(w.project, '.tropis/project.json'))).toEqual({ public: true });
+    expect(existsSync(join(w.project, '.claude/project.json'))).toBe(false);
+  }), SLOW);
+
+  it('refuses when the two settings files disagree, and changes nothing', () => inWorld({ name: 'Example Project' }, (w) => {
+    write(w.project, '.claude/project.json', '{ "name": "Other" }\n');
+    w.commit('an old name');
+    w.release('v0.2.1', bumpNext);
+    const before = snapshot(w.project);
+
+    const r = w.take('v0.2.1');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('.claude/project.json and');
+    expect(r.stderr).toContain('.tropis/project.json both set "name", differently.');
+    expect(git(w.project, 'status', '--porcelain')).toBe('');
+    expect(snapshot(w.project)).toEqual(before);
+  }), SLOW);
+
+  it('refuses a settings file that is not a JSON object', () => inWorld({}, (w) => {
+    write(w.project, '.claude/project.json', '[1]\n');
+    w.commit('a list');
+    w.release('v0.2.1', bumpNext);
+    const before = snapshot(w.project);
+
+    const r = w.take('v0.2.1');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('.claude/project.json is not a JSON object.');
+    expect(git(w.project, 'status', '--porcelain')).toBe('');
+    expect(snapshot(w.project)).toEqual(before);
+  }), SLOW);
+
+  it('moves .claude/worktree-setup.txt to .tropis/', () => inWorld({}, (w) => {
+    const setup = 'npm ci\nnpm --prefix .tropis ci\n';
+    write(w.project, '.claude/worktree-setup.txt', setup);
+    w.commit('a worktree setup');
+    w.release('v0.2.1', bumpNext);
+
+    const r = w.take('v0.2.1');
+    expect(r.status).toBe(0);
+    expect(read(w.project, '.tropis/worktree-setup.txt')).toBe(setup);
+    expect(existsSync(join(w.project, '.claude/worktree-setup.txt'))).toBe(false);
+    expect(r.stdout).toContain('.claude/worktree-setup.txt → .tropis/worktree-setup.txt');
+    expect(Object.keys(recordOfProject(w.project).files)).not.toContain('.tropis/worktree-setup.txt');
+
+    w.commit('taken');
+    w.release('v0.2.2', (root) => edit(root, 'commands/next.md', (t) => `${t}\nAnother line.\n`));
+    const again = w.take('v0.2.2');
+    expect(again.status).toBe(0);
+    expect(read(w.project, '.tropis/worktree-setup.txt')).toBe(setup);
+  }), SLOW);
+
+  it('refuses when both worktree setup files exist and differ', () => inWorld({}, (w) => {
+    write(w.project, '.claude/worktree-setup.txt', 'npm ci\n');
+    write(w.project, '.tropis/worktree-setup.txt', 'npm run other\n');
+    w.commit('two setups');
+    w.release('v0.2.1', bumpNext);
+    const before = snapshot(w.project);
+
+    const r = w.take('v0.2.1');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('.claude/worktree-setup.txt and');
+    expect(r.stderr).toContain('.tropis/worktree-setup.txt both exist, with different commands.');
+    expect(snapshot(w.project)).toEqual(before);
   }), SLOW);
 
   it('carries a filled project-owned block into the new text', () => inWorld({}, (w) => {
