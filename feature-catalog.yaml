@@ -397,17 +397,36 @@
 # mapping, and the generator fails with "Nested mappings are not allowed in compact
 # mappings" pointing at the value key. Caught instantly, costs a minute each time, and
 # the catalog rules say to quote nothing that does not need it without saying this does.
+# 2026-11-01, shaped for the rule-text bundle. Checked with the yaml package the guards
+# use (2.9): a space then a hash on a value's last line drops the rest of the value
+# with no error, which is worse than the colon case because nothing fails; so the rule
+# names both, and the value-start characters that fail. The quoting advice itself is in
+# commands/idea.md, step 6; the rule loads when feature-catalog.yaml is edited, which
+# /idea does, so the rule is the one place this goes.
 - id: catalog-rules-name-the-colon-trap
   title: The catalog rules say which characters need quoting
-  status: idea
+  status: building
   value: Someone writing a catalog entry knows before the generator tells them that a
     colon-space inside an unquoted value will not parse, and either rephrases or quotes.
     The rule that says to quote nothing unnecessary is right and incomplete.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The catalog rule says that a colon followed by a space inside an unquoted value
+      fails the catalog check, and quotes the error it fails with.
+    - It says that a space followed by a hash starts a comment that can drop the rest of
+      the value with no error.
+    - It says that a value beginning with a backtick, a quotation mark or another YAML
+      indicator character fails or parses as something else.
+    - It says what to do instead, rephrase or put the whole value in double quotes, and
+      that these are what needs quoting where the backlog commands say to quote nothing
+      that does not need it.
+    - The fresh-agent check the workflow requires for a rule change has an agent write an
+      entry whose natural wording carries a colon and a space, and records whether the
+      entry it commits parses, with tool, version, operating system and architecture.
   type: improvement
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
 # Raised 2026-09-12 at the review of payload-checks-cover-token-output. The executor's
 # first `npm test` in a freshly isolated harness worktree failed
 # framework-integrity › references no file that does not exist, because
@@ -893,19 +912,38 @@
 # none, so every set-up project has a step it cannot run.
 # 2026-10-16, backlog cleanup: the command half shipped with command-fill-ins-are-project-owned;
 # narrowed to the backlog rule, which still says to run the generator.
+# 2026-11-01, shaped for the rule-text bundle. Still true on main at d66d4ed:
+# rules/catalogs.md says to run the generator after any change and to ship an entry in
+# the same commit as the regenerated documentation, and framework/workflow.md's doc
+# closeout says to regenerate the catalog's document. scripts/installed-scripts.txt
+# installs no catalog-document generator, and the one page built from the backlog, the
+# board, is gitignored. Fixed by making the instruction conditional, not by shipping a
+# generator: nothing has asked for a generated feature document.
 - id: set-up-project-can-generate-its-catalog-document
   title: A set-up project's backlog rule only asks for what it has
-  status: idea
+  status: building
   value: Someone adding or promoting a backlog entry in a set-up project is told by the
     backlog rule to run only commands that exist there. Today rules/catalogs.md still
     requires a generator for a catalog document that the setup never installs, so every
     project skips a step it is told is required.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The catalog rule asks for a generator to be run, and a generated document to be
+      committed with the backlog, only where the project generates a document from its
+      backlog, and says that a set-up project has none until it adds one.
+    - The catalog rule's move to shipped, and the workflow's doc closeout row for
+      user-visible behaviour, name a generated document only where one exists.
+    - The catalog rule still says never to hand-edit a generated document and still
+      requires the byte-for-byte guard for a generated region.
+    - The fresh-agent check the workflow requires for a rule change has an agent in a
+      freshly set-up project add a backlog entry, and records whether it looks for or
+      reports skipping a generator, with tool, version, operating system and
+      architecture.
   type: bug
   layer: product
   modules: []
   refs:
     - docs/superpowers/plans/2026-10-15-framework-runs-its-own-release.md
+    - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
 # Found 2026-10-15: v0.1.0 installs three checks (backlog entries, rule headers, layout);
 # the checks on plans, review records and delivered entries run only in the framework's
 # own self-check, against a sample project. The v0.1.0 notes claimed otherwise; corrected
@@ -2887,19 +2925,35 @@
 # The plan's script set GIT_CONFIG_GLOBAL=/dev/null and GIT_CONFIG_NOSYSTEM=1 on every git call,
 # which turned off the credential helper and committer identity a real run needs. Its tests
 # passed only because each temporary repository set its own identity. Fixed there in 20465d7.
+# 2026-11-01, shaped for the rule-text bundle. The fixed pattern is in
+# guards/absorb-flush.test.js: runScript sets the two variables in the spawned script's
+# environment, and a test proves a global committer identity reaches the script. The
+# rule says how to write scripts rather than how the code is, so it gets no rule-claims
+# assertion; the fresh-agent check is its test.
 - id: scripts-never-hide-the-users-git-config
   title: The script rules say a script never hides the user's git config to make its tests repeatable
-  status: idea
+  status: building
   value: Someone writing a framework script that runs git learns from the script rules
     that the tests isolate the script from the developer's git config, never the script
     itself. A script that switches off the global or system config passes its tests and
     then fails on a real machine, because that config holds the credential helper that
     fetches from a private remote and the identity a commit needs.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The script rules say a script that runs git uses the git config in force and never
+      sets GIT_CONFIG_GLOBAL, GIT_CONFIG_NOSYSTEM or HOME for its own git calls, and say
+      why, naming the credential helper and the commit identity.
+    - They say the tests isolate the script instead, by setting those in the environment
+      they spawn it with and giving each temporary repository its own identity, and that
+      a test shows a config the script did not set taking effect.
+    - The fresh-agent check the workflow requires for a rule change has an agent write a
+      script that commits with git, with repeatable tests, and records whether the script
+      or only its tests isolate git config, with tool, version, operating system and
+      architecture.
   type: improvement
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
 # Raised 2026-10-20 by the developer after the attribution review filed two ideas for one
 # shipped entry; both were dropped the same day. Between 2026-10-15 and 2026-10-20 the
 # backlog gained 49 entries and shipped 21. Today rules/planning.md lets a review drop a
@@ -3573,7 +3627,7 @@
 # building on that section and changing nothing it already says.
 - id: kept-findings-go-to-the-catalog
   title: A finding worth keeping goes into the backlog, and a fix starts there too
-  status: shaped
+  status: building
   value: Every piece of work an agent finds outside the change in hand ends up in the one
     place the project plans from, so nothing is tracked in a tool's task card or side
     session that the backlog, its report and its board never see. An agent that proposes
@@ -3597,7 +3651,8 @@
   type: improvement
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
 # 2026-10-29, raised by the developer from first-adopter's first release rehearsal, which
 # failed in 0s with "candidate: could not read the production tag" before reset.sh ran.
 # extractTag read git archive's output through spawnSync's default 1 MiB buffer, and the
