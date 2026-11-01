@@ -370,9 +370,16 @@
 # separate entry dispatch-reads-a-whole-header-field). The maintainer folded it in here,
 # so one plan changes the header parser once - reading a wrapped field whole fixes the
 # second shape above, and refusing fixes the first.
+# 2026-11-01, re-shaped while planning the dispatch-fixes bundle. The plans here write the
+# tier and merge fields with the bold spanning the colon, and the parser already reads that
+# shape for them, so refusing it for Requires alone would refuse the standard shape; it is
+# read like the other two, and only a field that reads empty is refused. The installed
+# release still cuts a wrapped field until a release carrying this fix is installed, so
+# the entry file's note is reworded to say so rather than removed.
+# Plan: docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md.
 - id: dispatch-refuses-a-blank-header-field
   title: Dispatch reads each plan header field whole, and refuses one it still cannot read
-  status: shaped
+  status: building
   value: A plan's tier, requirements and merge authority reach the kick-off prompt whole,
     or dispatch refuses the plan and names the line. An executor reads the header before
     anything else, and a plan that needs the developer announcing that it needs nothing
@@ -382,11 +389,14 @@
   acceptanceCriteria:
     - A header field wrapped onto following lines reaches the kick-off prompt whole, up
       to the blank line that ends its paragraph.
-    - A header field that is present but parses empty, such as one whose bold spans the
-      colon, is refused at dispatch, naming the line.
-    - Dispatch tests cover a wrapped field and a bold-spanning field, and each goes red
-      with the old reading restored.
-    - The entry file's note that a plan header field must sit on one line is removed.
+    - A header field whose bold spans the colon, such as Requires written the way the
+      tier and merge fields are, reaches the kick-off prompt whole.
+    - A header field that is present but reads empty is refused at dispatch and by the
+      plan check, naming the field and its line.
+    - Dispatch tests cover a wrapped field, a bold-spanning field and an empty one, and
+      each goes red with the old reading restored.
+    - The entry file's note that a plan header field must sit on one line says it holds
+      only for the installed release, until a release carrying this fix is installed.
   type: bug
   layer: product
   modules: []
@@ -2410,20 +2420,25 @@
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). first-adopter carries
 # the instruction by hand, in its CLAUDE.md under "Dispatching a plan".
+# 2026-11-01, re-shaped while planning the dispatch-fixes bundle. The step counts the
+# checkouts the plan isolates in, not every row - a do-not-edit row needs no worktree and
+# the isolation helper does not look for it.
+# Plan: docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md.
 - id: cloud-executor-attaches-every-checkout
   title: A cloud executor attaches every checkout the plan names before isolating
-  status: shaped
+  status: building
   value: An executor running in a cloud session, which starts with only the repository
     it was opened on, attaches and clones every other checkout the plan's Repositories
     table names before it isolates, so isolation does not stop on a missing sibling.
     Today the kick-off prompt says nothing about it, and the executor finds one checkout.
   acceptanceCriteria:
-    - When a plan's Repositories table names more than one checkout, the prompt
+    - When a plan's Repositories table names more than one checkout to isolate in, the prompt
       /dispatch prints tells the executor, before isolating, to attach each other
       checkout with its tool for adding a repository to the session, where it has one,
       and to clone each beside this one under the directory name the table gives.
     - The prompt names no vendor and no tool by name.
-    - A plan whose table names one checkout gets no such step.
+    - A plan that isolates in one checkout gets no such step, whatever do-not-edit rows
+      its table has.
     - A dispatch test covers both cases and goes red with the step removed.
   type: improvement
   layer: product
@@ -3747,9 +3762,10 @@
     - guards/update.test.js
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-19.
+# Plan: docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md.
 - id: isolation-refuses-a-base-without-the-plan
   title: Isolation refuses to branch from a commit that does not hold the plan
-  status: shaped
+  status: building
   value: An executor isolated from a base without its plan finds no instructions in its
     worktree and has to cherry-pick the plan in, and any check that reads the plan from
     the main branch then fails. The workflow already says to push before dispatching;
