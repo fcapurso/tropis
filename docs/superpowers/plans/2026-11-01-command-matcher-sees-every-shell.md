@@ -470,7 +470,7 @@ fixes below.
   `x="#" && git commit` and `echo "a" # it's` then `git commit` match; a nested
   `bash <<A` whose body runs `cat <<B | sh` matches the inner command (it did not on
   `main`); `cat <<< 'git commit'` does not match.
-- `bash scripts/check-blueprint.sh` after the fixes: see the last line recorded below.
+- `bash scripts/check-blueprint.sh` at `465af20`, after both fixes: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` `npm --prefix .tropis test`: 13 suites, 138 tests passed.
 
 ### Found
 
