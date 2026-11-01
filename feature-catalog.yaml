@@ -1681,9 +1681,10 @@
 # directly. README.md and bootstrap.md keep a sentence each and point at it, so the
 # mechanism is described in one place. Kept current the way the operator and adopter
 # pages are (FW-006): a doc-closeout row, plus a check for what can be checked.
+# 2026-11-01, building. Plan revised against today's flush and dispatched.
 - id: contributors-know-how-to-contribute
   title: A contributor can read how contributing to the framework works
-  status: shaped
+  status: building
   value: Someone who wants to hand an improvement back to the framework — from a project
     using it, or directly — finds one page at the repository root, CONTRIBUTING.md, that
     says how a contribution reaches the framework and what happens to it, without reading
