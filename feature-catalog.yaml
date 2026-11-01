@@ -4852,3 +4852,121 @@
     - commands/release.md
   refs:
     - docs/superpowers/plans/2026-11-01-release-flow.md
+# 2026-11-01, the sprint epic, agreed with the developer: the way of working run in this
+# repository that day (a queue agreed with the developer, one delivery session per entry,
+# a merge token, parallel starts on dependencies) made a feature every project has. The
+# design is the spec in refs; these entries are its pieces, in order. Acceptance criteria
+# are written when each is shaped, from the spec.
+- id: merge-token-can-live-on-github
+  title: Find out whether the merge token can be a marker on GitHub that only one session can take
+  status: idea
+  value: Before the merge token is built, we know whether GitHub accepts a git ref outside
+    branches and tags on a repository with Tropis's ruleset, whether creating one that
+    already exists is refused so that only one session can hold it, what a cloud session's
+    credentials may do with it, and whether GitHub's own merge queue is offered on a
+    repository owned by a personal account. If the ref is refused, the token falls back to
+    a dedicated branch.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+- id: merges-take-turns-under-one-token
+  title: Pull requests open and merge one at a time, under a token any session can take
+  status: idea
+  value: Sessions working in parallel stop forcing each other to rebase and re-run their
+    checks every time one of them lands on a main branch that requires branches up to
+    date. A session takes the token when its branch is reviewed, rebases once, merges,
+    waits for main to go green and releases it; the developer can hold it, for example
+    during a release; a token left on a dead branch is shown and can be broken. The rule
+    is in the workflow, so every session follows it, and nothing about main's safety
+    depends on it.
+  acceptanceCriteria: []
+  type: feature
+  layer: product
+  blockedBy:
+    - merge-token-can-live-on-github
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+- id: overlapping-plans-merge-in-order
+  title: A plan that touches files another plan in flight touches waits to merge after it
+  status: idea
+  value: Two entries built at the same time never land out of the order their files
+    need. When a session claims an entry, a script compares its plan's files with every
+    plan already being built, and on an overlap the plan records that it merges after the
+    other; before merging, the session waits until that entry has shipped. Overlap is
+    judged from plans, which list every file, not guessed from entry descriptions.
+  acceptanceCriteria: []
+  type: feature
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+- id: sprint-plans-and-runs-a-team
+  title: The developer plans a sprint with /sprint, and a self-organising team delivers it
+  status: idea
+  value: Opening a project, the developer runs /sprint and gets a proposed sprint of
+    about 20 story points from the top of the ranking, refines it, and a team of
+    sessions delivers it in parallel, each entry through the whole workflow, without
+    getting in each other's way. The developer can ask where the sprint stands, is told
+    when team members add entries, bugs first, with the option to slide them in, and gets
+    a report at the end. In a tool that cannot start sessions, the sprint runs one entry
+    at a time.
+  acceptanceCriteria: []
+  type: feature
+  layer: product
+  blockedBy:
+    - merges-take-turns-under-one-token
+  after:
+    - overlapping-plans-merge-in-order
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+- id: another-tools-agent-can-be-started
+  title: Find out how a session starts another tool's agent and reads back what it did
+  status: idea
+  value: Before a sprint session starts team members in another tool, we know, from
+    each tool's own documentation and a trial run, what Cursor's and Claude Code's command
+    lines and Cursor's cloud agent API take and return when started from another session,
+    how the team member's final line and handover report are read back, and how
+    approvals behave with nobody watching.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+- id: team-members-start-in-another-tool
+  title: A sprint started in one tool can hand entries to team members in another
+  status: idea
+  value: A developer can run the sprint from the tool they prefer and have work done in
+    another, for example a sprint session in Claude Code starting team members in
+    Cursor, because team members coordinate only through the repository and GitHub.
+  acceptanceCriteria: []
+  type: feature
+  layer: product
+  blockedBy:
+    - another-tools-agent-can-be-started
+  after:
+    - sprint-plans-and-runs-a-team
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+# The last piece of the epic, and it may be left out: nothing else depends on it.
+- id: backlog-speaks-in-epics-stories-and-points
+  title: The backlog calls arcs epics, entries user stories, and effort story points
+  status: idea
+  value: The backlog speaks the language of a sprint, so a developer planning one reads
+    epics, user stories and story points rather than the framework's own words. Renames
+    the words across the rules, the catalog template, the board, the backlog report and
+    the commands, for every project that takes the release; adds no arithmetic.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  after:
+    - sprint-plans-and-runs-a-team
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
