@@ -10,7 +10,6 @@
  * checks there. It writes nothing in the project. Exit 0 with a verdict on stdout
  * (including nothing to take), or exit 1 with one `check-version:` line on stderr.
  */
-import { spawnSync } from 'node:child_process';
 import {
   existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync,
   symlinkSync, unlinkSync, writeFileSync,
@@ -19,14 +18,10 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fingerprint } from './installed-files.js';
-import { Refusal, takeVersion } from './take-version.mjs';
+import { Refusal, run, takeVersion } from './take-version.mjs';
 
 const tropis = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOK_PATH = /\.tropis\/[^\s"'`;|&)]+/g;
-
-function run(command, args, options = {}) {
-  return spawnSync(command, args, { encoding: 'utf8', maxBuffer: 1 << 28, ...options });
-}
 
 const git = (cwd, ...args) => run('git', ['-C', cwd, ...args]);
 
@@ -443,7 +438,9 @@ if (ranDirectly) {
       stream.write(outcome.text);
       process.exitCode = outcome.status;
     } catch (e) {
-      process.stderr.write(`check-version: ${e.message}\n`);
+      // A stopped child refuses with take-version's prefix, which is not this command's.
+      const message = e instanceof Refusal ? e.message.replaceAll('take-version:', 'check-version:') : `check-version: ${e.message}`;
+      process.stderr.write(`${message}\n`);
       process.exitCode = 1;
     }
   }
