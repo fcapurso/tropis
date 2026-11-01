@@ -436,3 +436,75 @@ Every file is in the File Structure table. Worktree: ../tropis-flush-name (the p
 ### Outstanding
 
 Nothing. No pull request opened and nothing merged, as instructed.
+
+## Review record
+
+Reviewed 2026-11-01 by the specifying session, in the worktree ../tropis-flush-name, on
+Claude Code desktop 2.1.300 (Opus 5.5), macOS 26.2 on arm64, git 2.49.0, Node v22.15.0.
+Reviewed head before this record: `8151870`.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: 8 files, `CONTRIBUTING.md`,
+  `commands/capture-learning.md`, `commands/flush-upstream.md`,
+  `docs/backlog-board/bands.yaml`, `feature-catalog.yaml`,
+  `guards/submit-upstream.test.js`, `scripts/submit-upstream.sh` and this plan. All are
+  in the File Structure table.
+- Source guard, the executor's way (installed Jest, inline `--config`, a temporary
+  `{"type":"module"}` package.json removed afterwards): `Tests: 26 passed, 26 total`.
+- Re-planting, each a working-tree edit restored with `git checkout` (Jest reads the
+  working tree, so no throwaway commit was needed):
+  - `open` without its `check_name` call: 1 failed, 25 passed (the open clash test).
+  - the clash filter never matching another account: 3 failed, 23 passed (the two
+    check-name refusals and the open clash test).
+  - the filter counting the signed-in account's own pull requests: 1 failed, 25 passed
+    (the own-earlier-flushes test).
+- `npm --prefix .tropis test`: `Tests: 140 passed, 140 total`.
+- `bash scripts/check-blueprint.sh` on `8151870`: "Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed."
+- The fresh-agent check (Task 5) was not re-run. Its recorded reply covers every pass
+  point, and the command text it read differs from the reviewed text only by the
+  rewrap below.
+
+The handover's two diagnoses were checked as well as its figures. The Jest line is
+wrong as the handover says: the source tree has no Jest config and no package.json, and
+the guard is an ES module. The invalid-name message has to differ from `open`'s, because
+`open`'s names the queue file and `check-name` has none.
+
+### Found
+
+- Public exposure: I read the diff for people's names, other projects' names, home paths
+  and hostnames. Nothing found. The probe's subjects, Lantern and Northwind, are made up
+  and appear only in this plan.
+- **Two bullets in `commands/flush-upstream.md` step 5 still had the line breaks of the
+  text they replaced.** This is mechanical, so **the reviewer fixed it on the branch** in
+  `8151870`. The wording is unchanged.
+- The test "compares the branch without the fork owner" runs the same input as the
+  refusal test before it. That is unavoidable with a stub: gh reports `headRefName`
+  without an owner whether the pull request came from a fork or not, and the test says
+  so in its comment. The comparison it stands for is covered by the second re-plant
+  above. Left as it is.
+- Nothing else.
+
+### Outstanding disposition
+
+- The handover lists nothing outstanding.
+- The plan's broken Jest line is a defect of this plan only, and it has merged as
+  history. Dropped: other plans name the self-check or a runner of their own, and this
+  line was not copied from a rule.
+- No screen is involved, so there is no developer check. Criteria 1 to 3 and 5 to 8
+  rest on the Task 5 fresh-agent check. Criteria 3, 4 and 9 rest on the source guard.
+
+### Learnings routed
+
+- "To run one source guard on its own in this repository, Jest needs an inline config
+  and an ES-module package.json." This applies only to this repository, and the
+  self-check is the supported way to run the guards. Not routed.
+- Nothing else generalises.
+
+### Merged because
+
+Every check passed again on the reviewed head. Each clash-check path went red when it
+was re-planted, the diff matches the File Structure table, and the only defect found
+was formatting, fixed and declared above.
