@@ -12,8 +12,10 @@ rebuilds it at once.
   backlog alone: no page, and no document generated from it. A project that already
   generates its own document from the backlog, such as a feature list or a roadmap page,
   replaces it with the board through an entry of its own, which removes the generator,
-  its guard, the document and every instruction to run them together. Until that entry
-  ships, keep following those instructions; then there is one view.
+  its guard, the document and every instruction to run them together. **An agent that
+  meets such a document while changing the backlog, and finds no entry for its
+  replacement, captures one with `/idea` in the same change.** Until that entry ships,
+  keep following the project's instructions for the document; then there is one view.
 - Never edit or commit the board's page. Change the backlog, and the page follows.
 - **A generated region inside a hand-written page gets the same guard.** Where a page
   people write by hand must carry a generated reference, mark the region with two comment
