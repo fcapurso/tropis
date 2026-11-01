@@ -332,18 +332,6 @@ pipeline-does-not-redo-green-work:
   seen:
     status: shaped
     blockers: []
-plan-checks-must-be-falsifiable:
-  band: B
-  value: 3
-  valueWhy: A check that cannot fail lets a wrong plan pass; three recorded cases.
-  effort: 1
-  effortWhy: A paragraph in the planning rule and its fresh-agent check.
-  bundle: planning-rule
-  verdict: "A rule-text change with three recorded cases behind it. Cheap; do it
-    with plans-are-accurate-without-a-rehearsal, which follows it."
-  seen:
-    status: shaped
-    blockers: []
 plan-folder-names-no-plugin:
   band: C
   value: 2
@@ -354,18 +342,6 @@ plan-folder-names-no-plugin:
     name and whether take-version moves it before building."
   seen:
     status: idea
-    blockers: []
-plans-are-accurate-without-a-rehearsal:
-  band: B
-  value: 4
-  valueWhy: Authors are paying twice for plans, rehearsing work an executor then repeats.
-  effort: 2
-  effortWhy: A planning-rule change and its fresh-agent check.
-  bundle: planning-rule
-  verdict: "Shaped and worth having: authors are paying twice for plans. Follows
-    plan-checks-must-be-falsifiable and should be planned with it."
-  seen:
-    status: shaped
     blockers: []
 prerequisite-check-refuses-old-node:
   band: B
