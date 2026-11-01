@@ -172,47 +172,6 @@ living-documents-stay-current:
   seen:
     status: idea
     blockers: []
-next-lets-no-open-work-drop-out:
-  band: B
-  value: 3
-  valueWhy: One layer's next step can hide the other's, and ideas worth shaping drop out.
-  effort: 3
-  effortWhy: A restructure of next.mjs, fully specified.
-  bundle: next-report
-  verdict: "A report that lets one layer hide the other, or drops a band A or B
-    idea that needs shaping, is how open work goes unseen. Moderate change to
-    next.mjs, fully specified."
-  seen:
-    status: shaped
-    blockers: []
-next-names-the-flush-when-due:
-  band: B
-  value: 2
-  valueWhy: Lessons sit unsent when nobody is prompted to flush.
-  effort: 1
-  effortWhy: A few lines in the report.
-  bundle: next-report
-  verdict: "A few lines in the report for set-up projects, so the queue gets
-    flushed when it is worth a sitting. Cheap; batch with the other report
-    changes."
-  seen:
-    status: shaped
-    blockers: []
-next-shows-which-work-is-planned:
-  band: B
-  value: 3
-  valueWhy: Ready-to-dispatch work reads as work still to design.
-  effort: 2
-  effortWhy: A change to the backlog report.
-  bundle: next-report
-  verdict: "Small improvement to the backlog report; useful the moment several
-    shaped entries have plans waiting, as now."
-  evidence: "2026-10-31 — scripts/next.mjs:52 shows a plan only when the entry's refs
-    name one; prerequisite-check-refuses-old-node has a plan written today and is
-    listed like any unplanned entry."
-  seen:
-    status: idea
-    blockers: []
 pipeline-bills-no-job-that-decides-nothing:
   band: C
   value: 2
