@@ -1878,15 +1878,29 @@
 # 2026-10-15, raised by the developer after /next listed blueprint-tool-agnostic-name — shaped,
 # with a committed plan awaiting dispatch — exactly like the unshaped ideas beside it, and
 # pointed its Next step line at the arc spec. The operator took it for work still to shape.
+# 2026-11-01, shaped while planning the next-report bundle. A plan is found by its
+# Delivers section, not by refs: refs names only the design (the catalog rule), so a
+# plan written today is never in refs.
+# Plan: docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md.
 - id: next-shows-which-work-is-planned
   title: The backlog report shows which ready work already has a plan
-  status: idea
+  status: building
   value: An operator reading the backlog report can tell at a glance which ready entries
     are shaped with a plan waiting to be dispatched, and which still need shaping, and the
     next step points at the plan to dispatch when there is one. Today a planned entry is
     listed exactly like an unshaped idea and the next step points at the arc's spec, so
     work that is ready to hand over reads as work still to design.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - An entry named in the Delivers section of a plan under docs/superpowers/plans/
+      that carries no handover report is listed with that plan's path, and, while the
+      entry is shaped, is marked as planned and not dispatched.
+    - A plan that carries a handover report, or whose Delivers section does not name
+      the entry, marks nothing, and a heading inside a fenced code block is not read.
+    - When the suggested next step has such a plan, the Next step line says to dispatch
+      it and names its path; otherwise it says to write its plan, naming the entry's
+      spec when it has one.
+    - With no plans folder the report prints as it does without plans.
+    - guards/next-report.test.js covers each criterion.
   type: improvement
   layer: product
   modules: []
@@ -2396,9 +2410,11 @@
 # Raised 2026-10-17 in first-adopter (its FW-005 and FW-007, and e463f2c) and submitted by
 # its upstream flush of 2026-10-19 (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md).
 # Each half alone leaves one kind of work invisible, so they are one entry.
+# 2026-11-01, checked against the report while planning the next-report bundle; the
+# criteria stand. Plan: docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md.
 - id: next-lets-no-open-work-drop-out
   title: The backlog report shows each layer as its own stream, and names the work bands would hide
-  status: shaped
+  status: building
   value: Someone reading the backlog report sees the next step for product work and for
     framework work, and still sees an unblocked idea worth shaping and an arc that lost
     its turn. Today one mixed list lets one layer's next step hide the other's, and once
@@ -2460,20 +2476,25 @@
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). first-adopter's FW-004
 # is the guard that the report never spawns another command.
+# 2026-11-01, re-shaped while planning the next-report bundle. The report already starts
+# a process, through main-status.mjs, to read the main branch's status, so "a check fails
+# if next.mjs starts a process" could not hold; the check is pinned to next.mjs itself.
+# The age threshold needs a waiting entry, or an empty queue would be sent to a flush.
+# Plan: docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md.
 - id: next-names-the-flush-when-due
   title: The backlog report names /flush-upstream when the queue is worth a sitting
-  status: shaped
+  status: building
   value: Someone reading the backlog report is told to run /flush-upstream when the
     upstream queue holds three or more entries or has gone 14 days without a flush.
     Today it prints only a count, and a queue nobody is prompted to flush is how lessons
     sit unsent.
   acceptanceCriteria:
-    - With three or more queue entries, or a Last flushed date more than 14 days before
-      today, the report's queue section names /flush-upstream and says which threshold
-      was met.
+    - With three or more queue entries, or at least one entry and a Last flushed date
+      more than 14 days before today, the report's queue section names /flush-upstream
+      and says which threshold was met.
     - Below both thresholds it names nothing.
-    - The report never runs another command, and a check fails if next.mjs starts a
-      process.
+    - The report names /flush-upstream and never runs it, and a check fails if next.mjs
+      imports node:child_process.
     - With no queue file the report prints no queue section, as today.
   type: improvement
   layer: product
