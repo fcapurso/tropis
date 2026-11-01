@@ -97,5 +97,6 @@ process.stdout.write(
     lastVerified: lastVerified ?? '(missing)',
     stale: lastVerified ? isStale(lastVerified, new Date()) : false,
     setups,
+    here: basename(root),
   }) + '\n',
 );

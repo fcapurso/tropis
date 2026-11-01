@@ -287,11 +287,12 @@ export function parseWorktreeSetup(text) {
  *   lastVerified: string,
  *   stale: boolean,
  *   setups?: Array<{checkout: string, steps: string[]|null}>,
+ *   here?: string,
  * }} opts
  * @returns {string}
  */
 export function renderThinPrompt(opts) {
-  const { planPath, protocol, repos, picks, lastVerified, stale, setups = [] } = opts;
+  const { planPath, protocol, repos, picks, lastVerified, stale, setups = [], here = '' } = opts;
   const lines = [
     `**Tier:** ${protocol.tier} · **Requires:** ${protocol.requires} · **Merge:** ${protocol.merge}`,
   ];
@@ -314,6 +315,19 @@ export function renderThinPrompt(opts) {
     + 'and it says what to report and who merges.',
   );
   lines.push('');
+  // A session may start with only this checkout, as a cloud session does; the helper
+  // looks for the others beside it and refuses when one is missing.
+  const commands = repos.filter((r) => r.isolation);
+  const others = commands.map((r) => checkoutName(r.checkout)).filter((name) => name !== here);
+  if (commands.length > 1 && others.length > 0) {
+    lines.push(
+      'Before isolating: this session may have started with only this checkout, as a cloud session does. '
+      + 'For each checkout below that is not already beside this one, attach it with your tool for adding '
+      + 'a repository to the session, where you have one, and clone it beside this one under exactly this directory name:',
+    );
+    for (const name of others) lines.push(`  - ${name}`);
+    lines.push('');
+  }
   lines.push(
     "Isolate (from the Repositories table), then work in the execute-here worktree — not the specifying session's directory:",
   );
@@ -340,7 +354,6 @@ export function renderThinPrompt(opts) {
   // isolate line they read as a command list — and running them by hand from one
   // checkout is the defect the helper exists to prevent: every worktree lands in
   // whichever repository you are standing in.
-  const commands = repos.filter((r) => r.isolation);
   if (commands.length) {
     lines.push('');
     lines.push(
