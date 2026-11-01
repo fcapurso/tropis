@@ -246,7 +246,7 @@ then both `passed` forms, and `--passed "$PASSED"` on the `plan` line's descript
 ### 6. Records
 
 - **`framework/DECISIONS.md`:** a new decision at the end, numbered with the next free
-  `FW-` number on `origin/main` when you write it (FW-045 if nothing has taken it; the
+  `FW-` number on `origin/main` when you write it (FW-047: FW-045 and FW-046 are taken; the
   reviewer renumbers at merge if another lands first). Title: *A run skips the stages when
   the same code already passed*. Decision: Decisions 1–3 and 5 in a paragraph. Evidence:
   the probe above (the push run on `47fbcf0` re-ran 3 min 34 s of stages on a tree pull
