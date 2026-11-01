@@ -3640,7 +3640,7 @@
 # building on that section and changing nothing it already says.
 # Shipped by docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md. The
 # criteria about rule text are covered by that text and Task 1's checks; the
-# fresh-agent criterion by probe K in that plan's handover report.
+# fresh-agent criterion by the rerun of probe K in that plan's review record.
 - id: kept-findings-go-to-the-catalog
   title: A finding worth keeping goes into the backlog, and a fix starts there too
   status: shipped
