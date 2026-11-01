@@ -519,3 +519,42 @@ Trap 1 says `docs/rule-trials.md` "is exported and may be named" in backticks. T
 
 - Parent review before merge. No pull request opened.
 - Possible load flake in `rule-delivery` capture-at-write tests under high load (seen once, on the unmodified base); not reproduced.
+
+## Review record
+
+Reviewed by the specifying session, on the branch at `e86f72d` and after. Tools: Claude Code 2.1.300, Node v22.15.0, macOS 26.2, Darwin arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: nine files, each in *File Structure* (`docs/backlog-board/index.html` not rebuilt, as the handover says).
+- `bash scripts/check-blueprint.sh` on `e86f72d`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` (load average about 29).
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 144 passed, 144 total`.
+- `node .github/scripts/rule-trial.mjs check`: `rule-trials: 0 trials, no problems`. `growth v0.7.3`: all five files `+0`, then `No rule file grew since v0.7.3: record a skipped trial.` `growth v9.9.9`: `v9.9.9 is not a commit here`, exit 1.
+- `guards/rule-trial.test.js` on the archive export: `Tests: 21 passed, 21 total`. Re-broken by disabling the record of kept clauses in `recordProblems` (`if (false) kept.push…`): `Tests: 1 failed, 20 passed, 21 total`.
+- The handover's diagnosis of the self-check failures was checked against the kept log of the first run (`.self-check/logs/20261101T180535Z-879cc07/clean-baseline.log`, local, not committed): two `main-status --pull-request` cases and six `rule-delivery` capture-at-write cases, the latter all `SyntaxError: Unexpected end of JSON input` on the hook's reply, on the unmodified base. Later runs on the same hook script passed. The load explanation is consistent with that but not proven.
+- `git diff origin/main -- .claude/commands/release.md`: one added line group, between the project-owned markers.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The probe's mention of the developer's own instructions is described in general terms only.
+
+- Mechanical, fixed on the branch by the reviewer in `e86f72d`: the rewritten catalog comment above `rule-is-measured-with-and-without` ran past the file's line width; the new band verdict was one unwrapped line unlike its neighbours; FW-046's status line ended `Accepted.` where every other decision has `Accepted`.
+- The script also prints `Nothing tried before from …` above the no-growth line, where the plan said that line would print instead. Harmless and arguably useful; left.
+- The plan's Trap 1 was wrong about `docs/rule-trials.md` being nameable in backticks in a framework document; the executor's plain-text naming is what `AGENTS.md` asks for a file no project has.
+- The probe's read-only allow list did not stop two `cat` calls through Bash. Nothing was written, so the result stands; noted for anyone relying on `--allowedTools` as a sandbox.
+
+### Outstanding disposition
+
+- Parent review before merge: this record.
+- The six `rule-delivery` capture-at-write failures under load: unexplained; recorded as the idea `capture-at-write-tests-pass-under-load` in `feature-catalog.yaml`, with this run as evidence. The two `main-status` failures are `main-status-tests-pass-under-load`, already building.
+- The first real trial happens at the developer's next release of this repository; nothing here runs a release. Only then is criterion 2 observed on a real clause rather than a probe.
+
+### Learnings routed
+
+- A framework document cannot name a repository-only file in backticks, even one present in the export: already in `AGENTS.md` (*A framework document may name an absent file only through the integrity guard*); the plan missed it, nothing new to route.
+- A command-line allow list for a probe is not a sandbox: not routed, it is a property of one tool version observed once and the probe was read-only by prompt as well.
+- A hook test that passes on a rerun: the catalog idea above.
+
+### Merged because
+
+Every check re-ran green on the reviewed head, the new guard goes red when its central check is removed, the fresh-agent probe found the procedure the change intended, and the only fixes were mechanical rewraps made and declared here.
