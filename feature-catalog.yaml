@@ -4378,7 +4378,7 @@
 # is the same promise for this repository.
 - id: release-tags-the-notes-commit
   title: This repository's release tags the commit that carries its notes, and nothing merged after it
-  status: shaped
+  status: building
   value: A release holds exactly what its notes describe. Today the release job tags the
     head of the main branch when it is started, so work merged after the notes - by
     another agent while the developer is reading them - is released unannounced.
@@ -4395,7 +4395,8 @@
   modules:
     - .github/workflows/ci.yml
     - .github/scripts/release.mjs
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-01-release-tags-the-notes-commit.md
 # 2026-10-31, found on the first run after the ruleset was applied here: run
 # 41227062902 failed only in pipeline / host, saying GitHub did not say whether
 # auto-merge is allowed. The pipeline's token reads the branch rules, but GitHub leaves
