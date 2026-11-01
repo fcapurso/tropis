@@ -998,6 +998,87 @@ function hostCommand(root, { summary }) {
   return 1;
 }
 
+const FULL_HASH = /^[0-9a-f]{40}$/;
+const PROMOTE_USAGE = 'promote: use check <commit> [--staged <commit>] [--allow <path>]...';
+
+function parsePromoteArgs(argv) {
+  if (argv[0] !== 'check' || argv[1] === undefined || argv[1].startsWith('--')) return null;
+  const parsed = { commit: argv[1], staged: undefined, allow: [] };
+  for (let i = 2; i < argv.length; i += 2) {
+    const value = argv[i + 1];
+    if (value === undefined) return null;
+    if (argv[i] === '--staged') parsed.staged = value;
+    else if (argv[i] === '--allow') parsed.allow.push(value);
+    else return null;
+  }
+  return parsed;
+}
+
+function isCommit(root, hash) {
+  return git(root, ['cat-file', '-e', `${hash}^{commit}`]).status === 0;
+}
+
+/** True when `ancestor` is `descendant` or one of its ancestors; null when git fails. */
+function contains(root, descendant, ancestor) {
+  const result = git(root, ['merge-base', '--is-ancestor', ancestor, descendant]);
+  if (result.status === 0) return true;
+  if (result.status === 1) return false;
+  return null;
+}
+
+/**
+ * The refusal the promote pipeline runs before it tags, so it is the same in
+ * every project: `commit` must be on the main branch (an ancestor of `HEAD`,
+ * which is a checkout of it), and where the project deploys to staging, must
+ * contain the staged commit and differ from it only in the allowed files.
+ * Returns the line to print and the exit status.
+ * @param {string} root
+ * @param {{ commit: string, staged?: string, allow: string[] }} args
+ * @returns {{ status: number, line: string }}
+ */
+export function promoteCheck(root, { commit, staged, allow }) {
+  const refuse = (line) => ({ status: 1, line: `promote: ${line}` });
+  for (const hash of [commit, staged]) {
+    if (hash !== undefined && !FULL_HASH.test(hash)) return refuse(`"${hash}" is not a full commit hash`);
+  }
+  for (const hash of [commit, staged]) {
+    if (hash !== undefined && !isCommit(root, hash)) return refuse(`${hash} is not a commit here`);
+  }
+  const onMain = contains(root, 'HEAD', commit);
+  if (onMain === null) return refuse('could not compare with HEAD');
+  if (!onMain) return refuse(`${commit} is not on the main branch — tag only a commit main holds`);
+  if (staged === undefined) {
+    const slot = stagingSlot(root);
+    if (slot.error) return { status: 1, line: slot.error };
+    if (slot.slot === 'filled') {
+      return refuse('this project deploys to staging — give --staged <the commit staging was checked on>');
+    }
+    return { status: 0, line: `promote: ${commit} may be tagged` };
+  }
+  const holdsStaged = contains(root, commit, staged);
+  if (holdsStaged === null) return refuse('could not compare the commit with the staged commit');
+  if (!holdsStaged) return refuse(`${commit} does not contain the staged commit ${staged}`);
+  const diff = git(root, ['diff', '--name-only', '--no-renames', staged, commit]);
+  if (diff.status !== 0) return refuse('could not list what changed since staging');
+  const changed = diff.stdout.split('\n').filter((path) => path !== '' && !allow.includes(path));
+  if (changed.length > 0) {
+    return refuse(`${changed.join(', ')} changed since staging was checked — deploy ${commit} to staging first`);
+  }
+  return { status: 0, line: `promote: ${commit} may be tagged` };
+}
+
+function promoteCommand(root, args) {
+  const parsed = parsePromoteArgs(args);
+  if (!parsed) {
+    process.stderr.write(`${PROMOTE_USAGE}\n`);
+    return 2;
+  }
+  const outcome = promoteCheck(root, parsed);
+  if (outcome.status === 0) process.stdout.write(`${outcome.line}\n`);
+  else process.stderr.write(`${outcome.line}\n`);
+  return outcome.status;
+}
+
 /** Commands for a host that has no wiring file, each with when to run it. */
 function commandList() {
   const lines = [
@@ -1028,6 +1109,8 @@ function commandList() {
     '# Deploy to staging. Started by hand for one commit on the main branch, never on a push.',
     '# Every stage first, as on a push with nothing skipped; then:',
     'node .tropis/scripts/pipeline.mjs staging deploy',
+    '# Promote to production: the project\'s own pipeline runs this before it tags <commit>.',
+    'node .tropis/scripts/pipeline.mjs promote check "$COMMIT" --staged "$STAGED" --allow <notes file> --allow <each version file>',
   );
   return `${lines.join('\n')}\n`;
 }
@@ -1151,6 +1234,14 @@ if (ranDirectly) {
       process.exitCode = 1;
     } else {
       process.exitCode = stagingCommand(root, args[0], args.slice(1));
+    }
+  } else if (command === 'promote') {
+    const root = projectRoot();
+    if (!root) {
+      process.stderr.write('pipeline: not a git repository\n');
+      process.exitCode = 1;
+    } else {
+      process.exitCode = promoteCommand(root, args);
     }
   } else {
     process.stderr.write('pipeline: unknown command\n');
