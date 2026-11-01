@@ -4569,15 +4569,40 @@
 # and the pull request merged as 54e7eda. Cause not known: a GitHub scheduling fault is
 # the guess, not tested. The re-run is the kind of retry the workflow says hides
 # failures, which is one more reason the state should be named rather than worked round.
+# 2026-11-01, shaped. Decisions: the merge wait (main-status.mjs --pull-request) is the
+# one place that reports it, because it is the one thing waiting on the pull request.
+# The required checks come from the base branch's active rules (the REST endpoint the
+# pipeline's host job already reads), not a hard-coded pipeline / gate, so a renamed gate
+# is still found; rules it cannot read leave the wait as it was, so this never turns a
+# working wait into a failing one. It fires only once every pipeline run on the head
+# commit has finished, so a gate that is merely late is not reported. It stops with
+# exit 4, like the other states that will not merge by waiting, and never re-runs
+# anything itself. A required check that some other CI system posts, slower than the
+# pipeline, would be reported early; Tropis requires only its own gate, so that is
+# accepted. Finding why GitHub skipped the gate is out of scope.
 - id: a-run-without-its-gate-is-reported
   title: A pull request whose pipeline finished without its required gate check is reported
-  status: idea
+  status: shaped
   value: Whoever is waiting on a pull request's auto-merge learns, with the run's
     address, that its pipeline finished without the gate check the branch requires, and
     so will never merge until something starts the gate. Today the pull request just
     stays blocked with every check it shows green, and a wait on it times out saying
     nothing.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Waiting on a pull request with main-status.mjs --pull-request, when every pipeline
+      run on the pull request's head commit has finished and a check that the base
+      branch's rules require has no check run on that commit, the wait stops with exit 4
+      and one line naming the missing check, the head commit, and the address of the
+      pipeline run that finished without it.
+    - While any pipeline run on the head commit is still going, a missing required check
+      is not reported and the wait goes on.
+    - When the required check is present on the head commit, whatever its state, the
+      wait behaves as it did before this change.
+    - When the base branch's rules cannot be read, or require no check, the wait behaves
+      as it did before this change.
+    - The wait never re-runs a run or starts a check itself.
+    - The workflow's gated-merge paragraph names this as one of the reasons the wait
+      exits 4, and says what to do about it.
   type: bug
   layer: product
   modules: []
