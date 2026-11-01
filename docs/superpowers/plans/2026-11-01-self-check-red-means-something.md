@@ -472,3 +472,71 @@ Structure table. Worktree used: `../tropis-self-check`, a sibling of the primary
 - The GitHub Actions log groups are tested only through `GITHUB_ACTIONS=true` locally.
 - No clean self-check verdict at `dc005fc` (see Task 0).
 - The five-minute limit on a project's own test run is for the reviewer to decide.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, Claude Code 2.1.300 (Opus 5.5) on
+Darwin arm64, git 2.49.0, Node v22.15.0.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: the ten files of *File Structure*, `10 files
+  changed, 393 insertions(+), 41 deletions(-)` after the review fix below.
+- `bash scripts/check-blueprint.sh` on `ca71060`: last line `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.`; `ls .self-check/logs` afterwards found no folder, so the pass left no
+  log.
+- `npm --prefix .tropis test`: `Tests: 130 passed, 130 total`.
+- `grep -n "readdirSync(tmpdir())" guards/take-version.test.js guards/update.test.js`:
+  nothing, exit 1. `grep -c "input: archive" scripts/take-version.mjs`: `0`.
+  `grep -n "spawnSync(" scripts/take-version.mjs scripts/check-version.mjs`: one line,
+  inside the exported `run`.
+- Each new guard re-broken, in a stage exported from `ca71060` with one file changed:
+  `check-conformance.sh` from `origin/main` turns `guards/conformance-output.test.js` red
+  (`2 failed, 1 passed`); the `rmSync` of the scratch folder removed from
+  `take-version.mjs` turns `-t 'scratch folder'` red (`2 failed`, the leftover test and
+  the hang test, which also checks the folder is gone); the `timeout` removed from `run`
+  turns the hang test red (`1 failed`) on its 30 s guard-side limit instead of hanging.
+- The handover's diagnosis that the time limit also reached the project's own npm
+  install and suite in `check-version.mjs` was checked: both calls went through `run`
+  with no override. True; fixed below.
+
+### Found
+
+Public exposure: the diff was read for private material; it names no person, project,
+home path or hostname. Nothing found.
+
+- **Fixed by the reviewer, mechanical (`ca71060`):** the limit on the project's own
+  `npm install` and `npm test` in `check-version.mjs` would have refused any project
+  whose suite runs longer than five minutes. That was the plan's wording ("every
+  child"), not the executor's error. Both calls now pass `timeout: undefined`, so they
+  run as long as before, and the entry's second criterion says the project's own
+  install and suite have no limit. The framework's own steps keep theirs.
+- **Fixed by the reviewer, mechanical (`ca71060`):** a red verdict from
+  `check-blueprint.sh` named the logs folder in its last lines only when its own guards
+  failed; on a conformance-only red the folder was printed further up. It now prints
+  `Output of each failing run` before either `FAILED` line.
+
+### Outstanding disposition
+
+- "GitHub Actions log groups tested only locally": the guard sets `GITHUB_ACTIONS=true`,
+  which is the variable Actions sets; what the job log shows will be seen on the next red
+  CI run. Dropped: nothing to track.
+- "No clean self-check verdict at `dc005fc`": `main` at `dc005fc` was green in CI, and
+  the branch passes; nothing to track.
+- "The five-minute limit on a project's own test run": decided and fixed above.
+- Nothing is observable only by the developer: the change has no screen.
+
+### Learnings routed
+
+- A time limit written as "every child" reached a child that runs someone else's code
+  for as long as it needs. Specific to this plan, and now in the entry's criterion. Not
+  routed.
+- Editing `check-blueprint.sh` while a self-check is running breaks that run, because
+  bash reads the script as it goes. Not routed: the self-check already says to commit
+  first, and an executor learns it at once.
+
+### Merged because
+
+Every check was re-run and holds, each new guard goes red when its fix is removed, and
+the two fixes made in review were small, mechanical and declared above.
