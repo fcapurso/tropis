@@ -30,9 +30,26 @@ specifying session what something means, the plan was underwritten.
 
 - **Carry the evidence, not just the conclusion.** A deletion needs its justification
   inline; a "verified" claim needs what was verified against.
-- **Verify every claim the plan makes about the code before dispatching.** A plan that
-  asserts something untrue sends the agent into a contradiction it was told not to
-  resolve. This has cost a review round more than once.
+- **Verify every claim about the repository as it stands before dispatching; write every
+  claim about the result as a check the executor runs.** A claim about what is there now
+  — a file exists, a function has three callers, a guard reads committed content only —
+  the author checks against the repository and carries with what it was checked against.
+  A plan that asserts something untrue sends the agent into a contradiction it was told
+  not to resolve. This has cost a review round more than once. A claim about what the
+  work will produce cannot be verified before the work exists. Write it as a check, and
+  say what the executor does when the check fails: fix the work and run it again, or
+  stop and hand back.
+- **A check states what it prints when it passes and what it prints when it fails, and
+  the two differ.** Before writing the passing output, ask what the check prints against
+  the repository as it is, before the work: for a check of the result, that is the
+  failing output, and it must not look like the passing one. A check the finished work
+  cannot pass, or one that cannot fail, tells the executor nothing, and working out which
+  it is costs the executor, or the review when the executor does not notice. Three checks
+  written for one plan, the first-adopter-harness plan of 2026-08-12 on the blueprint's
+  technology scope, could not pass, and each was caught only by the agent running it: a
+  search for a phrase the plan itself wrapped across two lines, a listing the backlog
+  command withholds until something has shipped, and a count of zero for a string that
+  the replacement text the plan authorised contains.
 - **A verification step must test every claim, not a sample.** An incomplete check that
   passes manufactures confidence.
 - **A red check of an uncommitted change needs a commit when the check reads committed
@@ -44,6 +61,23 @@ specifying session what something means, the plan was underwritten.
   plan is verified before dispatch and executed after its commit has added the plan
   file, a catalog entry and regenerated documentation, so "exactly one grep hit" is
   already false when the executor runs it, while "nothing imports it" still holds.
+  A count the author measured by doing the work on a copy is the same trap: the
+  executor's work differs in some detail and the figure stops matching. An expected output
+  rests on what the work must make true — every caller passes the new argument, nothing
+  names the old file — not on a figure taken from a rehearsal.
+- **Do not rehearse the work to write its plan.** Carrying out the change on a throwaway
+  copy to measure what it produces, then dispatching an executor to do it again, pays for
+  the work twice. Where the result can be stated only by producing it — prose whose
+  wording is the deliverable, output nobody can predict before it is generated — choose
+  one of two shapes while writing the plan, never both. **Describe it for an executor**:
+  state what the result must satisfy as checks, and give the judgment it needs a higher
+  model tier. Or **build it yourself and send it to a fresh reviewer**: an agent with
+  only the repository reviews it as a reviewing session reviews a plan's work and writes
+  the review record, and the plan, or the pull request where there is no plan, says this
+  shape was chosen and why. The sign that the choice is due is an expected output you can
+  fill in only by making the change. One plan was written by doing the whole change on a
+  throwaway copy to measure exact figures for its checks, and then dispatched to an
+  executor who did it again.
 - **A table mapping acceptance criteria to tests is a claim too.** A test named beside a
   criterion reads as coverage and hides the gap a blank cell would show. Check that the
   named test runs the sequence the criterion describes, not a unit test of one side of

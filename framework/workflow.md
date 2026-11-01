@@ -14,6 +14,11 @@ The session that shapes a change and writes its plan acts as business analyst an
 technical lead. It writes the plans and does **not** execute them. Execution is
 dispatched to separate agents, which may dispatch their own review subagents.
 
+**The one exception is a change whose result can be stated only by producing it.** Its
+author may build it and send it to a fresh agent to review, instead of describing it
+for an executor, and decides which when writing the plan — never both:
+`.claude/rules/planning.md`, *Do not rehearse the work to write its plan*.
+
 A plan must therefore be **self-contained** — every piece of evidence and reasoning its
 executor needs is in the plan. If an executor has to ask the specifying session what
 something means, the plan was underwritten.
