@@ -56,6 +56,10 @@ describe('framework integrity', () => {
         // A project may not have its README settings or skeleton yet.
         if (
           ref === 'docs/model-picks.md' ||
+          // The places releases before FW-045 used. DECISIONS.md names them to say an update
+          // moves them to .tropis/; no project keeps either file once it has taken that update.
+          ref === '.claude/project.json' ||
+          ref === '.claude/worktree-setup.txt' ||
           ref === 'docs/readme/readme.yaml' ||
           ref === 'docs/readme/skeleton.md' ||
           // Written into a project by bootstrap or update, not present in this tree.
