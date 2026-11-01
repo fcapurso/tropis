@@ -38,22 +38,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-board-is-the-backlog-view:
-  band: B
-  value: 3
-  valueWhy: Anyone reading the backlog sees it as it stands without running a command,
-    and projects stop being told to keep a document they have no way to generate.
-  effort: 3
-  effortWhy: An automatic rebuild when the backlog changes, the backlog rule's wording,
-    and removing any other readable view a project keeps.
-  verdict: "Put first in the queue by the developer. One readable view of the backlog for
-    every project, rebuilt automatically and never committed."
-  evidence: "2026-11-01 — docs/backlog-board/index.html is gitignored here and in set-up
-    projects (scripts/set-up-project.sh); rules/catalogs.md now asks for a generated
-    catalog document only where a project has one."
-  seen:
-    status: idea
-    blockers: []
 command-matcher-sees-every-shell:
   band: B
   value: 4
