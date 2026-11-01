@@ -4346,9 +4346,12 @@
 # check accepts any node 18, but the Jest it installs (30.5.2) declares engines.node
 # ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0, and the README and RELEASES.md already say
 # 18.14 or later. So node 18.0 to 18.13 passes the check and fails when the guards run.
+# Shipped by docs/superpowers/plans/2026-10-31-prerequisite-check-refuses-old-node.md.
+# Criteria 1, 2 and 3: check-prerequisites.test.js, which runs the shipped script against
+# a stub node reporting each version.
 - id: prerequisite-check-refuses-old-node
   title: The prerequisite check refuses a Node the guards cannot run on
-  status: building
+  status: shipped
   value: Someone setting up a project learns from the prerequisite check, before anything
     else runs, that their Node is too old for the guards. Today a Node from 18.0 to 18.13
     passes the check, and the first sign of trouble is Jest refusing to run.
@@ -4360,7 +4363,9 @@
       of the above stops being true.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/check-prerequisites.sh
+    - guards/check-prerequisites.test.js
   refs: []
 # 2026-10-31, found reviewing work-that-will-not-be-done-reads-as-closed (its review record,
 # Found): a self-check run sat for an hour in a take-version test. take-version.mjs was
