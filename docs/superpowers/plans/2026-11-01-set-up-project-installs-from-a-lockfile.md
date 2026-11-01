@@ -400,3 +400,44 @@ with `--allow-empty` is fine) and in the handover. Delete the scratch folder aft
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 7 done. Task 8: this report, then the push. The Task 6 probe passed on its first run.
+
+### Verification results
+
+Platform: git 2.49.0, node v22.15.0, npm 11.6.4, macOS 26.2 on arm64. Fresh-agent tool: Claude Code 2.1.300.
+
+- Task 0 baseline self-check: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1 red: the lockfile and the tests were committed; the self-check failed on `set-up-project.sh > leaves a lockfile npm ci installs from` and the three new `take-version.mjs` cases (replaces the project's lockfile when it kept the shipped package file; leaves the lockfile alone when the project changed its package file; adds the lockfile to a project that has none). The second case fails too, not just the first and third, because it reads the project's lockfile before the take and setup wrote none. The fixed `version unknown` test passed.
+- Task 2: after deleting `.self-check/package.json`, `Installing the self-check's test tools from templates/package-lock.json…`. Failing: the same four, plus `backlog board hooks > the package, the installed-scripts list and the self-check carry the wiring` (see What the plan got wrong). That run's lockfile test failed with a ReferenceError in my test (`NAME` undefined), not for the intended reason; fixed in the docs commit and shown to fail for the right reason in the throwaway step below.
+- Task 3: after the setup and update commit, the self-check was red only on the ReferenceError above and on a `main-status` test (load, see Outstanding). Throwaway commit deleting the lockfile line: red on `leaves a lockfile npm ci installs from` and the three take-version cases; dropped with `git reset --hard HEAD~1`.
+- Task 4: `git grep -nF "tropis install"` over the five named files prints only `templates/README.md`'s board paragraph. Self-check after it: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 5, project "Quay Works" set up from the branch: `ci` exit 0; shasum of the lockfile before and after both `a87e0cefd1c2aad1b897b9b6f17e6d6f68e658de`; `"name": "quay-works-framework",`; `Tests:       61 passed, 61 total`.
+- Task 6, `claude -p --output-format stream-json --verbose --allowedTools "Bash,Read,Write,Edit"`, project "Pier Tools": the agent ran setup (exit 0, closing line `Next, from there: npm --prefix .tropis ci, then npm --prefix .tropis test, then commit.`), then `npm --prefix .tropis ci` (exit 0, 257 packages, lockfile shasum unchanged), then `npm --prefix .tropis test`: `Tests:       61 passed, 61 total`. It never ran `npm --prefix .tropis install`.
+- Task 7: `npm --prefix .tropis test`: `Tests:       142 passed, 142 total`.
+
+### Scope
+
+Worktree used: `../tropis-lockfile`. Files changed: every file in File Structure, plus `guards/board-hooks.test.js` (not in the table; see below). Diff stat is the 16 files in the final `git diff --stat origin/main...HEAD`.
+
+### Judgment calls
+
+- Lockfile generated directly under `PROJECT_SLUG-framework`; npm accepted the name, so no text replacement was needed.
+- `FW-045` is the next free number on this base.
+- The new setup test uses the display name `Quay Works`.
+- Source worked from: nothing in particular; written against this repository's own scripts and tests.
+- The probe agent also deleted `_comment` from `.claude/settings.json` in its scratch project; unrelated to the change and discarded.
+
+### What the plan got wrong
+
+- `guards/board-hooks.test.js` finds the self-check's install line by the text `npm install --prefix "$TOOLS"`; switching to `npm ci` made it fail. I changed that one string to `npm ci --prefix "$TOOLS"`, keeping its `--ignore-scripts` assertion. The file was not in File Structure.
+- The second take-version case is red before the code too, not "may pass already".
+
+### Outstanding
+
+- `guards/main-status.test.js` (`--pull-request`, "brings a branch that is behind up to date once...", also two siblings in one run) failed in some self-check runs with status 3 instead of 0 when the machine was loaded (test took 119 to 154 s). It passed in other runs of the same code. It is unrelated to this change; `main-status-tests-pass-under-load` is already building.
+- The change has no screen, so there is no developer check.
