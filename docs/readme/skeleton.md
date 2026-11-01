@@ -61,6 +61,6 @@ things are the way they are.
 - **Length:** a short list.
 
 ## Where to go next
-- **Job:** links to the deeper documents, how to contribute, the licence.
+- **Job:** links to the deeper documents, how to contribute as one line linking CONTRIBUTING.md, the licence.
 - **Facts from:** the repository's own documents.
 - **Length:** a short list.

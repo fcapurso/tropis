@@ -19,6 +19,25 @@ For the full development history, see the git log.
 
 _Nothing yet._
 
+## [0.7.3] — 2026-11-01
+
+Two fixes. Setup now tells you up front when your Node is too old to run Tropis's
+checks, and an agent waiting for a pull request to merge itself is told when it never
+will.
+
+### Smaller corrections
+
+- The setup check now refuses Node older than 18.14, the oldest the test tool behind
+  Tropis's checks runs on, and names the version it found. Before, Node 18.0 to 18.13
+  passed the check and then failed at the first check that ran.
+- When a pull request's pipeline finishes without a check that `main` requires,
+  `node .tropis/scripts/main-status.mjs --pull-request <N>` now stops and says so, with
+  the run's address, instead of waiting for a merge that can never happen. The workflow
+  says to re-run that run once by hand, and to stop and report it if the check is
+  missing again.
+
+Checked on the release candidate: no — no candidate was rehearsed
+
 ## [0.7.2] — 2026-11-01
 
 Two agent sessions can now work in one project at the same time without moving each

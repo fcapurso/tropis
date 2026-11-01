@@ -10,22 +10,6 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
-a-run-without-its-gate-is-reported:
-  band: B
-  value: 3
-  valueWhy: A pull request waiting on auto-merge can stall for half an hour with every
-    check green and nothing saying why; it happened once in this repository.
-  effort: 2
-  effortWhy: The merge wait reads the pull request's checks and names a finished run
-    with no gate job; the cause itself is out of scope.
-  verdict: "Worth doing while agents merge in parallel: name the stalled state, with the
-    run's address, instead of timing out in silence. Finding why GitHub skipped the gate
-    is not part of it."
-  evidence: "2026-11-01 — run 41291063425 on pull request 74 completed with no
-    pipeline / gate job and the pull request stayed blocked until a manual re-run."
-  seen:
-    status: idea
-    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
@@ -63,22 +47,6 @@ command-slots-spike:
   verdict: "The open design question of the framework-updates arc: until it is
     answered, every command a project touches is a hand merge on each update. It
     is also what the backlog report names as the next step."
-  seen:
-    status: shaped
-    blockers: []
-contributors-know-how-to-contribute:
-  band: B
-  value: 2
-  valueWhy: The repository is public, but contributors are few.
-  effort: 2
-  effortWhy: One page, two pointers, a closeout row and a check.
-  verdict: "Shaped and plannable; one page that stops README and bootstrap each
-    half-describing the upstream path. Its plan dates from 2026-10-15, before
-    flushes went out under a flush name, so re-read it against today's flush before
-    dispatching."
-  evidence: "2026-10-31 — still no CONTRIBUTING.md at the repository root;
-    docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
-    delivers it and was never dispatched."
   seen:
     status: shaped
     blockers: []
@@ -285,7 +253,7 @@ release-guides-through-both-steps:
   verdict: "Removes the release step people forget and the jargon around it, but
     the rename touches every shipped file and needs a migration for projects."
   seen:
-    status: shaped
+    status: building
     blockers: []
 release-notes-stay-a-readable-size:
   band: D
@@ -309,7 +277,7 @@ release-tags-what-main-holds:
   verdict: "Needed before an adopter with a release pipeline can gate its main
     branch; until then it records why it does not."
   seen:
-    status: shaped
+    status: building
     blockers: []
 rule-is-measured-with-and-without:
   band: C

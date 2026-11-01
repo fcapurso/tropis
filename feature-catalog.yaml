@@ -1682,9 +1682,12 @@
 # mechanism is described in one place. Kept current the way the operator and adopter
 # pages are (FW-006): a doc-closeout row, plus a check for what can be checked.
 # 2026-11-01, building. Plan revised against today's flush and dispatched.
+# 2026-11-01, shipped by docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md,
+# revised that day. The fork-CI example in the criteria was out of date by then; the page
+# states what is true now, held to pipeline.yml by contributing-page.test.js.
 - id: contributors-know-how-to-contribute
   title: A contributor can read how contributing to the framework works
-  status: building
+  status: shipped
   value: Someone who wants to hand an improvement back to the framework — from a project
     using it, or directly — finds one page at the repository root, CONTRIBUTING.md, that
     says how a contribution reaches the framework and what happens to it, without reading
@@ -1712,7 +1715,10 @@
     - CONTRIBUTING.md is not copied into a project set up from the framework.
   type: feature
   layer: product
-  modules: []
+  modules:
+    - CONTRIBUTING.md
+    - guards/contributing-page.test.js
+    - scripts/check-blueprint.sh
   refs:
     - docs/superpowers/plans/2026-10-15-flush-opens-pull-requests-upstream.md
     - docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
@@ -4621,9 +4627,11 @@
 # anything itself. A required check that some other CI system posts, slower than the
 # pipeline, would be reported early; Tropis requires only its own gate, so that is
 # accepted. Finding why GitHub skipped the gate is out of scope.
+# Shipped by docs/superpowers/plans/2026-11-01-a-run-without-its-gate-is-reported.md;
+# each criterion's test or check is in that plan's handover report.
 - id: a-run-without-its-gate-is-reported
   title: A pull request whose pipeline finished without its required gate check is reported
-  status: building
+  status: shipped
   value: Whoever is waiting on a pull request's auto-merge learns, with the run's
     address, that its pipeline finished without the gate check the branch requires, and
     so will never merge until something starts the gate. Today the pull request just
@@ -4646,7 +4654,10 @@
       exits 4, and says what to do about it.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/main-status.mjs
+    - guards/main-status.test.js
+    - framework/workflow.md
   refs:
     - docs/superpowers/plans/2026-11-01-a-run-without-its-gate-is-reported.md
 # Raised 2026-11-01 by the developer, from the rule-text bundle's fix to
@@ -4709,22 +4720,27 @@
     - framework/doc-architecture.md
     - templates/README.md
   refs: []
-# 2026-11-01, found while executing docs/superpowers/plans/2026-11-01-project-has-one-display-name.md:
-# two guards/main-status.test.js cases, "--pull-request › brings a branch that is behind up
-# to date once, and waits on" and "never asks twice to update the same head", exited 3
-# instead of 0 in the self-check's clean baseline at 0a27f09 and again at d354efc, then
-# passed alone and in the next full run on the same tree (node v22.15.0, macOS 26.2,
-# arm64). Exit 3 is the command's own timeout; the cases pass --interval 0.05 --timeout
-# 0.05, so a loaded run that is slow to start the fake gh plausibly runs out of time. The
-# cause is untested. Both red runs' logs were kept under .self-check/logs/ in that worktree.
-- id: main-status-tests-wait-long-enough
-  title: The main-status tests pass on a busy machine as they do on an idle one
+# 2026-11-01, found executing contributors-know-how-to-contribute: two full self-check runs
+# failed on the clean baseline in guards/main-status.test.js, the --pull-request cases
+# "brings a branch that is behind up to date once, and waits on" and "never asks twice to
+# update the same head" exiting 3 instead of 0, with the load average at 12 to 16 while
+# other sessions ran their own self-checks. A third full run passed with nothing changed,
+# as did the reviewer's run, and the file passes 37 of 37 alone. Node v22.15.0, Jest
+# 30.5.2, macOS 26.2 arm64.
+# 2026-11-01, seen again executing docs/superpowers/plans/2026-11-01-project-has-one-display-name.md:
+# the same two cases exited 3 in the clean baseline at 0a27f09 and at d354efc, then passed
+# alone and in the next full run on the same tree (node v22.15.0, macOS 26.2 arm64).
+- id: main-status-tests-pass-under-load
+  title: The main-status tests give the same answer however busy the machine is
   status: idea
-  value: Someone running the self-check can trust a red main-status case to mean the
-    command is wrong. Today two of its --pull-request cases failed twice in full runs and
-    passed on a rerun with nothing changed, which the workflow counts as a bug.
+  value: A self-check run on a busy machine fails or passes on the same code depending
+    on load, because two of the main-status --pull-request tests time out under it. A
+    check that passes on a rerun with nothing changed hides the failures a person needs
+    to see, and costs every executor a rerun to tell a real failure from this one.
   acceptanceCriteria: []
   type: bug
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - guards/main-status.test.js
+  refs:
+    - docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md

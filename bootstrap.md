@@ -313,8 +313,8 @@ When a learning does not obviously belong anywhere, run `/capture-learning`. Whe
 would be true for any project using this framework — not about this codebase, this
 platform, or this domain — append it to an upstream queue at
 `docs/BLUEPRINT-UPSTREAM.md` so it can be flushed back into the blueprint.
-`/flush-upstream` drafts the porting plan; a person decides what ports. The flush then
-submits each decided line as a pull request and needs `gh` signed in.
+`/flush-upstream` sends the queue back as pull requests; the framework's CONTRIBUTING.md
+says how, and what it needs.
 
 Day to day, start from `/next` (or `npm --prefix .tropis run next`).
 

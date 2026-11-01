@@ -525,8 +525,8 @@ See the diff stat in the final report; every file is in *File Structure*. Worktr
 All by the specifying session, with git 2.49.0 and Node v22.15.0 on macOS 26.2, arm64.
 
 - `git diff --stat origin/main...HEAD` at `d60d67b`: 14 files, every one in *File
-  Structure*. The review added two files the table did not list, both declared below:
-  `docs/backlog-board/bands.yaml` and the new idea entry in `feature-catalog.yaml`.
+  Structure*. The review added one file the table did not list, declared below:
+  `docs/backlog-board/bands.yaml`.
 - Each guard re-broken in a scratch export of the branch (`git archive`, run with the
   branch's own Jest):
   - `.tropis/project.json` removed from `EXCLUDED`: `the display name › writes the name it
@@ -572,9 +572,9 @@ handover are relative or written as `<scratch>`.
 
 ### Outstanding disposition
 
-- The two flaky `main-status.test.js` cases: recorded as the idea
-  `main-status-tests-wait-long-enough`, with both runs, in `feature-catalog.yaml` on this
-  branch. Left unbanded for the next board refresh.
+- The two flaky `main-status.test.js` cases: another session had already recorded the
+  same two cases as `main-status-tests-pass-under-load`; this plan's two runs are added
+  to that entry as a comment.
 - No pull request opened by the executor: by instruction; the reviewer opens it.
 - No developer check: nothing has a screen except the board title, which the executor's
   Task 7 and the board guard both checked.
@@ -592,4 +592,4 @@ handover are relative or written as `<scratch>`.
 
 Every criterion has a test that fails without the change, the fresh-agent check passed on
 the first run, and the self-check and the installed checks are green; the review fixed one
-test that could not fail and recorded the flaky check it surfaced.
+test that could not fail and added the flaky check it surfaced to the entry that records it.

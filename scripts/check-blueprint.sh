@@ -91,7 +91,7 @@ set -e
 # a guard that calls isBlueprintTree and is missing from it is an error, and a listed
 # guard that does not exist fails to run. TROPIS_EXPECT_FRAMEWORK turns a skip into a
 # failure, and each guard must also fail on a planted defect.
-FRAMEWORK_GUARDS="operator-page-closeout readme-usable private-material dependency-overrides"
+FRAMEWORK_GUARDS="operator-page-closeout readme-usable private-material dependency-overrides contributing-page"
 framework=0
 echo
 echo "Framework repository: its own guards must pass here and fail on a planted defect"
@@ -148,6 +148,8 @@ plant operator-page-closeout framework/workflow.md "A plan does not patch it"
 plant operator-page-closeout PORTABILITY-NOTES.md
 plant readme-usable README.md "## What is Tropis?"
 plant readme-usable PORTABILITY-NOTES.md
+plant contributing-page CONTRIBUTING.md
+plant contributing-page CONTRIBUTING.md "A pull request from a fork runs the pipeline once the maintainer approves the run."
 plant dependency-overrides templates/package.json '"test-exclude": "^8.0.0"'
 
 # plant_add <kind> <text>: append a line to a file under an export-ignored path of the

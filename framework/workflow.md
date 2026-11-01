@@ -272,9 +272,14 @@ last line. It waits until the pull request has merged, bringing its branch
 up to date whenever `main` moves under it, then waits for the run the merge started on
 `main`, on the merge commit itself rather than on `HEAD`. Its exits are those of
 `--wait` below, plus 4 when the pull request did not merge. Its line then names why:
-a conflict, a failed check, auto-merge off, or the pull request closed. On 4, fix what
-it names, set auto-merge again if it was off, and run it again. Pull `main` once it has
-reported.
+a conflict, a failed check, auto-merge off, the pull request closed, or a pipeline that
+finished without a check the main branch requires. On 4, fix what it names, set
+auto-merge again if it was off, and run it again. **A pipeline that finished without
+its required check** leaves nothing on the branch to fix, and nothing will start the
+check: re-run that run once by hand, with `gh run rerun` and the run id from the address
+the line gives, say so in your report with that address, and run the wait again. That
+re-run starts a check that never ran, so it hides no failure; if the check is missing
+again, stop and report both runs. Pull `main` once it has reported.
 
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's
@@ -384,6 +389,7 @@ Before the work is considered done, update the durable artifact the change affec
 | alters what the product's users are told to do or how they start | nothing in the plan: the product's README is refreshed as a whole page by `/refresh-readme`, on its own or from `/release`. A plan does not patch it, except to correct a command, file or link the README names that the plan removed or renamed — correcting the reference and adding nothing |
 | fixed a defect in a file the blueprint also ships — path resolution, payload parsing, control flow, anything that would be wrong in any project | the blueprint upstream queue (**not** project-specific content: a namespaced marker directory, a comment naming a local backlog id — those are customisation and travel nowhere) |
 | taught **or built** something portable to any project — a lesson, or a command, guard or script a set-up project would want | the upstream queue. One inbox for both: the flush decides whether a line travels as an edit or as a shaped backlog entry, each in its own pull request to the framework — not the author, at write time |
+| alters how a contribution reaches the framework — the upstream queue, the flush, its pull requests and the branches they come from, how the maintainer takes them in, CI for them | `CONTRIBUTING.md`, in the same plan. Only the framework's own repository has it |
 | changed `.claude/framework/` or `.claude/rules/` | run a fresh-agent check (below) before closing, on a branch, and record what it found in the commit body — see **Branching** |
 
 **This step is the one most worth keeping.** Its absence is the single most common cause
