@@ -1,5 +1,9 @@
 # Portability notes
 
+> **Historical record.** How the framework was first assembled from two projects, and the
+> flushes that followed until 2026-10-14. Nothing updates it; merged pull requests are the
+> record since.
+
 What this blueprint is made of, and how that was decided.
 
 The framework layer existed in two real projects: one where it grew over about six
