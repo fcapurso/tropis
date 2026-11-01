@@ -512,3 +512,60 @@ Tools: git 2.49.0, Node v22.15.0, macOS 26.2 on arm64, Claude Code 2.1.300.
 - A green `bash scripts/check-blueprint.sh` on a quiet machine (only `main-status` timing tests failed, and they pass alone).
 - The change has no screen, so there is no developer check.
 - No pull request, review record or merge, as instructed.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, Claude Code 2.1.300 (Opus 5.5) on
+Darwin arm64, git 2.49.0, Node v22.15.0.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD` on `0f1b422`: 25 files, every one in *File
+  Structure* (the handover's 24 left out the plan file itself).
+- `bash scripts/check-blueprint.sh` on `0f1b422`: last line `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.` This settles the handover's one outstanding item: the `main-status`
+  timing failures it saw were load, not this change.
+- `npm --prefix .tropis test`: `Tests: 143 passed, 143 total`.
+- The new guards re-broken, in a stage exported from `0f1b422` with the self-check's
+  Jest setup: `pipeline.mjs` reading `.claude/project.json` again, `dispatch.mjs` reading
+  only the new setup file, and `takeVersion` moving nothing together turned
+  `pipeline`, `dispatch` and `take-version` red, `10 failed, 180 passed`: the three host
+  cases, the dispatch sibling case, and all six new `take-version` cases (the two moves,
+  the worktree-setup move, and the three refusals).
+- The hook cases in `rule-delivery.test.js` were not re-broken here: that guard needs
+  the project-shaped tree the self-check builds, and fails wholesale in a bare stage. Each
+  asserts silence when only the old file says public or ungated, which the old code,
+  reading that file, would not keep; they pass inside the self-check above.
+
+### Found
+
+Public exposure: the diff was read for private material; it names no person, project,
+home path or hostname. Nothing found.
+
+- The executor kept the integrity guard's exemptions for `.claude/project.json` and
+  `.claude/worktree-setup.txt`, against the plan, because FW-032 and FW-045 in
+  `framework/DECISIONS.md` name them in backticks and set-up projects carry that file.
+  Correct: those are records of past and moving places, not paths a reader should find.
+  Accepted as written; no fix.
+- No defect found in `settingsToMove` or `apply`: the refusal runs before the scratch
+  folder is made, so a refused update changes nothing, and the new file's keys win only
+  where both files agree.
+
+### Outstanding disposition
+
+- "A green self-check on a quiet machine": done above.
+- Nothing is observable only by the developer: the change has no screen.
+- This repository's own `.claude/project.json` moves when the next release is installed
+  here, by that update. Nothing to track: the update does it.
+
+### Learnings routed
+
+- The plan told the executor to drop exemptions the decision record still needed. Not
+  routed: the repository's own instructions already say a plan that touches a named
+  path lists the integrity guard, and the executor caught it on the first run.
+
+### Merged because
+
+Every check was re-run and holds, the new guards go red when the move is removed, and
+the one departure from the plan was right and is declared above.
