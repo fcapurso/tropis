@@ -87,13 +87,17 @@ function project({ version, source }) {
   return { parent, dir };
 }
 
+// The command's own temporary folder, so another run's clones are not this run's.
+const ownTmp = mkdtempSync(join(tmpdir(), 'update-tmp-'));
+afterAll(() => rmSync(ownTmp, { recursive: true, force: true }));
+
 const run = (dir, ...args) => spawnSync(
   'node',
   [join(dir, '.tropis/scripts/update.mjs'), ...args],
-  { encoding: 'utf8' },
+  { encoding: 'utf8', env: { ...process.env, TMPDIR: ownTmp } },
 );
 
-const clones = () => readdirSync(tmpdir()).filter((name) => name.startsWith('tropis-update-'));
+const clones = () => readdirSync(ownTmp).filter((name) => name.startsWith('tropis-update-'));
 
 describe('the breaking rule', () => {
   it('agrees with take-version.mjs', () => {
@@ -144,7 +148,7 @@ describe('update.mjs fetch', () => {
     } finally {
       for (const made of [highest, named, missing]) {
         const listed = clones().filter((name) => !clonesBefore.includes(name));
-        for (const name of listed) rmSync(join(tmpdir(), name), { recursive: true, force: true });
+        for (const name of listed) rmSync(join(ownTmp, name), { recursive: true, force: true });
       }
       rmSync(source.parent, { recursive: true, force: true });
       rmSync(highest.parent, { recursive: true, force: true });
