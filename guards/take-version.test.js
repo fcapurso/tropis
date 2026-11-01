@@ -12,7 +12,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import {
-  cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync,
+  chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync,
   statSync, symlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -24,6 +24,9 @@ import { appendMissingLines } from '../scripts/take-version.mjs';
 const blueprint = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_FOLDERS = ['rules', 'framework', 'commands', 'scripts', 'guards', 'templates'];
 const SLOW = 120000;
+// A spawned command that has not returned by then is killed, so a hang fails the test that
+// started it by name instead of blocking the worker until the whole run is stopped.
+const CHILD = SLOW - 20000;
 
 function git(cwd, ...args) {
   const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' });
@@ -102,10 +105,16 @@ function world({ v020 = {} } = {}) {
     },
     /** Check `ref` out in the scratch Tropis and run the command on the project. */
     take(ref, ...flags) {
+      return this.takeWith({}, ref, ...flags);
+    },
+    /** `take` with extra environment and, optionally, a shorter limit for the child. */
+    takeWith({ env = {}, timeout = CHILD }, ref, ...flags) {
       git(tropis, 'checkout', '-q', ref);
       return spawnSync('node', [join(tropis, 'scripts/take-version.mjs'), project, ...flags], {
         encoding: 'utf8',
-        env: { ...process.env, TMPDIR: tmp },
+        env: { ...process.env, TMPDIR: tmp, ...env },
+        timeout,
+        killSignal: 'SIGKILL',
       });
     },
     /** A file of the scratch Tropis at a tag. */
@@ -149,6 +158,8 @@ function takeInWorktree(w, ref, ...flags) {
   const r = spawnSync('node', [join(w.tropis, 'scripts/take-version.mjs'), worktree, ...flags], {
     encoding: 'utf8',
     env: { ...process.env, TMPDIR: w.tmp },
+    timeout: CHILD,
+    killSignal: 'SIGKILL',
   });
   return { r, worktree };
 }
@@ -734,6 +745,23 @@ describe('take-version.mjs', () => {
     expect(unbuildable.status).toBe(1);
     expect(unbuildable.stderr).toMatch(/^take-version: cannot read v0\.2\.0-9-gdeadbee/);
     expect(leftover()).toEqual([]);
+  }), SLOW);
+
+  it('stops a step that does not finish, says which, and removes its scratch folder', () => inWorld({}, (w) => {
+    w.release('v0.2.1', bumpNext);
+    // A tar that never reads its input or returns. `exec` makes the process that is
+    // stopped the sleep itself, so nothing is left holding the pipe open.
+    const fake = join(w.parent, 'fake-bin');
+    mkdirSync(fake);
+    writeFileSync(join(fake, 'tar'), '#!/bin/sh\nexec sleep 600\n');
+    chmodSync(join(fake, 'tar'), 0o755);
+    const r = w.takeWith({
+      env: { PATH: `${fake}:${process.env.PATH}`, TROPIS_STEP_TIMEOUT_MS: '3000' },
+      timeout: 30000,
+    }, 'v0.2.1');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^take-version: unpacking v0\.2\.1 did not finish within 3 s and was stopped\./m);
+    expect(takeVersionDirs(w.tmp)).toEqual([]);
   }), SLOW);
 
   it('leaves an already-pointed entry pair untouched', () => inWorld({}, (w) => {
