@@ -17,6 +17,7 @@
 # Its test tools are the ones a set-up project gets: what templates/package.json names
 # at HEAD, installed into .self-check/ (ignored by git) on first use and again whenever
 # that file changes. NODE_MODULES=<a folder holding jest and yaml> uses those instead.
+# Installed with --ignore-scripts: the package's prepare script installs a project's git hooks, and this is not a project.
 #
 # Only committed content is checked. Commit first.
 #
@@ -38,7 +39,7 @@ else
      || [ ! -x "$TOOLS/node_modules/.bin/jest" ]; then
     mv "$TOOLS/package.json.next" "$TOOLS/package.json"
     echo "Installing the self-check's test tools from templates/package.json…"
-    npm install --prefix "$TOOLS" --no-audit --no-fund --loglevel=error >/dev/null
+    npm install --prefix "$TOOLS" --ignore-scripts --no-audit --no-fund --loglevel=error >/dev/null
   else
     rm "$TOOLS/package.json.next"
   fi

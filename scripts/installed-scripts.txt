@@ -2,6 +2,7 @@ next.mjs
 next-work.js
 board-bands.js
 build-backlog-board.mjs
+install-board-hooks.mjs
 dispatch.mjs
 plan-binding.js
 projections.js
