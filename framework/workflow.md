@@ -447,6 +447,15 @@ which version a result came from. A result that holds only on some versions is a
 finding about the framework — change it so it no longer depends on what varies — not
 a reason to require a version.
 
+**Judge the check by what the agent did, not by what it says it did.** A run that prints
+only the agent's final reply hides the commands it ran and what answered them, so a check
+whose pass depends on a hook cannot tell a hook that refused a command from an agent that
+never ran it. Run the probe so its tool calls show — in Claude Code,
+`claude -p --output-format stream-json --verbose` prints each call and each reply, a
+hook's included — and quote the call and its answer in the record. Found reviewing the
+hook FW-040 added: the executor's probe passed but could not say whether the hook had
+fired, and a second run with the calls visible showed the refusal reaching the agent.
+
 **A probe on someone's own machine is not given only the repository.** The agent tool
 also loads that person's own instructions, the ones that apply to every project. When
 the change repeats something already in them, the probe follows those and passes
