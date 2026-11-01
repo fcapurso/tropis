@@ -503,3 +503,201 @@ its actual output, the red checks' failing test names, the criteria table, the p
 answer, and the worktree path used. Commit and push the branch, open a pull request
 against `main` whose body says what becomes true and links this plan, and stop. Do not
 write a review record and do not merge.
+
+## Handover report
+
+Platform for every check: git 2.49.0, node v22.15.0, Darwin arm64; agent tool Claude Code
+2.1.300. Started from `aea9ea9` (`origin/main`). Worked from no named external source: the
+plan-reading helpers in `guards/catalog-drift.test.js` were followed for `waitingPlans`
+(this repository's own, as the plan allows); everything else is written against this
+repository's names.
+
+### Task completion
+
+- Task 0: done. `npm --prefix .tropis ci`, clean `git status --porcelain`, and
+  `bash scripts/check-blueprint.sh` ending `Self-check passed: …`.
+- Task 1: done, committed alone (`test(next): …`). Run against today's `next.mjs`:
+  `Tests: 16 failed, 55 passed, 71 total`. Every new test failed for its named reason
+  except test 13 (never runs the flush), which passes today and guards the future. Test 4
+  (arcs after both streams) first passed vacuously because `indexOf` returned -1; I
+  added an assertion that the framework heading exists, so it then failed as it should.
+  The 16 failing: tests 1-12 (test 10 and 11 share two tests, below), plus the four
+  existing tests whose format changed (suggests by band, ahead-of-it, bundle, red main).
+- Task 2 and Task 3: done, but in one commit (`feat(next): …`), not two; see Judgment
+  calls. After it: `Tests: 71 passed, 71 total` for the three guards.
+- Red checks, each as a throwaway commit through the snippet, then dropped:
+  - `waitingPlans` without the handover-report skip: 1 failed, "is not marked by a plan
+    that was executed, names another entry, or hides Delivers in a fence" (test 9).
+  - Blocked worked out on a catalog filtered to the layer: 1 failed, "shows a product
+    entry waiting on a framework entry as blocked, not ready" (test 3).
+  - `toShape` without its blocker check: 1 failed, "lists the unblocked ideas banded A or B
+    to shape, with bands" (test 5).
+  - Age threshold without `entries.length >= 1`: 1 failed, "names /flush-upstream when the
+    queue is worth a sitting" (test 12).
+- Task 4: done; `bash scripts/check-blueprint.sh` last line `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.`
+- Task 5: done (probe, suite, criteria, catalog).
+- Task 6: this report.
+
+### Verification results
+
+- Full suite after the catalog commit:
+  `bash scripts/check-blueprint.sh` -> `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+  `npm --prefix .tropis test` -> `Test Suites: 13 passed, 13 total`, `Tests: 133 passed,
+  133 total`. The known `set-up-project` failure did not occur.
+- The fresh-agent check. Scratch project in `$TMPDIR` (since deleted): a ready product
+  entry banded B with a waiting plan, a ready framework entry banded A with none, an
+  unblocked product idea banded A, three queue entries, with invented ids and titles. Its
+  report was piped, with the plan's prompt, to `claude -p --tools ""` run from a folder
+  that is not a repository (Claude Code 2.1.300, Darwin arm64). Answer, in short:
+  dispatch the kettle-lid plan at its path; write a plan for rota-check; one idea to shape
+  (tea-labels); yes, run `/flush-upstream` (three entries waiting). It also noted the
+  missing `origin`. Passed on the first run; the wording needed no change. Caveat: the
+  run was local, so the developer's user-level instructions loaded too; they say nothing
+  about backlog reports, as the plan stated.
+- Criteria, sixteen, with the test in `guards/next-report.test.js` that covers each
+  (titles abbreviated):
+
+| Entry | Criterion | Test |
+|---|---|---|
+| drop-out | two streams, each with next step, action, Ready, Blocked; empty layer reads (none) | "prints a product and a framework stream…"; "reads (none) for a layer with no entries" |
+| drop-out | ready and blocked from the whole catalog | "shows a product entry waiting on a framework entry as blocked, not ready" |
+| drop-out | arcs after both streams | "prints arc progress after both streams" |
+| drop-out | with bands, unblocked A/B ideas listed to shape | "lists the unblocked ideas banded A or B to shape, with bands" |
+| drop-out | with bands, arcs that lost to a higher band named | "says when an arc under way lost its turn to a higher band, and not on a tie" |
+| drop-out | without bands, both streams and nothing about shaping or lost turns | "says nothing about shaping or lost turns without bands" |
+| drop-out | the test file covers each | this table |
+| planned | entry in an unexecuted plan's Delivers listed with its path, marked while shaped | "points at a waiting plan and says to dispatch it" |
+| planned | executed plan, other id, or fenced heading marks nothing | "is not marked by a plan that was executed, names another entry, or hides Delivers in a fence" |
+| planned | next step says dispatch with path, otherwise write its plan, naming the spec | "points at a waiting plan…" (dispatch, with and without bands); the write-its-plan wording and spec in "prints the two streams the same…" and the fence test |
+| planned | no plans folder prints as without plans | "runs without a plans folder"; "prints the two streams the same with no bands file, a header-only one, and no plans folder" |
+| planned | the test file covers each | this table |
+| flush | three entries or one entry plus a date over 14 days names the flush and the threshold | "names /flush-upstream when the queue is worth a sitting" |
+| flush | below both thresholds names nothing | same test (two entries flushed 14 days ago, two undated, none at 20 days) |
+| flush | names, never runs; check fails if next.mjs imports child_process | "never runs the flush itself" |
+| flush | no queue file, no section | same flush test, last assertion |
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: `feature-catalog.yaml`,
+`framework/DECISIONS.md`, `guards/next-report.test.js`, `scripts/next-work.js`,
+`scripts/next.mjs`, `templates/README.md` (6 files, 468 insertions, 88 deletions); with
+this report, the plan file too. Every file is in the plan's File Structure table.
+Worktree used: `../tropis-next-report` (a sibling of the primary checkout), made by
+`.tropis/scripts/isolate-for-plan.sh`.
+
+Existing assertions updated to the new format (none removed): "suggests by band" (step
+line now ends in the action), "names the blocked entry that would sort ahead…" and "names
+the rest of the suggestion's bundle…" (step line followed by the action before the
+newline), "says on its first line when the main branch is red" (first five lines now
+include the stream heading), and "is unchanged without bands" (replaced by the new
+constant `EXPECTED_WITHOUT_BANDS` and renamed).
+
+### Judgment calls
+
+- Tasks 2 and 3 are one commit. `next.mjs` was rewritten in one pass and the flush block
+  is small and independent of the streams; splitting would have meant a commit with test
+  12 red by design. The red checks and the green run cover both halves.
+- Test 10 ("no plans folder") and test 11 are two tests: 11 also checks an empty plans
+  folder, 10 only checks the run is clean with no folder. Both compare to the new
+  constant.
+- The decision-3 action is `dispatch <plan>` then ` (<spec>)` when the entry has a spec,
+  so a Next step line ends in the spec's path for an entry with both. Test 8 asserts the
+  "ends with `— dispatch <plan>`" form on an entry with no spec, and the
+  with-spec form on the other.
+- `waitingPlans` reads Delivers from the fence-stripped text, so a fenced `## Delivers`
+  is ignored (the plan's test 9); the guard in `catalog-drift.test.js` reads the raw
+  text for Delivers, which I left alone.
+- The primary checkout's local `main` was behind `origin/main`, so the isolation helper
+  could not read the plan; I fast-forwarded the primary `main` to `origin/main` (no local
+  work lost) and re-ran the helper.
+
+### What the plan got wrong
+
+- Test 8 says the Next step line "ends `— dispatch <plan>`", which contradicts
+  Decision 3 for an entry that has a spec (the spec follows in parentheses). Resolved as
+  above.
+- The plan lists test 4's check as `indexOf('Arcs under way') > indexOf('== Framework
+  work ==')`, which passes against today's report because both are checked as -1 versus
+  a found position; it needs the heading-exists assertion to fail first.
+- Nothing else; the formats in Decisions 2-6 and the expected constant matched the output
+  byte for byte.
+
+### Outstanding
+
+- Nothing blocking. The board's top box is unchanged, as scoped.
+- During the red checks I ran a helper that committed and hard-reset a throwaway commit
+  before its patch had applied, which dropped my two real commits from the branch; I
+  restored them from the reflog (`reset --hard` to the feature commit) and re-ran the
+  four checks, so the branch holds exactly the intended commits. Worth knowing only
+  because the history shows no trace of it.
+- Merge authority is parent review: not merged, no review record written.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `95c58bd` (the branch with
+`origin/main` at `448df2a` merged in), with git 2.49.0 and Node v22.15.0 in Claude Code
+2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` after merging `origin/main`: `Self-check passed:
+  every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed`, `Tests: 133 passed`.
+- `guards/next-report.test.js`, `guards/check-drift.test.js` and
+  `guards/backlog-board.test.js` through the Task 0 snippet: `Tests: 71 passed, 71 total`.
+- Re-break, throwaway commit then dropped: Blocked worked out on a catalog filtered to the
+  layer, and the flush age threshold without its waiting-entry condition — `Tests: 2
+  failed, 69 passed`. A second: `lostTurns` never records a lost arc — `Tests: 1 failed,
+  70 passed`.
+- The source report run on a scratch copy of this repository's own catalog, bands and
+  plans: two streams, the framework one `(none)`; `prerequisite-check-refuses-old-node`
+  (the entry's evidence case) and `contributors-know-how-to-contribute` listed with their
+  plans as planned, not dispatched; seven band B ideas under To shape.
+- Scope: `git diff --stat origin/main...HEAD` lists the plan, `feature-catalog.yaml`,
+  `framework/DECISIONS.md`, `guards/next-report.test.js`, `scripts/next-work.js`,
+  `scripts/next.mjs` and `templates/README.md`, all in *File Structure*.
+- The probe was not re-run; its prompt, answer and tool are recorded above.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing (the probe's invented
+ids appear only in this report).
+
+- The handover's diagnosis that the isolation helper failed because the primary
+  checkout's `main` was behind `origin/main` holds: the plan landed on `origin/main` in
+  `aea9ea9` while the primary checkout's `main` was at `783dd62`. The kick-off prompt sent
+  the executor to the primary checkout; the helper refused rather than isolating on a
+  base without the plan. The executor fast-forwarded that `main` to `origin/main`, which
+  lost nothing (it is now an ancestor of `origin/main`).
+- Decision 3's "followed by the spec" read as applying to both actions, so a step with a
+  waiting plan and a spec reads `dispatch <plan> (<spec>)`. Accepted as is: it keeps the
+  design visible, and the probe read it right.
+- Fixed here, mechanical: FW-017's amended line ran past the record's wrap width;
+  rewrapped in `2c6beda`, no wording changed.
+
+### Outstanding disposition
+
+- The executor's reflog recovery during the red checks: dropped — the branch holds the
+  intended commits, and the checks above were re-run on it.
+- The helper refusing when the primary checkout is behind: dropped as an entry — it
+  refused out loud, which is the behaviour `isolation-refuses-a-base-without-the-plan`
+  shipped, and a fetch and fast-forward clears it.
+- The board's top box still makes one suggestion across layers: out of scope by the
+  plan, recorded in FW-042's consequences; no entry until someone finds it misleading.
+- No criterion waits on the developer: the report is terminal text checked by the guard.
+
+### Learnings routed
+
+- Test 4 as specified could pass on output lacking the heading (`indexOf` -1). The
+  planning rule already says a check must be able to fail (FW-041); nothing new to route.
+- Nothing else generalises beyond this plan; FW-042 records the design choice.
+
+### Merged because
+
+Every criterion has a test that goes red without its code, the self-check and the
+installed checks pass with `main` merged in, and the report reads right on this
+repository's own backlog.

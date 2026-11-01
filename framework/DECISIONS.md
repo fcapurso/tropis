@@ -630,7 +630,8 @@ never writes under docs/, so an update does not replace a project's verdicts. `/
 reads those bands when the file has rows and suggests by them — highest band first,
 an arc already under way first within a band, D and E listed and never suggested. With
 no bands file, or a header and no rows, `/next` prints what it printed before bands
-existed. Amended by FW-034: four bands, C and D listed and never suggested.
+existed. Amended by FW-034: four bands, C and D listed and never suggested. Amended by
+FW-042: without bands it prints a product and a framework stream.
 
 **Rejected:** Publishing to a hosted page, which works in one agent tool, and whose
 address belongs to one project. Bands inside the catalog, a judgment beside facts,
@@ -1297,3 +1298,25 @@ all, have no checkable description short of the result itself.
 **Consequences:** A plan's expected outputs are invariants and failure behaviour rather
 than counts. A change built by its author is reviewed by a fresh agent, which writes the
 review record; the specifying session is not its reviewer.
+
+## FW-042: The backlog report shows product and framework work as two streams
+
+**Date:** 2026-11-01 · **Status:** Accepted
+
+**Decision:** The backlog report prints a product stream and a framework stream, each
+with its own next step and its own Building, Ready and Blocked lists, and, with bands,
+the ideas banded A or B that are ready to shape. Readiness is worked out on the whole
+catalog before entries are sorted into streams, so a product entry waiting on a
+framework entry shows as blocked. A next step says what to do: dispatch the plan that
+delivers it when one is waiting, found by its Delivers section, or write its plan.
+Arcs under way follow both streams, and with bands an arc whose next entry lost to a
+higher band says so. Without bands the report still prints both streams, and nothing
+about shaping or lost turns.
+
+**Rejected:** One list across layers, where a ready entry of one layer hides the other
+layer's next step. Two streams only when bands exist, which would give a project two
+shapes of report and a reason not to band. Finding a plan through `refs`, which the
+catalog rule keeps for the design.
+
+**Consequences:** A project with no framework entries sees a framework stream reading
+(none). The board's top box still makes one suggestion across layers; it is unchanged.

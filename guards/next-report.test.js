@@ -9,7 +9,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import {
-  mkdtempSync, mkdirSync, copyFileSync, writeFileSync, symlinkSync, rmSync, existsSync, chmodSync,
+  readFileSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, symlinkSync, rmSync, existsSync, chmodSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -69,7 +69,7 @@ const UNCHANGED_CATALOG = `- id: shipped-step
   refs: []
 `;
 
-function stageReport(catalog, bands, queue) {
+function stageReport(catalog, bands, queue, plans) {
   const dir = mkdtempSync(join(tmpdir(), 'next-report-'));
   const fw = join(dir, '.tropis');
   mkdirSync(join(fw, 'scripts'), { recursive: true });
@@ -85,6 +85,12 @@ function stageReport(catalog, bands, queue) {
   if (queue !== undefined) {
     mkdirSync(join(dir, 'docs'), { recursive: true });
     writeFileSync(join(dir, 'docs/BLUEPRINT-UPSTREAM.md'), queue);
+  }
+  if (plans !== undefined) {
+    mkdirSync(join(dir, 'docs/superpowers/plans'), { recursive: true });
+    for (const [name, text] of Object.entries(plans)) {
+      writeFileSync(join(dir, 'docs/superpowers/plans', name), text);
+    }
   }
   symlinkSync(resolve(here, '../node_modules'), join(fw, 'node_modules'));
   const run = spawnSync('node', [join(fw, 'scripts/next.mjs')], { cwd: dir, encoding: 'utf8' });
@@ -278,13 +284,14 @@ Last flushed: 2026-10-01
     expect(one.stdout).toContain('Waiting in the upstream queue\n  1 entry; no "Last flushed" date found\n');
   });
 
-  // Captured from origin/main's next.mjs and next-work.js against UNCHANGED_CATALOG.
-  // A project with no bands file, and one whose bands file is only a header, must
-  // keep printing this byte for byte. The first line is the main branch's status, which
-  // cannot be asked for in a staged project with no origin.
-  const UNCHANGED_WITHOUT_BANDS = `Main branch: could not tell — no remote named origin.
+  // Two streams, then the sections after them. A project with no bands file, and one
+  // whose bands file is only a header, must print this byte for byte. The first line is
+  // the main branch's status, which cannot be asked for in a staged project with no origin.
+  const EXPECTED_WITHOUT_BANDS = `Main branch: could not tell — no remote named origin.
 
-Next step: ready-step (docs/specs/arc-design.md)
+== Product work ==
+
+Next step: ready-step — write its plan (docs/specs/arc-design.md)
 
 Building (catalog status)
   (none)
@@ -296,6 +303,9 @@ Blocked
   - [feature] blocked-step: Blocked step
       waiting on: not-shipped
 
+== Framework work ==
+  (none)
+
 Arcs under way
   docs/specs/arc-design.md — 1 of 2 shipped
     ✓ shipped-step
@@ -304,14 +314,24 @@ Arcs under way
 1 idea(s) not yet shaped.
 `;
 
-  it('is unchanged without bands', () => {
+  it('prints the two streams the same with no bands file, a header-only one, and no plans folder', () => {
     const none = stageReport(UNCHANGED_CATALOG);
     const header = stageReport(UNCHANGED_CATALOG, HEADER_ONLY_BANDS);
+    const emptyPlans = stageReport(UNCHANGED_CATALOG, undefined, undefined, {});
     expect(none.stderr).toBe('');
     expect(header.stderr).toBe('');
-    expect(none.stdout).toBe(UNCHANGED_WITHOUT_BANDS);
-    expect(header.stdout).toBe(UNCHANGED_WITHOUT_BANDS);
+    expect(emptyPlans.stderr).toBe('');
+    expect(none.stdout).toBe(EXPECTED_WITHOUT_BANDS);
+    expect(header.stdout).toBe(EXPECTED_WITHOUT_BANDS);
+    expect(emptyPlans.stdout).toBe(EXPECTED_WITHOUT_BANDS);
     expect(none.stdout).toBe(header.stdout);
+  });
+
+  it('runs without a plans folder', () => {
+    const { stdout, stderr, status } = stageReport(UNCHANGED_CATALOG);
+    expect(status).toBe(0);
+    expect(stderr).toBe('');
+    expect(stdout).toBe(EXPECTED_WITHOUT_BANDS);
   });
 
   it('suggests by band', () => {
@@ -343,7 +363,7 @@ later:
 `;
     const { stdout, stderr } = stageReport(catalog, bands);
     expect(stderr).toBe('');
-    expect(stdout).toContain('Next step: later — band A');
+    expect(stdout).toContain('Next step: later — band A — write its plan');
     const ready = stdout.slice(stdout.indexOf('Ready to start'), stdout.indexOf('Blocked'));
     expect(ready.indexOf('  - [A] [feature] later: Later')).toBeGreaterThan(-1);
     expect(ready.indexOf('  - [A] [feature] later: Later')).toBeLessThan(
@@ -526,7 +546,7 @@ ${extra}`;
     );
     expect(ahead.stderr).toBe('');
     expect(ahead.stdout).toContain(
-      'Next step: now — band B\n  Ahead of it, blocked: held — band A, waiting on gate\n',
+      'Next step: now — band B — write its plan\n  Ahead of it, blocked: held — band A, waiting on gate\n',
     );
 
     const behind = stageReport(
@@ -545,7 +565,7 @@ ${extra}`;
       + `held:\n${bundled('B', 1, 5)}loner:\n${scored('B', 5, 1)}gate:\n  band: B\n`;
     const { stdout, stderr } = stageReport(catalog, bands);
     expect(stderr).toBe('');
-    expect(stdout).toContain('Next step: now — band A\n  With it, bundle pair: mate-a, mate-b, held\n');
+    expect(stdout).toContain('Next step: now — band A — write its plan\n  With it, bundle pair: mate-a, mate-b, held\n');
   });
 
   it('prints no With it line when the suggestion has no bundle', () => {
@@ -567,6 +587,162 @@ ${extra}`;
     );
     const none = stageReport(catalog, `left:\n  band: D\ndecide:\n  band: C\nheld:\n  band: C\n`);
     expect(none.stdout).not.toContain('Highest blocked');
+  });
+
+  // Entries for the stream, shape, lost-turn and plan tests.
+  const entryOf = (id, layer, status, { spec, blockedBy } = {}) => `- id: ${id}
+  title: ${id}
+  status: ${status}
+  type: feature
+  layer: ${layer}
+  value: ${id}.
+  acceptanceCriteria:
+    - ${id}.
+  modules: []
+${blockedBy ? `  blockedBy:\n    - ${blockedBy}\n` : ''}  refs: ${spec ? `\n    - docs/specs/${spec}.md` : '[]'}
+`;
+  const TWO_ARCS = entryOf('prod-done', 'product', 'shipped', { spec: 'prod-design' })
+    + entryOf('prod-next', 'product', 'shaped', { spec: 'prod-design' })
+    + entryOf('fw-done', 'framework', 'shipped', { spec: 'fw-design' })
+    + entryOf('fw-next', 'framework', 'shaped', { spec: 'fw-design' });
+  const streamOf = (stdout, title) => {
+    const from = stdout.indexOf(`== ${title} ==`);
+    const rest = stdout.slice(from + 1);
+    const next = rest.search(/\n== |\nArcs under way|\n\d+ idea\(s\)/);
+    return stdout.slice(from, next === -1 ? undefined : from + 1 + next);
+  };
+
+  it('prints a product and a framework stream, each with its own next step and lists', () => {
+    const { stdout, stderr } = stageReport(TWO_ARCS);
+    expect(stderr).toBe('');
+    const product = streamOf(stdout, 'Product work');
+    const framework = streamOf(stdout, 'Framework work');
+    expect(stdout.indexOf('== Product work ==')).toBeLessThan(stdout.indexOf('== Framework work =='));
+    expect(product).toContain('Next step: prod-next — write its plan (docs/specs/prod-design.md)');
+    expect(framework).toContain('Next step: fw-next — write its plan (docs/specs/fw-design.md)');
+    const readyOf = (text) => text.slice(text.indexOf('Ready to start'), text.indexOf('\nBlocked'));
+    expect(readyOf(product)).toContain('prod-next');
+    expect(readyOf(product)).not.toContain('fw-next');
+    expect(readyOf(framework)).toContain('fw-next');
+    expect(readyOf(framework)).not.toContain('prod-next');
+  });
+
+  it('reads (none) for a layer with no entries', () => {
+    const { stdout, stderr } = stageReport(entryOf('only-product', 'product', 'shaped'));
+    expect(stderr).toBe('');
+    expect(stdout).toContain('== Framework work ==\n  (none)\n');
+  });
+
+  it('shows a product entry waiting on a framework entry as blocked, not ready', () => {
+    const { stdout, stderr } = stageReport(
+      entryOf('fw-gate', 'framework', 'idea')
+      + entryOf('prod-held', 'product', 'shaped', { blockedBy: 'fw-gate' }),
+    );
+    expect(stderr).toBe('');
+    const product = streamOf(stdout, 'Product work');
+    const blockedPart = product.slice(product.indexOf('\nBlocked'));
+    expect(blockedPart).toContain('prod-held: prod-held');
+    expect(blockedPart).toContain('waiting on: fw-gate');
+    expect(product.slice(product.indexOf('Ready to start'), product.indexOf('\nBlocked'))).not.toContain('prod-held');
+  });
+
+  it('prints arc progress after both streams', () => {
+    const { stdout } = stageReport(TWO_ARCS);
+    expect(stdout.indexOf('== Framework work ==')).toBeGreaterThan(-1);
+    expect(stdout.indexOf('Arcs under way')).toBeGreaterThan(stdout.indexOf('== Framework work =='));
+  });
+
+  const IDEAS = entryOf('idea-a', 'product', 'idea') + entryOf('idea-b', 'product', 'idea')
+    + entryOf('idea-c', 'product', 'idea') + entryOf('idea-held', 'product', 'idea', { blockedBy: 'idea-c' });
+  const IDEA_BANDS = 'idea-a:\n  band: A\nidea-b:\n  band: B\nidea-c:\n  band: C\nidea-held:\n  band: A\n';
+
+  it('lists the unblocked ideas banded A or B to shape, with bands', () => {
+    const { stdout, stderr } = stageReport(IDEAS, IDEA_BANDS);
+    expect(stderr).toBe('');
+    const part = stdout.slice(stdout.indexOf('To shape (ideas banded A or B)'), stdout.indexOf('\n== Framework work =='));
+    expect(part).toContain('idea-a: idea-a');
+    expect(part).toContain('idea-b: idea-b');
+    expect(part).not.toContain('idea-c');
+    expect(part).not.toContain('idea-held');
+  });
+
+  const LOST = entryOf('arc-done', 'product', 'shipped', { spec: 'arc-design' })
+    + entryOf('arc-next', 'product', 'shaped', { spec: 'arc-design' })
+    + entryOf('other', 'product', 'shaped');
+
+  it('says when an arc under way lost its turn to a higher band, and not on a tie', () => {
+    const lost = stageReport(LOST, 'arc-next:\n  band: C\nother:\n  band: B\n');
+    expect(lost.stderr).toBe('');
+    expect(lost.stdout).toContain('    lost its turn: arc-next is band C, behind other (band B)\n');
+    const tie = stageReport(LOST, 'arc-next:\n  band: B\nother:\n  band: B\n');
+    expect(tie.stdout).not.toContain('lost its turn');
+  });
+
+  it('says nothing about shaping or lost turns without bands', () => {
+    const catalog = IDEAS + LOST;
+    const none = stageReport(catalog);
+    const header = stageReport(catalog, HEADER_ONLY_BANDS);
+    for (const run of [none, header]) {
+      expect(run.stderr).toBe('');
+      expect(run.stdout).not.toContain('To shape');
+      expect(run.stdout).not.toContain('lost its turn');
+      expect(run.stdout).toContain('== Product work ==');
+      expect(run.stdout).toContain('== Framework work ==');
+    }
+  });
+
+  const PLAN = (delivers, extra = '') => `# A plan\n\n## Delivers\n\n${delivers}\n\n## Tasks\n\nDo it.\n${extra}`;
+  const PLAN_PATH = 'docs/superpowers/plans/2026-11-01-a-plan.md';
+
+  it('points at a waiting plan and says to dispatch it', () => {
+    const withBands = stageReport(shapedEntry('target', 'Target'), 'target:\n  band: B\n', undefined, {
+      '2026-11-01-a-plan.md': PLAN('target'),
+    });
+    expect(withBands.stderr).toBe('');
+    expect(withBands.stdout).toContain(`  - [B] [feature] target: Target — ${PLAN_PATH} (planned, not dispatched)\n`);
+    expect(withBands.stdout).toContain(`Next step: target — band B — dispatch ${PLAN_PATH}\n`);
+
+    const noBands = stageReport(UNCHANGED_CATALOG, undefined, undefined, {
+      '2026-11-01-a-plan.md': PLAN('ready-step'),
+    });
+    expect(noBands.stdout).toContain(`  - [feature] ready-step: Ready step — ${PLAN_PATH} (planned, not dispatched)\n`);
+    expect(noBands.stdout).toContain(`Next step: ready-step — dispatch ${PLAN_PATH} (docs/specs/arc-design.md)\n`);
+  });
+
+  it('is not marked by a plan that was executed, names another entry, or hides Delivers in a fence', () => {
+    const { stdout, stderr } = stageReport(shapedEntry('target', 'Target'), 'target:\n  band: B\n', undefined, {
+      '2026-11-01-done.md': PLAN('target', '\n## Handover report\n\nDone.\n'),
+      '2026-11-02-other.md': PLAN('someone-else'),
+      '2026-11-03-fenced.md': '# Fenced\n\n```\n## Delivers\n\ntarget\n```\n',
+    });
+    expect(stderr).toBe('');
+    expect(stdout).not.toContain('planned, not dispatched');
+    expect(stdout).toContain('Next step: target — band B — write its plan\n');
+  });
+
+  const ymd = (daysAgo) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const queueOf = (flushed, count) => `# Upstream queue\n\n${flushed ? `Last flushed: ${flushed}\n\n` : ''}`
+    + Array.from({ length: count }, (_, i) => `- ${ymd(1)} — Purpose ${i}.\n`).join('');
+
+  it('names /flush-upstream when the queue is worth a sitting', () => {
+    const run = (flushed, count) => stageReport(CATALOG, undefined, queueOf(flushed, count));
+    expect(run(ymd(2), 3).stdout).toContain('\n  Run /flush-upstream: 3 entries waiting (three or more).\n');
+    expect(run(ymd(20), 1).stdout).toContain('\n  Run /flush-upstream: last flushed 20 days ago (more than 14).\n');
+    expect(run(ymd(20), 3).stdout).toContain(
+      '\n  Run /flush-upstream: 3 entries waiting (three or more); last flushed 20 days ago (more than 14).\n',
+    );
+    expect(run(ymd(14), 2).stdout).not.toContain('/flush-upstream');
+    expect(run(undefined, 2).stdout).not.toContain('/flush-upstream');
+    expect(run(ymd(20), 0).stdout).not.toContain('/flush-upstream');
+    expect(stageReport(CATALOG).stdout).not.toContain('Waiting in the upstream queue');
+  });
+
+  it('never runs the flush itself', () => {
+    expect(readFileSync(join(shipped, 'next.mjs'), 'utf8')).not.toMatch(/child_process/);
   });
 
   // The refresh point has to be an ancestor: a commit cannot contain its own hash.
@@ -704,10 +880,12 @@ esac
         encoding: 'utf8',
       });
       expect(stderr).toBe('');
-      expect(stdout.split('\n').slice(0, 3)).toEqual([
+      expect(stdout.split('\n').slice(0, 5)).toEqual([
         'Main branch: red — the pipeline failed on bad0000 (break it). Run: https://github.com/acme/example/actions/runs/1',
         '',
-        'Next step: second-step (docs/specs/example-design.md)',
+        '== Product work ==',
+        '',
+        'Next step: second-step — write its plan (docs/specs/example-design.md)',
       ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
