@@ -182,16 +182,18 @@ const HEADER_FIELDS = [
   { key: 'tier', name: 'Model tier', cut: true },
   { key: 'merge', name: 'Merge authority', cut: true },
   { key: 'requires', name: 'Requires', cut: false },
+  { key: 'mergesAfter', name: 'Merges after', cut: false },
 ];
 
 /**
- * The plan's three header fields, each read from the line it starts on to the end of its
+ * The plan's header fields, each read from the line it starts on to the end of its
  * paragraph (a blank line, or a line starting with bold, ends it). A field is written
  * `**Name:** value` or with the bold spanning the colon, `**Name: value.**`. Tier and
- * merge authority keep the text before the first full stop; Requires keeps all of it.
+ * merge authority keep the text before the first full stop; Requires and Merges after keep
+ * all of it.
  * `line` is the 1-based line the field starts on, null when the plan has no such field.
  * @param {string} markdown
- * @returns {Record<'tier'|'merge'|'requires', {value: string, line: number|null}>}
+ * @returns {Record<'tier'|'merge'|'requires'|'mergesAfter', {value: string, line: number|null}>}
  */
 export function headerFields(markdown) {
   const text = markdown.split('\n');
@@ -223,6 +225,79 @@ export function headerFields(markdown) {
     result[key] = { value: rest.trim(), line: start + 1 };
   }
   return result;
+}
+
+const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * The entry ids in the plan's `Merges after` field, in order, without duplicates.
+ * @param {string} markdown
+ * @returns {string[]}
+ */
+export function mergesAfterIds(markdown) {
+  const { value } = headerFields(markdown).mergesAfter;
+  return [...new Set(value.split(/[\s,]+/).filter((t) => ID.test(t)))];
+}
+
+/**
+ * The catalog ids under `## Delivers`: one per line or comma separated, an optional
+ * leading `-` or `*`, comments ignored, `None.` for no ids.
+ * @param {string} markdown
+ * @returns {string[]}
+ */
+export function deliversIds(markdown) {
+  const section = extractSection(markdown.replace(/<!--[\s\S]*?-->/g, ''), 'Delivers');
+  if (section == null || section === 'None.') return [];
+  const ids = [];
+  for (const line of section.split('\n')) {
+    for (const part of line.split(',')) {
+      const token = part.trim().replace(/^[-*]\s*/, '');
+      if (ID.test(token)) ids.push(token);
+    }
+  }
+  return ids;
+}
+
+/** Index one past the last line of the header paragraph starting at `start`. */
+function paragraphEnd(lines, start) {
+  let i = start + 1;
+  while (i < lines.length && lines[i].trim() !== '' && !/^ *\*\*/.test(lines[i])) i++;
+  return i;
+}
+
+/**
+ * The plan with its header saying it merges after the ids it already names plus `ids`:
+ * existing ids first, then new ones in the order given; never removes one. An existing
+ * field is replaced whole by one line; otherwise the line is a paragraph of its own after
+ * the last of Requires, Merge authority and Model tier, or before the first `## ` heading.
+ * Byte for byte the input when nothing is new.
+ * @param {string} markdown
+ * @param {string[]} ids
+ * @returns {string}
+ */
+export function withMergesAfter(markdown, ids) {
+  const have = mergesAfterIds(markdown);
+  const all = [...new Set([...have, ...ids])];
+  if (all.length === have.length) return markdown;
+  const line = `**Merges after:** ${all.join(', ')}`;
+  const lines = markdown.split('\n');
+  const startOf = (name) => lines.findIndex((l) => new RegExp(`^ *\\*\\*${name}(:\\*\\*|\\*\\*:|:)`).test(l));
+  const existing = startOf('Merges after');
+  if (existing !== -1) {
+    lines.splice(existing, paragraphEnd(lines, existing) - existing, line);
+    return lines.join('\n');
+  }
+  const anchors = ['Requires', 'Merge authority', 'Model tier'].map(startOf).filter((i) => i !== -1);
+  let at;
+  if (anchors.length) {
+    at = paragraphEnd(lines, Math.max(...anchors));
+  } else {
+    at = lines.findIndex((l) => l.startsWith('## '));
+    if (at === -1) at = lines.length;
+  }
+  lines.splice(at, 0, ...(at > 0 && lines[at - 1].trim() !== '' ? [''] : []), line,
+    ...(at >= lines.length || lines[at]?.trim() !== '' ? [''] : []));
+  return lines.join('\n');
 }
 
 /**
