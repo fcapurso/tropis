@@ -14,9 +14,9 @@
  * Run through `.tropis/scripts/isolate-for-plan.sh`, which sits beside it.
  */
 import { readFileSync, existsSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { validateDispatchable, isSiblingWorktree, checkoutName } from './plan-binding.js';
+import { validateDispatchable, isSiblingWorktree, checkoutName, isolationBase } from './plan-binding.js';
 import { mainStatus } from './main-status.mjs';
 
 const planArg = process.argv[2];
@@ -68,11 +68,48 @@ for (const row of v.repos) {
     );
     process.exit(1);
   }
-  targets.push({ isolation: row.isolation, cwd });
+  targets.push({ isolation: row.isolation, cwd, checkout: checkoutName(row.checkout) });
+}
+
+const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' });
+
+// A worktree is cut from a commit, and the executor reads the plan from it. In the
+// checkout holding the plan, refuse a base that lacks the plan (an uncommitted or
+// unpushed plan leaves the executor with nothing to execute), and note one that is not
+// on the remote's main branch, where the review record will be read from. The other
+// checkouts hold no plan, so nothing is checked in them.
+const notes = [];
+const planPath = relative(repoRoot, resolve(repoRoot, planArg));
+for (const { isolation, cwd, checkout } of targets) {
+  if (cwd !== repoRoot) continue;
+  const start = isolationBase(isolation);
+  const commit = git(repoRoot, 'rev-parse', '--verify', '--quiet', `${start}^{commit}`);
+  if (commit.status !== 0) {
+    process.stderr.write(`refusing to isolate: ${start} is not a commit in ${checkout}. Nothing was created.\n`);
+    process.exit(1);
+  }
+  const sha = commit.stdout.trim();
+  const short = sha.slice(0, 7);
+  if (git(repoRoot, 'cat-file', '-e', `${sha}:${planPath}`).status !== 0) {
+    process.stderr.write(
+      `refusing to isolate: ${planPath} is not committed in ${short} (${start}), the commit ${checkout} would branch from. `
+      + 'Commit the plan and push it to that base first. Nothing was created.\n',
+    );
+    process.exit(1);
+  }
+  const remoteMain = ['refs/remotes/origin/HEAD', 'refs/remotes/origin/main']
+    .find((ref) => git(repoRoot, 'rev-parse', '--verify', '--quiet', ref).status === 0);
+  if (remoteMain && git(repoRoot, 'merge-base', '--is-ancestor', sha, remoteMain).status !== 0) {
+    notes.push(
+      `Note: ${short} (${start}) is not on ${remoteMain.replace('refs/remotes/', '')}, `
+      + "where the plan's review record is read from. Push it there before the review.",
+    );
+  }
 }
 
 // Before any worktree: whether the main branch is red. It informs; isolation goes on.
 process.stdout.write(`${mainStatus(repoRoot).line}\n`);
+for (const note of notes) process.stdout.write(`${note}\n`);
 
 for (const { isolation, cwd } of targets) {
   const r = spawnSync(isolation, { cwd, shell: true, encoding: 'utf8' });

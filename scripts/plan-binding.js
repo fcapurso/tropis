@@ -101,6 +101,23 @@ export function isSiblingWorktree(isolation) {
 }
 
 /**
+ * The commit a `git worktree add` isolation command branches from: its start point, or
+ * HEAD when it gives none. Flags that take a value (`-b`, `-B`, `--reason`) are skipped
+ * with that value; the first remaining word is the path, the second the start point.
+ * @param {string} isolation
+ * @returns {string}
+ */
+export function isolationBase(isolation) {
+  const words = isolation.trim().split(/\s+/).slice(3);
+  const rest = [];
+  for (let i = 0; i < words.length; i++) {
+    if (['-b', '-B', '--reason'].includes(words[i])) i++;
+    else if (!words[i].startsWith('-')) rest.push(words[i]);
+  }
+  return rest[1] ?? 'HEAD';
+}
+
+/**
  * The directory a Repositories row names: the first backticked span of its checkout
  * cell — "app (`my-app`)" → "my-app" — or the cell itself when it has none.
  * @param {string} cell
