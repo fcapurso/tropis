@@ -77,6 +77,8 @@ Then proceed to Stage 3.
 
 Read `.tropis/templates/project-brief.md` now. That file is the section skeleton
 (copied by the setup). Draft `docs/project-brief.md` from it.
+Title it `# Project Brief — <name>`, with the name from `.tropis/project.json`, or the
+repository folder's name when that file is absent.
 
 Keep the title and the sections **Problem**, **Appetite**, **Solution sketch**,
 **Rabbit holes**, and **Out of scope**. Do not copy the HTML author-guidance comments
