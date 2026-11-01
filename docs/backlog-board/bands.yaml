@@ -355,20 +355,6 @@ release-notes-stay-a-readable-size:
   seen:
     status: idea
     blockers: []
-release-tags-the-notes-commit:
-  band: B
-  value: 3
-  valueWhy: A release can carry work its notes never mention, with agents merging in
-    parallel.
-  effort: 1
-  effortWhy: One input, one check in the release job, and the trigger /release prints.
-  verdict: "Small and closes a real gap while several agents merge at once. Do it
-    before the next release."
-  evidence: "2026-10-31 — .github/workflows/ci.yml tags whatever main holds when the
-    job starts; it takes a version and no commit."
-  seen:
-    status: shaped
-    blockers: []
 release-tags-what-main-holds:
   band: B
   value: 3
