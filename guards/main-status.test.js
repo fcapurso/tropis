@@ -27,7 +27,9 @@ const script = join(blueprint, 'scripts/main-status.mjs');
 // exists, and pull.json otherwise. Else `api repos/{owner}/{repo}` answers the default
 // branch, and `run list` answers runs-<n>.json on its n-th call when that file exists,
 // and runs.json otherwise.
+// With STUB_SLOW set, every call first sleeps that many seconds.
 const STUB_GH = `#!/usr/bin/env bash
+if [ -n "$STUB_SLOW" ]; then sleep "$STUB_SLOW"; fi
 echo "$*" >> "$STUB_DIR/gh.log"
 if [ "$1" = api ]; then
   case "$*" in
@@ -302,6 +304,15 @@ describe('main branch status', () => {
     });
 
     it('never asks twice to update the same head', () => {
+      pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'behind' }), MERGED);
+      const r = cli('--pull-request', '7', ...fast);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe(GREEN);
+      expect(updates()).toHaveLength(1);
+    });
+
+    it('gives the same answer when every gh call is slow', () => {
+      env.STUB_SLOW = '0.8';
       pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'behind' }), MERGED);
       const r = cli('--pull-request', '7', ...fast);
       expect(r.status).toBe(0);
