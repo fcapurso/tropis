@@ -4750,18 +4750,43 @@
 # 2026-11-01, seen a third time executing docs/superpowers/plans/2026-11-01-release-flow.md:
 # "never asks twice to update the same head" exited 3 twice in full self-checks on an
 # untouched base, then passed alone and in later runs (Claude Code 2.1.300, macOS 26.2 arm64).
+# 2026-11-01, shaped. The cause is the tests' deadline. Both cases poll a stub gh three
+# times (behind, then clean or behind, then merged) under --timeout 0.05, three seconds
+# the whole sequence had to beat; in one kept red log the file took 124 seconds against
+# 20 alone. Slowing every stub call to 0.8 seconds failed exactly five cases, all
+# exit 3, these two first and then the three others that poll more than once. Real load
+# alone (load average up to 132, the test at nice 20) did not reproduce it on macOS 26.2
+# arm64, so the slowed stub is the proof and the load run checks the fix holds.
+# Decided, a two-minute deadline for every case that does not test the deadline. Here
+# that is the honest fix and not a raised timeout hiding a cause, because the deadline
+# was never what those cases test. The stub's last answer ends them, and the deadline
+# only bounds a script that never stops. Rejected, counting polls instead of time in
+# main-status.mjs, which changes the command for a test's sake, and an injected clock,
+# which a spawned command cannot take. One case slows every gh call on purpose so that a
+# deadline tightened again is caught, and rules/tests.md gets the lesson.
 - id: main-status-tests-pass-under-load
   title: The main-status tests give the same answer however busy the machine is
-  status: idea
+  status: building
   value: A self-check run on a busy machine fails or passes on the same code depending
     on load, because two of the main-status --pull-request tests time out under it. A
     check that passes on a rerun with nothing changed hides the failures a person needs
     to see, and costs every executor a rerun to tell a real failure from this one.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Every main-status case whose expected answer is not the deadline's runs with a
+      deadline its stub sequence cannot reach, so its answer does not depend on how long
+      a gh call takes.
+    - A case with every stub gh call slowed to 0.8 seconds gives the answer it gives at
+      full speed, and fails with exit 3 under the old three-second deadline.
+    - The main-status test file passes three runs of three while the machine is loaded on
+      purpose, with three times as many busy loops and as many process-spawning loops as
+      it has cores and the test run at the lowest priority, recorded with the load averages.
+    - The test rule tells an agent that a deadline in a test stops a hang and is not
+      something the code must beat, and a fresh agent writing a polling test follows it.
   type: bug
   layer: product
   modules:
     - guards/main-status.test.js
+    - rules/tests.md
   refs:
     - docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
 # 2026-11-01, raised reviewing the release-flow plan: its fresh-agent probe sent the
