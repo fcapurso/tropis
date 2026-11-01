@@ -606,7 +606,8 @@ function apply(input) {
   }
 
   // The lockfile follows the package file: while the project's is the release's, the
-  // release's lockfile is what matches it. A project that changed its package file owns its lockfile.
+  // release's lockfile is what matches it. A project that changed its package file owns
+  // its lockfile.
   const projectPackage = readText(join(project, '.tropis/package.json'));
   const nextPackage = readText(join(next, '.tropis/package.json'));
   const nextLock = readText(join(next, '.tropis/package-lock.json'));
