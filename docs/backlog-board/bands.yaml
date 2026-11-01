@@ -103,18 +103,6 @@ framework-reaches-every-tool:
   seen:
     status: shaped
     blockers: []
-history-is-kept-apart-from-living-docs:
-  band: B
-  value: 2
-  valueWhy: A reader cannot tell which documents describe today.
-  effort: 2
-  effortWhy: Moves and two guards that recognise this repository.
-  verdict: "Housekeeping with a clear end state; batch it. Watch the two guards
-    that recognise this repository by PORTABILITY-NOTES.md."
-  evidence: "2026-10-17 — PORTABILITY-NOTES.md is still at the repository root."
-  seen:
-    status: shaped
-    blockers: []
 instruction-files-have-a-delivery-map:
   band: C
   value: 3
