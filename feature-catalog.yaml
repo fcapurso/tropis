@@ -4906,19 +4906,42 @@
 # are written when each is shaped, from the spec.
 - id: merge-token-can-live-on-github
   title: Find out whether the merge token can be a marker on GitHub that only one session can take
-  status: idea
+  status: building
   value: Before the merge token is built, we know whether GitHub accepts a git ref outside
     branches and tags on a repository with Tropis's ruleset, whether creating one that
     already exists is refused so that only one session can hold it, what a cloud session's
     credentials may do with it, and whether GitHub's own merge queue is offered on a
     repository owned by a personal account. If the ref is refused, the token falls back to
     a dedicated branch.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The sprint design's open question on the merge token is replaced by a recorded
+      answer saying whether GitHub accepts a ref outside branches and tags on this
+      repository, which carries Tropis's ruleset, created both by a git push and by the
+      REST API, each with the command run and GitHub's reply quoted.
+    - The answer shows whether creating a ref that already exists is refused, for each
+      way of creating it, including when several attempts start at the same moment, in
+      which exactly one may succeed; and it names any way of creating that reports
+      success on a ref that was already there.
+    - The answer shows how a session reads who holds the marker and since when, and how
+      the holder releases it without being able to delete a marker someone else has
+      since taken.
+    - The answer says whether creating or deleting the marker starts a pipeline run or
+      shows on the repository as a push.
+    - The answer says what a cloud session's GitHub credentials may do with such a ref,
+      from a probe or, failing one, from the tool's own documentation quoted and marked
+      unprobed; and whether GitHub's merge queue is offered on a repository owned by a
+      personal account, from GitHub's documentation and this repository's owner type.
+    - Every probe names the tool, version, operating system and architecture it ran on,
+      and the record ends with a listing showing that no ref the probes created remains
+      on the repository.
+    - A decision in the framework's decision record says what the marker is and which
+      operation takes and releases it, so the merge-token entry can be planned from it.
   type: spike
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-01-merge-token-can-live-on-github.md
 - id: merges-take-turns-under-one-token
   title: Pull requests open and merge one at a time, under a token any session can take
   status: idea

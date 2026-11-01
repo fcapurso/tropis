@@ -115,6 +115,19 @@ living-documents-stay-current:
   seen:
     status: idea
     blockers: []
+merge-token-can-live-on-github:
+  band: A
+  value: 4
+  valueWhy: The merge token, and the sprint built on it, cannot be planned until
+    we know whether GitHub will hold it.
+  effort: 2
+  effortWhy: A handful of probes against this repository with throwaway refs, and
+    two documentation checks.
+  verdict: "First piece of the sprint epic and the blocker of the merge token. Small,
+    and its answer is either the design or the fallback the spec already names."
+  seen:
+    status: building
+    blockers: []
 pipeline-bills-no-job-that-decides-nothing:
   band: C
   value: 2
