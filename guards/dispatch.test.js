@@ -464,4 +464,57 @@ esac
       rmSync(parent, { recursive: true, force: true });
     }
   });
+
+  it('refuses a base that does not hold the plan, and creates nothing', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY));
+    try {
+      const uncommitted = 'docs/superpowers/plans/2026-01-02-uncommitted.md';
+      writeFileSync(join(root, uncommitted), plan(PROJECT_ONLY));
+      const short = run(root, 'git', ['rev-parse', 'HEAD']).stdout.trim().slice(0, 7);
+      const r = run(root, 'bash', ['.tropis/scripts/isolate-for-plan.sh', uncommitted]);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain(uncommitted);
+      expect(r.stderr).toContain('example-project');
+      expect(r.stderr).toContain(short);
+      expect(existsSync(join(parent, 'example-project-wt'))).toBe(false);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  /** A project whose origin is a bare clone of it, fetched. */
+  function withOrigin() {
+    const made = project(plan(PROJECT_ONLY));
+    const remote = join(made.parent, 'remote.git');
+    git(made.parent, 'clone', '-q', '--bare', made.root, remote);
+    git(made.root, 'remote', 'add', 'origin', remote);
+    git(made.root, 'fetch', '-q', 'origin');
+    return made;
+  }
+
+  it("notes a base that is not on the remote's main branch, and still isolates", () => {
+    const { parent, root } = withOrigin();
+    try {
+      writeFileSync(join(root, 'src/app.js'), 'console.log(2);\n');
+      git(root, 'commit', '-qam', 'ahead of origin');
+      const r = run(root, 'bash', ['.tropis/scripts/isolate-for-plan.sh', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain("is not on origin/main, where the plan's review record is read from");
+      expect(existsSync(join(parent, 'example-project-wt'))).toBe(true);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("isolates a base that holds the plan and is on the remote's main branch, with no note", () => {
+    const { parent, root } = withOrigin();
+    try {
+      const r = run(root, 'bash', ['.tropis/scripts/isolate-for-plan.sh', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).not.toContain('Note:');
+      expect(existsSync(join(parent, 'example-project-wt'))).toBe(true);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
 });
