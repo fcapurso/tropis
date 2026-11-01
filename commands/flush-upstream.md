@@ -18,12 +18,33 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
    non-zero exit, show its line and stop: nothing is drafted.
 
    Then read `Flushes as: <name>.` from the queue's header (`docs/BLUEPRINT-UPSTREAM.md`).
-   If it is missing, ask the operator for the name, and say in one sentence that it will
-   be published in branch names, commits and pull requests on the framework's repository,
-   so a private project should pick a name that does not identify it. Suggest no name
-   derived from the folder or the repository. The name is lowercase letters, digits and
-   hyphens, starting with a letter or digit. Write the line below `Last flushed` before
-   going on, creating the queue's header if the file has none.
+   Whenever you ask for or propose a name, say these two sentences to the operator, word
+   for word:
+
+   > This name is how the framework's maintainer knows this project across flushes, and it
+   > is public in every branch, commit and pull request a flush opens. Never change it: a
+   > new name reads as a new project, and the maintainer loses its history.
+
+   If the line is missing, in this order:
+   1. Ask whether this project has flushed before, or is already named in the framework's
+      records (a pseudonym in its decisions, catalog or release notes, such as the one the
+      framework uses for its first adopter). If so, propose that name.
+   2. Otherwise propose the name `bash .tropis/scripts/submit-upstream.sh suggest-name`
+      prints.
+   3. Never propose a name derived from the folder, the repository or the product.
+   4. Whatever name the operator settles on, run
+      `bash .tropis/scripts/submit-upstream.sh check-name OWNER/NAME <name>`, with
+      `OWNER/NAME` from the preflight. On a non-zero exit, show its line and ask for
+      another name. Only once it exits 0, write the line below `Last flushed`, and the two
+      sentences above on their own line directly below it, before going on. Create the
+      queue's header if the file has none. The sentences go on their own line because the
+      script reads the whole rest of the `Flushes as:` line as the name. The name is
+      lowercase letters, digits and hyphens, starting with a letter or digit.
+
+   If the line is there, run `check-name` on it too, every sitting: another account may
+   have started using it since. If the queue lacks the two sentences, add them below the
+   line. If `check-name` refuses, stop the sitting and tell the operator: changing an
+   existing name is theirs to decide, against "never change it".
 2. **Read the queue** (`docs/BLUEPRINT-UPSTREAM.md`) and list every entry verbatim, with
    all its parts, and any note written under it.
 
@@ -57,6 +78,15 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
    - **Flush, a capability:** shape the entry with the operator — id, title, type,
      value, acceptance criteria, `layer: product` — in the framework's catalog format. If
      it cannot be shaped now, it is held, and marked "waiting to be shaped".
+   - **Before moving to the next entry, for either kind of flush:** show the operator the
+     text as it will be sent — the entry with anything of the project's own taken out: its
+     files, paths and names, its product and customers, and figures the point does not
+     need — and get their approval of that text. The plan's `## Decisions` records the
+     approved text for each flushed entry.
+   - **A reworded entry:** when the operator rewords an entry in the queue itself, say that
+     any project file naming that entry by its wording — a comment, a plan, a catalog
+     reference — must be changed to match in the same commit, or it no longer points at
+     anything.
    - **Hold:** ask what it waits for.
    - **Decline:** ask why.
 5. **Draft the plan** under `docs/superpowers/plans/`, named
@@ -78,16 +108,24 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
      - clones the framework's current `main` afresh into a temporary directory;
      - creates the branch `upstream/<flush name>/<flush-date>-<entry-slug>`;
      - makes the edit, or appends the entry;
-     - commits with a body that quotes the queue entry, with all its parts, and names
+     - commits with a body that quotes the approved text from the plan's Decisions, not
+       the queue line, with all its parts, and names
        the project by its flush name, and by nothing else — not its folder, repository
        or product name;
      - runs the framework's own check, bash scripts/check-blueprint.sh, in the clone and
        pastes its result. If it fails, the task stops there: no pull request is opened
        for that entry, and the drain task keeps the entry in the queue with the failure
        as its note;
-     - writes the pull request body (the queue entry, with all its parts, why it is
+     - writes the pull request body (the approved text from the plan's Decisions, not the
+       queue line, with all its parts, why it is
        portable, what the project already does) to a file, naming the project by its
        flush name and by nothing else — not its folder, repository or product name;
+     - before running `open`, reads its commit message (`git log -1 --format=%B`) and its
+       pull request body file for anything of the project's own — its files, paths and
+       names, its product and customers, figures the point does not need, home paths and
+       hostnames — as the exposure check does for the project's own pushes. If it finds
+       any, it stops for the operator: no push and no pull request for that entry, and the
+       drain task keeps the entry in the queue with that as its note;
      - runs
        `bash <project-root>/.tropis/scripts/submit-upstream.sh open <project-root> OWNER/NAME <branch> <title> <body-file>`
        from inside the clone, where `<project-root>` is this project's absolute path — the
