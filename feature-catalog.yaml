@@ -4589,9 +4589,13 @@
 # 2026-11-01, shaped and dispatched: the rebuild runs from git hooks that the framework
 # package's prepare script installs (FW-043). Plan
 # docs/superpowers/plans/2026-11-01-board-is-the-backlog-view.md.
+# Shipped by docs/superpowers/plans/2026-11-01-board-is-the-backlog-view.md. Criteria
+# 1 to 5 are covered by guards/board-hooks.test.js, criteria 6 and 7 by that plan's
+# Task 3 checks, and criterion 8 by probe B in its handover report (probe G, a project
+# with its own generated view, is recorded there too and did not pass).
 - id: board-is-the-backlog-view
   title: The board is every project's readable view of its backlog, and keeps itself current
-  status: building
+  status: shipped
   value: Anyone who wants to read the backlog opens the board and sees the backlog as it
     stands, because the page rebuilds itself whenever the backlog changes, without
     banding anything and without being committed, so parallel changes to the backlog
@@ -4623,5 +4627,12 @@
       generated document, and names the board as where the backlog is read.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/install-board-hooks.mjs
+    - templates/package.json
+    - scripts/check-blueprint.sh
+    - rules/catalogs.md
+    - framework/workflow.md
+    - framework/doc-architecture.md
+    - templates/README.md
   refs: []
