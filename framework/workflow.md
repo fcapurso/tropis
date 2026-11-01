@@ -376,7 +376,7 @@ Before the work is considered done, update the durable artifact the change affec
 
 | If the change… | Update |
 |---|---|
-| adds or alters user-visible behaviour | the feature catalog, then regenerate its document |
+| adds or alters user-visible behaviour | the feature catalog, and any document generated from it |
 | chose between real alternatives | `DECISIONS.md` |
 | revealed a constraint an agent would otherwise trip over | `.claude/rules/<area>.md`, with a `paths:` header naming its area; or, to add to a shipped rule, `.claude/rule-additions/<name>.md` — plain text, no header, named after the shipped rule. Its area stays in `.claude/rule-areas.json`. Then run `npm --prefix .tropis run rules`. The additions follow the shipped text in the one rule each tool loads, and win where they contradict. Never edit the shipped text in `.tropis/rules/` or a generated file. A project's additions to a framework document go in its own `AGENTS.md` |
 | changed module boundaries or data flow | the architecture document, diagrams included |

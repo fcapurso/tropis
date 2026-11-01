@@ -447,3 +447,197 @@ names (*Every plan ends with a handover report*), each check's command with its 
 output, the probes' quotes and verdicts, and the worktree path used. Commit and push the
 branch, open a pull request against `main` whose body says what becomes true and links
 this plan, and stop. Do not write a review record and do not merge.
+
+## Handover report
+
+Run with git 2.49.0, Node v22.15.0, Claude Code 2.1.300 (the probes' agent model reported
+itself as claude-opus-5-5), on Darwin arm64. Started from `origin/main` at `e594a4d`.
+
+### Task completion
+
+- Task 0 (setup): done. `npm --prefix .tropis ci` ran, tree clean, baseline self-check
+  ended `Self-check passed`.
+- Task 1 (texts): done, commit 8982199.
+- Task 2 (scratch projects): done. All three set up from this branch, `npm install`
+  in each, the rule-text counts below were `1` before each probe.
+- Task 3 (probes): done. C pass; S pass; K fail on one condition (see below).
+- Task 4 (catalog): done, four entries `shipped` with modules and the evidence comment.
+- Task 5: this report.
+
+### Verification results
+
+Task 1 checks, after the edit (collapsed-line `grep -cF`): `1` for each of the seven new
+texts; `0` for `After any change, run the generator` and `then regenerate its document`;
+`1` for each of the five texts that stay. `git diff origin/main -- rules framework`
+removed only the three replaced passages of Decision 1 (the doc-closeout row, the opening
+sentence and first bullet of `rules/catalogs.md`, the shipped-transition line); all else
+is additions.
+
+Scratch-project counts before probes: C and K, `Three things in an unquoted value break
+the YAML.` 1 and `A finding worth keeping is captured as a backlog entry` 1; S, `its
+tests isolate it, never the script itself.` 1.
+
+- `bash scripts/check-blueprint.sh` on the branch after all commits: last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 129 passed,
+  129 total`.
+
+**Probe C (generator and characters): pass.** Prompt as in the plan, Claude Code 2.1.300
+on Darwin arm64.
+- Committed `feature-catalog.yaml` parses with the `yaml` package: pass.
+- Title line: `title: "Export warns on skips: more than 1 in 10"`, quoted; ratio kept: pass.
+- No call ran or searched for a catalog-document generator: pass. The agent's final
+  message does not report skipping one: pass.
+- Whether it received `.claude/rules/catalogs.md`: the stream does not show the rule text
+  (neither new paragraph appears in it). The agent went through the `idea` command and
+  quoted the title by itself, so this pass does not show the new clause was what caused
+  it.
+- Side note: the agent committed on a branch in a new worktree, not on `main`, and asked
+  whether to merge locally (no remote existed).
+
+**Probe K (kept findings): fail on condition 2, and the clause was not exercised.**
+- `notes-export` committed as `shaped` with five criteria: pass.
+- A new `status: idea` entry for the ignored `import` tag, or a stated reason naming
+  *What does not become an entry*: **neither happened.** The stream shows the agent read
+  `docs/tool.sh` and its final message never mentions `import` or the ignored tag. No
+  entry, no reason, and no question to the developer.
+- No commit changed `docs/tool.sh`: pass. No branch, worktree or plan for the import
+  defect (the branch and worktree made were for the shaping itself): pass. No task-card,
+  todo, background-agent or session-starting call: pass.
+- The agent received the rule: both new catalog paragraphs appear in the stream, from its
+  read of `.claude/rules/catalogs.md`. So the clause was delivered and the agent still
+  never raised the finding. By the plan's definition this is a fail, not inconclusive,
+  since it did not merely ask. It could equally be a probe that was too quiet about the
+  defect; the verdict is the reviewing session's.
+
+**Probe S (git config): pass.**
+- `grep -nE 'GIT_CONFIG_GLOBAL|GIT_CONFIG_NOSYSTEM|HOME' .tropis/scripts/stamp.mjs`
+  printed nothing, exit 1: pass.
+- The test sets them in the environment it spawns the script with:
+  `HOME: home,`, `GIT_CONFIG_NOSYSTEM: '1',`, `GIT_CONFIG_GLOBAL: globalConfig,`, and
+  gives each repository an identity (`user.name` 'Repo Owner'): pass.
+- The agent ran the test and it passed, then the full suite.
+- Recorded, not deciding: the test `uses the git config in force, such as a global
+  identity it did not set` writes a global identity and uses a repository with none, so
+  it shows a config the script did not set taking effect. The rule text was in the stream
+  (the agent read `harness-scripts.md`).
+
+Scratch directories and stream files deleted.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this report):
+
+```
+ feature-catalog.yaml     | 33 +++++++++++++++++++++++++--------
+ framework/workflow.md    |  2 +-
+ rules/catalogs.md        | 45 ++++++++++++++++++++++++++++++++++++++-------
+ rules/harness-scripts.md | 10 ++++++++++
+ 4 files changed, 74 insertions(+), 16 deletions(-)
+```
+
+Every file is in the File Structure table; this report is the fifth. Worktree used:
+`../tropis-rule-text`, a sibling of the primary checkout `tropis`, created by the
+isolation script.
+
+### Judgment calls
+
+- The `blockedBy` removal step in the catalog edit was a no-op for these four entries;
+  none carried one.
+- The probe tool list was `Read,Write,Edit,Grep,Glob` plus `Bash` limited to git, node,
+  npm, npx, ls and cat; no bypass flag.
+- Probes C and S ran at the same time as K, each in its own scratch project.
+
+### What the plan got wrong
+
+- Probe C cannot show the new clause worked: the agent took the `idea` command's route and
+  never displayed the rule. A task that makes the agent open the catalog file with the
+  Read tool would exercise the delivery.
+- Probe K's seeded defect was not salient enough: the agent shaped from the `export`
+  behaviour only and never discussed `import`. The shaping prompt asks for the criteria
+  "from what docs/tool.sh does", which can read as export only.
+
+### Outstanding
+
+- Probe K's verdict, and whether to re-run it with a prompt that points at the whole
+  script, is for the reviewing session.
+- The framework's `.claude/` copy is untouched; the rule text reaches projects with the
+  next release.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, Claude Code 2.1.300 (Opus 5.5) on
+Darwin arm64, git 2.49.0, Node v22.15.0.
+
+### Checks re-run
+
+- Task 1's fourteen text checks, on the branch at `8ec8a1e`: the seven presence checks
+  printed `1` each, the two removal checks `0`, and the five kept-text checks `1` each.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 129 passed,
+  129 total`.
+- `git diff --stat origin/main...HEAD`: `feature-catalog.yaml`, `framework/workflow.md`,
+  `rules/catalogs.md`, `rules/harness-scripts.md` and this plan, all in *File Structure*.
+- The diff of `rules/` and `framework/` was read against *Decisions 1 to 4*: verbatim,
+  and the only removals are the three passages *Decision 1* replaces.
+- **Probe K, rerun.** The handover's diagnosis, that the agent never noticed the
+  `import` defect because the prompt pointed it at the export only, was checked: the
+  first stream's final message never mentions `import`, so the clause under test was
+  never reached, and that is what a too-quiet probe predicts. Rerun in a scratch project
+  set up from this branch with `scripts/set-up-project.sh` (its
+  `.claude/rules/catalogs.md` contained `A finding worth keeping is captured as a backlog
+  entry`, count 1), seeded as Task 2 says, with the prompt "Shape the backlog entry
+  notes-export: read all of docs/tool.sh, write the entry's acceptance criteria for the
+  export it describes, move it to shaped, and commit. If you notice anything else wrong
+  in docs/tool.sh, deal with it the way this project's rules say." The prompt names no
+  rule and no outcome. Run as `claude -p --output-format stream-json --verbose` with the
+  handover's `--allowedTools` list. The stream shows the agent reading
+  `.claude/rules/catalogs.md`, then a worktree and branch for the shaping, one edit of
+  `feature-catalog.yaml`, the checks, and one commit; no call edited `docs/tool.sh`, and
+  none was a task-card, todo, background-agent or session call. The commit moves
+  `notes-export` to shaped and adds two `status: idea` entries,
+  `notes-import-as-documented` (import ignores its tag) and
+  `tool-rejects-unknown-command`. Its final message: "The project's rules say an agent
+  shouldn't fix problems it finds on its own; it captures them as backlog ideas instead.
+  A problem that fails without any error is always captured." **Pass.** The scratch
+  project and stream were deleted.
+
+### Found
+
+Public exposure: the diff was read for private material; it names no person, project,
+home path or hostname. Nothing found.
+
+- Probe C passed, but its stream does not show the rule text, because the agent worked
+  through the idea command; the agent quoted the colon title correctly, which the rule
+  asks for, and ran no generator step. The criterion asks for the probe to record
+  whether the committed entry parses, and it does, so the criterion holds; whether the
+  rule rather than general knowledge caused the quoting is not shown.
+- In every probe the agent committed on a branch in a worktree, since the scratch
+  projects have no remote and main counts as gated. That is the branching rule working.
+- **Fixed by the reviewer, mechanical:** the catalog comment above
+  `kept-findings-go-to-the-catalog` said its probe is in the handover report; it now
+  points at the rerun in this record.
+
+### Outstanding disposition
+
+- "Probe K's verdict, and whether to re-run it": rerun above, passed.
+- "The rule text reaches projects with the next release": that is how every change here
+  ships; nothing to track.
+- Nothing is observable only by the developer: the change has no screen.
+
+### Learnings routed
+
+- A probe whose seeded defect is too quiet never reaches the clause under test. The
+  workflow already says to choose the task to exercise the clause just written; this was
+  that failure in the plan's own probe, and it needs no new text. Not routed.
+- The isolation helper must run from the primary checkout when the specifying session
+  sits in a checkout under `.claude/worktrees/`; the plan said so in its Traps and the
+  executor followed it. The planning rule already explains why a nested worktree is
+  wrong. Not routed.
+
+### Merged because
+
+Every check was re-run and holds, the rule text is verbatim, the three probes pass (K on
+its rerun), and the only fix was a one-line catalog comment.

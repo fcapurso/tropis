@@ -403,9 +403,12 @@
 # names both, and the value-start characters that fail. The quoting advice itself is in
 # commands/idea.md, step 6; the rule loads when feature-catalog.yaml is edited, which
 # /idea does, so the rule is the one place this goes.
+# Shipped by docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md. The
+# criteria about rule text are covered by that text and Task 1's checks; the
+# fresh-agent criterion by probe C in that plan's handover report.
 - id: catalog-rules-name-the-colon-trap
   title: The catalog rules say which characters need quoting
-  status: building
+  status: shipped
   value: Someone writing a catalog entry knows before the generator tells them that a
     colon-space inside an unquoted value will not parse, and either rephrases or quotes.
     The rule that says to quote nothing unnecessary is right and incomplete.
@@ -424,7 +427,8 @@
       entry it commits parses, with tool, version, operating system and architecture.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - rules/catalogs.md
   refs:
     - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
 # Raised 2026-09-12 at the review of payload-checks-cover-token-output. The executor's
@@ -919,9 +923,12 @@
 # installs no catalog-document generator, and the one page built from the backlog, the
 # board, is gitignored. Fixed by making the instruction conditional, not by shipping a
 # generator: nothing has asked for a generated feature document.
+# Shipped by docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md. The
+# criteria about rule text are covered by that text and Task 1's checks; the
+# fresh-agent criterion by probe C in that plan's handover report.
 - id: set-up-project-can-generate-its-catalog-document
   title: A set-up project's backlog rule only asks for what it has
-  status: building
+  status: shipped
   value: Someone adding or promoting a backlog entry in a set-up project is told by the
     backlog rule to run only commands that exist there. Today rules/catalogs.md still
     requires a generator for a catalog document that the setup never installs, so every
@@ -940,7 +947,9 @@
       architecture.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - rules/catalogs.md
+    - framework/workflow.md
   refs:
     - docs/superpowers/plans/2026-10-15-framework-runs-its-own-release.md
     - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
@@ -2930,9 +2939,12 @@
 # environment, and a test proves a global committer identity reaches the script. The
 # rule says how to write scripts rather than how the code is, so it gets no rule-claims
 # assertion; the fresh-agent check is its test.
+# Shipped by docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md. The
+# criteria about rule text are covered by that text and Task 1's checks; the
+# fresh-agent criterion by probe S in that plan's handover report.
 - id: scripts-never-hide-the-users-git-config
   title: The script rules say a script never hides the user's git config to make its tests repeatable
-  status: building
+  status: shipped
   value: Someone writing a framework script that runs git learns from the script rules
     that the tests isolate the script from the developer's git config, never the script
     itself. A script that switches off the global or system config passes its tests and
@@ -2951,7 +2963,8 @@
       architecture.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - rules/harness-scripts.md
   refs:
     - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
 # Raised 2026-10-20 by the developer after the attribution review filed two ideas for one
@@ -3625,9 +3638,12 @@
 # the missing entry was named. The bar for which findings are worth keeping already ships
 # in the catalog rule's What does not become an entry; this adds where a kept one goes,
 # building on that section and changing nothing it already says.
+# Shipped by docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md. The
+# criteria about rule text are covered by that text and Task 1's checks; the
+# fresh-agent criterion by the rerun of probe K in that plan's review record.
 - id: kept-findings-go-to-the-catalog
   title: A finding worth keeping goes into the backlog, and a fix starts there too
-  status: building
+  status: shipped
   value: Every piece of work an agent finds outside the change in hand ends up in the one
     place the project plans from, so nothing is tracked in a tool's task card or side
     session that the backlog, its report and its board never see. An agent that proposes
@@ -3650,7 +3666,8 @@
       architecture.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - rules/catalogs.md
   refs:
     - docs/superpowers/plans/2026-11-01-rule-text-says-what-is-true.md
 # 2026-10-29, raised by the developer from first-adopter's first release rehearsal, which
