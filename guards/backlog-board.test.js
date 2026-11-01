@@ -8,7 +8,7 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, symlinkSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { bandLetters, bandScores, movedBands } from '../scripts/board-bands.js';
@@ -97,6 +97,33 @@ function page(dir) {
 function grab(html, name) {
   return JSON.parse(html.match(new RegExp(`const ${name} = (.*?);\\n`, 's'))[1]);
 }
+
+describe('backlog board title', () => {
+  const titleOf = (settings) => {
+    const dir = stage(CATALOG, BANDS);
+    try {
+      if (settings !== undefined) writeFileSync(join(dir, '.tropis/project.json'), settings);
+      expect(build(dir).status).toBe(0);
+      return { html: page(dir), folder: basename(dir) };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+
+  it('takes the display name from .tropis/project.json, escaped', () => {
+    const { html } = titleOf('{ "name": "Acme & <Co>" }\n');
+    expect(html).toContain('<title>Acme &amp; &lt;Co&gt; backlog</title>');
+    expect(html).toContain('<h1>Acme &amp; &lt;Co&gt; backlog</h1>');
+  });
+
+  it.each([['no file', undefined], ['unreadable JSON', 'not json'], ['a blank name', '{ "name": "  " }']])(
+    "falls back to the folder's name with %s",
+    (_label, settings) => {
+      const { html, folder } = titleOf(settings);
+      expect(html).toContain(`<title>${folder} backlog</title>`);
+    },
+  );
+});
 
 describe('backlog board build', () => {
   let dir;

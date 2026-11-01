@@ -298,6 +298,7 @@ describe('record-installed.mjs', () => {
       copyFileSync(script, join(bin, 'record-installed.mjs'));
       writeFileSync(join(dir, '.claude/commands/release.md'), `${marker('begin -->')}\nfill\n${marker('end -->')}\n`);
       writeFileSync(join(dir, '.tropis/README.md'), 'operator guide\n');
+      writeFileSync(join(dir, '.tropis/project.json'), '{"name":"x"}\n');
 
       const r = spawnSync('node', [join(bin, 'record-installed.mjs'), 'v1.2.3'], { encoding: 'utf8' });
       expect(r.status).toBe(0);
@@ -308,6 +309,7 @@ describe('record-installed.mjs', () => {
       expect(written).toBe(`${JSON.stringify(recordOf(dir, 'v1.2.3'), null, 2)}\n`);
       expect(written.endsWith('\n')).toBe(true);
       expect(Object.keys(JSON.parse(written).files)).not.toContain('.tropis/README.md');
+      expect(Object.keys(JSON.parse(written).files)).not.toContain('.tropis/project.json');
       expect(recordProblems(dir)).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });

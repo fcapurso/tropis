@@ -44,7 +44,7 @@ function repository(files = {}) {
   return { parent, dir };
 }
 
-const runSetup = (dir) => spawnSync('bash', [setup, dir], { encoding: 'utf8' });
+const runSetup = (dir, ...rest) => spawnSync('bash', [setup, dir, ...rest], { encoding: 'utf8' });
 
 /** The paths of the setup's export-ignore loop, read from the script. */
 const exportIgnoredPaths = readFileSync(setup, 'utf8')
@@ -85,6 +85,54 @@ function markdownUnder(dir) {
     .map((f) => join(dir, f))
     .filter((f) => f.endsWith('.md') && statSync(f).isFile());
 }
+
+describe('the display name', () => {
+  const NAME = 'Acme Portal & Co. <β> $1';
+  const firstLine = (dir) => readFileSync(join(dir, '.tropis/README.md'), 'utf8').split('\n')[0];
+  const packageName = (dir) => JSON.parse(readFileSync(join(dir, '.tropis/package.json'), 'utf8')).name;
+
+  it('writes the name it is given to .tropis/project.json, exactly', () => {
+    const { parent, dir } = repository();
+    try {
+      const r = runSetup(dir, NAME);
+      expect(r.stderr).toBe('');
+      expect(r.status).toBe(0);
+      expect(readFileSync(join(dir, '.tropis/project.json'), 'utf8')).toBe(`${JSON.stringify({ name: NAME }, null, 2)}\n`);
+      expect(packageName(dir)).toBe('acme-portal-co-1-framework');
+      expect(firstLine(dir)).toBe(`# ${NAME} — working with the framework`);
+      expect(readFileSync(join(dir, '.tropis/README.md'), 'utf8')).not.toContain('{{PROJECT_NAME}}');
+      const record = JSON.parse(readFileSync(join(dir, '.tropis/installed.json'), 'utf8'));
+      expect(Object.keys(record.files)).not.toContain('.tropis/project.json');
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("writes no settings file without a name, and uses the folder's name", () => {
+    for (const rest of [[], ['']]) {
+      const { parent, dir } = repository();
+      try {
+        expect(runSetup(dir, ...rest).status).toBe(0);
+        expect(existsSync(join(dir, '.tropis/project.json'))).toBe(false);
+        expect(packageName(dir)).toBe('example-project-framework');
+        expect(firstLine(dir)).toBe('# example-project — working with the framework');
+      } finally {
+        rmSync(parent, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it('names the package after the folder when the name has nothing a package name can use', () => {
+    const { parent, dir } = repository();
+    try {
+      expect(runSetup(dir, '東京').status).toBe(0);
+      expect(readFileSync(join(dir, '.tropis/project.json'), 'utf8')).toContain('東京');
+      expect(packageName(dir)).toBe('example-project-framework');
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+});
 
 describe('set-up-project.sh', () => {
   it('sets a project up in its own repository', () => {
@@ -300,6 +348,8 @@ describe('set-up-project.sh', () => {
           const ref = m[0];
           // Created by the first install, not by the setup.
           if (/^\.tropis\/(node_modules|package-lock\.json)/.test(ref)) continue;
+          // Written only when setup is given a display name; this run gives none.
+          if (ref === '.tropis/project.json') continue;
           // A pattern or a placeholder, not a path.
           const next = text[m.index + ref.length] ?? '';
           if (/[*<]/.test(ref) || /[*<]/.test(next)) continue;

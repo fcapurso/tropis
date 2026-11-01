@@ -34,6 +34,10 @@ review record's *Found* opens with a `Public exposure:` line; and `/release` lis
 anything private in the release window before drafting the notes. Without the file, or
 with anything but `true`, none of this happens. An update never touches the file.
 
+The project's display name is in `.tropis/project.json`, as `{ "name": "…" }`. Setup
+writes it when it is given one; the backlog board is titled with it, and with this
+folder's name when the file is absent. An update never touches the file.
+
 ## What to type
 
     npm --prefix .tropis run next

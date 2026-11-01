@@ -445,3 +445,151 @@ folder.
    they are green. **Stop there.** Do not write a review record, set auto-merge or merge:
    `main` is gated and the dispatching session reviews and merges. Leave the worktree in
    place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 7 done. Task 8 done except its steps 3 and 4: **no pull request was opened, by
+instruction of the developer** (the branch is pushed and stops there).
+
+### Verification results
+
+Ran with git 2.49.0, Node v22.15.0, Claude Code 2.1.300, on macOS 26.2, arm64.
+
+- Task 1, red run: the new `the display name` cases (all three, including the no-name one,
+  whose guide heading was still `{{PROJECT_NAME}}`), `backlog board title › takes the
+  display name … escaped`, `record-installed.mjs › writes the record for its own project…`
+  failed, plus cascades in `check-version.mjs` cases and `a freshly set-up project passes
+  its own checks` (they run the installed copy of the changed guard). The take-version
+  case did not appear in the failing list I captured. The board fallback cases passed.
+  No test that existed before the plan failed on its own account.
+- After Tasks 2 and 3: the self-check failed only on two `main-status.test.js` cases
+  (`brings a branch that is behind…`, `never asks twice…`; status 3 instead of 0). They
+  passed alone (37 of 37) and passed in the next full run: see *What the plan got wrong*.
+- Task 4: `git grep -nF "{{PROJECT_NAME}}" -- commands bootstrap.md templates scripts` printed
+  `scripts/set-up-project.sh:89:` (the replacer) and `templates/README.md:1:`.
+- Self-check after Task 4, second run: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 5: `npm --prefix .tropis test` printed `Tests:       137 passed, 137 total`.
+- Task 6, fresh-agent check (Claude Code 2.1.300, macOS 26.2, arm64, `claude -p
+  --output-format stream-json --verbose`, with `--allowedTools` limited to bash, git, read
+  and write; the first attempt with bypassed permissions was refused by the session's
+  classifier). The agent ran
+  `bash scripts/set-up-project.sh "<scratch>/harbour-tools" "Harbour Tools & Co."`, exit 0.
+  Results: `.tropis/project.json` = `{` / `  "name": "Harbour Tools & Co."` / `}`; package
+  `harbour-tools-co-framework`; guide line 1 `# Harbour Tools & Co. — working with the
+  framework`; brief line 1 `# Project Brief — Harbour Tools & Co.` (written from the name
+  in `.tropis/project.json`). Passed first time; no command text was changed. The
+  developer's user-level instructions say nothing about project names, so the probe was
+  not primed.
+- Task 7: `<title>Harbour Tools &amp; Co. backlog</title>`.
+
+### Scope
+
+See the diff stat in the final report; every file is in *File Structure*. Worktree used:
+`../tropis-display-name` (branch `plan/project-has-one-display-name`).
+
+### Judgment calls
+
+- Tasks 2 and 3 were committed together (setup, record and board in one commit): the board
+  change is four lines and the intermediate self-check would only have shown its cases red.
+- The probe ran with a scoped tool allow-list instead of bypassed permissions, because the
+  latter was refused.
+- In `commands/bootstrap.md` Stage 2 I added the `.tropis/project.json` sentence before
+  "Prune what the project does not need", after "It does not commit."
+- The Stage 5 sentence in `commands/bootstrap.md` was rewrapped to the file's line width.
+
+### What the plan got wrong
+
+- Task 1 said the no-name setup case may already pass; it failed, because the guide's
+  heading must now be the folder name, not the placeholder.
+- `main-status.test.js` (`--pull-request` update-branch cases) failed twice in full
+  self-checks under load, passed in isolation and in the third full run. Unrelated to this
+  change; per the workflow it is a check that passes on a rerun and is worth a backlog
+  entry (runs: failed at 14:34 and 14:40, passed at 14:47 and alone, same tree for the last
+  two).
+- The plan's record of cascading red tests in Task 1 (check-version and the freshly
+  set-up project) was not anticipated.
+
+### Outstanding
+
+- No pull request was opened, by instruction. The branch is pushed for the reviewer.
+- The change has no screen beyond the board title, which Task 7 checked, so there is no
+  developer check.
+- The flaky `main-status.test.js` cases above need an entry if the reviewer agrees.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0 and Node v22.15.0 on macOS 26.2, arm64.
+
+- `git diff --stat origin/main...HEAD` at `d60d67b`: 14 files, every one in *File
+  Structure*. The review added one file the table did not list, declared below:
+  `docs/backlog-board/bands.yaml`.
+- Each guard re-broken in a scratch export of the branch (`git archive`, run with the
+  branch's own Jest):
+  - `.tropis/project.json` removed from `EXCLUDED`: `the display name › writes the name it
+    is given to .tropis/project.json, exactly`, `record-installed.mjs › writes the record
+    for its own project and prints nothing` and `a freshly set-up project passes its own
+    checks` fail. **The new take-version case passed** (`Tests: 45 skipped, 1 passed`):
+    see *Found*. After the fix it fails with the exclusion removed (`1 failed`) and passes
+    with it (`1 passed`).
+  - The board's title line restored to `${basename(root)} backlog`: `backlog board title`
+    fails (`1 failed, 3 passed` — the three fallback cases pass, as they should).
+- `bash scripts/check-blueprint.sh` at the review fix: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`, exit 0.
+- `npm --prefix .tropis test`: `Tests:       137 passed, 137 total`.
+- The setup diff read line by line: `node -e` puts its first argument at `process.argv[1]`,
+  so the guide writer's template, destination and value are `argv[1]`, `[2]` and `[3]`,
+  and the settings writer's name is `argv[1]`; the slug runs under `LC_ALL=C`; every write
+  happens before `record-installed.mjs`.
+- The handover's diagnosis of the two `main-status.test.js` failures: the kept logs under
+  the worktree's `.self-check/logs/` (`…-0a27f09/` and `…-d354efc/`, clean baseline) show
+  both cases exiting 3, the command's timeout code, with `--interval 0.05 --timeout 0.05`.
+  That fits a loaded run, not this change, which touches nothing `main-status.mjs` reads.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Paths in the
+handover are relative or written as `<scratch>`.
+
+- **The take-version case could not fail.** It wrote `.tropis/project.json` after setup,
+  so the file was never in the record, and an update has nothing to delete whether or
+  not the exclusion exists. The defect the exclusion prevents is a file setup writes and
+  then records. **Fixed by the reviewer, mechanically**: `world()` takes a `name` and
+  passes it to setup, and the case sets the scratch project up with one. The plan's
+  Decision 7 asked for the write-after-setup shape, so this is the plan's error.
+- The edited paragraphs in `commands/bootstrap.md` (Stages 1, 2 and 5) and `bootstrap.md`
+  (Step 5) were left with short ragged lines. **Rewrapped by the reviewer**; no word
+  changed.
+- **Unbanded on the branch, by the reviewer**: the entry's row is deleted from
+  `docs/backlog-board/bands.yaml`, so its move to shipped and its unbanding land in this
+  one pull request. `npm --prefix .tropis run board -- --stamp` would also have restamped
+  three other entries' rows, which other sessions are editing, so the row was deleted by
+  hand instead.
+
+### Outstanding disposition
+
+- The two flaky `main-status.test.js` cases: another session had already recorded the
+  same two cases as `main-status-tests-pass-under-load`; this plan's two runs are added
+  to that entry as a comment.
+- No pull request opened by the executor: by instruction; the reviewer opens it.
+- No developer check: nothing has a screen except the board title, which the executor's
+  Task 7 and the board guard both checked.
+
+### Learnings routed
+
+- **A test of "an update keeps X" must put X where the release record can see it.** This
+  is the planning rule's existing *A check states what it prints when it passes and when
+  it fails* applied to an update test, and the reviewer's re-break caught it as that rule
+  says; nothing generalises beyond it, so no new rule.
+- Nothing this plan built is portable beyond the framework itself: it is the framework's
+  own setup.
+
+### Merged because
+
+Every criterion has a test that fails without the change, the fresh-agent check passed on
+the first run, and the self-check and the installed checks are green; the review fixed one
+test that could not fail and added the flaky check it surfaced to the entry that records it.

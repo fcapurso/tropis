@@ -215,21 +215,6 @@ project-chooses-its-repository-host:
   seen:
     status: shaped
     blockers: []
-project-has-one-display-name:
-  band: B
-  value: 3
-  valueWhy: Setup asks for a name and nothing uses it.
-  effort: 2
-  effortWhy: One stored field read in four places.
-  verdict: "Confirmed: setup asks for a display name and nothing uses it — the
-    board is titled after the folder. Small and plannable; its draft criteria store
-    the name in a new .tropis/project.json, while the project's own settings now
-    live in .claude/project.json, so settle the file when shaping it."
-  evidence: "2026-10-19 — commands/bootstrap.md:19 asks for a display name;
-    scripts/build-backlog-board.mjs:101 titles the board with basename(root)."
-  seen:
-    status: building
-    blockers: []
 project-settings-are-listed-and-held-once:
   band: C
   value: 3

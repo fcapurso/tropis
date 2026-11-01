@@ -55,12 +55,15 @@ Ask for, then confirm before creating anything:
 - project display name
 - blueprint URL (the blueprint remote, or the local path the operator names)
 
-The package name in `.tropis/package.json` is derived from the project's folder name.
+Take the display name exactly as given — capitals, spaces and symbols included. Setup
+stores it in `.tropis/project.json`; the backlog board, the operator guide and the
+package name in `.tropis/package.json` take it from there, and fall back to the
+project's folder name when it is absent.
 
 ## Step 2 — Set the framework up in the project
 
 ```bash
-bash "$BP"/scripts/set-up-project.sh <project-root>
+bash "$BP"/scripts/set-up-project.sh <project-root> "<display name>"
 ```
 
 Refuse to continue if that exits non-zero. It writes these, inside the project only.
@@ -69,6 +72,7 @@ Refuse to continue if that exits non-zero. It writes these, inside the project o
 | In the project | What it is |
 |---|---|
 | `.tropis/rules/` | the text of each shipped rule |
+| `.tropis/project.json` | the project's display name, written when setup is given one — yours, never replaced by an update |
 | `.claude/rule-areas.json` | which files each shipped rule governs — yours to change |
 | `.claude/rule-additions/<name>.md` | not created by setup. Plain text, no header, named after a shipped rule: this project's additions to that rule. Write it, then run `npm --prefix .tropis run rules`. The additions follow the shipped text in the one file each tool loads, and win where they contradict. Never edit the shipped text in `.tropis/rules/` or a generated file |
 | `.claude/rules/`, `.claude/framework/`, `.claude/commands/` | the shipped rules as Claude Code reads them (generated), your own rules, the framework documents and the commands |
@@ -158,10 +162,9 @@ refreshedAt: ""        # the commit the README was last refreshed at; empty unti
 
 ## Step 4 — Fill the operator guide
 
-The setup copied `templates/README.md` to `.tropis/README.md`. Replace these
-placeholders from the Step 1 answers:
+The setup copied `templates/README.md` to `.tropis/README.md` with the display name at
+its head. Replace this placeholder from the Step 1 answers:
 
-- `{{PROJECT_NAME}}`
 - `{{BLUEPRINT_URL}}`
 
 Do not restate the workflow in this file. It points at the blueprint.
@@ -169,10 +172,10 @@ Do not restate the workflow in this file. It points at the blueprint.
 ## Step 5 — Draft the entry point
 
 The setup left `AGENTS.md` as the template and `CLAUDE.md` as the single line
-`@AGENTS.md`. Fill `AGENTS.md` from the brief's identity. Work through the
-template's comments and replace every placeholder. Then delete the comments,
-including the block at the bottom listing what does *not* belong in `AGENTS.md`
-— read it before deleting it.
+`@AGENTS.md`. Fill `AGENTS.md` from the brief's identity. Title it with the name in
+`.tropis/project.json`. Work through the template's comments and replace every
+placeholder. Then delete the comments, including the block at the bottom listing
+what does *not* belong in `AGENTS.md` — read it before deleting it.
 
 **Write the gotchas section first, and write it from experience.** The highest-value
 content in an entry file is what is *surprising* about this project, not what it is.
