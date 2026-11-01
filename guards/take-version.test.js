@@ -958,6 +958,20 @@ describe('take-version.mjs', () => {
     expect(recordProblems(worktree)).toEqual([]);
   }), SLOW);
 
+  it('leaves .tropis/project.json as the project wrote it', () => inWorld({}, (w) => {
+    const text = `${JSON.stringify({ name: 'Example Project' }, null, 2)}\n`;
+    write(w.project, '.tropis/project.json', text);
+    w.commit('write the display name');
+    w.release('v0.2.1', addExtraScript);
+    const { r, worktree } = takeInWorktree(w, 'v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(read(worktree, '.tropis/project.json')).toBe(text);
+    expect(existsSync(join(worktree, '.tropis/project.json.new'))).toBe(false);
+    expect(Object.keys(JSON.parse(read(worktree, '.tropis/installed.json')).files)).not.toContain('.tropis/project.json');
+    expect(recordProblems(worktree)).toEqual([]);
+  }), SLOW);
+
   it('names the package after the folder when the package names nothing', () => inWorld({}, (w) => {
     w.release('v0.2.1', addExtraScript);
     const { name, ...nameless } = packageOf(w.project);
