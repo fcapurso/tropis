@@ -857,3 +857,65 @@ and so are `.claude/`, `.tropis/`, `.cursor/`, `.github/` and `CLAUDE.md`.
   if another session takes it first.
 - **The pull request.** Not opened, per the developer's override; the reviewing session
   opens it.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `cfa053f`, with git 2.49.0 and Node
+v22.15.0 in Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` names 18 files, every one in *File
+  Structure* (the template renames as `git mv`s), plus the two other catalog entries the
+  handover explains.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 137 passed, 137 total`.
+- Re-break: a throwaway commit making `promoteCheck` ignore the allow list, then
+  `guards/pipeline.test.js` through the Task 0 snippet: `Tests: 1 failed, 110 passed`.
+  Commit dropped, never pushed.
+- Read in full: `promoteCheck` and the slot's two old-layout refusals in
+  `scripts/pipeline.mjs`, `commands/release.md`, FW-044 and FW-030's amendment, and the
+  by-hand steps in `RELEASES.md`. They do what Decisions 1–6 say.
+
+### Found
+
+- **The notes can miss what merged since staging (judgement, not fixed here).** When
+  Stage 7 or a failed check sends the developer back to step 1 for the head of the main
+  branch, nothing offers to redraft the notes for what merged meanwhile. Whether to
+  redraft, append or ask is a design choice, so it is a backlog idea,
+  `release-notes-cover-a-restaged-commit`, added on this branch.
+- **A main-status test passed on a rerun** on the untouched base (the handover's
+  *Outstanding*). The workflow calls that a bug to record. Another session had raised it
+  as `main-status-tests-pass-under-load` by merge time, so this branch adds this
+  sighting to that idea instead of a second entry.
+- Nothing mechanical to fix. The executor's deviations — renaming the template path in
+  two other catalog entries, which the catalog check required, and holding one release
+  test until the workflow text landed — are right.
+
+### Outstanding disposition
+
+- A real deploy to staging (finding the run by `run-name`, `gh run watch`, reading the
+  summary from the log) and a real promote pipeline can be checked only on an adopter's
+  first release after this one. Loose end, reported to the parent session; not run.
+- The old caller is caught only by the release note's by-hand step, which `/update`
+  performs; the slot refuses the old folder and variable by machine. Accepted.
+- This repository's own `.github/scripts/release.mjs` still names the old notes line in
+  one message. It is not shipped and changes when this repository takes the release.
+- FW-044 was free on `origin/main` at review; renumber at merge if another session takes
+  it first.
+
+### Learnings routed
+
+- Plan check: a plan may not quote a worktree command outside its Repositories table,
+  even inside a decision about what a command must print; already in `AGENTS.md`'s
+  gotchas, no new rule.
+- The two findings above are backlog ideas: one added on this branch, one a sighting
+  added to an existing idea. Nothing else generalises:
+  this repository is the upstream, so there is no queue entry.
+
+### Merged because
+
+Every criterion of both entries is covered by a test, the command text or the probe, as
+the handover's table shows, apart from the real runs above, which nothing here can
+exercise. The pull request carries both entries to shipped and removes their band rows.

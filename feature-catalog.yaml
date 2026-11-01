@@ -4739,6 +4739,9 @@
 # 2026-11-01, seen again executing docs/superpowers/plans/2026-11-01-project-has-one-display-name.md:
 # the same two cases exited 3 in the clean baseline at 0a27f09 and at d354efc, then passed
 # alone and in the next full run on the same tree (node v22.15.0, macOS 26.2 arm64).
+# 2026-11-01, seen a third time executing docs/superpowers/plans/2026-11-01-release-flow.md:
+# "never asks twice to update the same head" exited 3 twice in full self-checks on an
+# untouched base, then passed alone and in later runs (Claude Code 2.1.300, macOS 26.2 arm64).
 - id: main-status-tests-pass-under-load
   title: The main-status tests give the same answer however busy the machine is
   status: idea
@@ -4753,3 +4756,20 @@
     - guards/main-status.test.js
   refs:
     - docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
+# 2026-11-01, raised reviewing the release-flow plan: its fresh-agent probe sent the
+# developer back to step 1 after a merge, with notes drafted before that merge.
+- id: release-notes-cover-a-restaged-commit
+  title: When a release goes back to staging for a newer commit, its notes cover what merged since
+  status: idea
+  value: The people reading a release's notes learn about every change it ships. Today,
+    when /release finds that something merged after staging was checked, or the check
+    failed and a fix merged, it sends the developer back to deploy the head of the main
+    branch to staging, but the notes were drafted for the earlier commit and nothing
+    offers to redraft them, so the release can ship a change its notes never mention.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules:
+    - commands/release.md
+  refs:
+    - docs/superpowers/plans/2026-11-01-release-flow.md
