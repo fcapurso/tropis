@@ -26,8 +26,13 @@ releasing does that, after reading what you drafted.
 - Breaking: as `RELEASES.md` defines it — a project taking the release must act by hand.
   Below 1.0 the release job raises the middle number only for `bump=major`, and `minor`
   raises the last one: so a breaking release is `bump=major` until 1.0.
-- Trigger: `gh workflow run ci.yml --ref main -f version=<version>`, once the notes are
-  on main. The job checks main, tags it, and pushes only the tag.
+- Trigger: `gh workflow run ci.yml --ref main -f version=<version> -f commit=<commit>`,
+  once the notes are on main. `<commit>` is the full hash of the commit that carries the
+  promoted notes: where the notes went through a pull request, its merge commit,
+  `gh pr view <N> --json mergeCommit -q .mergeCommit.oid`; otherwise the notes commit
+  Stage 5 pushed. Never `origin/main`'s head, which may already hold later work. The job
+  tags that commit, refusing one not on main or whose notes do not name the version, and
+  pushes only the tag; anything merged after it waits for the next release.
 - Where the run is watched: https://github.com/fcapurso/tropis/actions/workflows/ci.yml
 <!-- project-owned: end -->
 

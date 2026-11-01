@@ -120,40 +120,50 @@ describe('checkReleased', () => {
 });
 
 // Backs main-is-gated-by-the-host (and supersedes the third criterion of
-// release-job-checks-the-commit-it-tags): the job's own steps, read from ci.yml and run in
-// a scratch repository whose self-check is a stub and whose origin is a bare repository
-// beside it, so nothing real is checked or pushed. The notes reach main already
-// promoted; the job checks them and the commit, tags it, and pushes only the tag.
+// release-job-checks-the-commit-it-tags) and release-tags-the-notes-commit: the job's own
+// steps, read from ci.yml and run in a scratch repository whose self-check is a stub and
+// whose origin is a bare repository beside it, so nothing real is checked or pushed. The
+// notes reach main already promoted; the job is given the commit that carries them,
+// checks it is on main and that its notes name the version, tags that commit, and pushes
+// only the tag.
 describe('the release job', () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   const workflow = YAML.parse(readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8'));
   const job = workflow.jobs.release;
   const after = job.steps.slice(job.steps.findIndex((st) => String(st.uses ?? '').startsWith('actions/setup-node')) + 1);
+  const commitStep = after.findIndex((st) => st.id === 'commit');
   const notesStep = after.findIndex((st) => st.id === 'notes');
   const checkStep = after.findIndex((st) => (st.run ?? '').trim() === 'bash scripts/check-blueprint.sh');
   const tagStep = after.findIndex((st) => (st.run ?? '').includes('git tag'));
 
   it('commits nothing, pushes only the tag, and checks before it tags', () => {
     expect(Object.keys(workflow.jobs)).toEqual(['release']);
-    expect(Object.keys(workflow.on.workflow_dispatch.inputs)).toEqual(['version']);
-    expect(workflow.on.workflow_dispatch.inputs.version.required).toBe(true);
+    const inputs = workflow.on.workflow_dispatch.inputs;
+    expect(Object.keys(inputs)).toEqual(['version', 'commit']);
+    expect(inputs.version.required).toBe(true);
+    expect(inputs.commit.required).toBe(true);
     const runs = job.steps.map((st) => st.run ?? '').join('\n');
     expect(runs).not.toContain('git commit');
     const pushes = runs.split('\n').map((l) => l.trim()).filter((l) => l.includes('git push'));
     expect(pushes).toEqual(['git push origin "v$VERSION"']);
-    expect(notesStep).toBeGreaterThanOrEqual(0);
+    expect(commitStep).toBeGreaterThanOrEqual(0);
+    expect(notesStep).toBeGreaterThan(commitStep);
     expect(checkStep).toBeGreaterThan(notesStep);
     expect(tagStep).toBeGreaterThan(checkStep);
-    for (const st of after.slice(notesStep)) {
+    for (const st of after.slice(commitStep)) {
       expect(st).not.toHaveProperty('if');
       expect(st).not.toHaveProperty('continue-on-error');
     }
     expect(job).not.toHaveProperty('continue-on-error');
   });
 
-  // Runs the job's steps after setup-node in a fresh scratch world whose main already
-  // carries notes promoted to 0.2.0; the stub self-check records the commit it saw.
-  const release = ({ checkExit = 0, version = '0.2.0', tagFirst = false } = {}) => {
+  // Runs the job's steps after setup-node in a fresh scratch world: a first commit with
+  // notes not yet promoted, then the notes commit that promotes them to 0.2.0, both
+  // pushed to main. The stub self-check records the commit it saw. `commit` picks what
+  // the job is given: 'notes', 'parent' (the first commit), 'side' (a commit on a branch
+  // never merged), 'short' (a seven-character hash); `later` adds a commit to main after
+  // the notes commit, pushed, which the job's checkout then starts on.
+  const release = ({ checkExit = 0, version = '0.2.0', tagFirst = false, commit = 'notes', later = false } = {}) => {
     const dir = mkdtempSync(join(tmpdir(), 'release-job-'));
     const origin = join(dir, 'origin.git');
     const work = join(dir, 'work');
@@ -168,7 +178,8 @@ describe('the release job', () => {
     try {
       git(dir, 'init', '-q', '--bare', origin);
       git(dir, 'init', '-q', '-b', 'main', work);
-      writeFileSync(join(work, 'RELEASES.md'), promote(`${head}${unreleased}\n---\n`, '0.2.0', '2026-10-31'));
+      const notes = join(work, 'RELEASES.md');
+      writeFileSync(notes, `${head}${unreleased}\n---\n`);
       mkdirSync(join(work, '.github/scripts'), { recursive: true });
       copyFileSync(join(root, '.github/scripts/release.mjs'), join(work, '.github/scripts/release.mjs'));
       mkdirSync(join(work, 'scripts'));
@@ -176,21 +187,44 @@ describe('the release job', () => {
       writeFileSync(stub, `#!/usr/bin/env bash\ngit rev-parse HEAD > "${join(dir, 'checked')}"\nexit ${checkExit}\n`);
       chmodSync(stub, 0o755);
       git(work, 'add', '-A');
-      git(work, 'commit', '-qm', 'docs(release): draft notes for the next release');
+      git(work, 'commit', '-qm', 'docs(release): notes still unreleased');
+      const parent = git(work, 'rev-parse', 'HEAD');
+      writeFileSync(notes, promote(`${head}${unreleased}\n---\n`, '0.2.0', '2026-10-31'));
+      git(work, 'commit', '-qam', 'docs(release): promote the notes to 0.2.0');
+      const notesCommit = git(work, 'rev-parse', 'HEAD');
       git(work, 'remote', 'add', 'origin', origin);
       git(work, 'push', '-q', 'origin', 'main');
+      git(work, 'checkout', '-q', '-b', 'side');
+      writeFileSync(join(work, 'side.txt'), 'unmerged\n');
+      git(work, 'add', '-A');
+      git(work, 'commit', '-qm', 'work on a side branch');
+      const sideCommit = git(work, 'rev-parse', 'HEAD');
+      git(work, 'checkout', '-q', 'main');
+      let laterCommit = null;
+      if (later) {
+        writeFileSync(join(work, 'later.txt'), 'merged after the notes\n');
+        git(work, 'add', '-A');
+        git(work, 'commit', '-qm', 'feat: work merged after the notes');
+        git(work, 'push', '-q', 'origin', 'main');
+        laterCommit = git(work, 'rev-parse', 'HEAD');
+      }
       if (tagFirst) git(work, 'tag', 'v0.2.0');
       const start = git(origin, 'rev-parse', 'main');
+      const given = { notes: notesCommit, parent, side: sideCommit, short: notesCommit.slice(0, 7) }[commit];
 
-      for (const st of after) expect(Object.keys(st.env ?? {}).filter((k) => k !== 'VERSION')).toEqual([]);
+      for (const st of after) {
+        expect(Object.keys(st.env ?? {}).filter((k) => k !== 'VERSION' && k !== 'COMMIT')).toEqual([]);
+      }
       let stoppedAt = -1;
+      let output = '';
       for (const [i, st] of after.entries()) {
         if (!st.run) continue;
         const r = spawnSync('bash', ['-e', '-c', st.run], {
           cwd: work,
           encoding: 'utf8',
-          env: { ...process.env, VERSION: version },
+          env: { ...process.env, VERSION: version, COMMIT: given },
         });
+        output = `${r.stdout}${r.stderr}`;
         if (r.status !== 0) {
           stoppedAt = i;
           break;
@@ -200,26 +234,63 @@ describe('the release job', () => {
       try {
         checked = readFileSync(join(dir, 'checked'), 'utf8').trim();
       } catch {}
+      const onOrigin = (...args) => spawnSync('git', args, { cwd: origin, encoding: 'utf8' }).stdout.trim();
       return {
         stoppedAt,
+        output,
         start,
+        notesCommit,
         checked,
         workHead: git(work, 'rev-parse', 'HEAD'),
         originMain: git(origin, 'rev-parse', 'main'),
         originTags: git(origin, 'tag', '--list', 'v*'),
-        originTagCommit: spawnSync('git', ['rev-parse', 'v0.2.0^{commit}'], { cwd: origin, encoding: 'utf8' })
-          .stdout.trim(),
+        originTagCommit: onOrigin('rev-parse', 'v0.2.0^{commit}'),
+        taggedAfterLater: laterCommit ? onOrigin('tag', '--contains', laterCommit) : null,
       };
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   };
 
-  it('tags the commit main holds and pushes only the tag', () => {
+  it('tags the commit it is given, not the head of main, and pushes only the tag', () => {
+    const r = release({ later: true });
+    expect(r.stoppedAt).toBe(-1);
+    expect(r.start).not.toBe(r.notesCommit);
+    expect(r.originMain).toBe(r.start);
+    expect(r.checked).toBe(r.notesCommit);
+    expect(r.originTagCommit).toBe(r.notesCommit);
+    expect(r.taggedAfterLater).toBe('');
+  });
+
+  it('refuses a commit that is not on main, before the self-check', () => {
+    const r = release({ commit: 'side' });
+    expect(r.stoppedAt).toBe(commitStep);
+    expect(r.output).toMatch(/is not on main/);
+    expect(r.checked).toBeNull();
+    expect(r.originTags).toBe('');
+  });
+
+  it('refuses a short hash, before the self-check', () => {
+    const r = release({ commit: 'short' });
+    expect(r.stoppedAt).toBe(commitStep);
+    expect(r.output).toMatch(/not a full commit hash/);
+    expect(r.checked).toBeNull();
+    expect(r.originTags).toBe('');
+  });
+
+  it('refuses a commit whose notes do not name the version, before the self-check', () => {
+    const r = release({ commit: 'parent' });
+    expect(r.stoppedAt).toBe(notesStep);
+    expect(r.output).toMatch(/still holds notes/);
+    expect(r.checked).toBeNull();
+    expect(r.originTags).toBe('');
+  });
+
+  it('tags the commit main holds when that is the notes commit', () => {
     const r = release();
     expect(r.stoppedAt).toBe(-1);
     expect(r.originMain).toBe(r.start);
-    expect(r.workHead).toBe(r.start);
+    expect(r.workHead).toBe(r.notesCommit);
     expect(r.checked).toBe(r.start);
     expect(r.originTagCommit).toBe(r.start);
   });

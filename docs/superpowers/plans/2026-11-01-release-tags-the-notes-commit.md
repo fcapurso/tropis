@@ -340,3 +340,97 @@ its actual output, the red checks' failing test names, the criteria table, the p
 answer, and the worktree path used. Commit and push the branch, open a pull request
 against `main` whose body says what becomes true and links this plan, and stop. Do not
 write a review record and do not merge.
+
+## Handover report
+
+Worktree: `../tropis-release-commit`, branch `plan/release-tags-the-notes-commit`, started from `460f86e`. Tool: Claude Code 2.1.300; git 2.49.0; node v22.15.0; Darwin arm64. Source worked from: none; the code is written against this repository's own names.
+
+### Task completion
+
+- Task 0: `npm --prefix .tropis ci`, clean tree, `scripts/check-blueprint.sh` ended `Self-check passed`.
+- Task 1: tests first (red: 5 failed, 66 passed), then `ci.yml` (71 passed). Red checks, each a throwaway commit then dropped:
+  - tag step without the commit and without the detach: fails "tags the commit it is given, not the head of main, and pushes only the tag" and "refuses a commit whose notes do not name the version, before the self-check";
+  - ancestor refusal removed: fails "refuses a commit that is not on main, before the self-check";
+  - full-hash refusal removed: fails "refuses a short hash, before the self-check".
+- Task 2: only lines between the project-owned markers changed; `npm --prefix .tropis test`: 13 suites, 132 tests passed.
+- Task 3: probe passed on the first run (below).
+- Task 4: catalog entry shipped; modules are `ci.yml`, `guards/release.test.js`, `.claude/commands/release.md` (`release.mjs` unchanged).
+
+### Verification results
+
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: Test Suites 13 passed, Tests 132 passed (the known `set-up-project` failure did not occur).
+- Probe, read-only tools, scratch clone with no remote, told notes went through merged pull request 401 and 402 merged after: it printed `gh workflow run ci.yml --ref main -f version=0.9.0 -f commit=<full hash of PR 401's merge commit>`, got the hash from `gh pr view 401 --json mergeCommit -q .mergeCommit.oid`, and said not to use main's head, which is 402's. One run, no rewording.
+
+### Criteria
+
+| Criterion | Covered by |
+|---|---|
+| 1. Trigger names the commit; `/release` prints it filled in | The probe, and the *Trigger* text in the project-owned block of `.claude/commands/release.md`; the first test asserts the `commit` input exists and is required |
+| 2. Job tags that commit; refuses one not on main or whose notes do not name the version, saying which | Tests: tags the commit it is given; refuses a commit not on main; refuses a short hash; refuses a commit whose notes do not name the version (each asserts the stop step and the message) |
+| 3. Work merged after the commit is in no tag | Test "tags the commit it is given, not the head of main": origin's tag is the notes commit, origin's main unchanged, `git tag --contains` the later commit prints nothing |
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: `.claude/commands/release.md`, `.github/workflows/ci.yml`, `feature-catalog.yaml`, `guards/release.test.js`. With this report: plus this plan file. All in the File Structure table.
+
+### Judgment calls
+
+- The test world now has two commits (unpromoted notes, then promoted notes) so the "notes do not name the version" case uses the parent; the first commit also carries the scripts, since the job checks that commit out.
+- The commit step's `echo` quotes the hash with escaped double quotes inside a YAML block, as written in the plan.
+- The probe's answer left the hash as a placeholder for the lookup, which is what the instruction asks the agent to do when it cannot run commands.
+
+### What the plan got wrong
+
+Nothing found. The probe noted the generic Stage 6 text says "with the confirmed bump" while this repository's trigger takes a version and a commit; the project-owned block overrides it and the probe followed it.
+
+### Outstanding
+
+Parent review. The release job was never run and nothing was tagged; no review record written, not merged.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `2f804d2`, with git 2.49.0 and Node
+v22.15.0 in Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `guards/release.test.js` through the Task 0 snippet: `Tests: 71 passed, 71 total`.
+- Re-break: a throwaway commit removing the detach, the `merge-base --is-ancestor`
+  refusal, and the tag-by-name from `ci.yml`, then the same guard:
+  `Tests: 3 failed, 68 passed, 71 total`. Dropped.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed`, `Tests: 132 passed`.
+- Scope: `git diff --stat origin/main...HEAD` lists `.claude/commands/release.md`,
+  `.github/workflows/ci.yml`, the plan, `feature-catalog.yaml` and
+  `guards/release.test.js`, all in *File Structure*. The `.claude/commands/release.md`
+  diff is wholly between the project-owned markers.
+- The probe was not re-run; its answer and tool are recorded in the commit body of
+  `3b8ff43` and above, and the block's wording was read against the probe's pass
+  condition.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing.
+
+Nothing else. The handover's note that the shipped Stage 6 says "with the confirmed
+bump" is right and harmless here: this repository's block names both values. Changing
+the shipped Stage 6 belongs to `release-tags-what-main-holds`, which reworks projects'
+release flow.
+
+### Outstanding disposition
+
+The handover lists nothing outstanding. The job's behaviour on GitHub's runner is proven
+only by its steps run against a scratch origin; it is first exercised for real by the
+developer's next release, which no agent runs.
+
+### Learnings routed
+
+Nothing generalises: the change is this repository's own release job, and projects'
+release flow is `release-tags-what-main-holds`.
+
+### Merged because
+
+Every criterion has a test or a recorded probe, the re-break goes red, and the suite and
+self-check pass on the branch.

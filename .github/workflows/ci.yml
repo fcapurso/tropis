@@ -1,10 +1,12 @@
 # The release job. Pull requests and pushes to main run through pipeline.yml,
 # whose unit stage is the self-check. The notes reach main already promoted
 # under the version, through /release's notes commit, so this job commits
-# nothing: it checks that the notes on main name the version and that it is not
-# tagged yet, self-checks the very commit it tags, tags it, and pushes only the
-# tag. It is started by hand, on main, by the developer — never by an agent:
-#   gh workflow run ci.yml --ref main -f version=<X.Y.Z>
+# nothing: it tags the commit it is given, checked to be on main, checks that the
+# notes at that commit name the version and that it is not tagged yet,
+# self-checks that very commit, and pushes only the tag. Anything merged after
+# that commit waits for the next release. It is started by hand, on main, by the
+# developer — never by an agent:
+#   gh workflow run ci.yml --ref main -f version=<X.Y.Z> -f commit=<full hash>
 name: Self-check and release
 
 on:
@@ -12,6 +14,10 @@ on:
     inputs:
       version:
         description: The version the notes on main were promoted to, X.Y.Z
+        type: string
+        required: true
+      commit:
+        description: The full hash of the commit on main that carries the promoted notes
         type: string
         required: true
 
@@ -32,6 +38,24 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - name: The commit is on main, and is checked out
+        id: commit
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          if ! [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "\"$COMMIT\" is not a full commit hash: give the 40-character hash /release printed."
+            exit 1
+          fi
+          if ! git cat-file -e "$COMMIT^{commit}" 2> /dev/null; then
+            echo "$COMMIT is not a commit in this repository."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$COMMIT" HEAD; then
+            echo "$COMMIT is not on main: give the commit /release's notes merge put on main."
+            exit 1
+          fi
+          git checkout -q --detach "$COMMIT"
       - name: The notes name this version, and it is not tagged yet
         id: notes
         env:
@@ -49,8 +73,9 @@ jobs:
       - name: Tag and push the tag
         env:
           VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git tag -a "v$VERSION" "$COMMIT" -m "Release v$VERSION"
           git push origin "v$VERSION"
