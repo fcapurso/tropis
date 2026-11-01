@@ -17,7 +17,7 @@ const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '..');
 function isBlueprintTree(dir) {
   return (
     existsSync(join(dir, 'bootstrap.md')) &&
-    existsSync(join(dir, 'PORTABILITY-NOTES.md')) &&
+    existsSync(join(dir, 'framework/workflow.md')) &&
     existsSync(join(dir, 'commands')) &&
     existsSync(join(dir, 'README.md'))
   );
