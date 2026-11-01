@@ -18,7 +18,7 @@ const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '..');
 function isBlueprintTree(dir) {
   return (
     existsSync(join(dir, 'bootstrap.md')) &&
-    existsSync(join(dir, 'PORTABILITY-NOTES.md')) &&
+    existsSync(join(dir, 'framework/workflow.md')) &&
     existsSync(join(dir, 'commands')) &&
     existsSync(join(dir, 'README.md'))
   );
@@ -94,7 +94,9 @@ describe('CONTRIBUTING.md', () => {
     let dir;
     beforeEach(() => {
       dir = mkdtempSync(join(tmpdir(), 'contributing-'));
-      for (const f of ['bootstrap.md', 'PORTABILITY-NOTES.md', 'README.md']) writeFileSync(join(dir, f), '');
+      for (const f of ['bootstrap.md', 'README.md']) writeFileSync(join(dir, f), '');
+      mkdirSync(join(dir, 'framework'));
+      writeFileSync(join(dir, 'framework/workflow.md'), '');
       mkdirSync(join(dir, 'commands'));
       writeFileSync(join(dir, 'commands/real.md'), '');
       mkdirSync(join(dir, '.github/workflows'), { recursive: true });

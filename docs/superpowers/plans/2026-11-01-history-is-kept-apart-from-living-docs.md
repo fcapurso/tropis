@@ -332,3 +332,138 @@ every test must pass. Run `bash scripts/check-blueprint.sh` and paste the last l
    **Stop there.** Do not open a pull request, write a review record, set auto-merge or
    merge: `main` is gated and the dispatching session reviews and delivers. Leave the
    worktree in place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+- Task 0 (setup): done. `npm --prefix .tropis ci` ran; `git status` was clean; the baseline self-check on the worktree before any edit printed `Self-check passed`.
+- Task 1 (guards, Decision 3): done, commit `1a9084e`. All five `isBlueprintTree` checks and both plant lines now use `framework/workflow.md`; `contributing-page.test.js` builds `framework/workflow.md` in its small tree.
+- Task 2 (move, Decision 1): done, commit `db9a0e7`. Notes moved with `git mv`, label paragraph inserted under the heading.
+- Task 3 (references, Decision 2): done, commit `f561d55`. README link, two plain-text references in `framework/DECISIONS.md`, one row in `AGENTS.md`.
+- Task 4 (fresh-agent check): done with a deviation, commit `523cdb1` (empty commit carrying the check record). See Verification results.
+- Task 5 (catalog and board, Decision 4): done, commit `f7857ed`. Entry set to `shipped`, comment added, band block removed.
+- Task 6: verification run; self-check did NOT pass (see below); this report committed and the branch pushed.
+
+### Verification results
+
+Tools: git 2.49.0; node v22.15.0; Claude Code 2.1.300; macOS 26.2 (`sw_vers -productVersion`); Darwin arm64 (`uname -sm`).
+
+**Task 0 baseline self-check** (before edits): last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+
+**Task 1 self-check** (after the guard edit): `Self-check passed...`. The Framework repository section printed, in part:
+
+```
+  caught      operator-page-closeout: framework/workflow.md planted
+  caught      operator-page-closeout: framework/workflow.md planted
+  caught      readme-usable: README.md planted
+  caught      readme-usable: framework/workflow.md planted
+```
+
+**Task 2 self-check** (after the move): `Self-check passed...`.
+
+**Task 3 grep**, `git grep -nF PORTABILITY-NOTES -- . ':!docs/superpowers' ':!.claude' ':!.tropis' ':!feature-catalog.yaml' ':!docs/backlog-board'`, printed exactly two lines:
+
+```
+README.md:179:  [docs/history/PORTABILITY-NOTES.md](docs/history/PORTABILITY-NOTES.md) records what was kept, what was left
+framework/DECISIONS.md:202:portability notes (docs/history/PORTABILITY-NOTES.md), because it is a property of the
+```
+
+The second grep (`PORTABILITY-NOTES.md` outside `docs/history`, in the framework folders) printed nothing. The same grep against `origin/main` printed the old lines (README 179, DECISIONS 202 and 207), so the empty result is not vacuous.
+
+**Task 3 self-check**: `Self-check passed...`.
+
+**Task 4 fresh-agent check.** Command: `claude -p "<the prompt from the plan>" --output-format stream-json --verbose --allowedTools Read,Grep,Glob` run from the worktree.
+
+- First run (Bash allowed, which the allow list did not block): the agent searched `framework/DECISIONS.md` with Grep, then read the notes with `sed -n 412,426p docs/history/PORTABILITY-NOTES.md` through Bash, not a Read call. Its reply: heading `## What this evidence does not cover`, read from `docs/history/PORTABILITY-NOTES.md:412`. Right file and heading, but no Read call.
+- Second run (`--disallowedTools Bash` added): the agent Grepped `framework/DECISIONS.md` for "portab", then Globbed `docs/history/**`, which returned `docs/history/PORTABILITY-NOTES.md`, then Grepped the notes for `^#`. Its reply: heading `## What this evidence does not cover`, line 412 of `docs/history/PORTABILITY-NOTES.md`. Its first Glob, `**/*portab*`, found nothing because the pattern is lowercase and the file name is uppercase; the agent then went to `docs/history/`.
+
+Judgement: the reference works (both runs followed the path from the decision record to the right file and heading, and read nothing else). The plan's literal pass wording asked for a Read call, and neither run made one; I did not run a third time to force it. The reviewer should decide whether this counts as a pass.
+
+**Task 5 tests**: `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 139 passed, 139 total`.
+
+**Task 5 self-check, FAILED.** Two full runs, both `FAILED: conformance or the clean baseline`. The conformance section (every guard caught its planted defect) and the Framework repository section passed in both runs. The clean-baseline failure was in `guards/main-status.test.js`, in every case `--pull-request` tests that run with `--timeout 0.05` (three seconds) against a stub `gh`:
+
+- Run 1 (log `.self-check/logs/20261101T175002Z-f7857ed`): 2 failed, 765 passed. `never asks twice to update the same head` (expected exit 0, got 3); `waits while a run on the head is still going, then stops` (expected 4, got 3).
+- Run 2 (log `.self-check/logs/20261101T180727Z-f7857ed`): 3 failed, 764 passed. `goes on waiting when the rules cannot be read, and asks only once`; `brings a branch that is behind up to date once, and waits on`; `never asks twice to update the same head`. Each expected 0 or 4 and got 3, which is the script's own "not within the timeout" exit.
+- Run in isolation, from a scratch copy of `git archive HEAD` with the same jest and config: `guards/main-status.test.js`: `Tests: 47 passed, 47 total`.
+- Machine load average during the runs was 33 to 58 (`uptime`).
+
+The failing tests are the timing-sensitive ones, they fail on different tests from run to run, and they pass alone, which points to load-induced timeouts rather than this plan's diff. This plan does not touch `scripts/main-status.mjs` or its guard. I did not change the test: the plan forbids lowering or skipping tests, and widening the timeout is a judgement for the reviewer. Earlier today the same self-check passed on the base commit (before any change in this plan).
+
+**Task 6 scope**: `git diff --stat origin/main...HEAD`:
+
+```
+ AGENTS.md                                                 |  1 +
+ README.md                                                 |  2 +-
+ docs/backlog-board/bands.yaml                             | 12 ------------
+ PORTABILITY-NOTES.md => docs/history/PORTABILITY-NOTES.md |  4 ++++
+ feature-catalog.yaml                                      |  6 +++++-
+ framework/DECISIONS.md                                    |  8 ++++----
+ guards/contributing-page.test.js                          |  6 ++++--
+ guards/dependency-overrides.test.js                       |  2 +-
+ guards/operator-page-closeout.test.js                     |  2 +-
+ guards/private-material.test.js                           |  2 +-
+ guards/readme-usable.test.js                              |  2 +-
+ scripts/check-blueprint.sh                                |  4 ++--
+ 12 files changed, 25 insertions(+), 26 deletions(-)
+```
+
+Every file is in *File Structure*. The plan file itself gets this report appended, which the File Structure row already allows. Worktree used: `../tropis-history` (branch `plan/history-is-kept-apart-from-living-docs`).
+
+### Scope
+
+Twelve files, as above, plus this report in the plan. Nothing under `.claude/`, `.tropis/` or `CLAUDE.md`. The installed `.claude/framework/DECISIONS.md` still names the old root path, as the plan requires.
+
+### Judgment calls
+
+- Decision 2: re-wrapped the two `framework/DECISIONS.md` paragraphs to keep lines near 90 characters. The path `docs/history/PORTABILITY-NOTES.md` stays on one line. No other word changed.
+- Decision 4: the entry read `status: building`, so it became `shipped`. The comment above the entry states the criteria as the plan gave them, and says "checked by git grep in Task 5"; the grep actually ran in Task 3. The comment is a little off on that detail.
+- Task 4: the probe was run twice, the second time with Bash disallowed (see Verification results). Commit `523cdb1` is an empty commit carrying the check record, as the plan allows.
+- Task 1 commit: the body says it is a refactor of guards, not a fix, since the guards' behaviour is unchanged on this repository.
+
+### What the plan got wrong
+
+- Task 4's pass wording requires a Read call on the notes. Under this environment's Claude Code, the agent reaches the file by Grep or Glob, not Read, and the first run used Bash unless Bash is disallowed. The pass condition needs rewording if the reviewer wants to keep it literal.
+- Decision 4's comment mentions a Task 5 grep for criteria 1 and 2; that grep is in Task 3.
+- The plan's Task 6 requires `Self-check passed`. The clean-baseline timing tests in `guards/main-status.test.js` make that unreliable on a loaded machine; the plan does not mention them.
+
+### Outstanding
+
+- **The self-check is not green.** The failure is the timing tests above, in code this plan does not touch. A reviewer should decide: rerun on a quieter machine, widen the test timeouts (a test change), or record the flake in the backlog with both run logs, as the workflow says for a check that fails on one run and passes on another.
+- No developer check: the change has no screen, so there is nothing for a developer to test.
+- The branch is pushed; no pull request is open, no merge or auto-merge set, and `main` is untouched. The worktree `../tropis-history` is left in place for the reviewer.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session with git 2.49.0 and node v22.15.0 on macOS 26.2, Darwin arm64, at `2695a71` (after the review fixes below).
+
+- `git diff --stat origin/main...HEAD`: 13 files, the twelve in *File Structure* plus this plan; the move shows as `PORTABILITY-NOTES.md => docs/history/PORTABILITY-NOTES.md`.
+- `bash scripts/check-blueprint.sh`: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` The *Framework repository* section shows `caught      operator-page-closeout: framework/workflow.md planted` and `caught      readme-usable: framework/workflow.md planted`, so removing the new marker still turns both guards red, and all five guards passed on the repository.
+- The Task 3 reference search printed exactly the two lines the plan expects (`README.md:179` and `framework/DECISIONS.md:202`, both with `docs/history/PORTABILITY-NOTES.md`). The search for the bare name outside `docs/history/` printed nothing, and the same search against `origin/main` printed 11 lines, so it can find a hit.
+- Read the label paragraph at the top of `docs/history/PORTABILITY-NOTES.md`. It matches the `doc-currency` pattern `^>\s*\*\*Historical record\.\*\*`.
+
+### Found
+
+Public exposure: read the whole diff and the handover for private material (names, other projects, home paths, hostnames). Nothing found. Paths in the handover are relative.
+
+- **The self-check failures in the handover were load, not this diff.** The executor's two red runs failed different `guards/main-status.test.js` `--pull-request` cases, each with exit 3 where 0 or 4 was expected, under a load average of 33 to 58. My run on the same content, at a load average around 32 to 50, passed in full, those tests included. This is the known defect `main-status-tests-pass-under-load`.
+- **The fresh-agent check is accepted.** The probe reached `docs/history/PORTABILITY-NOTES.md` from the decision's plain-text reference and quoted the right heading, both times. It did so through Grep, Glob or `sed` rather than a Read call. The plan's pass wording named the Read tool, which was the plan's mistake: the point was to reach the right file. The record is in the body of commit `523cdb1`, and it is carried into the squash message.
+- **Fixed by the reviewer, mechanically, in `2695a71`:** the reworded paragraph in `framework/DECISIONS.md` and the README link line were wrapped back to the files' line width, with no wording change. The catalog comment now says the reference search ran in Task 3, not Task 5. The developer's use of the repository is the check on these fixes.
+
+### Outstanding disposition
+
+- Self-check not green on the executor's machine: `main-status-tests-pass-under-load`, already in the catalog.
+- No developer check: the change has no screen.
+- The worktree `../tropis-history` is removed by the reviewer at merge.
+
+### Learnings routed
+
+- **A pass condition should name the outcome, not the tool call.** "The stream shows a Read of X" failed a probe that found X another way. This is a plan-writing slip already covered by the planning rule's *A check states what it prints when it passes*. It is not routed further.
+- Nothing else generalises. Moving a marker file is specific to this repository.
+
+### Merged because
+
+The move, the references and the five guards' new marker all do what the plan says. The self-check passes with both plants caught. The executor's red runs are explained by a known load defect that my green run on the same content confirms.

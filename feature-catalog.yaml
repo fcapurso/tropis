@@ -1843,9 +1843,13 @@
 # docs/superpowers/, which doc-currency already treats as an archive of dated records;
 # moving finished ones would break the catalog refs and plan paths the tooling reads, and
 # renaming that folder is plan-folder-names-no-plugin.
+# Shipped by docs/superpowers/plans/2026-11-01-history-is-kept-apart-from-living-docs.md.
+# Criteria 1 and 2 - the move and the references, checked by git grep in Task 3.
+# Criterion 3 - docs/history/ and the Historical record label. Criterion 4 - the
+# self-check's framework section and its two plants.
 - id: history-is-kept-apart-from-living-docs
   title: Historical documents sit apart from the ones still maintained
-  status: building
+  status: shipped
   value: A reader of this repository can tell at a glance which documents describe how
     things are now and which record how they came to be. Today PORTABILITY-NOTES.md sits
     at the root and is listed beside the live source folders, though nothing writes to it

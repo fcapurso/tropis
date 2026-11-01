@@ -145,9 +145,9 @@ plant() {
   rm -rf "$tree"
 }
 plant operator-page-closeout framework/workflow.md "A plan does not patch it"
-plant operator-page-closeout PORTABILITY-NOTES.md
+plant operator-page-closeout framework/workflow.md
 plant readme-usable README.md "## What is Tropis?"
-plant readme-usable PORTABILITY-NOTES.md
+plant readme-usable framework/workflow.md
 plant contributing-page CONTRIBUTING.md
 plant contributing-page CONTRIBUTING.md "A pull request from a fork runs the pipeline once the maintainer approves the run."
 plant dependency-overrides templates/package.json '"test-exclude": "^8.0.0"'
