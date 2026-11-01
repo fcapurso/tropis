@@ -101,6 +101,23 @@ export function isSiblingWorktree(isolation) {
 }
 
 /**
+ * The commit a `git worktree add` isolation command branches from: its start point, or
+ * HEAD when it gives none. Flags that take a value (`-b`, `-B`, `--reason`) are skipped
+ * with that value; the first remaining word is the path, the second the start point.
+ * @param {string} isolation
+ * @returns {string}
+ */
+export function isolationBase(isolation) {
+  const words = isolation.trim().split(/\s+/).slice(3);
+  const rest = [];
+  for (let i = 0; i < words.length; i++) {
+    if (['-b', '-B', '--reason'].includes(words[i])) i++;
+    else if (!words[i].startsWith('-')) rest.push(words[i]);
+  }
+  return rest[1] ?? 'HEAD';
+}
+
+/**
  * The directory a Repositories row names: the first backticked span of its checkout
  * cell — "app (`my-app`)" → "my-app" — or the cell itself when it has none.
  * @param {string} cell
@@ -148,7 +165,64 @@ export function validateDispatchable(markdown) {
     if (!cells.has(cmd)) errors.push(`Worktree command not in Repositories isolation: ${cmd}`);
   }
 
+  // A field that is there and reads nothing is a mistake the reader would otherwise pass
+  // on silently: the executor starts without what the field was meant to tell it.
+  const fields = headerFields(markdown);
+  for (const { key, name } of HEADER_FIELDS) {
+    const { value, line } = fields[key];
+    if (line !== null && value === '') {
+      errors.push(`Header field "${name}" on line ${line} reads empty: write it as **${name}:** followed by its value`);
+    }
+  }
+
   return { ok: errors.length === 0, errors, repos };
+}
+
+const HEADER_FIELDS = [
+  { key: 'tier', name: 'Model tier', cut: true },
+  { key: 'merge', name: 'Merge authority', cut: true },
+  { key: 'requires', name: 'Requires', cut: false },
+];
+
+/**
+ * The plan's three header fields, each read from the line it starts on to the end of its
+ * paragraph (a blank line, or a line starting with bold, ends it). A field is written
+ * `**Name:** value` or with the bold spanning the colon, `**Name: value.**`. Tier and
+ * merge authority keep the text before the first full stop; Requires keeps all of it.
+ * `line` is the 1-based line the field starts on, null when the plan has no such field.
+ * @param {string} markdown
+ * @returns {Record<'tier'|'merge'|'requires', {value: string, line: number|null}>}
+ */
+export function headerFields(markdown) {
+  const text = markdown.split('\n');
+  const result = {};
+  for (const { key, name, cut } of HEADER_FIELDS) {
+    result[key] = { value: '', line: null };
+    const start = text.findIndex((l) => new RegExp(`^ *\\*\\*${name}(:\\*\\*|\\*\\*:|:)`).test(l));
+    if (start === -1) continue;
+    const para = [text[start]];
+    for (let i = start + 1; i < text.length; i++) {
+      if (text[i].trim() === '' || /^ *\*\*/.test(text[i])) break;
+      para.push(text[i]);
+    }
+    const joined = para.map((l) => l.trim()).join(' ').trim();
+    let rest = joined.slice(joined.indexOf(name) + name.length);
+    if (rest.startsWith(':**')) rest = rest.slice(3);
+    else if (rest.startsWith('**:')) rest = rest.slice(3);
+    else {
+      rest = rest.slice(1);
+      const close = rest.indexOf('**');
+      if (close !== -1) rest = rest.slice(0, close);
+    }
+    rest = rest.trim();
+    if (cut) {
+      const stop = rest.indexOf('. ');
+      if (stop !== -1) rest = rest.slice(0, stop);
+      rest = rest.replace(/\.$/, '');
+    }
+    result[key] = { value: rest.trim(), line: start + 1 };
+  }
+  return result;
 }
 
 /**
@@ -157,12 +231,8 @@ export function validateDispatchable(markdown) {
  * @returns {{tier: string, merge: string, requires: string}}
  */
 export function parseExecutionProtocol(markdown) {
-  const field = (name) =>
-    (markdown.match(new RegExp(`\\*\\*${name}:\\*\\*\\s*([^*]+?)\\.\\s`)) || [])[1]?.trim() ??
-    (markdown.match(new RegExp(`\\*\\*${name}:\\s*([^*]+?)\\.\\*\\*`)) || [])[1]?.trim() ??
-    '';
-  const requires = (markdown.match(/\*\*Requires:\*\*\s*(.+)/) || [])[1]?.trim() ?? '';
-  return { tier: field('Model tier'), merge: field('Merge authority'), requires };
+  const f = headerFields(markdown);
+  return { tier: f.tier.value, merge: f.merge.value, requires: f.requires.value };
 }
 
 /**
@@ -234,11 +304,12 @@ export function parseWorktreeSetup(text) {
  *   lastVerified: string,
  *   stale: boolean,
  *   setups?: Array<{checkout: string, steps: string[]|null}>,
+ *   here?: string,
  * }} opts
  * @returns {string}
  */
 export function renderThinPrompt(opts) {
-  const { planPath, protocol, repos, picks, lastVerified, stale, setups = [] } = opts;
+  const { planPath, protocol, repos, picks, lastVerified, stale, setups = [], here = '' } = opts;
   const lines = [
     `**Tier:** ${protocol.tier} · **Requires:** ${protocol.requires} · **Merge:** ${protocol.merge}`,
   ];
@@ -261,6 +332,19 @@ export function renderThinPrompt(opts) {
     + 'and it says what to report and who merges.',
   );
   lines.push('');
+  // A session may start with only this checkout, as a cloud session does; the helper
+  // looks for the others beside it and refuses when one is missing.
+  const commands = repos.filter((r) => r.isolation);
+  const others = commands.map((r) => checkoutName(r.checkout)).filter((name) => name !== here);
+  if (commands.length > 1 && others.length > 0) {
+    lines.push(
+      'Before isolating: this session may have started with only this checkout, as a cloud session does. '
+      + 'For each checkout below that is not already beside this one, attach it with your tool for adding '
+      + 'a repository to the session, where you have one, and clone it beside this one under exactly this directory name:',
+    );
+    for (const name of others) lines.push(`  - ${name}`);
+    lines.push('');
+  }
   lines.push(
     "Isolate (from the Repositories table), then work in the execute-here worktree — not the specifying session's directory:",
   );
@@ -287,7 +371,6 @@ export function renderThinPrompt(opts) {
   // isolate line they read as a command list — and running them by hand from one
   // checkout is the defect the helper exists to prevent: every worktree lands in
   // whichever repository you are standing in.
-  const commands = repos.filter((r) => r.isolation);
   if (commands.length) {
     lines.push('');
     lines.push(

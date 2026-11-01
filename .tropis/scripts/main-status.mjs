@@ -7,11 +7,15 @@
  * the pipeline workflow (.github/workflows/pipeline.yml) on the repository's default
  * branch, and exits 0 whatever it found. With --wait <commit> it waits for the push run
  * on that commit to finish, prints one line, and exits 0 green, 1 red, 3 still running
- * at the timeout. Where it cannot ask — origin not on GitHub, no gh, gh failing — it
- * prints that it could not tell and why, and exits 0.
+ * at the timeout. With --pull-request <number> it waits for a pull request set to merge
+ * itself, bringing its branch up to date whenever it falls behind, then waits for the run
+ * on the merge commit as --wait does; it exits 4 naming why when the pull request did not
+ * merge. Where it cannot ask — origin not on GitHub, no gh, gh failing — it prints that it
+ * could not tell and why, and exits 0.
  *
  * The backlog report and the isolation helper import mainStatus; the workflow's merge
- * sequence runs --wait. gh is never run unless origin is on GitHub, so a repository
+ * sequence runs --wait, and the workflow's gated merge, /release and the commit hook name
+ * --pull-request. gh is never run unless origin is on GitHub, so a repository
  * without such a remote — every test's — never reaches the network. The default branch
  * comes from the REST API (`gh api repos/{owner}/{repo}`), not `gh repo view`, which
  * needs GraphQL, and GraphQL is refused in some agent sessions.
@@ -123,7 +127,61 @@ export async function waitForRun(root, sha, {
   }
 }
 
-const USAGE = 'usage: main-status.mjs [--wait <commit> [--interval <seconds>] [--timeout <minutes>]]\n';
+/**
+ * Waits for a pull request set to merge itself to merge, then for the push run on its
+ * merge commit. While it waits, a branch behind its base is brought up to date through
+ * GitHub's update-branch endpoint, once per head commit. Makes no local git change.
+ * @param {string} root the repository root
+ * @param {number} number the pull request's number
+ * @returns {Promise<{ state: string, line: string, exit: number }>}
+ */
+export async function seeThrough(root, number, {
+  env = process.env, ghTimeoutMs = 20000, intervalMs = 30000, timeoutMs = 1800000,
+} = {}) {
+  const options = { env, ghTimeoutMs };
+  const name = `Pull request #${number}`;
+  const cannotTell = (reason) => ({ state: 'unknown', line: `${name}: could not tell — ${reason}.`, exit: 0 });
+  const stopped = (why) => ({ state: 'stopped', line: `${name}: did not merge — ${why}`, exit: 4 });
+  const origin = originOnGitHub(root, env);
+  if (origin.error) return cannotTell(origin.error);
+  const updated = new Set();
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const asked = askGh(root, ['api', `repos/{owner}/{repo}/pulls/${number}`], options);
+    if (asked.error) return cannotTell(asked.error);
+    const pull = asked.value ?? {};
+    const head = pull.head?.sha;
+    const base = pull.base?.ref;
+    if (pull.merged === true) {
+      if (!pull.merge_commit_sha) return cannotTell('GitHub named no merge commit');
+      const run = await waitForRun(root, pull.merge_commit_sha, { env, ghTimeoutMs, intervalMs, timeoutMs });
+      return { ...run, line: `${name} merged as ${short(pull.merge_commit_sha)}. ${run.line}` };
+    }
+    if (pull.state === 'closed') return stopped('it was closed without merging.');
+    if (pull.auto_merge === null) return stopped('auto-merge is off.');
+    const checks = askGh(root, ['api', `repos/{owner}/{repo}/commits/${head}/check-runs?per_page=100`], options);
+    if (checks.error) return cannotTell(checks.error);
+    const failed = (checks.value?.check_runs ?? []).find((check) => RED.has(check.conclusion));
+    if (failed) return stopped(`the check ${failed.name} failed on ${short(head)}. Run: ${failed.html_url}`);
+    if (pull.mergeable_state === 'dirty') return stopped(`it conflicts with ${base}.`);
+    if (pull.mergeable_state === 'behind' && !updated.has(head)) {
+      const update = askGh(root, ['api', '-X', 'PUT', `repos/{owner}/{repo}/pulls/${number}/update-branch`,
+        '-f', `expected_head_sha=${head}`], options);
+      if (update.error) {
+        const reason = update.error.replace(/^gh failed: /, '').replace(/^gh: /, '');
+        return stopped(`it is behind ${base} and could not be brought up to date: ${reason}.`);
+      }
+      updated.add(head);
+      process.stderr.write(`main-status: pull request #${number} was behind ${base}; brought it up to date\n`);
+    }
+    if (Date.now() >= deadline) {
+      return { state: 'waiting', line: `${name}: still open — not merged within ${timeoutMs / 60000} minutes.`, exit: 3 };
+    }
+    await new Promise((done) => { setTimeout(done, intervalMs); });
+  }
+}
+
+const USAGE = 'usage: main-status.mjs [--wait <commit> | --pull-request <number>] [--interval <seconds>] [--timeout <minutes>]\n';
 
 /** The options the command line asks for, or null when it is not understood. */
 function parseArgs(argv) {
@@ -134,11 +192,12 @@ function parseArgs(argv) {
     const value = argv[i + 1];
     if (value === undefined || value === '') return null;
     if (flag === '--wait' && !value.startsWith('-')) opts.commit = value;
+    else if (flag === '--pull-request' && /^[1-9]\d*$/.test(value)) opts.pullRequest = Number(value);
     else if (flag === '--interval' && Number(value) >= 0) opts.intervalMs = Number(value) * 1000;
     else if (flag === '--timeout' && Number(value) > 0) opts.timeoutMs = Number(value) * 60000;
     else return null;
   }
-  return opts.commit ? opts : null;
+  return (opts.commit === undefined) !== (opts.pullRequest === undefined) ? opts : null;
 }
 
 const ranDirectly = (() => {
@@ -157,6 +216,11 @@ if (ranDirectly) {
   if (!opts) {
     process.stderr.write(USAGE);
     process.exitCode = 2;
+  } else if (opts.pullRequest) {
+    process.stderr.write(`main-status: waiting for pull request #${opts.pullRequest} to merge, asking every ${opts.intervalMs / 1000} s for up to ${opts.timeoutMs / 60000} min\n`);
+    const result = await seeThrough(root, opts.pullRequest, opts);
+    process.stdout.write(`${result.line}\n`);
+    process.exitCode = result.exit;
   } else if (!opts.commit) {
     process.stdout.write(`${mainStatus(root).line}\n`);
   } else {

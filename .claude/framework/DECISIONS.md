@@ -630,7 +630,8 @@ never writes under docs/, so an update does not replace a project's verdicts. `/
 reads those bands when the file has rows and suggests by them — highest band first,
 an arc already under way first within a band, D and E listed and never suggested. With
 no bands file, or a header and no rows, `/next` prints what it printed before bands
-existed. Amended by FW-034: four bands, C and D listed and never suggested.
+existed. Amended by FW-034: four bands, C and D listed and never suggested. Amended by
+FW-042: without bands it prints a product and a framework stream.
 
 **Rejected:** Publishing to a hosted page, which works in one agent tool, and whose
 address belongs to one project. Bands inside the catalog, a judgment beside facts,
@@ -1215,3 +1216,143 @@ do until something happens.
 **Consequences:** A project's shelved entries keep their meaning, but any that recorded
 work nobody will do should be dropped by hand; nothing converts them. A band row on a
 shelved entry is reported stale. `/next` still does not offer shelved entries.
+
+---
+
+## FW-039: An agent that sets a pull request to merge itself stays until main is green
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** An agent that sets a pull request to merge itself runs
+`main-status.mjs --pull-request <N>` and stays until the merge and the main branch's run
+have finished. The command keeps the branch up to date through GitHub's update-branch
+endpoint, which merges `main` into the branch.
+
+**Evidence:** Pull request 47 here was set to merge itself and the agent moved on. The
+main branch then moved with the v0.7.1 update; the ruleset requires a branch up to date
+with it, and auto-merge does not update one, so the pull request sat behind with nobody
+told until the developer noticed. Read from GitHub's REST API on 2026-10-31, with gh
+2.103.2: a pull request carries `merged`, `merge_commit_sha`, `mergeable_state`,
+`auto_merge` (`null` when off), `head.sha` and `base.ref`, and a commit's check runs
+carry each run's `conclusion` and `html_url`.
+
+**Rejected:** Rebasing locally and force-pushing. That needs a checkout of the branch,
+which a session that has already removed its worktree no longer has, and the squash
+discards the merge commit anyway. Leaving the wait to each agent: that is what happened,
+and the wait was never written. `gh pr` subcommands, which need GraphQL, refused in some
+agent sessions.
+
+**Consequences:** A check that is not required and fails stops the command, even though
+auto-merge would still merge; the agent then reports a failure the host would have let
+through. The command makes no local git change, so the session pulls `main` afterwards.
+
+---
+
+## FW-040: A session creates its branch in a worktree of its own
+
+**Date:** 2026-10-31 · **Status:** Accepted
+
+**Decision:** Every session that creates a branch does it in a sibling worktree based on
+`origin/main`, and the main checkout stays on `main`. A hook refuses the branch-creating
+commands in the main checkout, and `/update` creates its branch in a worktree.
+
+**Evidence:** Two sessions in this repository's main checkout moved each other's branch,
+found only when a push carried the wrong commit (the entry
+`a-session-cannot-move-another-sessions-branch`). The workflow's worktree command had no
+base, so it branched from whatever was checked out.
+
+**Rejected:** Advising instead of refusing: the hook's reply arrives with the call, which
+still runs, so the main checkout has moved before the agent reads the advice. Refusing
+every `git checkout` and `git switch` in the main checkout: a session switching back to
+`main` is the repair, and refusing it blocks that. Exempting `/update`: the same hazard
+applies to its branch.
+
+**Consequences:** An agent that is asked to switch the main checkout to an existing branch
+is not stopped. A command that `cd`s into a worktree before creating a branch is judged by
+where the hook runs, and may be refused; the command it prints is still correct. The
+developer's own terminal is not affected.
+
+## FW-041: A plan states its result as checks; an unstatable result is built or described, not both
+
+**Date:** 2026-11-01 · **Status:** Accepted
+
+**Decision:** A plan verifies its claims about the repository as it stands before
+dispatch, and states every claim about the result as a check the executor runs, saying
+what it prints on success and on failure, and what to do when it fails. Its author does
+not carry out the work to measure what the checks should expect. Where the result can be
+stated only by producing it, the author chooses while writing the plan between
+describing it for an executor and building it and sending it to a fresh agent to review.
+
+**Evidence:** Three checks in one plan could not pass, each caught only by the agent
+running it (the entry `plan-checks-must-be-falsifiable`). An author rehearsed a whole
+change on a throwaway copy to measure exact figures, then paid an executor to repeat it
+(the entry `plans-are-accurate-without-a-rehearsal`). The rule asked for every claim to
+be verified before dispatch, which reads as covering the result.
+
+**Rejected:** Requiring the author to rehearse and record exact figures: it pays for the
+work twice, and the figures stop matching when the executor's work differs in a detail.
+Letting the author both rehearse and dispatch: the same cost, with two versions of the
+result to reconcile. Forbidding the author from ever building: some results, prose above
+all, have no checkable description short of the result itself.
+
+**Consequences:** A plan's expected outputs are invariants and failure behaviour rather
+than counts. A change built by its author is reviewed by a fresh agent, which writes the
+review record; the specifying session is not its reviewer.
+
+## FW-042: The backlog report shows product and framework work as two streams
+
+**Date:** 2026-11-01 · **Status:** Accepted
+
+**Decision:** The backlog report prints a product stream and a framework stream, each
+with its own next step and its own Building, Ready and Blocked lists, and, with bands,
+the ideas banded A or B that are ready to shape. Readiness is worked out on the whole
+catalog before entries are sorted into streams, so a product entry waiting on a
+framework entry shows as blocked. A next step says what to do: dispatch the plan that
+delivers it when one is waiting, found by its Delivers section, or write its plan.
+Arcs under way follow both streams, and with bands an arc whose next entry lost to a
+higher band says so. Without bands the report still prints both streams, and nothing
+about shaping or lost turns.
+
+**Rejected:** One list across layers, where a ready entry of one layer hides the other
+layer's next step. Two streams only when bands exist, which would give a project two
+shapes of report and a reason not to band. Finding a plan through `refs`, which the
+catalog rule keeps for the design.
+
+**Consequences:** A project with no framework entries sees a framework stream reading
+(none). The board's top box still makes one suggestion across layers; it is unchanged.
+
+## FW-043: The board rebuilds itself through git hooks, and is the one readable view of the backlog
+
+**Date:** 2026-11-01 · **Status:** Accepted. Amends FW-017: the page is still local and
+never committed, and now keeps itself current.
+
+**Decision:** Every set-up project's readable view of its backlog is the board,
+docs/backlog-board/index.html, and nothing else: the catalog rule and the workflow's doc
+closeout ask for no generated catalog document, and a project that keeps one replaces it
+with the board through an entry of its own. The page rebuilds itself, without banding,
+from four git hooks — post-commit, post-merge, post-checkout and post-rewrite — that run
+the board's build and never fail or print. `npm --prefix .tropis install` (and `ci`)
+writes them through the framework package's `prepare` script, so setup, an update that
+changes that package, and a fresh clone's first install all install them, and one
+install covers every worktree, which share the hooks folder. A hook the project already
+has, or a hooks folder set with `core.hooksPath`, is left alone, and the install prints
+the one line to add to it.
+
+**Evidence:** Measured 2026-11-01 with npm 11.6.4 and Node v22.15.0 on Darwin arm64:
+`npm ci` and `npm install` both ran a package's `prepare` script, from the package's own
+folder. A board build of this repository's backlog took 0.22 seconds.
+
+**Rejected:** An agent-tool hook after a write to the backlog — it covers agents only,
+needs wiring once per tool, and misses a pull or a branch switch, which is how parallel
+sessions' backlog changes arrive. FW-008 and FW-009 settle that hooks do not deliver
+text to agents; this hook delivers none, but git's hooks cover more moments for every
+tool and for a person alike. A file watcher — a process somebody must keep running.
+Rebuilding inside each backlog command — an instruction, which a hand edit never reads.
+Writing `core.hooksPath` — it would take over a project's existing hooks.
+
+**Consequences:** An edit to the backlog shows on the page at the next commit, merge,
+checkout or rebase, not while it is uncommitted; `npm --prefix .tropis run board`
+rebuilds it at once. A git client that cannot find `node` on its path rebuilds nothing,
+silently. A project with its own hooks folder or hook adds the printed line by hand. The
+self-check installs its test tools with `--ignore-scripts`, so it writes no hooks into
+this repository.

@@ -31,12 +31,20 @@ belongs with the parent session. It is never a constraint on the executor.
 - **The dispatch header:** the plan's model tier, what it requires, and its merge
   authority; today's picks for that tier from the project's `docs/model-picks.md`, and
   the date they were last verified — with a warning when they are older than ~45 days,
-  because picks change and the tier does not. A project with no picks file is told to
-  run `/refresh-model-tiers`; the prompt never invents picks.
+  because picks change and the tier does not. Each field is read to the end of its
+  paragraph, and a field that is there but reads empty stops the dispatch, naming its
+  line. A project with no picks file is told to run `/refresh-model-tiers`; the prompt
+  never invents picks.
 - **The plan and its checkouts:** which plan, and which checkouts it may edit.
+- **Attaching the other checkouts:** when the plan isolates in more than one checkout, a
+  step before isolating tells an executor whose session started with only this one — a
+  cloud session does — to attach and clone each other checkout beside it under the
+  directory name the table gives.
 - **Isolation:** one command that creates every worktree the plan's Repositories table
-  names, each in the checkout its row names. The raw commands are listed beneath it,
-  labelled as not to be run by hand — from one checkout they would all land in that one.
+  names, each in the checkout its row names. It refuses to cut a worktree of this
+  checkout from a commit that does not hold the plan, and notes one that is not on the
+  remote's main branch. The raw commands are listed beneath it, labelled as not to be
+  run by hand — from one checkout they would all land in that one.
   Then what each worktree needs before its suite can run: the commands in that
   checkout's `.claude/worktree-setup.txt`, in order, or `npm --prefix .tropis ci` where
   the checkout has no such file. The file is the project's — one command per line, `#`
@@ -54,8 +62,8 @@ From the project root, run `npm --prefix .tropis run dispatch -- <plan-path>` an
 what it prints into a **new** session.
 
 **If it exits non-zero, the plan is not dispatchable.** It prints nothing to paste and
-names each problem — a missing heading, no checkout anyone may edit, or isolation that is
-not a sibling worktree. Fix the plan; do not write a prompt by hand instead. The rules it
+names each problem — a missing heading, a header field that reads empty, no checkout
+anyone may edit, or isolation that is not a sibling worktree. Fix the plan; do not write a prompt by hand instead. The rules it
 applies live in one module, `plan-binding.js`, which the plan-dispatchable guard reads
 too, so a plan the guard accepts is a plan the command accepts.
 

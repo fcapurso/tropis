@@ -7,13 +7,22 @@ alwaysApply: false
 # Catalog rules (the backlog)
 <!-- layer: framework -->
 
-The backlog is the source of truth for what this product does and what is planned, and
-the documents generated from it are not to be edited by hand.
+The backlog is the source of truth for what this product does and what is planned. Its
+readable view is the backlog board, docs/backlog-board/index.html: one page built from
+the backlog, which rebuilds itself without banding anything at every commit, merge,
+checkout and rebase, through the git hooks `npm --prefix .tropis install` writes, and is
+never committed. After an edit not yet committed, `npm --prefix .tropis run board`
+rebuilds it at once.
 
-- After any change, run the generator and commit the regenerated Markdown **in the same
-  commit**. A guard compares them byte-for-byte, so splitting them across two commits
-  leaves the first one red.
-- Never hand-edit a generated document. Change the backlog and regenerate.
+- **Keep no other readable view of the backlog.** A change to the backlog commits the
+  backlog alone: no page, and no document generated from it. A project that already
+  generates its own document from the backlog, such as a feature list or a roadmap page,
+  replaces it with the board through an entry of its own, which removes the generator,
+  its guard, the document and every instruction to run them together. **An agent that
+  meets such a document while changing the backlog, and finds no entry for its
+  replacement, captures one with `/idea` in the same change.** Until that entry ships,
+  keep following the project's instructions for the document; then there is one view.
+- Never edit or commit the board's page. Change the backlog, and the page follows.
 - **A generated region inside a hand-written page gets the same guard.** Where a page
   people write by hand must carry a generated reference, mark the region with two comment
   markers, have the generator rewrite only what lies between them, and compare that
@@ -53,6 +62,15 @@ the documents generated from it are not to be edited by hand.
   treats every spec cited by more than one entry as an arc and reports how far it has
   got, so a grooming or review spec cited on each entry it touched shows as a false arc
   of unrelated work. Name such a document in a comment above the entry instead.
+- **Three things in an unquoted value break the YAML.** A colon followed by a space
+  reads the rest of the line as a nested mapping, and the catalog check fails with
+  "Nested mappings are not allowed in compact mappings". A space followed by `#` starts
+  a comment, which on a value's last line drops the rest of the value with no error at
+  all. A value that begins with a backtick, or with a quotation mark that does not close
+  the whole value, fails; one that begins with another YAML indicator, such as `*`, `&`,
+  `!`, `[` or `{`, fails or parses as something else. Rephrase, or put the whole value
+  in double quotes. These are what needs quoting where a backlog command says to quote
+  nothing that does not need it.
 
 ## What does not become an entry
 
@@ -83,14 +101,31 @@ shipped 21. One review filed two for a single shipped entry: a warning that was 
 only before setup's own commit, and a gap the reviewer had already filled by hand.
 Both were dropped the same day.
 
+**A finding worth keeping is captured as a backlog entry, and nowhere else instead.** A
+task card, or a side or background session of the agent tool, is seen by neither the
+backlog, its report nor its board, so the work it holds is planned by nobody and found
+only by whoever opens that tool. Capture it with `/idea`, and tell the developer if it
+matters now.
+
+**A fix an agent proposes on its own starts as an idea entry, and is shaped before any
+branch or plan is made for it.** That holds for a fix to the project's own process
+machinery too; work the upstream framework must do goes to the upstream queue instead
+(*Layers*). The developer then decides whether and when it is done, rather than finding
+it under way. Work the developer asks for directly is not proposed by the agent, and
+neither paragraph applies to it.
+
+Both were corrected in the framework's own repository before they were written here: a
+guard defect raised as a background task card instead of an entry, and defects found by
+a model-tier refresh taken straight to a branch and then a plan, until the developer had
+asked twice where the entry was.
+
 ## Status transitions
 
 Status changes hands at fixed moments, not whenever it feels right:
 
 - `idea` → `shaped` when acceptance criteria are written, before implementation.
 - `shaped` → `building` **when its plan is dispatched**.
-- `building` → `shipped` **when its plan merges**, in the same commit as the regenerated
-  documentation.
+- `building` → `shipped` **when its plan merges**.
 - `building` → `shaped` if the plan is abandoned; nothing stays `building` without a plan.
 - `idea` or `shaped` → `dropped` when it is decided the work will not be done (see
   *Dropping*).
@@ -176,4 +211,4 @@ and left out of an arc's count.
   for a shipped entry.
 - Do not delete the entry: specs and plans cite ids, and its reason is the record that
   this was decided.
-<!-- generated by .tropis/scripts/generate-rules.mjs · sha256:076a9eaaa75d072b4878abfe1ec7725912af749b22a35d971f2ac1fce54dc03b -->
+<!-- generated by .tropis/scripts/generate-rules.mjs · sha256:fe362cd350c4e2f33cb4d5adb153278f9fd7929fc54db56c5b877d1705bae93a -->

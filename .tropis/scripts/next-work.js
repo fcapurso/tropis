@@ -243,13 +243,17 @@ export function readyInBandOrder(catalog, bands = null, scores = null) {
  *
  * With bands, the first ready entry banded A or B in the order of `readyInBandOrder`.
  * C and D are never returned.
+ *
+ * Readiness and order are worked out over the whole catalog; `layer`, when given, only
+ * narrows which ready entries may be returned.
  * @param {object[]} catalog
  * @param {Record<string, string> | null} [bands] id to letter; omit when no bands exist
  * @param {Record<string, {value: number, effort: number}> | null} [scores]
+ * @param {string | null} [layer] only entries of this layer are candidates
  * @returns {object|null}
  */
-export function nextStep(catalog, bands = null, scores = null) {
-  const startable = readyInBandOrder(catalog, bands, scores);
+export function nextStep(catalog, bands = null, scores = null, layer = null) {
+  const startable = readyInBandOrder(catalog, bands, scores).filter((e) => !layer || e.layer === layer);
   if (!hasBandRows(bands)) return startable.find((e) => underWayIds(catalog).has(e.id)) ?? null;
   return startable.find((e) => SUGGESTABLE.has(bandOf(e.id, bands))) ?? null;
 }
@@ -257,21 +261,118 @@ export function nextStep(catalog, bands = null, scores = null) {
 /**
  * The shaped entry, waiting on an unshipped blocker, that sorts highest in the order
  * above — strictly ahead of `step` when there is one, otherwise banded A or B. Null
- * when none qualifies or there are no bands.
+ * when none qualifies or there are no bands. `layer`, when given, limits the candidates
+ * to that layer.
  * @param {object[]} catalog
  * @param {Record<string, string> | null} bands
  * @param {Record<string, {value: number, effort: number}> | null} scores
  * @param {object | null} step the suggestion, or null
+ * @param {string | null} [layer]
  * @returns {{entry: object, waitingOn: object[]} | null}
  */
-export function blockedAhead(catalog, bands, scores, step) {
+export function blockedAhead(catalog, bands, scores, step, layer = null) {
   if (!hasBandRows(bands)) return null;
   const compare = compareByBand(bands, scores, underWayIds(catalog));
   const candidates = blocked(catalog)
     .filter(({ entry }) => entry.status === 'shaped')
+    .filter(({ entry }) => !layer || entry.layer === layer)
     .filter(({ entry }) => (step
       ? compare(entry, step) < 0
       : SUGGESTABLE.has(bandOf(entry.id, bands))));
   candidates.sort((a, b) => compare(a.entry, b.entry) || a.entry.id.localeCompare(b.entry.id));
   return candidates[0] ?? null;
+}
+
+/**
+ * Ideas worth shaping: not shelved, not superseded, no unshipped blocker, banded A or
+ * B. Empty without band rows.
+ * @param {object[]} catalog
+ * @param {Record<string, string> | null} [bands]
+ * @param {Record<string, {value: number, effort: number}> | null} [scores]
+ * @param {string | null} [layer]
+ * @returns {object[]}
+ */
+export function toShape(catalog, bands = null, scores = null, layer = null) {
+  if (!hasBandRows(bands)) return [];
+  const index = byId(catalog);
+  const compare = compareByBand(bands, scores, underWayIds(catalog));
+  return catalog
+    .filter((e) => e.status === 'idea' && !e.shelved && !isSuperseded(e))
+    .filter((e) => waitingOn(e, index).length === 0)
+    .filter((e) => SUGGESTABLE.has(bandOf(e.id, bands)))
+    .filter((e) => !layer || e.layer === layer)
+    .sort((a, b) => compare(a, b) || a.id.localeCompare(b.id));
+}
+
+/**
+ * Arcs under way whose next ready entry sits behind a higher-banded step of its layer.
+ * Empty without band rows.
+ * @param {object[]} catalog
+ * @param {Record<string, string> | null} [bands]
+ * @param {Record<string, {value: number, effort: number}> | null} [scores]
+ * @returns {{ref: string, entry: object, step: object}[]}
+ */
+export function lostTurns(catalog, bands = null, scores = null) {
+  if (!hasBandRows(bands)) return [];
+  const readyIds = new Set(ready(catalog).map((e) => e.id));
+  const lost = [];
+  for (const arc of arcs(catalog)) {
+    if (arc.state !== 'under way') continue;
+    const entry = arc.entries.find((e) => readyIds.has(e.id));
+    if (!entry) continue;
+    const step = nextStep(catalog, bands, scores, entry.layer);
+    if (step && step.id !== entry.id && BAND_RANK[bandOf(step.id, bands)] < BAND_RANK[bandOf(entry.id, bands)]) {
+      lost.push({ ref: arc.ref, entry, step });
+    }
+  }
+  return lost;
+}
+
+/** Blank out fenced code blocks, keeping the line count. */
+function stripFences(text) {
+  let inFence = false;
+  return text
+    .split('\n')
+    .map((l) => {
+      if (/^\s*```/.test(l)) {
+        inFence = !inFence;
+        return '';
+      }
+      return inFence ? '' : l;
+    })
+    .join('\n');
+}
+
+/** Entry ids a plan's `## Delivers` section names; null when it has none. */
+function deliveredIds(markdown) {
+  const heading = /^## Delivers\s*$/m.exec(markdown);
+  if (!heading) return null;
+  const rest = markdown.slice(heading.index + heading[0].length);
+  const next = /^## /m.exec(rest);
+  const body = (next ? rest.slice(0, next.index) : rest).replace(/<!--[\s\S]*?-->/g, '').trim();
+  if (body === 'None.') return [];
+  const ids = [];
+  for (const l of body.split('\n')) {
+    for (const part of l.split(',')) {
+      const token = part.trim().replace(/^[-*]\s*/, '');
+      if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(token)) ids.push(token);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Plans not yet executed, by the entry ids their Delivers section names.
+ * A plan is executed once it has a `## Handover report` outside fenced code blocks.
+ * @param {{path: string, text: string}[]} plans in file-name order
+ * @returns {Map<string, string>} id to plan path; a later plan wins
+ */
+export function waitingPlans(plans) {
+  const waiting = new Map();
+  for (const { path, text } of plans) {
+    const visible = stripFences(text);
+    if (/^## Handover report/m.test(visible)) continue;
+    for (const id of deliveredIds(visible) ?? []) waiting.set(id, path);
+  }
+  return waiting;
 }
