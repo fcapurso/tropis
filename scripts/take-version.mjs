@@ -48,8 +48,28 @@ const refuse = (message, kind) => {
   throw new Refusal(`take-version: ${message}`, kind);
 };
 
-function run(command, args, options = {}) {
-  return spawnSync(command, args, { encoding: 'utf8', maxBuffer: 1 << 28, ...options });
+// How long any one child may run before it is killed: TROPIS_STEP_TIMEOUT_MS when that is
+// a positive integer, five minutes otherwise.
+const stepLimit = () => {
+  const given = process.env.TROPIS_STEP_TIMEOUT_MS;
+  return /^[1-9]\d*$/.test(given ?? '') ? Number(given) : 300000;
+};
+
+/**
+ * Runs a child to completion and returns what `spawnSync` does. A child that outlives the
+ * limit is killed and the run refuses, naming `step` (default: the command and its first
+ * argument), so a hung child ends the run with a message instead of blocking it.
+ * `check-version.mjs` uses this too.
+ */
+export function run(command, args, options = {}, step = `${command} ${args[0] ?? ''}`.trim()) {
+  const limit = stepLimit();
+  const result = spawnSync(command, args, {
+    encoding: 'utf8', maxBuffer: 1 << 28, timeout: limit, killSignal: 'SIGKILL', ...options,
+  });
+  if (result.error?.code === 'ETIMEDOUT') {
+    refuse(`${step} did not finish within ${limit / 1000} s and was stopped.`);
+  }
+  return result;
 }
 
 const git = (cwd, ...args) => run('git', ['-C', cwd, ...args]);
@@ -134,10 +154,11 @@ function parseArgs(argv) {
 function buildVersion(version, tmp, label, name) {
   const src = join(tmp, label, 'src');
   mkdirSync(src, { recursive: true });
-  // Raw bytes: a tar stream is not text.
-  const archive = spawnSync('git', ['-C', tropis, 'archive', '--format=tar', version], { maxBuffer: 1 << 28 });
+  // Through a file, not a pipe: tar once waited on its input after git archive had exited.
+  const tarball = join(tmp, label, 'version.tar');
+  const archive = run('git', ['-C', tropis, 'archive', '--format=tar', '-o', tarball, version], {}, `reading ${version}`);
   if (archive.status !== 0) refuse(`cannot read ${version} from ${tropis}: ${String(archive.stderr).trim()}`);
-  const untar = spawnSync('tar', ['-x', '-C', src], { input: archive.stdout });
+  const untar = run('tar', ['-x', '-f', tarball, '-C', src], {}, `unpacking ${version}`);
   if (untar.status !== 0) refuse(`cannot unpack ${version}: ${String(untar.stderr).trim()}`);
   const out = join(tmp, label, 'out', name);
   mkdirSync(out, { recursive: true });

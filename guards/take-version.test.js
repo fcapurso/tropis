@@ -12,7 +12,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import {
-  cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync,
+  chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync,
   statSync, symlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -24,6 +24,9 @@ import { appendMissingLines } from '../scripts/take-version.mjs';
 const blueprint = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_FOLDERS = ['rules', 'framework', 'commands', 'scripts', 'guards', 'templates'];
 const SLOW = 120000;
+// A spawned command that has not returned by then is killed, so a hang fails the test that
+// started it by name instead of blocking the worker until the whole run is stopped.
+const CHILD = SLOW - 20000;
 
 function git(cwd, ...args) {
   const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' });
@@ -59,6 +62,9 @@ function world({ v020 = {} } = {}) {
   const parent = mkdtempSync(join(tmpdir(), 'tv-test-'));
   const tropis = join(parent, 'tropis');
   mkdirSync(tropis);
+  // The command's own temporary folder, so another run's scratch folders are not this run's leftovers.
+  const tmp = join(parent, 'tmp');
+  mkdirSync(tmp);
   for (const folder of SOURCE_FOLDERS) {
     cpSync(join(blueprint, folder), join(tropis, folder), {
       recursive: true,
@@ -83,6 +89,7 @@ function world({ v020 = {} } = {}) {
     parent,
     tropis,
     project,
+    tmp,
     /** Commit a change to the scratch Tropis and tag it. */
     release(tag, change) {
       git(tropis, 'checkout', '-q', 'main');
@@ -98,8 +105,17 @@ function world({ v020 = {} } = {}) {
     },
     /** Check `ref` out in the scratch Tropis and run the command on the project. */
     take(ref, ...flags) {
+      return this.takeWith({}, ref, ...flags);
+    },
+    /** `take` with extra environment and, optionally, a shorter limit for the child. */
+    takeWith({ env = {}, timeout = CHILD }, ref, ...flags) {
       git(tropis, 'checkout', '-q', ref);
-      return spawnSync('node', [join(tropis, 'scripts/take-version.mjs'), project, ...flags], { encoding: 'utf8' });
+      return spawnSync('node', [join(tropis, 'scripts/take-version.mjs'), project, ...flags], {
+        encoding: 'utf8',
+        env: { ...process.env, TMPDIR: tmp, ...env },
+        timeout,
+        killSignal: 'SIGKILL',
+      });
     },
     /** A file of the scratch Tropis at a tag. */
     at(tag, rel) {
@@ -123,7 +139,7 @@ function inWorld(options, fn) {
 
 const bumpNext = (root) => edit(root, 'commands/next.md', (t) => `${t}\nA line from the next version.\n`);
 const recordOfProject = (project) => JSON.parse(read(project, '.tropis/installed.json'));
-const takeVersionDirs = () => readdirSync(tmpdir()).filter((f) => f.startsWith('take-version-'));
+const takeVersionDirs = (dir) => readdirSync(dir).filter((f) => f.startsWith('take-version-'));
 
 /** Add a `scripts.extra` to the release's package template, asserting the edit changed it. */
 const addExtraScript = (root) => edit(root, 'templates/package.json', (t) => {
@@ -139,7 +155,12 @@ function takeInWorktree(w, ref, ...flags) {
   const worktree = join(w.parent, 'example-project-update');
   git(w.project, 'worktree', 'add', '-q', worktree, '-b', 'update');
   git(w.tropis, 'checkout', '-q', ref);
-  const r = spawnSync('node', [join(w.tropis, 'scripts/take-version.mjs'), worktree, ...flags], { encoding: 'utf8' });
+  const r = spawnSync('node', [join(w.tropis, 'scripts/take-version.mjs'), worktree, ...flags], {
+    encoding: 'utf8',
+    env: { ...process.env, TMPDIR: w.tmp },
+    timeout: CHILD,
+    killSignal: 'SIGKILL',
+  });
   return { r, worktree };
 }
 
@@ -709,8 +730,8 @@ describe('take-version.mjs', () => {
 
   it('removes its scratch folder on every exit path', () => inWorld({}, (w) => {
     w.release('v0.2.1', bumpNext);
-    const known = new Set(takeVersionDirs());
-    const leftover = () => takeVersionDirs().filter((d) => !known.has(d));
+    const known = new Set(takeVersionDirs(w.tmp));
+    const leftover = () => takeVersionDirs(w.tmp).filter((d) => !known.has(d));
 
     expect(w.take('v0.2.1').status).toBe(0);
     expect(leftover()).toEqual([]);
@@ -724,6 +745,23 @@ describe('take-version.mjs', () => {
     expect(unbuildable.status).toBe(1);
     expect(unbuildable.stderr).toMatch(/^take-version: cannot read v0\.2\.0-9-gdeadbee/);
     expect(leftover()).toEqual([]);
+  }), SLOW);
+
+  it('stops a step that does not finish, says which, and removes its scratch folder', () => inWorld({}, (w) => {
+    w.release('v0.2.1', bumpNext);
+    // A tar that never reads its input or returns. `exec` makes the process that is
+    // stopped the sleep itself, so nothing is left holding the pipe open.
+    const fake = join(w.parent, 'fake-bin');
+    mkdirSync(fake);
+    writeFileSync(join(fake, 'tar'), '#!/bin/sh\nexec sleep 600\n');
+    chmodSync(join(fake, 'tar'), 0o755);
+    const r = w.takeWith({
+      env: { PATH: `${fake}:${process.env.PATH}`, TROPIS_STEP_TIMEOUT_MS: '3000' },
+      timeout: 30000,
+    }, 'v0.2.1');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/^take-version: unpacking v0\.2\.1 did not finish within 3 s and was stopped\./m);
+    expect(takeVersionDirs(w.tmp)).toEqual([]);
   }), SLOW);
 
   it('leaves an already-pointed entry pair untouched', () => inWorld({}, (w) => {

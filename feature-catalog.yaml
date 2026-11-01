@@ -3138,9 +3138,11 @@
 # test name at all; that is why the 2026-10-25 CI line said only that a guard failed.
 # scripts/check-blueprint.sh's run_guard discards its output the same way.
 # Plan: docs/superpowers/plans/2026-11-01-self-check-red-means-something.md.
+# Shipped by docs/superpowers/plans/2026-11-01-self-check-red-means-something.md; each
+# criterion's test or check is in that plan's handover report.
 - id: self-check-red-runs-keep-their-output
   title: A red self-check keeps its output, so an intermittent failure can be found
-  status: building
+  status: shipped
   value: Someone whose self-check goes red can find out afterwards which test failed and
     why, even when a re-run passes. Today the run's output is gone once the terminal
     scrolls, so an intermittent failure is either ignored or re-run until green, and a
@@ -3161,6 +3163,7 @@
   modules:
     - scripts/check-conformance.sh
     - scripts/check-blueprint.sh
+    - guards/conformance-output.test.js
   refs: []
 
 # Found releasing v0.4.1 on 2026-10-21. The release job promotes RELEASES.md, commits,
@@ -3723,9 +3726,11 @@
 # races the same way. guards/check-version.test.js already gives its child a TMPDIR of its
 # own, the pattern both tests take.
 # Plan: docs/superpowers/plans/2026-11-01-self-check-red-means-something.md.
+# Shipped by docs/superpowers/plans/2026-11-01-self-check-red-means-something.md; each
+# criterion's test or check is in that plan's handover report.
 - id: self-check-runs-beside-another
   title: Two self-check runs on one machine do not fail each other
-  status: building
+  status: shipped
   value: A flush with more than one submission runs a self-check per clone. Run side by
     side, one run's scratch folder reads as the other's leak, the check goes red, and an
     executor spends a batch finding out that nothing was wrong.
@@ -4302,9 +4307,11 @@
 # ends in an error that names it. A reproduction would cost more than removing the pipe,
 # and a bounded failure that names its step is what someone running an update needs.
 # Plan: docs/superpowers/plans/2026-11-01-self-check-red-means-something.md.
+# Shipped by docs/superpowers/plans/2026-11-01-self-check-red-means-something.md; each
+# criterion's test or check is in that plan's handover report.
 - id: an-update-never-hangs-unpacking-a-version
   title: Taking or checking an update never hangs unpacking a version
-  status: building
+  status: shipped
   value: Someone taking an update, or checking whether one fits, gets an answer or an error
     in bounded time. Today the step that unpacks a version into a scratch folder can wait
     forever with nothing on the screen, and the framework's own checks that exercise it
@@ -4312,8 +4319,10 @@
   acceptanceCriteria:
     - Unpacking a version passes nothing through a pipe; git archive writes a file in the
       scratch folder and tar reads it.
-    - Every child process take-version and check-version start is stopped when it runs
-      past a time limit, and the command then refuses, naming the step and the limit.
+    - Every child process take-version and check-version start for the framework's own
+      steps is stopped when it runs past a time limit, and the command then refuses,
+      naming the step and the limit. The project's own install and test suite, which
+      check-version runs in a clone, have no limit.
     - A guard makes tar hang and fails unless take-version refuses within the limit,
       naming the unpacking step.
     - Every guard that runs take-version or check-version gives the child a time limit
@@ -4324,6 +4333,8 @@
   modules:
     - scripts/take-version.mjs
     - scripts/check-version.mjs
+    - guards/take-version.test.js
+    - guards/check-version.test.js
   refs: []
 # 2026-10-31, found while releasing v0.7.0. main-is-gated-by-the-host made this
 # repository's release tag-only: the notes reach main promoted under the version, and

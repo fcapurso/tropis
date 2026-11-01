@@ -15,6 +15,8 @@ import { fileURLToPath } from 'node:url';
 const blueprint = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_FOLDERS = ['rules', 'framework', 'commands', 'scripts', 'guards', 'templates'];
 const SLOW = 120000;
+// A spawned command that has not returned by then is killed, so a hang fails its test by name.
+const CHILD = SLOW - 20000;
 
 function git(cwd, ...args) {
   const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd, encoding: 'utf8' });
@@ -105,6 +107,8 @@ function world({ v020 = {} } = {}) {
         const result = spawnSync('node', [join(tropis, 'scripts/check-version.mjs'), project, ...flags], {
           encoding: 'utf8',
           env: { ...process.env, TMPDIR: scratch },
+          timeout: CHILD,
+          killSignal: 'SIGKILL',
         });
         expect(readdirSync(scratch).filter(
           (name) => name.startsWith('check-version-') || name.startsWith('take-version-'),
