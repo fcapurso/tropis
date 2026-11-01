@@ -433,3 +433,37 @@ Twelve files, as above, plus this report in the plan. Nothing under `.claude/`, 
 - **The self-check is not green.** The failure is the timing tests above, in code this plan does not touch. A reviewer should decide: rerun on a quieter machine, widen the test timeouts (a test change), or record the flake in the backlog with both run logs, as the workflow says for a check that fails on one run and passes on another.
 - No developer check: the change has no screen, so there is nothing for a developer to test.
 - The branch is pushed; no pull request is open, no merge or auto-merge set, and `main` is untouched. The worktree `../tropis-history` is left in place for the reviewer.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session with git 2.49.0 and node v22.15.0 on macOS 26.2, Darwin arm64, at `2695a71` (after the review fixes below).
+
+- `git diff --stat origin/main...HEAD`: 13 files, the twelve in *File Structure* plus this plan; the move shows as `PORTABILITY-NOTES.md => docs/history/PORTABILITY-NOTES.md`.
+- `bash scripts/check-blueprint.sh`: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` The *Framework repository* section shows `caught      operator-page-closeout: framework/workflow.md planted` and `caught      readme-usable: framework/workflow.md planted`, so removing the new marker still turns both guards red, and all five guards passed on the repository.
+- The Task 3 reference search printed exactly the two lines the plan expects (`README.md:179` and `framework/DECISIONS.md:202`, both with `docs/history/PORTABILITY-NOTES.md`). The search for the bare name outside `docs/history/` printed nothing, and the same search against `origin/main` printed 11 lines, so it can find a hit.
+- Read the label paragraph at the top of `docs/history/PORTABILITY-NOTES.md`. It matches the `doc-currency` pattern `^>\s*\*\*Historical record\.\*\*`.
+
+### Found
+
+Public exposure: read the whole diff and the handover for private material (names, other projects, home paths, hostnames). Nothing found. Paths in the handover are relative.
+
+- **The self-check failures in the handover were load, not this diff.** The executor's two red runs failed different `guards/main-status.test.js` `--pull-request` cases, each with exit 3 where 0 or 4 was expected, under a load average of 33 to 58. My run on the same content, at a load average around 32 to 50, passed in full, those tests included. This is the known defect `main-status-tests-pass-under-load`.
+- **The fresh-agent check is accepted.** The probe reached `docs/history/PORTABILITY-NOTES.md` from the decision's plain-text reference and quoted the right heading, both times. It did so through Grep, Glob or `sed` rather than a Read call. The plan's pass wording named the Read tool, which was the plan's mistake: the point was to reach the right file. The record is in the body of commit `523cdb1`, and it is carried into the squash message.
+- **Fixed by the reviewer, mechanically, in `2695a71`:** the reworded paragraph in `framework/DECISIONS.md` and the README link line were wrapped back to the files' line width, with no wording change. The catalog comment now says the reference search ran in Task 3, not Task 5. The developer's use of the repository is the check on these fixes.
+
+### Outstanding disposition
+
+- Self-check not green on the executor's machine: `main-status-tests-pass-under-load`, already in the catalog.
+- No developer check: the change has no screen.
+- The worktree `../tropis-history` is removed by the reviewer at merge.
+
+### Learnings routed
+
+- **A pass condition should name the outcome, not the tool call.** "The stream shows a Read of X" failed a probe that found X another way. This is a plan-writing slip already covered by the planning rule's *A check states what it prints when it passes*. It is not routed further.
+- Nothing else generalises. Moving a marker file is specific to this repository.
+
+### Merged because
+
+The move, the references and the five guards' new marker all do what the plan says. The self-check passes with both plants caught. The executor's red runs are explained by a known load defect that my green run on the same content confirms.
