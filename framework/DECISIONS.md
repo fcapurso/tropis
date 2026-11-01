@@ -630,8 +630,8 @@ never writes under docs/, so an update does not replace a project's verdicts. `/
 reads those bands when the file has rows and suggests by them — highest band first,
 an arc already under way first within a band, D and E listed and never suggested. With
 no bands file, or a header and no rows, `/next` prints what it printed before bands
-existed. Amended by FW-034: four bands, C and D listed and never suggested. Amended by FW-042:
-without bands it prints a product and a framework stream.
+existed. Amended by FW-034: four bands, C and D listed and never suggested. Amended by
+FW-042: without bands it prints a product and a framework stream.
 
 **Rejected:** Publishing to a hosted page, which works in one agent tool, and whose
 address belongs to one project. Bands inside the catalog, a judgment beside facts,
