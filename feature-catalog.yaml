@@ -4319,8 +4319,10 @@
   acceptanceCriteria:
     - Unpacking a version passes nothing through a pipe; git archive writes a file in the
       scratch folder and tar reads it.
-    - Every child process take-version and check-version start is stopped when it runs
-      past a time limit, and the command then refuses, naming the step and the limit.
+    - Every child process take-version and check-version start for the framework's own
+      steps is stopped when it runs past a time limit, and the command then refuses,
+      naming the step and the limit. The project's own install and test suite, which
+      check-version runs in a clone, have no limit.
     - A guard makes tar hang and fails unless take-version refuses within the limit,
       naming the unpacking step.
     - Every guard that runs take-version or check-version gives the child a time limit

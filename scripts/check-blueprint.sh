@@ -189,9 +189,9 @@ echo
 if [ "$conformance" -eq 0 ] && [ "$framework" -eq 0 ]; then
   echo "Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed."
 else
+  echo "Output of each failing run: $LOGS"
   [ "$conformance" -ne 0 ] && echo "Self-check FAILED: conformance or the clean baseline (above)."
   if [ "$framework" -ne 0 ]; then
-    echo "Output of each failing run: $LOGS"
     if [ "${GITHUB_ACTIONS:-}" = true ]; then
       for log in "$LOGS"/framework-*.log; do
         [ -f "$log" ] || continue

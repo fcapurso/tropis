@@ -328,7 +328,9 @@ function checkVersion({ project, from = null }) {
     const { held, target, breaking, result } = applied;
     const linked = dependencyLink(project, clone);
     if (!linked.linked) {
-      const installed = run('npm', ['--prefix', '.tropis', 'install', '--no-audit', '--no-fund'], { cwd: clone });
+      // The project's own install and suite may take as long as they take: only the
+      // framework's steps have a limit.
+      const installed = run('npm', ['--prefix', '.tropis', 'install', '--no-audit', '--no-fund'], { cwd: clone, timeout: undefined });
       if (installed.status !== 0) {
         return {
           status: 0,
@@ -352,7 +354,7 @@ function checkVersion({ project, from = null }) {
     for (const key of Object.keys(env)) if (key.startsWith('JEST_')) delete env[key];
     const tested = run('npm', [
       '--prefix', '.tropis', 'test', '--', '--json', `--outputFile=${resultsPath}`,
-    ], { cwd: clone, env });
+    ], { cwd: clone, env, timeout: undefined });
 
     let results = null;
     if (existsSync(resultsPath)) {
