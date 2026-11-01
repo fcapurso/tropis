@@ -1459,7 +1459,7 @@ updated.
 
 ## FW-046: A rule clause is retired only on a trial at this repository's release
 
-**Date:** 2026-11-01 · **Status:** Accepted.
+**Date:** 2026-11-01 · **Status:** Accepted
 
 **Decision:** Before each release of this repository, one rule clause is tried. It comes
 from the rule file that grew most, in words, since the last release, preferably a clause

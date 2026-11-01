@@ -220,7 +220,9 @@ rule-is-measured-with-and-without:
   valueWhy: Would let rules be judged by evidence rather than memory.
   effort: 3
   effortWhy: A spike with repeated agent runs.
-  verdict: "Whether with-and-without measurement is reliable and cheap enough is the question; the release trial runs one agent, and this would make it a repeatable comparison."
+  verdict: "Whether with-and-without measurement is reliable and cheap enough is
+    the question; the release trial runs one agent, and this would make it a
+    repeatable comparison."
   seen:
     status: idea
     blockers: []
