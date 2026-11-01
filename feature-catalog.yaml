@@ -2245,9 +2245,14 @@
 #   Its board keeps the folder name until someone writes the file by hand.
 # 2026-11-01, dispatched. Plan
 # docs/superpowers/plans/2026-11-01-project-has-one-display-name.md.
+# Shipped by docs/superpowers/plans/2026-11-01-project-has-one-display-name.md.
+# Criteria 1, 4 and 5 - set-up-project.test.js, the display name. Criterion 2 -
+# installed-files.test.js and take-version.test.js. Criterion 3 - backlog-board.test.js.
+# Criterion 6 - the fresh-agent check recorded in the commit body. Criterion 7 - the
+# file itself.
 - id: project-has-one-display-name
   title: A project's name is written once and everything the framework writes uses it
-  status: building
+  status: shipped
   value: Someone setting up a project gives its name once — capitals, spaces, symbols and
     all — and the framework uses that name wherever it writes one, whatever the repository
     folder is called. Today the setup asks for a display name and then drops it, so the
@@ -2272,7 +2277,12 @@
     - This repository records its own name, Tropis, in .tropis/project.json.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/set-up-project.sh
+    - scripts/installed-files.js
+    - scripts/build-backlog-board.mjs
+    - commands/bootstrap.md
+    - commands/scope.md
   refs: []
 # Raised 2026-10-31 at a backlog refresh. .claude/project.json was placed by FW-032, which
 # weighed it only against a key in the README's settings and a call to GitHub, never
