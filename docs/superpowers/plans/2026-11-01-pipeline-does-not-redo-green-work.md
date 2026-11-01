@@ -504,3 +504,65 @@ Existing tests changed: none.
 - Whether the skip is sound on a real project (the token's read access to actions and pull requests, the `commits/<sha>/pulls` answer, `git fetch origin <sha>` of a deleted branch) can only be shown by real runs after a release is installed.
 - The README paragraph does not mention that the first case depends on the project's own `pipeline/prose.txt` (the fresh-agent check pointed this out); left as the paragraph before it already introduces the file.
 - FW-047: the reviewer renumbers at merge if another decision lands first.
+
+## Review record
+
+Reviewed by the specifying session.
+
+### Checks re-run
+
+Tools: git 2.49.0, Node v22.15.0, Jest from `.self-check/`, Claude Code 2.1.300, macOS 26.2 on arm64.
+
+- Scope: `git diff --stat origin/main...HEAD` lists `docs/backlog-board/bands.yaml`,
+  the plan, `feature-catalog.yaml`, `framework/DECISIONS.md`, `guards/pipeline.test.js`,
+  `scripts/pipeline.mjs`, `templates/README.md`, `templates/github/tropis-pipeline.yml`:
+  all in *File Structure*.
+- `guards/pipeline.test.js` from a `git archive HEAD` copy with the template Jest config:
+  `Tests: 138 passed, 138 total`.
+- Re-breaks, each on that copy, then restored:
+  - gate ignores `plan.passed` → `2 failed, 136 passed`;
+  - the passed diff made three-dot → `2 failed`;
+  - the workflow asks for a passed commit on every pull request action but `closed`
+    instead of `synchronize` only → `1 failed`;
+  - `applyPassed` no longer leaves an already-skipping plan alone → `1 failed`.
+- The self-check is re-run after rebasing on the fix for `main-status-tests-pass-under-load`;
+  its result is recorded below, under *Merged because*.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Run ids and pull
+request 103 are this public repository's own.
+
+- **Fixed here (mechanical):** FW-047 used a `**Context:**` section ahead of the
+  decision; every other record has `**Decision:**` then `**Evidence:**`. Renamed it and
+  moved it after the decision. No wording changed.
+- **Decision number:** FW-047 was taken on main by another plan while this one was in
+  review; it is renumbered to the next free number at merge, with FW-028's amendment line.
+- Read against the plan: the two-dot diff, the "only into skips" rule, the gate on a pull
+  request, `--merged` matching `merge_commit_sha`, and `synchronize` only all match the
+  decisions. `"${passed_args[@]}"` under `set -u` needs bash 4.4 or later; GitHub's
+  hosted runners have bash 5, and the job already pins `ubuntu-latest`.
+- An empty stage (no `pipeline/<stage>.sh`) becomes `skipped` too when a passed commit
+  applies (the executor's judgment call); the summary then says the same code passed for
+  it rather than `empty`. Harmless, and as the plan worded it.
+
+### Outstanding disposition
+
+- Self-check failing on `guards/main-status.test.js` timing: `main-status-tests-pass-under-load`,
+  merged before this plan; re-run recorded below.
+- Soundness on real runs (token read access, `commits/<sha>/pulls`, fetching a deleted
+  branch's head by hash): a loose end that only real runs can show, after the next
+  release is installed in this repository. Whoever installs it looks at the first pull
+  request push after a green run and the push to main after it, and checks the plan job's
+  summary line from `passed`. No entry: there is nothing to build until a run shows a gap.
+- README and `pipeline/prose.txt`: dropped — the paragraph before the new one introduces
+  the file, and the new one says "only prose and framework files".
+- FW number: handled at merge, above.
+
+### Learnings routed
+
+The probe finding that a closed pull request's run is a green run with nothing in it is
+recorded in FW-047's *Rejected* and in `gateIsGreen`'s comment, where the next person
+reading run conclusions will be. Nothing else generalises beyond this plan.
+
+### Merged because

@@ -1516,15 +1516,6 @@ which GitHub's dependency alerts on this repository prompt.
 
 **Date:** 2026-11-01 · **Status:** Accepted. Amends FW-028: a stage may be skipped for a second reason.
 
-**Context:** The pipeline skipped the four filled stages only when the whole diff was prose
-and framework files. Two runs retested code that had already passed. A push to a pull
-request that changed only a document re-ran every stage on code the previous run had
-passed. And the push to main re-ran them on a tree a green pull request run had tested:
-on a gated main the squash commit's tree is the head's tree, and the push run on one such
-commit took 3 min 34 s repeating the stages that tree had passed (pull request 103 of
-this repository, probed with `gh` on 2026-11-01). The entry came from the first adopter's
-flush of 2026-10-29.
-
 **Decision:** A run is green when its job named `gate`, or ending in `/ gate`, concluded
 `success`; the run's own conclusion is not used, since a closed pull request's run is
 `success` with every stage skipped. Only runs of the same workflow count. A new command,
@@ -1540,6 +1531,15 @@ added. Otherwise the plan is exactly today's, with a stderr line saying why. On 
 request the gate then does not redeploy (the branch's environment already holds that
 code); on the push to main it deploys. Deploy to staging and promote to production do not
 use the plan and still run every stage.
+
+**Evidence:** The pipeline skipped the four filled stages only when the whole diff was prose
+and framework files. Two runs retested code that had already passed. A push to a pull
+request that changed only a document re-ran every stage on code the previous run had
+passed. And the push to main re-ran them on a tree a green pull request run had tested:
+on a gated main the squash commit's tree is the head's tree, and the push run on one such
+commit took 3 min 34 s repeating the stages that tree had passed (pull request 103 of
+this repository, probed with `gh` on 2026-11-01). The entry came from the first adopter's
+flush of 2026-10-29.
 
 **Rejected:** Planning a pull request from the merge base of the green run (a change the
 green run had and the head dropped is missed). Relying on a run's `pull_requests` list
