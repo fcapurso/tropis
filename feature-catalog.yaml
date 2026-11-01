@@ -4100,9 +4100,10 @@
     - framework/DECISIONS.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+# Planned in docs/superpowers/plans/2026-11-01-flush-reveals-nothing-of-the-project.md.
 - id: flush-name-is-explained-and-unique
   title: A flush reveals nothing of the project, in the name it goes under or in what it sends
-  status: shaped
+  status: building
   after:
     - project-chooses-the-name-it-flushes-under
   value: An operator can flush from a private project without reading every word for
