@@ -1430,7 +1430,7 @@ every agent tool sat in a folder named after one.
 
 **Decision:** The project's own settings live in `.tropis/project.json` — its display
 name, `public` and `ungated`, as keys of one object — and its worktree setup in
-`.tropis/worktree-setup.txt`, one command a line as before. Neither is in the record of
+`worktree-setup.txt` beside it, one command a line as before. Neither is in the record of
 installed files. An update moves `.claude/project.json`'s keys into
 `.tropis/project.json` and `.claude/worktree-setup.txt` to its new place, and refuses,
 before changing anything, when either file is malformed or the old and new copies
