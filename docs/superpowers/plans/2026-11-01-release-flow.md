@@ -580,3 +580,342 @@ the red checks' failing test names, the criteria table, the old-names hits with 
 kinds, the probe's answer, and the worktree path used. Commit, push the branch, open a
 pull request against `main` whose body says what becomes true and links this plan, and
 stop. Do not write a review record and do not merge.
+
+---
+
+## Handover report
+
+Executed by Claude Code 2.1.300 (model claude-opus-5-5) on macOS 26.2, arm64 (`uname -sm`:
+`Darwin arm64`), with git 2.49.0 and Node.js v22.15.0. Started from `origin/main` at
+`553841d` (the plan was verified against `191673f`; nothing between them touched this
+plan's files). Worktree used: `../tropis-release-flow` beside the primary checkout, branch
+`plan/release-flow`, created by `.tropis/scripts/isolate-for-plan.sh`. No other checkout
+was edited.
+
+Developer's override, given at dispatch: the branch is pushed, and **no pull request is
+opened** — the reviewing session opens pull requests one at a time.
+
+Provenance: no outside source was worked from. The new code follows this repository's own
+patterns in `scripts/pipeline.mjs` (`branchSlot`'s error shape, the `git(root, args)`
+helper, the `candidateCommand` dispatch it replaces).
+
+### Task completion
+
+- **Task 0** — done. `npm --prefix .tropis ci`, then `git status --porcelain` printed
+  nothing. `bash scripts/check-blueprint.sh` on the untouched base **failed**, twice, on
+  one clean-baseline test (see *Judgment calls*); I carried on rather than stop.
+- **Task 1** — done. Tests first (commit `f554f58`), red, then the script, `git mv`s and
+  installers (`31a26e5`), green. Both red checks run and dropped.
+- **Task 2** — done. Tests (`1d9cb3c`), red, implementation (`471377f`), green. Both red
+  checks run and dropped.
+- **Task 3** — done (`a649fc1`, and `5bdc716` after the probe). The release guard's one
+  workflow assertion was held back to the workflow commit (see *What the plan got wrong*).
+- **Task 4** — done. `framework/DECISIONS.md`, `templates/README.md`, `RELEASES.md` in
+  `4d42f48`. `framework/workflow.md` in `34bb726`, after Task 6, with the probe's outcome
+  in its body.
+- **Task 5** — done. Every hit is one of the kinds listed below.
+- **Task 6** — done, two runs, both pass. Scratch clones deleted.
+- **Task 7** — done, except the pull request (override above). Catalog in `9c490e3`, plus
+  `6e8e314` for two other entries that named the renamed template.
+
+### Verification results
+
+**Task 1, red** (the guard snippet from Task 0 on `guards/pipeline.test.js`, after the
+test commit): the suite did not load —
+`SyntaxError: The requested module '../scripts/pipeline.mjs' does not provide an export named 'stagingSlot'`,
+`Tests: 0 total`, `Test Suites: 1 failed`.
+
+**Task 1, green:** `Tests: 101 passed, 101 total` for `guards/pipeline.test.js`.
+
+**Task 1 red checks** (each a throwaway commit, run through the snippet, dropped with
+`git reset --hard HEAD~1`):
+- `pipeline/candidate/` refusal disabled → `Tests: 1 failed, 100 passed, 101 total`;
+  failing: `staging slot › refuses the old pipeline/candidate/ folder, from slot and from deploy, and names the move`.
+- `TROPIS_CANDIDATE` refusal disabled → `Tests: 1 failed, 100 passed, 101 total`;
+  failing: `staging slot › refuses a staging script that still reads TROPIS_CANDIDATE, from slot and from deploy`.
+
+**Task 2, red:** `Tests: 10 failed, 101 passed, 111 total` — every test under
+`promote check` (two passes, refusals 1–6 in six tests, usage, the command listing).
+
+**Task 2, green:** `Tests: 111 passed, 111 total`.
+
+**Task 2 red checks:**
+- ancestor-of-`HEAD` test disabled (`if (!onMain)` → `if (false)`) →
+  `Tests: 1 failed, 110 passed, 111 total`; failing:
+  `promote check › refuses a commit the main branch does not hold`.
+- allow-list comparison disabled (`!allow.includes(path)` → `false`) →
+  `Tests: 1 failed, 110 passed, 111 total`; failing:
+  `promote check › refuses every path changed since staging that is not allowed, and names them all`.
+
+**Task 3:** snippet on `guards/release.test.js` → `Tests: 77 passed, 77 total`. With the
+workflow assertion restored after Task 4, on `guards/release.test.js`,
+`guards/pipeline.test.js`, `guards/set-up-project.test.js` and
+`guards/installed-files.test.js` together → `Tests: 221 passed, 221 total`.
+
+**Task 5** — the plan's search, on the final tree, prints these hits; each is an expected
+kind:
+
+| Hit | Kind |
+|---|---|
+| `commands/release.md:19`, `:22` | the old notes line, read on resume (Decision 3 requires it) |
+| `commands/release.md:317` | the old check *Change* line, read on resume (Decision 3) |
+| `framework/DECISIONS.md:942–979` | FW-030's original text and its 2026-10-27 amendment |
+| `framework/DECISIONS.md:985–990` | FW-030's new amendment: the name mapping |
+| `framework/DECISIONS.md:1300–1307` | FW-041, the unrelated "rehearse the work" |
+| `framework/workflow.md:20` | the unrelated citation of planning.md's *Do not rehearse the work to write its plan* |
+| `rules/planning.md:67`, `:68` | the unrelated "rehearse the work" |
+| `scripts/pipeline.mjs:345`, `:351`, `:353` | the two refusal messages |
+| `guards/pipeline.test.js:390–427` | the two refusals' tests |
+| `guards/release.test.js:537`, `:539`, `:542` | the assertions that `/release` reads both old resume forms |
+
+The search is case-insensitive `-E` with no `\b`, so the macOS `git grep` gap does not
+apply; it is shown to find planted hits by `rules/planning.md` (2 matches) being found.
+
+**Task 6 — fresh-agent probe.** Claude Code 2.1.300, model claude-opus-5-5, macOS 26.2,
+arm64. Run from a scratch clone at `$TMPDIR/tmp.*/tropis` with its remote removed:
+`claude -p --output-format stream-json --verbose --allowedTools "Read,Grep,Glob" --disallowedTools "Bash,Edit,Write,NotebookEdit,WebFetch,WebSearch,Agent"`,
+the plan's prompt piped in. The developer's user-level instructions say nothing about
+releases or staging, so a local probe is a real one. The session's tool list still
+carried some connector tools, but Bash, Edit and Write were absent. In both runs the only
+call was `Read` of `commands/release.md`.
+
+- **Run 1** (command at `4d42f48`) — **pass.** It read
+  `Checked on the release candidate: (after the candidate)` as the earlier form and went
+  to *Resume at staging*. It took the `abc1234` *release candidate at* entry with `pass`
+  as the staged commit and went to Stage 7, where `git diff --name-only <staged> origin/main`
+  listed `src/app.js`. It said it would not prepare the pull request, and that staging
+  must be deployed and checked again at the head of main. It printed
+  `Step 1 of 2 — deploy to staging` with the *Candidate trigger* read as the staging
+  trigger. It printed no promote trigger and ran nothing. It raised two things:
+  - Stage 7 asked for the version before running the comparison that throws it away.
+    Fixed in `5bdc716`.
+  - Notes drafted before a later merge are never redrafted (see *Outstanding*).
+- **Run 2** (command at `5bdc716`) — **pass.** The same path. It now compared before
+  asking for the version, said it would not ask for the version, and printed
+  `Step 1 of 2 — deploy to staging` for the head of `origin/main`. It also said it would
+  ask for the missing *Staging workflow* line, as the block instructs. No promote trigger,
+  nothing run.
+
+**Task 7** (on the final commit before this report, `6e8e314`):
+- `bash scripts/check-blueprint.sh` →
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+  (clean baseline `ok`; 49 `caught` lines; no `missed` or `FAILED` line). The run on
+  `9c490e3` printed the same last line.
+- `npm --prefix .tropis test` → `Test Suites: 13 passed, 13 total`,
+  `Tests: 137 passed, 137 total`. The first run, on `9c490e3`, failed one test:
+  `catalog invariants › finds every shipped entry's modules`, with
+  `release-is-rehearsed-on-a-candidate: module templates/github/tropis-candidate.yml does not exist`.
+  Fixed in `6e8e314`. The Trap's known `set-up-project` failure did not appear: that
+  guard is not among the installed release's 13 suites.
+
+**Acceptance criteria**
+
+| Entry · criterion | Covered by | Covers what it describes? |
+|---|---|---|
+| tags-what-main-holds · 1, the version and notes reach main through a pull request `/release` drafts after the check passes | `guards/release.test.js` *refuses the promotion when anything but the notes and version files changed…* and *commits the version with the notes where there is no staging…* (assert the command text); probe runs 1–2 | Command text only. An agent opening that pull request is outstanding for a real release |
+| tags-what-main-holds · 2, the release pipeline tags a commit main holds and pushes only the tag | `guards/release.test.js` *states the promote step in the workflow document*; `guards/pipeline.test.js` *refuses a commit the main branch does not hold* | The refusal runs for real in a scratch repository. Tagging and pushing only the tag are the project's own pipeline, which the workflow states and nothing here runs |
+| tags-what-main-holds · 3, refuses to tag on any change beyond notes and version files since the checked commit | `guards/pipeline.test.js` *refuses every path changed since staging…* (runs the check against a scratch main branch, including a commit merged after staging), red check above; `/release` Stage 7's two `git diff` checks, the probe | Yes for the shipped check. `/release`'s own refusal is command text, exercised by the probe |
+| guides-through-both-steps · 1, the new names everywhere, the old ones only in migration and earlier records | Task 5 search and its table | Yes. The resume forms are the transition that criterion 7 asks for |
+| guides-through-both-steps · 2, step 1 of 2 with its trigger, wait, then report the summary and by-hand list | `guards/release.test.js` *prints the two steps by their plain names…*, *finds the staging run by its commit…*; `guards/pipeline.test.js` summary-on-stdout tests and the caller's `run-name` assertion | Text and the summary's shape. **The run lookup by `run-name` and the log reading are outstanding for a real staging run** |
+| guides-through-both-steps · 3, the check drafted and recorded in the same sitting, as `/manual-check` does | `guards/release.test.js` *drafts the check as /manual-check does…* | Command text only |
+| guides-through-both-steps · 4, step 2 of 2 on a pass; a failure is recorded and stops; a rerun resumes at step 1 for the new commit | `guards/release.test.js` *prints the promote trigger only in step 2…*, *resumes from the new and the old notes line…*; probe runs 1–2 (resume and restart of step 1) | Command text, and the probe's reading of it |
+| guides-through-both-steps · 5, the developer starts both steps and the command runs neither | `guards/release.test.js` *…never runs a trigger*; probe runs 1–2 (no command run, no promote trigger) | Yes as text. The probe could not run commands, so it shows intent, not restraint |
+| guides-through-both-steps · 6, an old slot or caller is moved, or the project is told exactly what to rename, and nothing is lost silently | `guards/pipeline.test.js` two refusal tests (slot and deploy both exit 1, naming the fix, nothing runs); `RELEASES.md` by-hand steps 1–2, which `/update` performs | Yes for the slot and the variable. The old caller is covered only by the by-hand step; nothing checks it by machine |
+| guides-through-both-steps · 7, the notes line is renamed and `/release` reads either form | `guards/release.test.js` *names all three endings…*, *resumes from the new and the old…*; probe runs 1–2 | Yes |
+
+**After rebasing on `origin/main` at `a989f1e`** (two commits landed meanwhile:
+`main-status` and the backlog; the rebase was clean): `bash scripts/check-blueprint.sh` →
+`Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`;
+`npm --prefix .tropis test` → `Test Suites: 13 passed, 13 total`,
+`Tests: 137 passed, 137 total`. The rebase rewrote this branch's commits, so the short
+hashes named in this report (`f554f58` … `6e8e314`) are those from before it; the
+subjects are unchanged.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: 17 files, 1030 insertions, 401
+deletions. Files: `RELEASES.md`, `commands/release.md`, `feature-catalog.yaml`,
+`framework/DECISIONS.md`, `framework/workflow.md`,
+`guards/{framework-integrity,installed-files,pipeline,release,set-up-project}.test.js`,
+`scripts/installed-files.js`, `scripts/pipeline.mjs`, `scripts/set-up-project.sh`,
+`templates/README.md`, `templates/candidate-caller.yml → templates/staging-caller.yml`,
+`templates/github/tropis-candidate.yml → templates/github/tropis-staging.yml`. With this
+report, the plan file too. All are in *File Structure*. The catalog edit reaches two
+entries outside the bundle (see *What the plan got wrong*). `bands.yaml` is untouched,
+and so are `.claude/`, `.tropis/`, `.cursor/`, `.github/` and `CLAUDE.md`.
+
+### Judgment calls
+
+- **I carried on past a red baseline.** Task 0's self-check failed twice on `origin/main`
+  with `main branch status › --pull-request › never asks twice to update the same head`:
+  exit 3 instead of 0, a timeout under `--timeout 0.05`, in a 232-second run. Alone
+  through the snippet, `guards/main-status.test.js` passed 37/37, and both Task 7
+  self-checks passed. It is load-dependent timing in a file this plan does not touch, so
+  it says nothing about the base. The plan said to stop.
+- **Where the summary goes.** `staging deploy` now writes the summary to stdout always,
+  and also to the file when `--summary` is given. Without `--summary` it no longer goes to
+  stderr.
+- **The old-layout refusals.**
+  - The old folder is refused whenever `pipeline/candidate/` exists, even beside a filled
+    `pipeline/staging/`.
+  - The variable check reads every file under `pipeline/staging/`, recursively, and names
+    the first in sorted order.
+- **The promote check's output.**
+  - Refusals go to stderr and the pass line to stdout.
+  - Where the slot itself errors, refusal 4's place returns the slot's own `staging:`
+    line, exit 1.
+  - Three extra refusals cover git failing: `promote: could not compare …` and
+    `promote: could not list what changed since staging`.
+  - The diff uses `--no-renames`, so a renamed file names both paths.
+  - The command listing's line uses `"$COMMIT"` and `"$STAGED"`, like the listing's other
+    lines.
+- **`/release`'s structure.**
+  - Order: Stage 5 → *Step 1* → Stage 6 (the check) → *Resume at staging* → Stage 7 (the
+    promotion pull request) → *Step 2*.
+  - Stage 7 compares `git diff --name-only <staged> origin/main` before preparing
+    anything, then runs the plan's `<staged> HEAD` check after its commit. It asks for the
+    version only after the first comparison passes (probe run 1).
+  - An extra resume case: a version section ending `Checked on staging: no — …` with no
+    tag goes to *Step 2* with no `<staged>`.
+  - A first release asks the developer for the version.
+  - A block missing *Version files* or *Staging workflow* means asking the developer and
+    suggesting the line.
+  - Stage 5's empty-slot commit uses the same `release/<version>` worktree where the
+    branch is gated.
+- **The release guard.**
+  - `describe('the /release candidate')` is rewritten as `describe('the /release steps')`.
+  - Its workflow assertions now name the new text.
+  - The fixtures for this repository's own release script at its top (`promote`,
+    `checkReleased`) say `Checked on staging: yes`. The test
+    `refuses notes whose release-candidate line still reads (ask)` is renamed
+    `…checked line…`.
+- **The pipeline guard.**
+  - The `candidate slot` and `candidate rehearse` describes are renamed `staging slot` and
+    `staging deploy`.
+  - The command-listing test now checks that the staging lines are present rather than
+    last, since the promote line now ends the list.
+- **Wording.**
+  - The operator guide names no old path, so the search stays clean; it says a project on
+    an earlier layout is refused with the fix.
+  - The workflow's upgrade bullet is reworded so it does not say "rehearsal".
+- **The catalog.** `release-guides-through-both-steps` also lists
+  `templates/staging-caller.yml` and `templates/README.md` among its modules.
+
+### What the plan got wrong
+
+- **Two other catalog entries name the renamed template.** The shipped
+  `release-is-rehearsed-on-a-candidate` and the shaped
+  `pipeline-bills-no-job-that-decides-nothing` both list
+  `templates/github/tropis-candidate.yml` as a module, and the plan said to touch only
+  this bundle's two entries. The catalog check failed on the shipped one. I renamed the
+  path in both (`6e8e314`). Path only, nothing else changed in either.
+- **Traps' list of expected old-name hits is incomplete.** It omits three kinds:
+  - the resume forms in `commands/release.md` that Decision 3 itself requires;
+  - their assertions in `guards/release.test.js`;
+  - `framework/workflow.md:20`, which cites planning.md's "Do not rehearse" heading.
+- **The plan did not mention `guards/release.test.js`'s fixtures** for this repository's
+  own release script. They carried the old notes line, so the search found them; I
+  changed them.
+- **Task 3 cannot finish green as written.** It asks for the release guard to pass and be
+  committed, while Decision 4's workflow text lands only in Task 4. I held that one
+  assertion back and committed it with `framework/workflow.md`.
+- **Not every guard runs through Task 0's snippet.** `guards/framework-integrity.test.js`
+  reads `.claude/rules` beside its own folder, which the snippet's export does not have
+  (`ENOENT … /.claude/rules`). It ran through the self-check instead.
+- **The Trap about `set-up-project.test.js` is about a guard `npm --prefix .tropis test`
+  does not run.** That command runs the installed release's 13 suites, so it could not
+  show that failure.
+- **Task 0 was red on the base before any change** (*Judgment calls*). The plan's
+  stop-on-red would have ended the run on a timing fault in an unrelated file.
+
+### Outstanding
+
+- **A real deploy to staging.** Nothing here can exercise the run lookup by `run-name`,
+  `gh run watch`, or reading the `### Deploy to staging` block from `gh run view --log`.
+  Only the command text covers them. Someone has to see them work on an adopter's first
+  release after this one.
+- **A real promote pipeline.** Tagging and pushing only the tag are the project's own
+  pipeline. Only the workflow's text and the shipped `promote check` cover them.
+- **Stale notes after a restart (from probe run 1).** When Stage 7 sends the developer
+  back to step 1 because something merged after staging, `## [Unreleased]` was drafted
+  before that merge, and nothing offers to redraft it. The release can then ship a change
+  its notes do not mention. This is a design question for the reviewer: a backlog entry,
+  or a line in Stage 7.
+- **A flaky main-status test.** `guards/main-status.test.js` *never asks twice to update
+  the same head* failed twice under a full self-check, with exit 3 instead of 0 under
+  `--timeout 0.05`, and passed on reruns. The workflow calls a check that passes on a
+  rerun with nothing changed a bug, and it needs a backlog entry. I did not add one,
+  because the catalog is outside this plan's scope beyond its two entries.
+- **The old caller workflow is caught only by a release note.** `/update` performs
+  step 2 of the notes. Nothing checks a project's `staging.yml` by machine. A
+  `tropis-candidate.yml` caller left in place fails on GitHub once the update removes
+  the workflow it calls.
+- **This repository's own release script still says the old line.**
+  `.github/scripts/release.mjs` (not shipped, outside scope) still says
+  `answer "Checked on the release candidate" first` in its `(ask)` refusal.
+- **FW-044's number.** It was free on `origin/main` when written. The reviewer renumbers
+  if another session takes it first.
+- **The pull request.** Not opened, per the developer's override; the reviewing session
+  opens it.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `cfa053f`, with git 2.49.0 and Node
+v22.15.0 in Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` names 18 files, every one in *File
+  Structure* (the template renames as `git mv`s), plus the two other catalog entries the
+  handover explains.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 137 passed, 137 total`.
+- Re-break: a throwaway commit making `promoteCheck` ignore the allow list, then
+  `guards/pipeline.test.js` through the Task 0 snippet: `Tests: 1 failed, 110 passed`.
+  Commit dropped, never pushed.
+- Read in full: `promoteCheck` and the slot's two old-layout refusals in
+  `scripts/pipeline.mjs`, `commands/release.md`, FW-044 and FW-030's amendment, and the
+  by-hand steps in `RELEASES.md`. They do what Decisions 1–6 say.
+
+### Found
+
+- **The notes can miss what merged since staging (judgement, not fixed here).** When
+  Stage 7 or a failed check sends the developer back to step 1 for the head of the main
+  branch, nothing offers to redraft the notes for what merged meanwhile. Whether to
+  redraft, append or ask is a design choice, so it is a backlog idea,
+  `release-notes-cover-a-restaged-commit`, added on this branch.
+- **A main-status test passed on a rerun** on the untouched base (the handover's
+  *Outstanding*). The workflow calls that a bug to record. Another session had raised it
+  as `main-status-tests-pass-under-load` by merge time, so this branch adds this
+  sighting to that idea instead of a second entry.
+- Nothing mechanical to fix. The executor's deviations — renaming the template path in
+  two other catalog entries, which the catalog check required, and holding one release
+  test until the workflow text landed — are right.
+
+### Outstanding disposition
+
+- A real deploy to staging (finding the run by `run-name`, `gh run watch`, reading the
+  summary from the log) and a real promote pipeline can be checked only on an adopter's
+  first release after this one. Loose end, reported to the parent session; not run.
+- The old caller is caught only by the release note's by-hand step, which `/update`
+  performs; the slot refuses the old folder and variable by machine. Accepted.
+- This repository's own `.github/scripts/release.mjs` still names the old notes line in
+  one message. It is not shipped and changes when this repository takes the release.
+- FW-044 was free on `origin/main` at review; renumber at merge if another session takes
+  it first.
+
+### Learnings routed
+
+- Plan check: a plan may not quote a worktree command outside its Repositories table,
+  even inside a decision about what a command must print; already in `AGENTS.md`'s
+  gotchas, no new rule.
+- The two findings above are backlog ideas: one added on this branch, one a sighting
+  added to an existing idea. Nothing else generalises:
+  this repository is the upstream, so there is no queue entry.
+
+### Merged because
+
+Every criterion of both entries is covered by a test, the command text or the probe, as
+the handover's table shows, apart from the real runs above, which nothing here can
+exercise. The pull request carries both entries to shipped and removes their band rows.

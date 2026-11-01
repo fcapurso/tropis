@@ -136,8 +136,8 @@ when the framework half exists to serve the application half. Full rule:
   before the executor starts.
 - **Where it is not gated, what may go directly to `main` is what cannot change how an
   agent behaves**: the
-  backlog, generated documentation, plan and spec files, the release notes `/release`
-  commits, the README `/refresh-readme` commits, and prose under `docs/`.
+  backlog, generated documentation, plan and spec files, the release notes and version
+  `/release` commits, the README `/refresh-readme` commits, and prose under `docs/`.
   **Anything under `.claude/rules/`, `.claude/rule-additions/` or `.claude/framework/`
   needs a branch, and so does anything under `.claude/commands/`**: a command changes
   how every later session behaves. A command edit needs a commit body but no fresh-agent
@@ -163,13 +163,12 @@ when the framework half exists to serve the application half. Full rule:
   `framework-commit-check.sh` speaks at any commit on `main` where no reason is
   recorded, and otherwise only when the commit carries something that belonged on a
   branch.
-- **A release pipeline is a third writer to `main`.** Where the project includes the
-  optional release section, its pipeline sets the version and promotes the notes on
-  `main` itself. That is not a breach of the list above; name the files it commits in
-  the project's own `AGENTS.md`, so a reader of the list does not take them for one.
-  Where the main branch is gated it cannot be: nothing bypasses the gate, so a project
-  whose release pipeline pushes to `main` records why it is ungated until its release
-  only tags what `main` holds.
+- **A promote pipeline never writes to the main branch.** Where the project includes
+  the optional release section, the version and the promoted notes reach `main` through
+  `/release`'s own pull request, and the promote pipeline only tags a commit `main`
+  already holds, so a gated project needs no bypass to release. A project whose own
+  release pipeline still pushes to `main` records why it is ungated until it follows
+  that section.
 - **A commit touching `.claude/rules/`, `.claude/rule-additions/` or
   `.claude/framework/` states what its fresh-agent check found, in the body.** One or
   two sentences: what the agent was asked to do, whether it found what the change
@@ -536,53 +535,57 @@ pure functions, types, constants — where automated checks suffice.
 **Include if the project ships versioned releases.** Three things transfer from the project
 that had this; the rest is release-tool specific.
 
-- **`/release` drafts; the developer starts each step.** The command checks `main` is
-  clean and pushed, where Tropis keeps the README brings it up to date with
+- **`/release` drafts and guides; the developer starts each step.** The command checks
+  `main` is clean and pushed, where Tropis keeps the README brings it up to date with
   `/refresh-readme` (pushing the refreshed page, when there is one, as its own commit),
-  proposes the bump, drafts the notes from the backlog for the people who use the
-  product, commits the notes, and prints the trigger for the next step. An agent never
-  runs a trigger. A release is three steps:
-  1. **The release candidate**, for one commit on the main branch that already carries
-     the notes. It runs every stage on that commit; puts the pre-production environment
-     back on the version production runs; deploys the candidate there; and says whether
-     anything must be upgraded by hand. It sets no version and makes no tag. Tropis
-     ships this step: the project fills `pipeline/candidate/`, and
-     `.github/workflows/tropis-candidate.yml` runs it.
-  2. **The check**, by the developer on the pre-production environment, drafted and
-     recorded through `/manual-check`. `/release`, run again, prints the release trigger
-     only once that entry says `pass`.
-  3. **The release**, given the candidate's commit. It is the project's own pipeline,
-     and must: run the full suite as a gate; on top of the candidate, make one commit
-     that sets the version, promotes `## [Unreleased]` in the notes file and writes
-     `Checked on the release candidate: yes`, and changes no other file; tag that
-     commit; merge it into the main branch; push the branch and the tag together; deploy
-     the tag to production; publish the notes without the `Checked on the release
-     candidate` line; and roll back on failure, as below. Nothing merged after the
-     candidate reaches production through it.
+  proposes the bump and works out the version, drafts the notes from the backlog for
+  the people who use the product, commits them, and then carries the developer through
+  the release's two steps, printing each trigger. An agent never runs a trigger. In
+  order:
+  1. **Step 1, deploy to staging**, for one commit on the main branch that already
+     carries the notes. It runs every stage on that commit; puts staging back on the
+     version production runs; deploys the commit there; and says whether anything must
+     be upgraded by hand. It sets no version and makes no tag. Tropis ships this step:
+     the project fills `pipeline/staging/`, and `.github/workflows/tropis-staging.yml`
+     runs it. `/release` finds the run, waits for it, and reads its summary.
+  2. **The check**, by the developer on staging, drafted and recorded by `/release` as
+     `/manual-check` does, in the same sitting. The commit it passes on is the staged
+     commit.
+  3. **The promotion pull request**, opened by `/release` once the check passes. It sets
+     the version in each file that carries it, promotes `## [Unreleased]` in the notes
+     file, and writes `Checked on staging: yes`, and it changes no other file. It
+     reaches the main branch like any other change, through the gate where there is
+     one.
+  4. **Step 2, promote to production**, given the commit that pull request put on the
+     main branch and the staged commit. It is the project's own pipeline, and must: run
+     `node .tropis/scripts/pipeline.mjs promote check <commit> --staged <staged> --allow <notes file> --allow <each version file>`
+     (without `--staged` where the project does not deploy to staging) and stop on a
+     refusal; run the full suite as a gate; tag `<commit>`; push only the tag; deploy
+     the tag to production; publish the notes without the `Checked on staging` line;
+     and roll back on failure, as below. It never commits and never pushes a branch.
 
-  **Where the project leaves `pipeline/candidate/` empty, there is no candidate and no
-  check.** `/release` records that no candidate was rehearsed, and the release runs on
-  the main branch as it stands.
-- **The tag sits one commit above the candidate, and its code is the candidate's.** The
-  version and the promoted notes belong in the tagged commit, and the candidate cannot
-  carry them: they are set only once it has passed. So the release refuses a commit
-  that changes anything besides the notes file and the files carrying the version.
-  Merging it into the main branch is a fast-forward when nothing landed since the
-  candidate, and a merge otherwise; a conflict stops the release before anything is
-  pushed.
+  **Where the project leaves `pipeline/staging/` empty, there is no step 1 and no
+  check.** `/release` commits the version with the notes, ending them
+  `Checked on staging: no — this project does not deploy to staging`, and the promote
+  pipeline tags that commit.
+- **The tag sits on a commit the main branch holds, and its code is the staged
+  commit's.** The version and the promoted notes belong in the tagged commit, and the
+  staged commit cannot carry them: they are set only once the check has passed. So the
+  promotion pull request changes only the notes and the version files, and
+  `promote check` refuses a commit that changes anything else since the staged one.
+  Production gets what staging was checked on; anything merged in the meantime needs a
+  new deploy to staging, and waits for the next release otherwise.
 - **Only a tag of the form `vX.Y.Z` is a release.** A tag such as `v1.5.0-rc.1` may mark
-  anything else, and the framework ignores it: the candidate puts the pre-production
-  environment back on the highest `vX.Y.Z` tag, and `/release` counts the changes since
-  the last one. Without this, a test tag sorts above the release it precedes and above
-  the one before it, and the pre-production environment is reset to a version production
-  never ran, with nothing to say so.
-- **The candidate is an upgrade rehearsal.** Because the pre-production environment is
-  first put back on production's version, each candidate deploy is the upgrade
-  production will receive, onto data an older version wrote.
+  anything else, and the framework ignores it: a deploy to staging puts staging back on
+  the highest `vX.Y.Z` tag, and `/release` counts the changes since the last one.
+  Without this, a test tag sorts above the release it precedes and above the one before
+  it, and staging is reset to a version production never ran, with nothing to say so.
+- **Each deploy to staging is the upgrade production will receive.** Because staging is
+  first put back on production's version, the deploy upgrades it onto data an older
+  version wrote, as promotion will upgrade production.
 - **Production deploy is a manual step, never a CI job.** Merging to the main branch may
-  deploy to a development environment. The pre-production environment belongs to the
-  release candidate, and production is started by a person after the check on the
-  candidate.
+  deploy to a development environment. Staging belongs to step 1, and production is
+  started by a person after the check on staging.
 - **A job that writes irreversible remote state mid-run needs rollback, not idempotency.**
   Compensating actions on failure (`if: failure()`) keep each run self-contained. Trying
   instead to detect "is this already done?" on a re-run is unreliable, because the

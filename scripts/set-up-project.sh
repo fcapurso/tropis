@@ -92,7 +92,7 @@ if [ -n "$name" ]; then
   node -e 'process.stdout.write(JSON.stringify({ name: process.argv[1] }, null, 2) + "\n")' "$name" > "$PROJECT/.tropis/project.json"
 fi
 cp "$BP"/templates/project-brief.md "$BP"/templates/readme-skeleton.md "$PROJECT/.tropis/templates/"
-cp "$BP"/templates/pipeline-caller.yml "$BP"/templates/candidate-caller.yml \
+cp "$BP"/templates/pipeline-caller.yml "$BP"/templates/staging-caller.yml \
    "$BP"/templates/github/main-branch-ruleset.json "$PROJECT/.tropis/templates/"
 cp "$BP"/templates/backlog-board.html "$BP"/templates/backlog-bands.yaml "$PROJECT/.tropis/templates/"
 mkdir -p "$PROJECT/docs/backlog-board"

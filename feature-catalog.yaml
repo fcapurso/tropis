@@ -2792,7 +2792,7 @@
   layer: product
   modules:
     - scripts/pipeline.mjs
-    - templates/github/tropis-candidate.yml
+    - templates/github/tropis-staging.yml
     - commands/release.md
   refs:
     - first-adopter:docs/superpowers/specs/2026-10-22-pipeline-and-environments-design.md
@@ -4024,7 +4024,7 @@
   layer: product
   modules:
     - templates/github/tropis-pipeline.yml
-    - templates/github/tropis-candidate.yml
+    - templates/github/tropis-staging.yml
     - templates/github/tropis-framework-checks.yml
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
@@ -4051,9 +4051,11 @@
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
 # 2026-11-01, re-shaped while planning: criterion 1 keeps earlier decision records'
 # original text, which is history; FW-030 gets an amendment mapping the old names.
+# Shipped by docs/superpowers/plans/2026-11-01-release-flow.md; each criterion's test
+# or check is in that plan's handover report.
 - id: release-guides-through-both-steps
   title: A release is two plainly named steps, and /release stays with the developer through both
-  status: building
+  status: shipped
   value: Candidate and rehearsal read as jargon, and release names three different
     things. The industry's words, deploy to staging and promote to production, say what
     each step does, and promote names the guarantee that production gets the build that
@@ -4084,7 +4086,9 @@
   modules:
     - commands/release.md
     - scripts/pipeline.mjs
-    - templates/github/tropis-candidate.yml
+    - templates/github/tropis-staging.yml
+    - templates/staging-caller.yml
+    - templates/README.md
     - framework/workflow.md
     - framework/DECISIONS.md
   refs: []
@@ -4267,9 +4271,11 @@
 # FW-030's promise - nothing merged after the candidate reaches production - by refusing
 # instead of by branching. Until this ships, a project whose release pushes to the main
 # branch leaves the gate off and records why.
+# Shipped by docs/superpowers/plans/2026-11-01-release-flow.md; each criterion's test
+# or check is in that plan's handover report.
 - id: release-tags-what-main-holds
   title: A project's release tags what its main branch holds, so a gated branch needs no bypass
-  status: building
+  status: shipped
   value: A project can turn on its host's gate without giving any person or token a way
     around it, because releasing no longer writes to the main branch. Today the release
     pipeline commits the version and the promoted notes and pushes them to the main
@@ -4286,7 +4292,10 @@
   layer: product
   after:
     - main-is-gated-by-the-host
-  modules: []
+  modules:
+    - scripts/pipeline.mjs
+    - commands/release.md
+    - framework/workflow.md
   refs: []
 # 2026-10-31, raised by the developer: the board showed the harness sidecar arc as in
 # progress though both its entries were shelved. Shelved was carrying two meanings - parked
@@ -4730,6 +4739,9 @@
 # 2026-11-01, seen again executing docs/superpowers/plans/2026-11-01-project-has-one-display-name.md:
 # the same two cases exited 3 in the clean baseline at 0a27f09 and at d354efc, then passed
 # alone and in the next full run on the same tree (node v22.15.0, macOS 26.2 arm64).
+# 2026-11-01, seen a third time executing docs/superpowers/plans/2026-11-01-release-flow.md:
+# "never asks twice to update the same head" exited 3 twice in full self-checks on an
+# untouched base, then passed alone and in later runs (Claude Code 2.1.300, macOS 26.2 arm64).
 - id: main-status-tests-pass-under-load
   title: The main-status tests give the same answer however busy the machine is
   status: idea
@@ -4744,3 +4756,20 @@
     - guards/main-status.test.js
   refs:
     - docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
+# 2026-11-01, raised reviewing the release-flow plan: its fresh-agent probe sent the
+# developer back to step 1 after a merge, with notes drafted before that merge.
+- id: release-notes-cover-a-restaged-commit
+  title: When a release goes back to staging for a newer commit, its notes cover what merged since
+  status: idea
+  value: The people reading a release's notes learn about every change it ships. Today,
+    when /release finds that something merged after staging was checked, or the check
+    failed and a fix merged, it sends the developer back to deploy the head of the main
+    branch to staging, but the notes were drafted for the earlier commit and nothing
+    offers to redraft them, so the release can ship a change its notes never mention.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules:
+    - commands/release.md
+  refs:
+    - docs/superpowers/plans/2026-11-01-release-flow.md

@@ -173,9 +173,9 @@ describe('set-up-project.sh', () => {
         '.tropis/templates/backlog-board.html',
         '.tropis/templates/backlog-bands.yaml',
         '.tropis/templates/pipeline-caller.yml',
-        '.tropis/templates/candidate-caller.yml',
+        '.tropis/templates/staging-caller.yml',
         '.tropis/templates/main-branch-ruleset.json',
-        '.github/workflows/tropis-candidate.yml',
+        '.github/workflows/tropis-staging.yml',
         '.github/workflows/tropis-framework-checks.yml',
         '.github/workflows/tropis-pipeline.yml',
         'docs/backlog-board/bands.yaml',
@@ -196,7 +196,7 @@ describe('set-up-project.sh', () => {
       expect(existsSync(join(dir, 'CONTRIBUTING.md'))).toBe(false);
       expect(existsSync(join(dir, 'pipeline'))).toBe(false);
       expect(existsSync(join(dir, '.github/workflows/pipeline.yml'))).toBe(false);
-      expect(existsSync(join(dir, '.github/workflows/candidate.yml'))).toBe(false);
+      expect(existsSync(join(dir, '.github/workflows/staging.yml'))).toBe(false);
 
       const settings = JSON.parse(readFileSync(join(dir, '.claude/settings.json'), 'utf8'));
       const commands = settings.hooks.PreToolUse.flatMap((m) => m.hooks.map((h) => h.command));

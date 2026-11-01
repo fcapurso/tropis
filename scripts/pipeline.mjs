@@ -9,7 +9,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -317,34 +317,59 @@ function originBranches(root) {
 }
 
 const BRANCH_ACTIONS = ['create', 'deploy', 'remove'];
-const CANDIDATE_SCRIPTS = ['reset.sh', 'deploy.sh'];
+const STAGING_SCRIPTS = ['reset.sh', 'deploy.sh'];
 
-/**
- * `filled` when `pipeline/candidate/` has reset and deploy. `empty` when
- * it has neither. One without the other is an error naming the missing
- * script, the same shape as `branchSlot`.
- * @param {string} root
- * @returns {{ slot?: 'filled' | 'empty', error?: string }}
- */
-export function candidateSlot(root) {
-  const missing = CANDIDATE_SCRIPTS
-    .filter((name) => !existsSync(join(root, 'pipeline', 'candidate', name)));
-  if (missing.length === CANDIDATE_SCRIPTS.length) return { slot: 'empty' };
-  if (missing.length === 0) return { slot: 'filled' };
-  return { error: `candidate: pipeline/candidate/ is missing ${missing.join(', ')}` };
+/** Every file under dir, as paths relative to it, in sorted order. */
+function filesUnder(dir, prefix = '') {
+  const found = [];
+  for (const entry of readdirSync(join(dir, prefix), { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) found.push(...filesUnder(dir, rel));
+    else if (entry.isFile()) found.push(rel);
+  }
+  return found.sort();
 }
 
 /**
- * The summary every rehearse writes. `byHand` null means the deploy did not
- * finish, so lines it may have written are left out.
+ * `filled` when `pipeline/staging/` has reset and deploy. `empty` when it has
+ * neither. One without the other is an error naming the missing script, the
+ * same shape as `branchSlot`. A project still on the layout this replaced is
+ * refused rather than read as empty: the old folder, or a script reading the
+ * old variable, would otherwise deploy nothing and say nothing.
+ * @param {string} root
+ * @returns {{ slot?: 'filled' | 'empty', error?: string }}
+ */
+export function stagingSlot(root) {
+  if (existsSync(join(root, 'pipeline', 'candidate'))) {
+    return {
+      error: 'staging: pipeline/candidate/ is the old name of pipeline/staging/ — run git mv pipeline/candidate pipeline/staging',
+    };
+  }
+  const dir = join(root, 'pipeline', 'staging');
+  if (existsSync(dir)) {
+    const stale = filesUnder(dir)
+      .find((rel) => readFileSync(join(dir, rel), 'utf8').includes('TROPIS_CANDIDATE'));
+    if (stale) {
+      return { error: `staging: pipeline/staging/${stale} reads TROPIS_CANDIDATE, now TROPIS_STAGING_COMMIT` };
+    }
+  }
+  const missing = STAGING_SCRIPTS.filter((name) => !existsSync(join(dir, name)));
+  if (missing.length === STAGING_SCRIPTS.length) return { slot: 'empty' };
+  if (missing.length === 0) return { slot: 'filled' };
+  return { error: `staging: pipeline/staging/ is missing ${missing.join(', ')}` };
+}
+
+/**
+ * The summary every deploy to staging writes. `byHand` null means the deploy
+ * did not finish, so lines it may have written are left out.
  * @param {{ hash: string, reset: string, deploy: string, byHand: string[] | null }} outcome
  * @returns {string}
  */
-export function candidateSummary({ hash, reset, deploy, byHand }) {
+export function stagingSummary({ hash, reset, deploy, byHand }) {
   const lines = [
-    '### Release candidate',
+    '### Deploy to staging',
     '',
-    `- Candidate: \`${hash}\``,
+    `- Commit: \`${hash}\``,
     `- Reset: ${reset}`,
     `- Deploy: ${deploy}`,
   ];
@@ -358,9 +383,13 @@ export function candidateSummary({ hash, reset, deploy, byHand }) {
   return lines.join('\n');
 }
 
-function writeCandidateSummary(summary, text) {
+/**
+ * The summary goes to stdout always, where /release reads it from the run's log,
+ * and to the summary file too when one is given.
+ */
+function writeStagingSummary(summary, text) {
   if (summary) appendFileSync(summary, text);
-  else process.stderr.write(text);
+  process.stdout.write(text);
 }
 
 function headHash(root) {
@@ -402,14 +431,14 @@ function extractTag(root, tag, dir) {
 }
 
 /** Runs reset.sh against the tag's files. The directory is removed either way. */
-function rehearseReset(root, env, tag) {
-  const dir = mkdtempSync(join(tmpdir(), 'tropis-candidate-'));
+function stagingReset(root, env, tag) {
+  const dir = mkdtempSync(join(tmpdir(), 'tropis-staging-'));
   try {
     if (!extractTag(root, tag, dir)) {
-      process.stderr.write('candidate: could not read the production tag\n');
+      process.stderr.write('staging: could not read the production tag\n');
       return { status: 1, failed: 'extract' };
     }
-    const status = runScript(root, join(root, 'pipeline', 'candidate', 'reset.sh'), {
+    const status = runScript(root, join(root, 'pipeline', 'staging', 'reset.sh'), {
       ...env,
       TROPIS_PRODUCTION_TAG: tag,
       TROPIS_PRODUCTION_DIR: dir,
@@ -421,12 +450,12 @@ function rehearseReset(root, env, tag) {
 }
 
 /** Runs deploy.sh. By-hand lines count only when it exits 0. */
-function rehearseDeploy(root, env) {
+function stagingDeployScript(root, env) {
   const dir = mkdtempSync(join(tmpdir(), 'tropis-by-hand-'));
   const byHandPath = join(dir, 'by-hand.txt');
   writeFileSync(byHandPath, '');
   try {
-    const status = runScript(root, join(root, 'pipeline', 'candidate', 'deploy.sh'), {
+    const status = runScript(root, join(root, 'pipeline', 'staging', 'deploy.sh'), {
       ...env,
       TROPIS_BY_HAND: byHandPath,
     });
@@ -437,41 +466,41 @@ function rehearseDeploy(root, env) {
   }
 }
 
-function rehearse(root, summary) {
+function deployToStaging(root, summary) {
   const hash = headHash(root);
   if (!hash) {
-    process.stderr.write('candidate: the checkout has no commit\n');
+    process.stderr.write('staging: the checkout has no commit\n');
     return 1;
   }
-  const slot = candidateSlot(root);
+  const slot = stagingSlot(root);
   if (slot.error) {
     process.stderr.write(`${slot.error}\n`);
     return 1;
   }
   if (slot.slot === 'empty') {
-    process.stdout.write('candidate: empty — no pipeline/candidate/, so no candidate was rehearsed\n');
-    writeCandidateSummary(summary, candidateSummary({
+    process.stdout.write('staging: empty — no pipeline/staging/, so nothing was deployed to staging\n');
+    writeStagingSummary(summary, stagingSummary({
       hash,
-      reset: 'not run — no pipeline/candidate/',
-      deploy: 'not run — no pipeline/candidate/',
+      reset: 'not run — no pipeline/staging/',
+      deploy: 'not run — no pipeline/staging/',
       byHand: null,
     }));
     return 0;
   }
   const env = stageEnv();
   if (!env) return 1;
-  env.TROPIS_CANDIDATE = hash;
+  env.TROPIS_STAGING_COMMIT = hash;
   const tag = highestReleaseTag(root);
   if (tag === null) {
-    process.stderr.write('candidate: could not list tags\n');
+    process.stderr.write('staging: could not list tags\n');
     return 1;
   }
   let reset = 'not needed — no release yet';
   if (tag !== '') {
-    const resetRun = rehearseReset(root, env, tag);
+    const resetRun = stagingReset(root, env, tag);
     if (resetRun.failed) return resetRun.status;
     if (resetRun.status !== 0) {
-      writeCandidateSummary(summary, candidateSummary({
+      writeStagingSummary(summary, stagingSummary({
         hash,
         reset: `failed — reset.sh exited ${resetRun.status}`,
         deploy: 'not run — reset.sh failed',
@@ -481,8 +510,8 @@ function rehearse(root, summary) {
     }
     reset = `to \`${tag}\``;
   }
-  const deployRun = rehearseDeploy(root, env);
-  writeCandidateSummary(summary, candidateSummary({
+  const deployRun = stagingDeployScript(root, env);
+  writeStagingSummary(summary, stagingSummary({
     hash,
     reset,
     deploy: deployRun.status === 0 ? 'deployed' : `failed — deploy.sh exited ${deployRun.status}`,
@@ -491,7 +520,7 @@ function rehearse(root, summary) {
   return deployRun.status;
 }
 
-function parseRehearseArgs(argv) {
+function parseStagingDeployArgs(argv) {
   let summary;
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] !== '--summary') return null;
@@ -502,29 +531,29 @@ function parseRehearseArgs(argv) {
   return { summary };
 }
 
-function candidateUsage() {
-  process.stderr.write('candidate: use slot or rehearse\n');
+function stagingUsage() {
+  process.stderr.write('staging: use slot or deploy\n');
   return 2;
 }
 
-/** `slot` reports the slot. `rehearse` resets, deploys, and writes the summary. */
-function candidateCommand(root, sub, rest) {
+/** `slot` reports the slot. `deploy` resets, deploys, and writes the summary. */
+function stagingCommand(root, sub, rest) {
   if (sub === 'slot') {
-    if (rest.length !== 0) return candidateUsage();
-    const slot = candidateSlot(root);
+    if (rest.length !== 0) return stagingUsage();
+    const slot = stagingSlot(root);
     if (slot.error) {
       process.stderr.write(`${slot.error}\n`);
       return 1;
     }
-    process.stdout.write(`candidate=${slot.slot}\n`);
+    process.stdout.write(`staging=${slot.slot}\n`);
     return 0;
   }
-  if (sub === 'rehearse') {
-    const parsed = parseRehearseArgs(rest);
-    if (!parsed) return candidateUsage();
-    return rehearse(root, parsed.summary);
+  if (sub === 'deploy') {
+    const parsed = parseStagingDeployArgs(rest);
+    if (!parsed) return stagingUsage();
+    return deployToStaging(root, parsed.summary);
   }
-  return candidateUsage();
+  return stagingUsage();
 }
 
 /**
@@ -969,6 +998,87 @@ function hostCommand(root, { summary }) {
   return 1;
 }
 
+const FULL_HASH = /^[0-9a-f]{40}$/;
+const PROMOTE_USAGE = 'promote: use check <commit> [--staged <commit>] [--allow <path>]...';
+
+function parsePromoteArgs(argv) {
+  if (argv[0] !== 'check' || argv[1] === undefined || argv[1].startsWith('--')) return null;
+  const parsed = { commit: argv[1], staged: undefined, allow: [] };
+  for (let i = 2; i < argv.length; i += 2) {
+    const value = argv[i + 1];
+    if (value === undefined) return null;
+    if (argv[i] === '--staged') parsed.staged = value;
+    else if (argv[i] === '--allow') parsed.allow.push(value);
+    else return null;
+  }
+  return parsed;
+}
+
+function isCommit(root, hash) {
+  return git(root, ['cat-file', '-e', `${hash}^{commit}`]).status === 0;
+}
+
+/** True when `ancestor` is `descendant` or one of its ancestors; null when git fails. */
+function contains(root, descendant, ancestor) {
+  const result = git(root, ['merge-base', '--is-ancestor', ancestor, descendant]);
+  if (result.status === 0) return true;
+  if (result.status === 1) return false;
+  return null;
+}
+
+/**
+ * The refusal the promote pipeline runs before it tags, so it is the same in
+ * every project: `commit` must be on the main branch (an ancestor of `HEAD`,
+ * which is a checkout of it), and where the project deploys to staging, must
+ * contain the staged commit and differ from it only in the allowed files.
+ * Returns the line to print and the exit status.
+ * @param {string} root
+ * @param {{ commit: string, staged?: string, allow: string[] }} args
+ * @returns {{ status: number, line: string }}
+ */
+export function promoteCheck(root, { commit, staged, allow }) {
+  const refuse = (line) => ({ status: 1, line: `promote: ${line}` });
+  for (const hash of [commit, staged]) {
+    if (hash !== undefined && !FULL_HASH.test(hash)) return refuse(`"${hash}" is not a full commit hash`);
+  }
+  for (const hash of [commit, staged]) {
+    if (hash !== undefined && !isCommit(root, hash)) return refuse(`${hash} is not a commit here`);
+  }
+  const onMain = contains(root, 'HEAD', commit);
+  if (onMain === null) return refuse('could not compare with HEAD');
+  if (!onMain) return refuse(`${commit} is not on the main branch — tag only a commit main holds`);
+  if (staged === undefined) {
+    const slot = stagingSlot(root);
+    if (slot.error) return { status: 1, line: slot.error };
+    if (slot.slot === 'filled') {
+      return refuse('this project deploys to staging — give --staged <the commit staging was checked on>');
+    }
+    return { status: 0, line: `promote: ${commit} may be tagged` };
+  }
+  const holdsStaged = contains(root, commit, staged);
+  if (holdsStaged === null) return refuse('could not compare the commit with the staged commit');
+  if (!holdsStaged) return refuse(`${commit} does not contain the staged commit ${staged}`);
+  const diff = git(root, ['diff', '--name-only', '--no-renames', staged, commit]);
+  if (diff.status !== 0) return refuse('could not list what changed since staging');
+  const changed = diff.stdout.split('\n').filter((path) => path !== '' && !allow.includes(path));
+  if (changed.length > 0) {
+    return refuse(`${changed.join(', ')} changed since staging was checked — deploy ${commit} to staging first`);
+  }
+  return { status: 0, line: `promote: ${commit} may be tagged` };
+}
+
+function promoteCommand(root, args) {
+  const parsed = parsePromoteArgs(args);
+  if (!parsed) {
+    process.stderr.write(`${PROMOTE_USAGE}\n`);
+    return 2;
+  }
+  const outcome = promoteCheck(root, parsed);
+  if (outcome.status === 0) process.stdout.write(`${outcome.line}\n`);
+  else process.stderr.write(`${outcome.line}\n`);
+  return outcome.status;
+}
+
 /** Commands for a host that has no wiring file, each with when to run it. */
 function commandList() {
   const lines = [
@@ -996,9 +1106,11 @@ function commandList() {
     'node .tropis/scripts/pipeline.mjs branch deploy "$BRANCH"',
     '# When a pull request closes and the plan says branch=filled.',
     'node .tropis/scripts/pipeline.mjs branch remove "$BRANCH"',
-    '# Release candidate. Started by hand for one commit on the main branch, never on a push.',
+    '# Deploy to staging. Started by hand for one commit on the main branch, never on a push.',
     '# Every stage first, as on a push with nothing skipped; then:',
-    'node .tropis/scripts/pipeline.mjs candidate rehearse',
+    'node .tropis/scripts/pipeline.mjs staging deploy',
+    '# Promote to production: the project\'s own pipeline runs this before it tags <commit>.',
+    'node .tropis/scripts/pipeline.mjs promote check "$COMMIT" --staged "$STAGED" --allow <notes file> --allow <each version file>',
   );
   return `${lines.join('\n')}\n`;
 }
@@ -1115,13 +1227,21 @@ if (ranDirectly) {
     }
   } else if (command === 'commands') {
     process.stdout.write(commandList());
-  } else if (command === 'candidate') {
+  } else if (command === 'staging') {
     const root = projectRoot();
     if (!root) {
       process.stderr.write('pipeline: not a git repository\n');
       process.exitCode = 1;
     } else {
-      process.exitCode = candidateCommand(root, args[0], args.slice(1));
+      process.exitCode = stagingCommand(root, args[0], args.slice(1));
+    }
+  } else if (command === 'promote') {
+    const root = projectRoot();
+    if (!root) {
+      process.stderr.write('pipeline: not a git repository\n');
+      process.exitCode = 1;
+    } else {
+      process.exitCode = promoteCommand(root, args);
     }
   } else {
     process.stderr.write('pipeline: unknown command\n');

@@ -48,14 +48,14 @@ describe('nextVersion', () => {
 const head = '# Releases\n\nIntro.\n\n---\n\n';
 const unreleased =
   '## [Unreleased]\n\n### Setting a project up\n\n- You can do X.\n\n' +
-  'Checked on the release candidate: yes\n';
+  'Checked on staging: yes\n';
 
 describe('promote', () => {
   it('moves Unreleased under the dated version and leaves an empty Unreleased above it', () => {
     expect(promote(`${head}${unreleased}\n---\n`, '0.1.0', '2026-10-16')).toBe(
       `${head}## [Unreleased]\n\n_Nothing yet._\n\n## [0.1.0] — 2026-10-16\n\n` +
         '### Setting a project up\n\n- You can do X.\n\n' +
-        'Checked on the release candidate: yes\n\n---\n'
+        'Checked on staging: yes\n\n---\n'
     );
   });
 
@@ -73,7 +73,7 @@ describe('promote', () => {
     ).toThrow(/Nothing to release/);
   });
 
-  it('refuses notes whose release-candidate line still reads (ask)', () => {
+  it('refuses notes whose checked line still reads (ask)', () => {
     const asking = unreleased.replace(': yes', ': (ask)');
     expect(() => promote(`${head}${asking}`, '0.1.0', '2026-10-16')).toThrow(/\(ask\)/);
   });
@@ -493,61 +493,135 @@ describe('the gate in the workflow', () => {
   });
 });
 
-describe('the /release candidate', () => {
+describe('the /release steps', () => {
   const command = readFileSync(
     resolve(dirname(fileURLToPath(import.meta.url)), '../commands/release.md'),
     'utf8',
   );
+  const flat = command.replace(/\s+/g, ' ');
   const workflow = readFileSync(
     resolve(dirname(fileURLToPath(import.meta.url)), '../framework/workflow.md'),
     'utf8',
   ).replace(/\s+/g, ' ');
-  const stage = (from, to) => command.slice(
-    command.indexOf(from),
-    to ? command.indexOf(to) : command.length,
-  ).replace(/\s+/g, ' ');
+  const section = (from, to) => {
+    const at = command.indexOf(from);
+    expect(at).toBeGreaterThanOrEqual(0);
+    const end = to ? command.indexOf(to, at) : command.length;
+    expect(end).toBeGreaterThan(at);
+    return command.slice(at, end).replace(/\s+/g, ' ');
+  };
 
-  it('runs candidate slot during pre-flight', () => {
-    expect(stage('## Stage 1 —', '## Stage 1b')).toContain(
-      'node .tropis/scripts/pipeline.mjs candidate slot',
+  it('runs staging slot during pre-flight', () => {
+    expect(section('## Stage 1 —', '## Stage 1b')).toContain(
+      'node .tropis/scripts/pipeline.mjs staging slot',
     );
   });
 
-  it('names both endings of the draft', () => {
-    const stage3 = stage('## Stage 3', '## Stage 4');
-    expect(stage3).toContain('Checked on the release candidate: no — no candidate was rehearsed');
-    expect(stage3).toContain('Checked on the release candidate: (after the candidate)');
+  it('names all three endings of the notes in the drafting stage', () => {
+    const stage3 = section('## Stage 3', '## Stage 4');
+    expect(stage3).toContain('Checked on staging: no — this project does not deploy to staging');
+    expect(stage3).toContain('Checked on staging: (after staging)');
+    expect(stage3).toContain('Checked on staging: yes');
   });
 
-  it('splits stage 6, and the filled branch names the manual-check change line', () => {
-    const stage6 = stage('## Stage 6', '## Stage 7');
-    const empty = stage6.slice(stage6.indexOf('Empty slot'), stage6.indexOf('Filled slot'));
-    const filled = stage6.slice(stage6.indexOf('Filled slot'));
-    expect(empty).toContain('release trigger');
-    expect(filled).toContain('candidate trigger');
-    expect(filled).toContain('release candidate at');
-    expect(filled).not.toContain('release trigger');
+  it('computes the version itself and says whether there is a staging step', () => {
+    const stage4 = section('## Stage 4', '## Stage 5');
+    expect(stage4).toContain('Version: <current> → <next>');
+    expect(stage4).toContain('Staging: step 1, then promote · none — pipeline/staging/ is empty, promote only');
+    expect(command).not.toContain('the pipeline computes the number');
   });
 
-  it('prints the release trigger only after a pass, and stops on pending and fail', () => {
-    expect(command.indexOf('## Stage 7')).toBeGreaterThan(command.indexOf('## Stage 6'));
-    const stage7 = stage('## Stage 7');
-    expect(stage7).toContain('release candidate at');
-    const pending = stage7.slice(stage7.indexOf('pending'), stage7.indexOf('fail'));
-    const failed = stage7.slice(stage7.indexOf('fail'), stage7.indexOf('`pass`'));
-    const passed = stage7.slice(stage7.indexOf('`pass`'));
-    expect(pending).not.toContain('release trigger');
-    expect(failed).not.toContain('release trigger');
-    expect(passed).toContain('release trigger');
-    expect(pending.length).toBeGreaterThan(0);
-    expect(failed.length).toBeGreaterThan(0);
+  it('resumes from the new and the old notes line, and from the new and the old check entry', () => {
+    const opening = section('You are running `/release`.', '## Stage 1 —');
+    expect(opening).toContain('Checked on staging: (after staging)');
+    expect(opening).toContain('Checked on the release candidate: (after the candidate)');
+    expect(opening).toContain('Checked on staging: yes');
+    expect(opening).toContain('Checked on the release candidate: yes');
+    const resume = section('## Resume at staging', '## Stage 7');
+    expect(resume).toContain('staging deploy at');
+    expect(resume).toContain('release candidate at');
   });
 
-  it('states the release step in the workflow document', () => {
-    expect(workflow).toContain('sets no version and makes no tag');
-    expect(workflow).toContain('Nothing merged after the candidate reaches production through it');
-    expect(workflow).toContain('changes no other file');
+  it('names the fill-in lines, and reads the old trigger names as the new', () => {
+    const block = section('<!-- project-owned: begin', '<!-- project-owned: end');
+    for (const line of ['Version files:', 'Promote trigger:', 'Staging trigger:', 'Staging workflow:']) {
+      expect(block).toContain(line);
+    }
+    expect(block).toContain('may still say Trigger and Candidate trigger');
+    expect(command.split('<!-- project-owned: begin').length - 1).toBe(1);
+  });
+
+  it('prints the two steps by their plain names, step 1 before the check and step 2 last', () => {
+    expect(flat).toContain('Step 1 of 2 — deploy to staging');
+    expect(flat).toContain('Step 2 of 2 — promote to production');
+    const order = ['## Stage 5', '## Step 1', '## Stage 6', '## Resume at staging', '## Stage 7', '## Step 2']
+      .map((heading) => command.indexOf(heading));
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it('commits the version with the notes where there is no staging, and the notes alone where there is', () => {
+    const stage5 = section('## Stage 5', '## Step 1');
+    const empty = stage5.slice(stage5.indexOf('**Empty slot'), stage5.indexOf('**Filled slot'));
+    const filled = stage5.slice(stage5.indexOf('**Filled slot'));
+    expect(empty).toContain('chore(release): <version>');
+    expect(empty).toContain('every version file');
+    expect(empty).toContain('go to *Step 2*');
+    expect(filled).toContain('Bump: <bump>');
+    expect(filled).toContain('go to *Step 1*');
+  });
+
+  it('finds the staging run by its commit, waits for it, and reads its summary', () => {
+    const step1 = section('## Step 1', '## Stage 6');
+    expect(step1).toContain('gh run list --workflow <staging workflow> --event workflow_dispatch');
+    expect(step1).toContain('`displayTitle` contains the full hash');
+    expect(step1).toContain('gh run watch <id> --exit-status');
+    expect(step1).toContain('gh run view <id> --log');
+    expect(step1).toContain('### Deploy to staging');
+    expect(step1).toContain('staging deploy at `<short hash>`');
+  });
+
+  it('drafts the check as /manual-check does, by-hand list first', () => {
+    const stage6 = section('## Stage 6', '## Resume at staging');
+    expect(stage6).toContain('/manual-check');
+    expect(stage6).toContain('`pending` before anything is run');
+    expect(stage6).toContain('staging deploy at `<short hash>`');
+    expect(stage6).toContain('*By hand* list comes first');
+  });
+
+  it('refuses the promotion when anything but the notes and version files changed since the staged commit', () => {
+    const stage7 = section('## Stage 7', '## Step 2');
+    expect(stage7).toContain('git diff --name-only <staged> origin/main');
+    expect(stage7).toContain('git diff --name-only <staged> HEAD');
+    expect(stage7).toContain('anything but the notes file and the version files');
+    expect(stage7).toContain('go to *Step 1* with `<commit>` the head of `origin/main`');
+    expect(stage7).toContain('Checked on staging: yes');
+    expect(stage7).toContain('node .tropis/scripts/main-status.mjs --pull-request <N>');
+    expect(stage7).not.toContain('Step 2 of 2');
+  });
+
+  it('prints the promote trigger only in step 2, and never runs a trigger', () => {
+    for (const [from, to] of [['## Step 1', '## Stage 6'], ['## Stage 6', '## Resume at staging'],
+      ['## Resume at staging', '## Stage 7'], ['## Stage 7', '## Step 2']]) {
+      expect(section(from, to)).not.toContain('promote trigger');
+    }
+    const step2 = section('## Step 2');
+    expect(step2).toContain('the promote trigger');
+    expect(step2).toContain('promote check');
+    expect(step2).toContain('pushes only the tag');
+    expect(flat).toContain('an agent must not run a trigger');
+    expect(flat).toContain('You never run a trigger, deploy, or tag');
+  });
+
+  it('states the promote step in the workflow document', () => {
+    expect(workflow).toContain(
+      'node .tropis/scripts/pipeline.mjs promote check <commit> --staged <staged> --allow <notes file> --allow <each version file>',
+    );
+    expect(workflow).toContain('It never commits and never pushes a branch');
+    expect(workflow).toContain("The tag sits on a commit the main branch holds, and its code is the staged commit's");
+    expect(workflow).toContain('A promote pipeline never writes to the main branch');
     expect(workflow).toContain('Only a tag of the form `vX.Y.Z` is a release');
+    expect(workflow).not.toContain('The tag sits one commit above');
   });
 
   it('the operator guide says how to apply the gate and how to opt out', () => {

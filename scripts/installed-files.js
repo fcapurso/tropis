@@ -28,7 +28,7 @@ export const SHIPPED_ROOTS = ['.tropis', '.claude/framework', '.claude/commands'
 export const SHIPPED_PATHS = [
   '.github/workflows/tropis-pipeline.yml',
   '.github/workflows/tropis-framework-checks.yml',
-  '.github/workflows/tropis-candidate.yml',
+  '.github/workflows/tropis-staging.yml',
 ];
 
 /**

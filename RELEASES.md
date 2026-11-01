@@ -17,7 +17,41 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+### What to do by hand
+
+These steps are for a project that deploys to staging before it releases, the step
+earlier releases called the release candidate. Each applies only where the file it
+names exists.
+
+**1. Rename the staging scripts' folder and the variable they read.** Tropis now looks
+for them under their plain name, and refuses the old folder or variable rather than
+skip the deploy. Where `pipeline/candidate/` exists, run
+`git mv pipeline/candidate pipeline/staging`, then in each `pipeline/staging/*.sh`
+replace `TROPIS_CANDIDATE` with `TROPIS_STAGING_COMMIT`.
+
+**2. Rename the workflow that starts it.** The workflow it calls is now
+`tropis-staging.yml`, and the update removes `tropis-candidate.yml`, so the old caller
+would break. Where `.github/workflows/candidate.yml` exists, run
+`git mv .github/workflows/candidate.yml .github/workflows/staging.yml`; in it, change
+`uses: ./.github/workflows/tropis-candidate.yml` to
+`uses: ./.github/workflows/tropis-staging.yml`, set `name: Deploy to staging`, and add
+`run-name: Deploy to staging ${{ inputs.commit || github.sha }}` on the line under it,
+which is how `/release` finds the run.
+
+**3. Rename two lines in your release command and add two.** `/release` now reads the
+triggers by their new names and needs to know your version files. In the block your
+project fills in `.claude/commands/release.md`, rename *Trigger* to *Promote trigger*
+and *Candidate trigger* to *Staging trigger*, and add *Version files* (each file that
+carries the version, and where in it) and *Staging workflow* (`staging.yml`).
+
+**4. Change your release pipeline so it only tags.** `/release` now commits the version
+and the notes through a pull request, so a release no longer writes to your main
+branch and works where the branch is protected. In your release pipeline: take two
+inputs, `commit` and `staged`; first run
+`node .tropis/scripts/pipeline.mjs promote check <commit> --staged <staged> --allow RELEASES.md --allow <each version file>`
+and stop if it refuses; tag `commit`; push only the tag; and stop committing the version
+and the notes. The release section of `.claude/framework/workflow.md` lists everything
+it must do.
 
 ## [0.7.3] — 2026-11-01
 

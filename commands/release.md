@@ -1,13 +1,32 @@
 ---
-description: Draft the release notes, record whether the candidate was checked, commit them, and print the trigger. Does not release.
+description: Draft the release notes, guide deploy to staging and promote to production, and print each trigger. Does not run them.
 ---
 
-You are running `/release`. Work through the stages in order. If `## [Unreleased]`
-already ends with `Checked on the release candidate: (after the candidate)`, the notes
-are drafted and a candidate was started: go to Stage 7. It drafts and records; the
-project's release pipeline does everything irreversible, after the developer runs the
-trigger this prints. **You never run the trigger, deploy, or tag** — the person
-releasing does that, after reading what you drafted.
+You are running `/release`. A release is two steps: **step 1, deploy to staging** — every
+stage runs on one commit of the main branch, staging is put back on production's version,
+that commit is deployed there, and the developer checks it by hand — and **step 2,
+promote to production** — the project's promote pipeline tags a commit the main branch
+holds and deploys the tag to production. A project whose `pipeline/staging/` is empty
+has only step 2. This command drafts the notes, carries the developer through both
+steps, and picks up where the last run stopped. **You never run a trigger, deploy, or
+tag** — the person releasing starts each step, after reading what you drafted.
+
+**Where to start.** Read `## [Unreleased]` in the notes file and the version sections
+below it before anything else:
+
+- It ends with `Checked on staging: (after staging)`, or with the line an earlier
+  release of this command wrote,
+  `Checked on the release candidate: (after the candidate)`:
+  the notes are drafted and committed. Go to *Resume at staging*.
+- The newest version's section ends with `Checked on staging: yes`, or the earlier
+  `Checked on the release candidate: yes`, and `git tag --list v<version>` prints
+  nothing: the promotion has merged and nothing is tagged yet. Go to *Step 2*, with
+  `<commit>` the commit on `origin/main` that last changed the notes file
+  (`git log -1 --format=%H origin/main -- <notes file>`), and `<staged>` the staged
+  commit read as *Resume at staging* says. Where the section instead ends with
+  `Checked on staging: no — this project does not deploy to staging` and no tag names
+  it, go to *Step 2* the same way, with no `<staged>`.
+- Otherwise start at Stage 1.
 
 **Delete this command if the project does not ship versioned releases.**
 
@@ -15,19 +34,24 @@ releasing does that, after reading what you drafted.
 <!-- Fill in each line:
      - Run from: the root of this repository, where the backlog also lives.
      - Notes file: RELEASES.md at the root (from templates/RELEASES.md), with an
-       `## [Unreleased]` section the pipeline promotes.
+       `## [Unreleased]` section /release promotes.
      - Readers: who the notes are for, in their words — e.g. "administrators and the
        people who use the product".
      - Breaking: what forces a major version beyond a breaking commit — e.g. a change to
        the permissions or network access the product asks for, which its users must
        approve again.
-     - Trigger: the exact command that starts the release pipeline, with <bump>
-       where the confirmed bump goes, and, where the project rehearses a candidate,
-       <commit> where the candidate's commit goes.
-     - Candidate trigger: where the project rehearses a candidate, the command that
-       starts it, with <commit> — e.g. gh workflow run candidate.yml --ref main
-       -f commit=<commit>.
-     - Where the run is watched: the URL of the pipeline's runs. -->
+     - Version files: each file that carries the version, and where in it — e.g.
+       package.json's version field.
+     - Promote trigger: the command that starts the project's promote pipeline, with
+       <commit> and, where the project deploys to staging, <staged> — e.g.
+       gh workflow run promote.yml --ref main -f commit=<commit> -f staged=<staged>.
+     - Staging trigger: where the project deploys to staging, the command that starts
+       it, with <commit> — e.g. gh workflow run staging.yml --ref main -f commit=<commit>.
+     - Staging workflow: the file name of that workflow — e.g. staging.yml.
+     - Where the run is watched: the URL of the pipeline's runs.
+     A block filled before this release may still say Trigger and Candidate trigger:
+     read them as Promote trigger and Staging trigger. Where Version files or Staging
+     workflow is missing, ask the developer, and suggest adding the line here. -->
 <!-- project-owned: end -->
 
 ## Stage 1 — Pre-flight
@@ -45,10 +69,12 @@ the release is cut from exactly what the remote has. List any open pull requests
 `main` and ask whether to continue without them.
 
 ```bash
-node .tropis/scripts/pipeline.mjs candidate slot
+node .tropis/scripts/pipeline.mjs staging slot
 ```
 
-Stop on exit 1 and show its message. Remember whether it printed `filled` or `empty`.
+Stop on exit 1 and show its message: it names a missing script, or a layout an earlier
+release used and the command that moves it. Remember whether it printed `filled` or
+`empty`.
 
 ## Stage 1b — The README
 
@@ -172,23 +198,31 @@ If `## [Unreleased]` already has content other than its placeholder, it was most
 written change by change as each landed, in the voice of whoever built it. Keep its facts,
 fill the gaps, and rewrite the whole section to the shape above; otherwise replace
 the placeholder. End the draft with the line
-`Checked on the release candidate: no — no candidate was rehearsed` when the slot is
-empty, and `Checked on the release candidate: (after the candidate)` when it is filled.
-That line is the developer's record, not part of the notes: it stays as the last line of
-the version's section, and the pipeline leaves it out of anything it publishes.
+`Checked on staging: no — this project does not deploy to staging` when the slot is
+empty, and `Checked on staging: (after staging)` when it is filled; once the check on
+staging has passed, the promotion pull request replaces that with
+`Checked on staging: yes`. That line is the developer's record, not part of the notes:
+it stays as the last line of the version's section, and the promote pipeline leaves it
+out of anything it publishes.
 
 ## Stage 4 — Confirm
+
+Work out the version: take the last release from Stage 2 and apply the bump by semantic
+versioning — from 1.0, major raises the first number, minor the second, patch the third;
+below 1.0 a breaking change raises the middle number and anything else the last. With no
+previous release there is nothing to count from: ask the developer for the first version.
 
 Print, before any further tool call:
 
 ```
-Last version: <current version>
-Proposed bump: <patch|minor|major> (the pipeline computes the number)
+Last version: <current version, or none>
+Bump: <patch|minor|major>
+Version: <current> → <next>
 Commits in scope: <count> since <last tag, or the first commit>
 Breaking: yes / no / n/a — first release
 Dropped: <each change left out of the notes, and why — or none>
 README: <refreshed · up to date · behind, released anyway: <sections or why it could not run> · not kept by Tropis>
-Candidate: rehearsed before the release · none — pipeline/candidate/ is empty
+Staging: step 1, then promote · none — pipeline/staging/ is empty, promote only
 
 Draft notes:
 ─────────────────────────────────────
@@ -196,56 +230,158 @@ Draft notes:
 ─────────────────────────────────────
 ```
 
-Ask the developer to confirm or adjust the bump and the notes. Stop and wait. Do not
-treat silence as confirmation. Loop until they confirm.
+Ask the developer to confirm or adjust the bump, the version and the notes. Stop and
+wait. Do not treat silence as confirmation. Loop until they confirm.
 
-## Stage 5 — Commit the notes, nothing else
+## Stage 5 — Commit the notes
 
-Replace the body of `## [Unreleased]` with the confirmed draft, keeping the heading.
-Stop if the commit would include any file other than the notes file, or if `(ask)` is
-still in it — the pipeline promotes the section as written, and a placeholder would
-become the permanent record. Commit with
-`docs(release): draft notes for the next release`, a body line `Bump: <bump>`, and push.
-Where the main branch is gated, commit on a branch instead, open a pull request, run
-`gh pr merge <N> --auto --squash` with the same subject and body, then
-`node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only once it
-reports the main branch green; on any other line, show it and stop. The commit Stage 6
-names is then the one the merge made on `main`, which that line names.
+Stop if `(ask)` is still in the draft: the section is promoted as written, and a
+placeholder would become the permanent record.
 
-## Stage 6 — Print the next trigger. Do not run it.
+The main branch is gated unless `.claude/project.json` records `"ungated"` (workflow.md,
+*Branching*). Where it is gated, every commit below goes on a branch in a worktree of
+its own —
+`git worktree add ../<repo>-release-<version> -b release/<version> origin/main` — is
+pushed, gets a pull request, `gh pr merge <N> --auto --squash` with the commit's subject
+and body, then `node .tropis/scripts/main-status.mjs --pull-request <N>`; go on only once
+it reports the main branch green, and on any other line show it and stop. The commit
+the next step names is then the one the merge made on `main`
+(`gh pr view <N> --json mergeCommit -q .mergeCommit.oid`). Remove the worktree after.
+Where it is not gated, commit on `main` and push.
 
-**Empty slot.** Print the release trigger named above with the confirmed bump, and
-where the run is watched.
+**Empty slot — one commit, then step 2.** Set the version in every version file;
+replace `## [Unreleased]` and its body with a fresh `## [Unreleased]` holding
+`_Nothing yet._`, above `## [<version>] — <date>` holding the confirmed draft, its last
+line `Checked on staging: no — this project does not deploy to staging`. Commit with
+`chore(release): <version>`. Stop if the commit would touch any file other than the
+notes file and the version files. Then go to *Step 2*, with `<commit>` the commit that
+landed on `main` and no `<staged>`.
 
-**Filled slot.** Print the candidate trigger named above with the full hash of the
-commit Stage 5 put on `main`, and where the run is watched. Then say what comes next, as
-numbered steps for the developer:
+**Filled slot — the notes alone, then step 1.** Replace the body of `## [Unreleased]`
+with the confirmed draft, keeping the heading, its last line
+`Checked on staging: (after staging)`. Stop if the commit would include any file other
+than the notes file. Commit with `docs(release): draft notes for the next release` and
+a body line `Bump: <bump>`. Then go to *Step 1*, with `<commit>` the commit that landed
+on `main`.
 
-1. Read the run's summary and do anything it lists under *By hand*.
-2. Run `/manual-check` on the pre-production environment. The entry's *Change* line
-   reads `release candidate at `<short hash>``.
-3. Run `/release` again.
+## Step 1 — Deploy to staging
 
-Stop.
+Print:
 
-Either way, an agent must not run a trigger.
+```
+Step 1 of 2 — deploy to staging
+<the staging trigger, with the full hash of <commit>>
+Watch it at: <where the run is watched>
+```
 
-The pipeline that step starts is the project's own. What it must do is stated in the
-workflow's release section.
+Ask the developer to say when they have started it, and wait: silence is not a yes. If
+they say a run for this commit has already finished, find that one instead.
 
-## Stage 7 — After the candidate
+**Find the run:**
+
+```bash
+gh run list --workflow <staging workflow> --event workflow_dispatch --limit 20 --json databaseId,displayTitle,status,conclusion,url,createdAt
+```
+
+The run is the one whose `displayTitle` contains the full hash. Where none does — a
+caller without `run-name` — take the newest run created after the developer said they
+started it, and say that is how it was found.
+
+**Wait for it:** `gh run watch <id> --exit-status`. Where the tool stops long commands,
+run it in the background, or run it again: each run waits for the same run.
+
+**Read it:** `gh run view <id> --log`, and report its `### Deploy to staging` block —
+the commit, the reset, the deploy, and the **By hand** list, numbered.
+
+**A failed run** — `gh run watch` exits non-zero, or the block says something failed:
+add an entry to `docs/verification-log.md` for this commit, its *Change* line
+``staging deploy at `<short hash>` ``, *Result* `fail — <what the summary says failed>`,
+naming the run's URL. The notes stay. Say that once a fix has merged, `/release` starts
+step 1 again for the new head of the main branch. Stop.
+
+## Stage 6 — The check on staging
+
+In the same sitting, draft and record the check with the developer by following
+`/manual-check`'s stages: it decides the kind, drafts the steps, writes the entry as
+`pending` before anything is run, waits for the developer, and records what they found.
+The check runs on staging. The entry's *Change* line reads
+``staging deploy at `<short hash>` ``. The run's *By hand* list comes first in the
+steps: what must be upgraded or approved before anything else can be judged.
+
+On `fail`, the entry records it; stop as for a failed run. On `pass`, go to Stage 7.
+
+## Resume at staging
 
 1. `git status --porcelain` must print nothing, then `git fetch origin`.
 2. Find the newest entry in `docs/verification-log.md` whose *Change* line names
-   `release candidate at`, and read its hash and its latest round's *Result*.
-3. No such entry, or `pending`: say the candidate has not been checked, print the
-   `/manual-check` step again, and stop.
-4. `fail`: say what the check reported. The notes stay. Once a fix has merged, print
-   the candidate trigger for the head of `origin/main`, and the same next steps as
-   Stage 6. Stop.
-5. `pass`: read the bump from the newest `Bump:` line in
-   `git log <hash> --format=%b`, ask the developer to confirm or adjust it, and wait.
-   Then print the release trigger with that bump and the candidate's full hash, where
-   the run is watched, and that the release step writes
-   `Checked on the release candidate: yes` in the version's section. An agent must not
-   run it.
+   `staging deploy at`, or `release candidate at` as an earlier release of this command
+   wrote it. Read its short hash — the staged commit; resolve it to the full hash with
+   `git rev-parse <short hash>^{commit}` — and its latest round's *Result*.
+3. No such entry: go to *Step 1*, with `<commit>` the commit on `origin/main` that last
+   changed the notes file (`git log -1 --format=%H origin/main -- <notes file>`).
+4. `pending`: the check was started and not finished. Resume Stage 6 on that entry.
+5. `fail`: say what it reported. The notes stay. Go to *Step 1* with `<commit>` the head
+   of `origin/main`, once the developer says the fix has merged.
+6. `pass`: go to Stage 7, with `<staged>` that full hash.
+
+## Stage 7 — The promotion pull request
+
+**First, compare with the staged commit:**
+
+```bash
+git diff --name-only <staged> origin/main
+```
+
+If it names anything but the notes file and the version files, something merged after
+staging was checked, and production would get code nobody checked. Say which paths, do
+not prepare the pull request, and go to *Step 1* with `<commit>` the head of
+`origin/main`: staging must be deployed and checked again. Production waits.
+
+**Otherwise**, read the bump from the newest `Bump:` line in
+`git log <staged> --format=%b`, work out the version as Stage 4 does, and ask the
+developer to confirm it; wait. Then, where the main branch is gated, in a worktree of
+its own:
+
+```bash
+git worktree add ../<repo>-release-<version> -b release/<version> origin/main
+```
+
+There, set the version in every version file; replace `## [Unreleased]` and its body
+with a fresh `## [Unreleased]` holding `_Nothing yet._`, above `## [<version>] — <date>`
+holding that body, with its last line replaced by `Checked on staging: yes`. Commit with
+`chore(release): <version>`, then check again:
+
+```bash
+git diff --name-only <staged> HEAD
+```
+
+If it names anything but the notes file and the version files, refuse: something merged
+since staging was checked. Say so, remove the worktree and the branch, and go to
+*Step 1* with `<commit>` the head of `origin/main`.
+
+Then push, open the pull request, run `gh pr merge <N> --auto --squash` with that
+subject, then `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only
+once it reports the main branch green; on any other line, show it and stop. Remove the
+worktree. Where the main branch is not gated, make the same commit on `main`, run the
+same check, and push.
+
+## Step 2 — Promote to production
+
+Print:
+
+```
+Step 2 of 2 — promote to production
+<the promote trigger, with <commit> and, where the project deploys to staging, <staged>>
+Watch it at: <where the run is watched>
+```
+
+`<commit>` is the full hash of the commit the promotion put on `main` —
+`gh pr view <N> --json mergeCommit -q .mergeCommit.oid`, or the pushed commit — and
+`<staged>` the staged commit's full hash. Say what the promote pipeline does: it runs
+`node .tropis/scripts/pipeline.mjs promote check` first and stops on a refusal, tags
+`<commit>`, pushes only the tag, and deploys the tag to production. Anything merged
+after `<commit>` waits for the next release. Stop.
+
+Both steps are the developer's to start: an agent must not run a trigger. The promote
+pipeline is the project's own; what it must do is stated in the workflow's release
+section.

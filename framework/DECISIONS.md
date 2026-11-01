@@ -985,6 +985,19 @@ tag of the form `vX.Y.Z`, and `/release` counts from the last one, not from any 
 a version production never ran. A tag of any other form may mark anything a project
 likes; a project-owned pattern was rejected as a setting no project had asked for.
 
+**Amended 2026-11-01 — renamed, and the tag moved.** The release's first step is now
+called deploy to staging, and its last step promote to production: the slot
+pipeline/candidate/ is pipeline/staging/, the commands candidate slot and candidate
+rehearse are staging slot and staging deploy, the variable TROPIS_CANDIDATE is
+TROPIS_STAGING_COMMIT, the workflow tropis-candidate.yml is tropis-staging.yml and its
+caller candidate.yml is staging.yml, the summary heading Release candidate is Deploy to
+staging, the notes line Checked on the release candidate is Checked on staging, the
+check's change line release candidate at is staging deploy at, and the pre-production
+environment is staging. The tag no longer sits one commit above the candidate, made by
+the release pipeline: it sits on the promotion commit the main branch already holds,
+which /release's pull request put there, per FW-044. The text above is kept as it was
+decided.
+
 ## FW-031: A project's entry instructions live in AGENTS.md, and CLAUDE.md points at it
 
 **Date:** 2026-10-27 · **Status:** Accepted
@@ -1361,3 +1374,45 @@ rebuilds it at once. A git client that cannot find `node` on its path rebuilds n
 silently. A project with its own hooks folder or hook adds the printed line by hand. The
 self-check installs its test tools with `--ignore-scripts`, so it writes no hooks into
 this repository.
+
+## FW-044: A release is deploy to staging then promote to production, and promoting only tags
+
+**Date:** 2026-11-01 · **Status:** Accepted
+
+**Decision:** A release is two steps, both started by the developer and both guided by
+`/release`. Step 1, deploy to staging: every stage runs on one commit of the main
+branch, staging is put back on production's version, that commit is deployed there, and
+the developer checks it by hand; `/release` prints the trigger, finds the run by the
+commit in its name, waits for it, reports its by-hand list, and drafts and records the
+check as `/manual-check` does. On a pass, `/release` opens the promotion pull request,
+which sets the version in each version file, promotes the notes and writes
+`Checked on staging: yes`, and nothing else. Step 2, promote to production: the
+project's own pipeline runs the shipped `pipeline.mjs promote check`, tags the commit
+that pull request put on the main branch, pushes only the tag, and deploys it. A project
+with nothing in `pipeline/staging/` has only step 2, and `/release` commits the version
+with the notes. `/release` works out the version itself, and resumes from the notes'
+last line and the newest check entry, reading the earlier wording too. The names change
+throughout, as FW-030's amendment maps them; a project still on the earlier slot or
+variable is refused with the command that fixes it.
+
+**Evidence:** FW-037 left a project whose release pipeline pushes to the main branch
+ungated until its release only tags, and FW-030's release made one commit above the
+candidate and merged it into the main branch, so a gated project could not release
+without a bypass. The bundle `release-flow` in the backlog holds the two entries this
+answers, `release-tags-what-main-holds` and `release-guides-through-both-steps`. The
+earlier names read as jargon to the people releasing, and "release" named the whole, the
+pipeline and its last step at once.
+
+**Rejected:** A bypass of the ruleset for the release pipeline, as FW-037 rejected. Tagging
+the staged commit itself, which cannot carry the version and the promoted notes, set only
+once its check has passed. Tropis shipping the whole promote pipeline, as FW-030
+rejected: version files, tags and production differ per project, so Tropis ships the
+check that pipeline runs. Accepting both the old and the new variable name — two names
+for one thing would last forever; the slot refuses the old one and names the change.
+
+**Consequences:** A project that deploys to staging renames its slot, its caller and its
+variable, through the release's by-hand steps, and its promote pipeline stops committing
+and takes the commit and the staged commit instead. Anything merged after staging is
+checked needs a new deploy to staging before promotion; `/release` and `promote check`
+both refuse to carry it. FW-037's condition that a project stays ungated until its
+release only tags is met by following the workflow's release section.

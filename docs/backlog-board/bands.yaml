@@ -243,18 +243,6 @@ project-settings-live-under-tropis:
   seen:
     status: idea
     blockers: []
-release-guides-through-both-steps:
-  band: B
-  value: 3
-  valueWhy: Removes the release step people forget and the jargon around it.
-  effort: 4
-  effortWhy: A rename across every shipped file with a migration, plus the guided command.
-  bundle: release-flow
-  verdict: "Removes the release step people forget and the jargon around it, but
-    the rename touches every shipped file and needs a migration for projects."
-  seen:
-    status: building
-    blockers: []
 release-notes-stay-a-readable-size:
   band: D
   value: 1
@@ -266,18 +254,6 @@ release-notes-stay-a-readable-size:
   evidence: "2026-10-30 — RELEASES.md is 649 lines with 12 second-level headings."
   seen:
     status: idea
-    blockers: []
-release-tags-what-main-holds:
-  band: B
-  value: 3
-  valueWhy: Lets a project with a release pipeline turn the gate on with no bypass.
-  effort: 3
-  effortWhy: Reworks the release step FW-030 designed, and its guard.
-  bundle: release-flow
-  verdict: "Needed before an adopter with a release pipeline can gate its main
-    branch; until then it records why it does not."
-  seen:
-    status: building
     blockers: []
 rule-is-measured-with-and-without:
   band: C
