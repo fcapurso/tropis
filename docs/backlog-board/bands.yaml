@@ -50,22 +50,6 @@ command-slots-spike:
   seen:
     status: shaped
     blockers: []
-contributors-know-how-to-contribute:
-  band: B
-  value: 2
-  valueWhy: The repository is public, but contributors are few.
-  effort: 2
-  effortWhy: One page, two pointers, a closeout row and a check.
-  verdict: "Shaped and plannable; one page that stops README and bootstrap each
-    half-describing the upstream path. Its plan dates from 2026-10-15, before
-    flushes went out under a flush name, so re-read it against today's flush before
-    dispatching."
-  evidence: "2026-10-31 — still no CONTRIBUTING.md at the repository root;
-    docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
-    delivers it and was never dispatched."
-  seen:
-    status: shaped
-    blockers: []
 flush-name-is-explained-and-unique:
   band: B
   value: 4
@@ -244,7 +228,7 @@ project-has-one-display-name:
   evidence: "2026-10-19 — commands/bootstrap.md:19 asks for a display name;
     scripts/build-backlog-board.mjs:101 titles the board with basename(root)."
   seen:
-    status: idea
+    status: building
     blockers: []
 project-settings-are-listed-and-held-once:
   band: C
@@ -284,7 +268,7 @@ release-guides-through-both-steps:
   verdict: "Removes the release step people forget and the jargon around it, but
     the rename touches every shipped file and needs a migration for projects."
   seen:
-    status: shaped
+    status: building
     blockers: []
 release-notes-stay-a-readable-size:
   band: D
@@ -308,7 +292,7 @@ release-tags-what-main-holds:
   verdict: "Needed before an adopter with a release pipeline can gate its main
     branch; until then it records why it does not."
   seen:
-    status: shaped
+    status: building
     blockers: []
 rule-is-measured-with-and-without:
   band: C
