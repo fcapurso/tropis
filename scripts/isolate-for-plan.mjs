@@ -79,6 +79,11 @@ const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' });
 // on the remote's main branch, where the review record will be read from. The other
 // checkouts hold no plan, so nothing is checked in them.
 const notes = [];
+// origin/HEAD is a pointer to the branch; name the branch, which is what a reader pushes to.
+const remoteName = (ref) => {
+  const target = git(repoRoot, 'symbolic-ref', '--quiet', '--short', ref);
+  return target.status === 0 ? target.stdout.trim() : ref.replace('refs/remotes/', '');
+};
 const planPath = relative(repoRoot, resolve(repoRoot, planArg));
 for (const { isolation, cwd, checkout } of targets) {
   if (cwd !== repoRoot) continue;
@@ -101,7 +106,7 @@ for (const { isolation, cwd, checkout } of targets) {
     .find((ref) => git(repoRoot, 'rev-parse', '--verify', '--quiet', ref).status === 0);
   if (remoteMain && git(repoRoot, 'merge-base', '--is-ancestor', sha, remoteMain).status !== 0) {
     notes.push(
-      `Note: ${short} (${start}) is not on ${remoteMain.replace('refs/remotes/', '')}, `
+      `Note: ${short} (${start}) is not on ${remoteName(remoteMain)}, `
       + "where the plan's review record is read from. Push it there before the review.",
     );
   }
