@@ -25,6 +25,7 @@ case "$1 $2" in
   "auth status") [ "\${STUB_SIGNED_IN:-1}" = 1 ]; exit ;;
   "api user") echo "$STUB_LOGIN"; exit 0 ;;
   "repo fork") echo "✓ Created fork $STUB_LOGIN/framework"; exit 0 ;;
+  "pr list") printf '%s' "\${STUB_PRS:-}"; [ -z "\${STUB_PRS:-}" ] || echo; exit 0 ;;
   "pr create") echo "https://github.com/$STUB_UPSTREAM/pull/1"; exit 0 ;;
   "repo view")
     case "$*" in
@@ -158,6 +159,67 @@ describe('submitting a flush upstream', () => {
     });
   });
 
+
+  describe('suggest-name', () => {
+    it('prints one generated name, uses no gh, and varies', () => {
+      const names = [];
+      for (let i = 0; i < 10; i++) {
+        const r = run(['suggest-name']);
+        expect(r.status).toBe(0);
+        expect(r.stderr).toBe('');
+        expect(r.stdout).toMatch(/^adopter-[0-9a-f]{6}\n$/);
+        names.push(r.stdout);
+      }
+      expect(new Set(names).size).toBeGreaterThan(1);
+      expect(calls()).toEqual([]);
+    });
+  });
+
+  describe('check-name', () => {
+    const prsCalls = () => calls().filter((c) => c.startsWith('pr list'));
+    const check = (name, prs) => run(['check-name', UPSTREAM, name], { env: env({ STUB_PRS: prs }) });
+
+    it('refuses a name another account has a pull request under', () => {
+      const r = check('example', 'upstream/example/2026-10-01-x other');
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe('');
+      expect(r.stderr.trim().split('\n')).toHaveLength(1);
+      expect(r.stderr).toContain('example');
+      expect(r.stderr).toContain('other');
+    });
+
+    it('compares the branch without the fork owner', () => {
+      // gh reports headRefName without the owner, so a pull request opened from the other
+      // account's fork reads the same as one pushed to the framework itself.
+      const r = check('example', 'upstream/example/2026-10-01-x other');
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain('other');
+      expect(prsCalls()).toHaveLength(1);
+    });
+
+    it('accepts the signed-in account\u2019s own earlier flushes', () => {
+      const r = check('example', 'upstream/example/2026-10-01-x someone');
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toBe('');
+    });
+
+    it('accepts a name nobody uses, even when another name starts the same way', () => {
+      const r = check('example', 'upstream/example-two/2026-10-01-x other');
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toBe('');
+    });
+
+    it('refuses an invalid name before asking gh for pull requests', () => {
+      const r = check('Example Project', '');
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toMatch(/"Example Project" is not lowercase letters, digits and hyphens/);
+      expect(prsCalls()).toHaveLength(0);
+    });
+  });
+
   describe('open', () => {
     const body = () => {
       const file = join(dir, 'body.md');
@@ -273,6 +335,16 @@ describe('submitting a flush upstream', () => {
         expect(r.status).toBe(0);
         expect(branches(upstream)).toBe(`refs/heads/${BRANCH}`);
       });
+    });
+
+    it('refuses a name another account already uses, before pushing', () => {
+      const r = open(env({ STUB_PRS: `${BRANCH} other` }));
+      expect(r.status).not.toBe(0);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain('other');
+      expect(branches(upstream)).toBe('');
+      expect(branches(fork)).toBe('');
+      expect(calls().some((c) => c.startsWith('pr create'))).toBe(false);
     });
 
     it.each(['WRITE', 'READ'])('never merges and never pushes to main (%s)', (permission) => {
