@@ -4849,9 +4849,14 @@
 # main-status.mjs, which changes the command for a test's sake, and an injected clock,
 # which a spawned command cannot take. One case slows every gh call on purpose so that a
 # deadline tightened again is caught, and rules/tests.md gets the lesson.
+# Shipped by docs/superpowers/plans/2026-11-01-main-status-tests-pass-under-load.md.
+# Criterion 1 - main-status.test.js, the settles options. Criterion 2 - its case "gives
+# the same answer when every gh call is slow", red with the old deadline in that plan's
+# Task 1. Criterion 3 - the load run in that plan's handover report, re-run in its review
+# record. Criterion 4 - the fresh-agent check recorded in the commit body.
 - id: main-status-tests-pass-under-load
   title: The main-status tests give the same answer however busy the machine is
-  status: building
+  status: shipped
   value: A self-check run on a busy machine fails or passes on the same code depending
     on load, because two of the main-status --pull-request tests time out under it. A
     check that passes on a rerun with nothing changed hides the failures a person needs
