@@ -142,6 +142,19 @@ merge-token-can-live-on-github:
   seen:
     status: building
     blockers: []
+overlapping-plans-merge-in-order:
+  band: A
+  value: 4
+  valueWhy: Two entries built at once can land in an order their shared files do not
+    allow, and nothing today notices before the rebase.
+  effort: 3
+  effortWhy: One script with two modes, its tests, and three documents that name it.
+  verdict: "Piece 3 of the sprint epic and useful without the rest: parallel work
+    waits for what it overlaps instead of colliding at merge. Needs nothing else in
+    the epic, and the sprint command comes after it."
+  seen:
+    status: building
+    blockers: []
 pipeline-bills-no-job-that-decides-nothing:
   band: C
   value: 2

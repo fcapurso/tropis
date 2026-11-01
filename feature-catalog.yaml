@@ -4962,18 +4962,37 @@
     - docs/superpowers/specs/2026-11-01-sprint-design.md
 - id: overlapping-plans-merge-in-order
   title: A plan that touches files another plan in flight touches waits to merge after it
-  status: idea
+  status: building
   value: Two entries built at the same time never land out of the order their files
     need. When a session claims an entry, a script compares its plan's files with every
     plan already being built, and on an overlap the plan records that it merges after the
     other; before merging, the session waits until that entry has shipped. Overlap is
     judged from plans, which list every file, not guessed from entry descriptions.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Claiming an entry whose plan lists a file that the plan of an entry already in
+      building lists, the overlap check names that entry and the files both plans list,
+      and the claimed plan's header then reads Merges after with that entry's id. With no
+      shared file it says there is no overlap and leaves the plan as it was.
+    - The catalog, the bands file, the generated board, the release notes and the
+      decision record never count as a shared file, so two plans that share only those
+      do not wait for each other.
+    - Running the check again on a plan that already has Merges after keeps every id it
+      had and adds any new one; it never removes one. A plan whose Merges after field is
+      there but empty is refused by /dispatch.
+    - Before merging, a session whose plan has Merges after waits, asking origin/main
+      every 30 seconds, until each entry it names has shipped or been dropped; a plan
+      without the field goes ahead at once.
+    - The wait has a time limit. When it runs out the session stops and reports
+      STOPPED, waiting on the entry still not shipped, by its id.
+    - The workflow's claim and merge steps and /feature tell a session to run the check
+      and the wait, and a fresh agent given only a project set up from the release runs
+      both at those moments.
   type: feature
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-01-overlapping-plans-merge-in-order.md
 - id: sprint-plans-and-runs-a-team
   title: The developer plans a sprint with /sprint, and a self-organising team delivers it
   status: idea
