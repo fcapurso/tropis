@@ -15,10 +15,13 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { sharedFiles, BOOKKEEPING } from '../scripts/plan-overlap.mjs';
-import {
-  mergesAfterIds, withMergesAfter, validateDispatchable,
-} from '../scripts/plan-binding.js';
+import * as overlap from '../scripts/plan-overlap.mjs';
+import * as binding from '../scripts/plan-binding.js';
+
+// Namespace imports, so a module that does not export a name yet fails the case that
+// uses it and not the whole file at link time.
+const { sharedFiles, BOOKKEEPING } = overlap;
+const { mergesAfterIds, withMergesAfter, validateDispatchable } = binding;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
