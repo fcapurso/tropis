@@ -232,9 +232,12 @@ describe('set-up-project.sh', () => {
   });
 
   it('records every shipped file at version unknown', () => {
+    // Without a .git, `git describe` finds nothing, as in the self-check's export.
+    const { parent: sourceParent, copy } = blueprintCopy({ withGit: false });
     const { parent, dir } = repository();
     try {
-      expect(runSetup(dir).status).toBe(0);
+      const r = spawnSync('bash', [join(copy, 'scripts/set-up-project.sh'), dir], { encoding: 'utf8' });
+      expect(r.status).toBe(0);
       const record = JSON.parse(readFileSync(join(dir, '.tropis/installed.json'), 'utf8'));
       expect(record.version).toBe('unknown');
       expect(Object.keys(record)).toEqual(['version', 'source', 'files']);
@@ -244,20 +247,41 @@ describe('set-up-project.sh', () => {
       }
     } finally {
       rmSync(parent, { recursive: true, force: true });
+      rmSync(sourceParent, { recursive: true, force: true });
     }
   });
 
+  it('leaves a lockfile npm ci installs from', () => {
+    const { parent, dir } = repository();
+    try {
+      expect(runSetup(dir, NAME).status).toBe(0);
+      const pkg = JSON.parse(readFileSync(join(dir, '.tropis/package.json'), 'utf8'));
+      const lock = JSON.parse(readFileSync(join(dir, '.tropis/package-lock.json'), 'utf8'));
+      expect(lock.name).toBe(pkg.name);
+      expect(lock.packages[''].name).toBe(pkg.name);
+      const ci = spawnSync('npm', ['--prefix', '.tropis', 'ci', '--no-audit', '--no-fund', '--prefer-offline'], {
+        cwd: dir, encoding: 'utf8',
+      });
+      expect(ci.status).toBe(0);
+      expect(existsSync(join(dir, '.tropis/node_modules/.bin/jest'))).toBe(true);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  }, 180000);
+
   /** A copy of this blueprint, committed, so the test controls whether it has an origin. */
-  function blueprintCopy() {
+  function blueprintCopy({ withGit = true } = {}) {
     const parent = mkdtempSync(join(tmpdir(), 'set-up-source-'));
     const copy = join(parent, 'blueprint');
     mkdirSync(copy);
     for (const folder of ['rules', 'framework', 'commands', 'scripts', 'guards', 'templates']) {
       cpSync(join(blueprint, folder), join(copy, folder), { recursive: true });
     }
-    git(copy, 'init', '-q', '-b', 'main');
-    git(copy, 'add', '-A');
-    git(copy, 'commit', '-qm', 'blueprint copy');
+    if (withGit) {
+      git(copy, 'init', '-q', '-b', 'main');
+      git(copy, 'add', '-A');
+      git(copy, 'commit', '-qm', 'blueprint copy');
+    }
     return { parent, copy };
   }
 
