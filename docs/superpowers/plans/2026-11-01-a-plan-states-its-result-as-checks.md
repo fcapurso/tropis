@@ -368,3 +368,85 @@ names (*Every plan ends with a handover report*), each check's command with its 
 output, the probes' quotes, and the worktree path used. Commit and push the branch, open
 a pull request against `main` whose body says what becomes true and links this plan, and
 stop. Do not write a review record and do not merge.
+
+## Handover report
+
+Worktree used: `../tropis-planning-rule`, branch `plan/planning-rule-states-results-as-checks`,
+started from `origin/main` at `ef13493`. Tools: git 2.49.0, Node v22.15.0, Claude Code
+2.1.300, Darwin arm64.
+
+### Task completion
+
+- Task 0: setup done; `npm --prefix .tropis ci` ran; the tree was clean; the self-check
+  ended `Self-check passed`.
+- Task 1: Decisions 1 to 3 applied verbatim. Checks printed `1 1 1 1 1 1` for the six
+  presence checks and `0` for the removed sentence, as required. Self-check passed.
+- Task 2: two scratch projects set up from this branch; each project's
+  `.claude/rules/planning.md` contained `Do not rehearse the work to write its plan`
+  (count 1) before its probe started. Both were deleted afterwards.
+- Task 3: both probes run; A passed, B failed (below).
+- Task 4: both catalog entries are `shipped` with `modules` set and the comment added.
+- Task 5: this report.
+
+### Verification results
+
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 128 passed, 128 total`.
+- `git diff --stat origin/main...HEAD` before this report: `feature-catalog.yaml`,
+  `framework/DECISIONS.md`, `framework/workflow.md`, `rules/planning.md`.
+
+**Fresh-agent check.** Run with `claude -p --output-format stream-json --verbose
+--allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(ls:*),Bash(cat:*),Bash(grep:*)"`,
+prompt on stdin, in each scratch project. A first attempt with
+`--permission-mode bypassPermissions` was refused by the session's permission classifier
+and nothing ran; the scoped tool list above was used instead. The developer's
+user-level instructions do not cover this rule (the plan checked this), so the local run
+was not contaminated by them.
+
+**Probe A: pass.** The agent read `.claude/rules/planning.md` (a `cat` of it in the
+stream). Its committed plan gives, for each of six verification steps, a Pass and a Fail
+output that differ, for example "Pass: prints only `docs/journal.md`. Fail (before the
+work): prints only `docs/notes.md`", and for the reference search "Pass: prints only
+`exit=1`. Fail (before the work): prints the two `docs/guide.md` lines and `exit=0`";
+it also plants a hit first to prove the search can find one. Expected outputs follow from
+what the work must make true; none is a figure measured by renaming. The stream's
+file-changing calls were: `git worktree add ../A-plan-notes-to-journal -b
+plan/notes-to-journal-spec main` (a new working tree to hold the plan, as the branching
+rule asks; it did not rename or copy `docs/notes.md`), a `Write` of the plan, and a
+Python rewrite of the plan file's header lines. No call renamed, moved or copied
+`docs/notes.md`. One point for the reviewer: the plan was committed on a branch in that
+worktree, not on `main`; the agent said so, citing the project's rules.
+
+**Probe B: fail.** The agent wrote no plan and committed nothing, so neither shape was
+chosen. It read `.claude/rules/planning.md` and stopped, because another part of the
+same rule says a plan does not patch the README (`/refresh-readme` does), and
+asked which of three routes to take. Quote: "I haven't written or committed the plan.
+This project's own rules say a plan should not edit the README". The new clause was
+therefore not exercised. The cause is the probe's subject, which the README rule
+forbids; it is not evidence that the new clause fails. Per the plan's trap, the rule
+was not reworded. The reviewing session decides whether to rerun B with a subject that is
+not the README, for example rewriting an invented prose file under `docs/`.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` lists only the files in the plan's File Structure
+(this report included). Worktree: `../tropis-planning-rule`.
+
+### Judgment calls
+
+- Used a scoped `--allowedTools` list for the probes after the bypass flag was refused.
+- Kept the probe streams outside the repository and deleted the scratch projects; the
+  streams are not committed.
+- Task 3 asked for a pass or fail per condition; B's conditions are all unmet because
+  nothing was written.
+
+### What the plan got wrong
+
+Probe B's subject collides with the README rule in the same file, so it could not
+exercise the new clause. The plan's Decision text for Task 3 should have chosen a prose
+subject outside the README.
+
+### Outstanding
+
+- Probe B needs a rerun with a different subject (reviewer's call).
+- No review record written, nothing merged, as instructed.
