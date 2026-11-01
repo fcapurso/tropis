@@ -128,7 +128,7 @@ says what actually landed in the window, and neither alone is enough.
 
 ## Stage 3 — Draft the notes
 
-**In a public project** — one whose `.claude/project.json` says `"public": true` — first
+**In a public project** — one whose `.tropis/project.json` says `"public": true` — first
 read the release window's diff for private material: people's names other than public
 authorship, customers or their sites, another project's name or internals, home paths,
 hostnames or computer names, email addresses, and anything copied from a private source.
@@ -238,7 +238,7 @@ wait. Do not treat silence as confirmation. Loop until they confirm.
 Stop if `(ask)` is still in the draft: the section is promoted as written, and a
 placeholder would become the permanent record.
 
-The main branch is gated unless `.claude/project.json` records `"ungated"` (workflow.md,
+The main branch is gated unless `.tropis/project.json` records `"ungated"` (workflow.md,
 *Branching*). Where it is gated, every commit below goes on a branch in a worktree of
 its own —
 `git worktree add ../<repo>-release-<version> -b release/<version> origin/main` — is

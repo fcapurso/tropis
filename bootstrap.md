@@ -72,7 +72,7 @@ Refuse to continue if that exits non-zero. It writes these, inside the project o
 | In the project | What it is |
 |---|---|
 | `.tropis/rules/` | the text of each shipped rule |
-| `.tropis/project.json` | the project's display name, written when setup is given one — yours, never replaced by an update |
+| `.tropis/project.json` | the project's own settings — its display name, written when setup is given one, and later whether it is public and why its main branch is not gated — yours, never replaced by an update |
 | `.claude/rule-areas.json` | which files each shipped rule governs — yours to change |
 | `.claude/rule-additions/<name>.md` | not created by setup. Plain text, no header, named after a shipped rule: this project's additions to that rule. Write it, then run `npm --prefix .tropis run rules`. The additions follow the shipped text in the one file each tool loads, and win where they contradict. Never edit the shipped text in `.tropis/rules/` or a generated file |
 | `.claude/rules/`, `.claude/framework/`, `.claude/commands/` | the shipped rules as Claude Code reads them (generated), your own rules, the framework documents and the commands |

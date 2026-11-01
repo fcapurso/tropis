@@ -46,9 +46,10 @@ belongs with the parent session. It is never a constraint on the executor.
   remote's main branch. The raw commands are listed beneath it, labelled as not to be
   run by hand — from one checkout they would all land in that one.
   Then what each worktree needs before its suite can run: the commands in that
-  checkout's `.claude/worktree-setup.txt`, in order, or `npm --prefix .tropis ci` where
+  checkout's `.tropis/worktree-setup.txt`, in order, or `npm --prefix .tropis ci` where
   the checkout has no such file. The file is the project's — one command per line, `#`
-  for a comment — and an update never touches it. It replaces the framework's install
+  for a comment — and an update moves one from `.claude/`, where releases
+  before this one kept it, and otherwise never touches it. It replaces the framework's install
   rather than adding to it, so list that install in it too when the checkout needs it.
 - **Verification in every checkout,** when the plan edits more than one.
 - **An instruction to read the whole plan first.**

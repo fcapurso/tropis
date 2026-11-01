@@ -16,27 +16,30 @@ lock it writes.
 A plan's worktree needs the same before its suite can run, and the prompt `/dispatch`
 prints says so for each worktree a plan creates. When this project needs more than the
 line above — a submodule, its own dependency install, a second tools package — write
-every command, in order and one per line, in `.claude/worktree-setup.txt`, the line above
+every command, in order and one per line, in `.tropis/worktree-setup.txt`, the line above
 included: the file replaces it rather than adding to it. Lines starting with `#` are
-comments. An update never touches the file.
+comments. An update moves one from `.claude/worktree-setup.txt` into it, and otherwise
+never touches it.
 
 An agent creates every branch in a worktree of its own beside this folder, never in this
 folder: two sessions sharing it would move each other's branch. A hook refuses
 `git checkout -b`, `git switch -c` and `git branch <name>` here and prints the command
 that creates the worktree instead. Your own commands in a terminal are not affected.
 
-**If the repository is or will be public**, say so in `.claude/project.json`, holding
-`{ "public": true }`. Setup asks and writes it; a project that goes public later writes
-the same file. Then the agent is told at every `git commit` and `git push` to read what
-is going out for private material — people's names, customers, another project's name or
-internals, home paths, hostnames — and to ask you before going on if it finds any; a
-review record's *Found* opens with a `Public exposure:` line; and `/release` lists
-anything private in the release window before drafting the notes. Without the file, or
-with anything but `true`, none of this happens. An update never touches the file.
+`.tropis/project.json` holds the project's own settings: `name`, `public` and `ungated`.
+No update replaces it; an update moves an older `.claude/project.json` into it.
 
-The project's display name is in `.tropis/project.json`, as `{ "name": "…" }`. Setup
-writes it when it is given one; the backlog board is titled with it, and with this
-folder's name when the file is absent. An update never touches the file.
+The display name is `{ "name": "…" }`. Setup writes it when it is given one; the backlog
+board is titled with it, and with this folder's name when the file lacks it.
+
+**If the repository is or will be public**, say so in that file, with `"public": true`
+beside any key already there. Setup asks and writes it; a project that goes public later
+writes the same key. Then the agent is told at every `git commit` and `git push` to read
+what is going out for private material — people's names, customers, another project's
+name or internals, home paths, hostnames — and to ask you before going on if it finds any;
+a review record's *Found* opens with a `Public exposure:` line; and `/release` lists
+anything private in the release window before drafting the notes. Without the key, or
+with anything but `true`, none of this happens.
 
 ## What to type
 
@@ -180,7 +183,7 @@ and turn on *Allow auto-merge* and *Automatically delete head branches* under Se
 General → Pull Requests. If you renamed the job in `pipeline.yml` or the gate, apply a
 copy with the check's name changed. The pipeline's `host` job fails on every run until
 the main branch requires a pull request and a check and auto-merge is not turned off, or
-until `.claude/project.json` says why not, as `"ungated": "<the reason>"` — a private
+until `.tropis/project.json` says why not, as `"ungated": "<the reason>"` — a private
 repository on GitHub's free plan cannot have rulesets, for one; the run summary then
 carries the reason. Only rulesets are read: a classic branch protection rule does not
 count. GitHub does not tell the pipeline whether auto-merge is allowed, so the job checks
