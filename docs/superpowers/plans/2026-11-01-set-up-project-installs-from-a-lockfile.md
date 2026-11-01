@@ -462,6 +462,8 @@ All by the specifying session, with git 2.49.0, Node v22.15.0 and npm 11.6.4 on 
   its defect, the clean baseline passed, and the framework repository's own guards
   passed.`, exit 0, first attempt.
 - `npm --prefix .tropis test`: `Tests:       145 passed, 145 total`.
+- Re-run after the second rebase, onto `a5b49b5`, at `f275d59`: the self-check passed
+  with the same line, and `npm --prefix .tropis test` printed `145 passed, 145 total`.
 - The take-version change read line by line: the lockfile is written only when the
   release has one and the project's package file is byte-for-byte the release's; it is
   pushed to `added` or `replaced`; `Next:` says `ci` in exactly that case and `install`
