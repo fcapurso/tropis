@@ -541,3 +541,212 @@ output, the fail-first runs of Task 2, the probes' quotes and verdicts, and the 
 path used (relative to the primary checkout, no home path). Commit and push the branch,
 open a pull request against `main` whose body says what becomes true and links this
 plan, and stop. Do not write a review record and do not merge.
+
+## Handover report
+
+Executed by a dispatched agent. Worktree used: `../tropis-board-view` (a sibling of the
+primary checkout), branch `plan/board-is-the-backlog-view`, started from `f6f49a1`
+(`origin/main`, which carries this plan; the plan names `c9a9b3c`, one commit earlier).
+Tools: git 2.49.0, Node v22.15.0, npm 11.6.4, Claude Code 2.1.300, Darwin arm64.
+
+### Task completion
+
+- Task 0: done. `npm --prefix .tropis ci` ran; `git status --porcelain` printed nothing;
+  baseline self-check last line `Self-check passed: every guard caught its defect, …`.
+- Task 1: done. Installer, hook, `installed-scripts.txt`, `prepare`, `--ignore-scripts`.
+  By hand in a scratch repository (`git init -q -b main`, `set-up-project.sh .`,
+  `npm --prefix .tropis install`): printed `Backlog board: rebuilds itself at each
+  commit, merge, checkout and rebase.` and left four hook files containing
+  `tropis-backlog-board`. Scratch repository deleted. Self-check passed afterwards.
+- Task 2: done. `guards/board-hooks.test.js`, 11 tests; fail-first runs below.
+- Task 3: done. All the text checks gave the expected figures (see below).
+- Task 4: done. Probe B passed. Probe G did not (a finding, not fixed).
+- Task 5: done. Entry shipped; self-check, Jest and scope check below.
+- Task 6: this report.
+
+### Verification results
+
+- Fail first, throwaway 1 (hook build line replaced with `exit 0` in the installer):
+  `Tests: 5 failed, 6 passed, 11 total`. Failing: the committed-catalog-change test (2),
+  the checkout/merge/rebase test (3), the linked-worktree test (9), and also the
+  byte-identical-install test (1) and the project-hook test (6), which compare the
+  hook's bytes. Dropped.
+- Fail first, throwaway 2 (`--ignore-scripts` removed from `check-blueprint.sh`):
+  `Tests: 1 failed, 10 passed, 11 total`, the wiring test (11). Dropped.
+- Real commit: `Tests: 11 passed, 11 total`.
+- Task 3 text checks (via `tr -s ' \n' ' ' | grep -cF`): the six new phrases printed `1`;
+  the five old phrases printed `0`; the three kept phrases printed `1`.
+- `git diff origin/main -- rules framework templates/README.md` shows only the
+  replacements of *Decision 4*.
+- `bash scripts/check-blueprint.sh` after Task 1, Task 2, Task 3 and Task 5: each last
+  line starts `Self-check passed: every guard caught its defect, the clean baseline
+  passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 134 passed,
+  134 total`.
+
+**Probes** (Claude Code 2.1.300, `claude -p --output-format stream-json --verbose`,
+scoped `--allowedTools`, Darwin arm64; the session model reported was
+`claude-opus-5-5`; the user-level instructions on this machine say nothing about the
+board, hooks or catalog documents). Scratch projects B and G were set up from this
+branch; `npm --prefix .tropis install` printed the "rebuilds itself" line in both;
+before each probe the check for `Keep no other readable view of the backlog.` printed `1`.
+
+- **Probe B: pass.** The agent's commit changes `feature-catalog.yaml` only (11 lines,
+  on branch `idea/export-all-notes` in its own worktree). The stream shows it reading
+  `.claude/rules/catalogs.md` once and no call that runs or searches for a catalog
+  generator. Final message: "You read the backlog on the backlog board,
+  `docs/backlog-board/index.html`. It's a page built from `feature-catalog.yaml` that
+  rebuilds itself on each commit and is never committed. Nothing else had to be updated
+  or committed". Page check: in the agent's worktree the page held the new id right
+  after its commit (`1`), by the post-commit hook. In B's primary checkout, a detached
+  checkout of the agent's branch showed the id (`1`, by post-checkout) and returning to
+  `main` removed it (`0`).
+- **Probe G: fail on its condition.** The agent read `.claude/rules/catalogs.md`
+  (three references in the stream), ran `scripts/features.mjs` and committed
+  `docs/features.md` with the catalog, as the project's `AGENTS.md` says, and said "The
+  backlog rules plan to replace that file with the backlog board, but they say to keep
+  following this instruction until that replacement ships." The committed backlog holds
+  only the export entry besides the example: no entry to replace `docs/features.md`, and
+  no reason given for not adding one. It then asked the developer whether to merge to
+  `main`. It did not merely ask and capture nothing, so not inconclusive. Finding: the
+  rule's "replaces it with the board through an entry of its own" was understood as a
+  future thing for someone else, and the agent that read it did not capture it. Per the
+  Traps, the rule was not reworded. Fixing it is a decision for the reviewing session.
+
+Scratch directories and streams were deleted.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this report): 10 files, 386 insertions, 23
+deletions: `feature-catalog.yaml`, `framework/doc-architecture.md`,
+`framework/workflow.md`, `guards/board-hooks.test.js`, `rules/catalogs.md`,
+`scripts/check-blueprint.sh`, `scripts/install-board-hooks.mjs`,
+`scripts/installed-scripts.txt`, `templates/README.md`, `templates/package.json`. Every
+one is in *File Structure*; this report adds the plan file.
+
+### Judgment calls
+
+- The comment above the catalog entry says criterion 8 is covered by probe B and notes
+  that probe G did not pass, instead of claiming both, since G failed.
+- The installer prints the project line indented two spaces on every use, and the guard
+  matches it as a substring, so the indentation is not pinned.
+- The installer runs the build once after the hook step even when it wrote no hook
+  (including outside a repository top), as Decision 2 step 5 says.
+- The guard's temporary projects link `node_modules` from the guard's own tree, the way
+  `guards/backlog-board.test.js` does. To run the guard by hand in the worktree I made a
+  temporary `node_modules` link and `package.json` (git-ignored, removed before the
+  final commit).
+
+### What the plan got wrong
+
+- *Decision 4* quotes the opening of `rules/catalogs.md` as "the opening paragraph and
+  the first two bullets", ending at "Never hand-edit a generated document. Change the
+  backlog and regenerate." On `main` the first bullet was longer than the plan's
+  sketch (it already said a set-up project has no such document and that the board's
+  page is not committed). I replaced the span from the opening line up to the bullet
+  `**A generated region inside a hand-written page…**`, which is the stated intent.
+- The plan's "Task 3" figures for the old phrases matched `main` as found.
+- The plan names `c9a9b3c` as the base; the branch was cut from `f6f49a1`, which adds
+  only this plan's own commit.
+
+### Outstanding
+
+- Probe G failed: a project that already generates its own view is not told, in a way
+  an agent acts on, to capture the replacement. The reviewing session should decide
+  whether to reword the rule, add the instruction elsewhere, or accept it.
+- Nothing in this repository's installed `.tropis/` was changed, so the hooks are not
+  active here until a release is installed.
+- The fresh-agent check is recorded here, as the commits touching `rules/` and
+  `framework/` say. Doc closeout: the lesson of probe G is the only portable item; no
+  other durable change beyond what the plan lists.
+
+### Review round 1
+
+Fix for probe G's finding, as instructed by the reviewing session: in
+`rules/catalogs.md` the bullet *Keep no other readable view of the backlog.* now says
+that an agent that meets such a document while changing the backlog, and finds no entry
+for its replacement, captures one with `/idea` in the same change. Commit `c2ce7db`.
+
+- Text check: `tr -s ' \n' ' ' < rules/catalogs.md | grep -cF 'An agent that meets such
+  a document while changing the backlog, and finds no entry for its replacement,
+  captures one with'` printed `1`. The other Task 3 figures were unchanged: readable
+  view `1`, keep no other `1`, never edit or commit `1`, old "Where the project
+  generates" `0`, "generated region" `1`.
+- `bash scripts/check-blueprint.sh`: last line `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+- **Probe G re-run: pass.** Fresh scratch project G set up from this branch at
+  `c2ce7db`, same seeding (`scripts/features.mjs`, `docs/features.md`, the AGENTS.md
+  line), the new sentence present in its `.claude/rules/catalogs.md` (count `1`),
+  same prompt, same flags. Claude Code 2.1.300, Darwin arm64, session model
+  `claude-opus-5-5`. The agent read `.claude/rules/catalogs.md`, committed the export
+  entry and `docs/features.md` as the project's AGENTS.md says, and also added an
+  idea entry `backlog-board-only-view`, "Backlog board is the only readable view of the
+  backlog", whose value ends "Removes scripts/features.mjs, docs/features.md and the
+  AGENTS.md instruction to run them together." Its final message: "A second idea entry,
+  `backlog-board-only-view`. The backlog rules say the backlog board should be the only
+  readable view of it. An agent that finds a second generated document like
+  `docs/features.md`, with no entry yet to remove it, must capture one in the same
+  change. Until that entry ships, regenerating the document still applies, which is why
+  I did both." It ran `scripts/features.mjs` too, as expected. Scratch project and
+  stream deleted.
+- The catalog comment above the entry now names probe B and the re-run of probe G.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `666b8a1`, with Claude Code 2.1.300
+(Opus 5.5), git 2.49.0, npm 11.6.4 and Node v22.15.0 on Darwin arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: the eleven files of *File Structure*, nothing
+  else; the branch contains `origin/main` (`f6f49a1`).
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 134 passed,
+  134 total`.
+- `guards/board-hooks.test.js` alone, on an export of `HEAD` with the self-check's
+  tools: `Tests: 11 passed, 11 total`.
+- The diff of `rules/`, `framework/` and `templates/README.md` read against *Decision 4*
+  and review round 1: verbatim, and the only removals are the passages it replaces.
+  `scripts/install-board-hooks.mjs` read against *Decisions 1 and 2*: the hook body is
+  byte-for-byte the plan's, the top-of-repository and `core.hooksPath` checks come
+  before any write, and every path exits 0.
+
+### Found
+
+Public exposure: the diff was read for private material; it names no person, project,
+home path or hostname (the guard's identity is `test@example.com`). Nothing found.
+
+- **Probe G failed on the first run, and the clause was the cause.** The agent read the
+  catalog rule, quoted it back, and treated "replaces it with the board through an entry
+  of its own" as someone else's later work. The rule said what a project does and not
+  who captures the entry when. Sent back to the executor as a rule change, not fixed
+  here, because it changes what agents do: the bullet now says an agent that meets such
+  a document while changing the backlog, and finds no entry for its replacement,
+  captures one with `/idea` in the same change. The re-run passed (review round 1).
+- The handover's "What the plan got wrong" about *Decision 4*'s span: the plan said to
+  replace from the opening sentence through the "Never hand-edit" bullet, which is what
+  the executor did; no defect.
+
+### Outstanding disposition
+
+- "Probe G failed": fixed in review round 1, re-probe passed.
+- "The hooks are not active in this repository until a release is installed": that is
+  how every change here ships; nothing to track.
+- "Doc closeout, the lesson of probe G": routed below.
+
+### Learnings routed
+
+- A rule that asks a project for work through a future entry must say who captures that
+  entry and at what moment, or an agent reading it defers it. Written into the clause it
+  came from (`rules/catalogs.md`); one instance, so no general rule yet.
+- The trigger choice and its gaps (uncommitted edits, a git client without `node`, a
+  project's own hooks) are in FW-043, written before dispatch.
+- Nothing else generalises.
+
+### Merged because
+
+Every criterion is covered by the new guard, the text checks or the two probes, all
+re-run or read here, and the one defect review found was fixed by the executor and
+re-probed.

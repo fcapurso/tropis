@@ -1,17 +1,22 @@
 # Catalog rules (the backlog)
 <!-- layer: framework -->
 
-The backlog is the source of truth for what this product does and what is planned, and
-any document generated from it is not to be edited by hand.
+The backlog is the source of truth for what this product does and what is planned. Its
+readable view is the backlog board, docs/backlog-board/index.html: one page built from
+the backlog, which rebuilds itself without banding anything at every commit, merge,
+checkout and rebase, through the git hooks `npm --prefix .tropis install` writes, and is
+never committed. After an edit not yet committed, `npm --prefix .tropis run board`
+rebuilds it at once.
 
-- **Where the project generates a document from the backlog**, run its generator after
-  any change and commit the regenerated document **in the same commit**. A guard
-  compares them byte-for-byte, so splitting them across two commits leaves the first one
-  red. A project set up by the framework has no such document until it adds one: the
-  guards, the backlog report and the board read the backlog itself, and the board's page
-  is not committed. Where there is none, there is nothing to run and no step to report
-  as skipped.
-- Never hand-edit a generated document. Change the backlog and regenerate.
+- **Keep no other readable view of the backlog.** A change to the backlog commits the
+  backlog alone: no page, and no document generated from it. A project that already
+  generates its own document from the backlog, such as a feature list or a roadmap page,
+  replaces it with the board through an entry of its own, which removes the generator,
+  its guard, the document and every instruction to run them together. **An agent that
+  meets such a document while changing the backlog, and finds no entry for its
+  replacement, captures one with `/idea` in the same change.** Until that entry ships,
+  keep following the project's instructions for the document; then there is one view.
+- Never edit or commit the board's page. Change the backlog, and the page follows.
 - **A generated region inside a hand-written page gets the same guard.** Where a page
   people write by hand must carry a generated reference, mark the region with two comment
   markers, have the generator rewrite only what lies between them, and compare that
@@ -114,8 +119,7 @@ Status changes hands at fixed moments, not whenever it feels right:
 
 - `idea` → `shaped` when acceptance criteria are written, before implementation.
 - `shaped` → `building` **when its plan is dispatched**.
-- `building` → `shipped` **when its plan merges**, in the same commit as any document
-  regenerated from the backlog.
+- `building` → `shipped` **when its plan merges**.
 - `building` → `shaped` if the plan is abandoned; nothing stays `building` without a plan.
 - `idea` or `shaped` → `dropped` when it is decided the work will not be done (see
   *Dropping*).
