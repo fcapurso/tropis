@@ -1838,9 +1838,14 @@
 # by the file's presence, so moving it without changing that marker silently changes what
 # they check. Related, not the same: blueprint-page-guards-run-in-the-self-check, which is
 # about those guards skipping in the self-check.
+# 2026-11-01, re-shaped at planning. Five guards, not two, recognised this repository by
+# the file, and the self-check plants its absence for two of them. Plans and specs stay in
+# docs/superpowers/, which doc-currency already treats as an archive of dated records;
+# moving finished ones would break the catalog refs and plan paths the tooling reads, and
+# renaming that folder is plan-folder-names-no-plugin.
 - id: history-is-kept-apart-from-living-docs
   title: Historical documents sit apart from the ones still maintained
-  status: shaped
+  status: building
   value: A reader of this repository can tell at a glance which documents describe how
     things are now and which record how they came to be. Today PORTABILITY-NOTES.md sits
     at the root and is listed beside the live source folders, though nothing writes to it
@@ -1850,10 +1855,12 @@
     - PORTABILITY-NOTES.md lives under docs/ as a history document, and every reference to
       it points at its new place.
     - The README no longer lists it among the repository's live files.
-    - Historical documents under docs/ are separated from actively maintained ones, in a
-      way a reader can see without opening each file.
-    - The two guards that recognise this repository by the file's presence recognise it by
-      something else, and still run against this repository.
+    - Documents nothing updates any more sit under docs/history/, each opening with the
+      Historical record label the doc-currency guard recognises; dated plans and specs
+      stay in docs/superpowers/, already kept apart as an archive.
+    - The five guards that recognised this repository by the file's presence recognise it
+      by framework/workflow.md, still run against this repository, and still fail in the
+      self-check when that marker is removed.
   type: improvement
   layer: product
   modules: []
