@@ -517,3 +517,79 @@ See the diff stat in the final report; every file is in *File Structure*. Worktr
 - The change has no screen beyond the board title, which Task 7 checked, so there is no
   developer check.
 - The flaky `main-status.test.js` cases above need an entry if the reviewer agrees.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0 and Node v22.15.0 on macOS 26.2, arm64.
+
+- `git diff --stat origin/main...HEAD` at `d60d67b`: 14 files, every one in *File
+  Structure*. The review added two files the table did not list, both declared below:
+  `docs/backlog-board/bands.yaml` and the new idea entry in `feature-catalog.yaml`.
+- Each guard re-broken in a scratch export of the branch (`git archive`, run with the
+  branch's own Jest):
+  - `.tropis/project.json` removed from `EXCLUDED`: `the display name › writes the name it
+    is given to .tropis/project.json, exactly`, `record-installed.mjs › writes the record
+    for its own project and prints nothing` and `a freshly set-up project passes its own
+    checks` fail. **The new take-version case passed** (`Tests: 45 skipped, 1 passed`):
+    see *Found*. After the fix it fails with the exclusion removed (`1 failed`) and passes
+    with it (`1 passed`).
+  - The board's title line restored to `${basename(root)} backlog`: `backlog board title`
+    fails (`1 failed, 3 passed` — the three fallback cases pass, as they should).
+- `bash scripts/check-blueprint.sh` at the review fix: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`, exit 0.
+- `npm --prefix .tropis test`: `Tests:       137 passed, 137 total`.
+- The setup diff read line by line: `node -e` puts its first argument at `process.argv[1]`,
+  so the guide writer's template, destination and value are `argv[1]`, `[2]` and `[3]`,
+  and the settings writer's name is `argv[1]`; the slug runs under `LC_ALL=C`; every write
+  happens before `record-installed.mjs`.
+- The handover's diagnosis of the two `main-status.test.js` failures: the kept logs under
+  the worktree's `.self-check/logs/` (`…-0a27f09/` and `…-d354efc/`, clean baseline) show
+  both cases exiting 3, the command's timeout code, with `--interval 0.05 --timeout 0.05`.
+  That fits a loaded run, not this change, which touches nothing `main-status.mjs` reads.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Paths in the
+handover are relative or written as `<scratch>`.
+
+- **The take-version case could not fail.** It wrote `.tropis/project.json` after setup,
+  so the file was never in the record, and an update has nothing to delete whether or
+  not the exclusion exists. The defect the exclusion prevents is a file setup writes and
+  then records. **Fixed by the reviewer, mechanically**: `world()` takes a `name` and
+  passes it to setup, and the case sets the scratch project up with one. The plan's
+  Decision 7 asked for the write-after-setup shape, so this is the plan's error.
+- The edited paragraphs in `commands/bootstrap.md` (Stages 1, 2 and 5) and `bootstrap.md`
+  (Step 5) were left with short ragged lines. **Rewrapped by the reviewer**; no word
+  changed.
+- **Unbanded on the branch, by the reviewer**: the entry's row is deleted from
+  `docs/backlog-board/bands.yaml`, so its move to shipped and its unbanding land in this
+  one pull request. `npm --prefix .tropis run board -- --stamp` would also have restamped
+  three other entries' rows, which other sessions are editing, so the row was deleted by
+  hand instead.
+
+### Outstanding disposition
+
+- The two flaky `main-status.test.js` cases: recorded as the idea
+  `main-status-tests-wait-long-enough`, with both runs, in `feature-catalog.yaml` on this
+  branch. Left unbanded for the next board refresh.
+- No pull request opened by the executor: by instruction; the reviewer opens it.
+- No developer check: nothing has a screen except the board title, which the executor's
+  Task 7 and the board guard both checked.
+
+### Learnings routed
+
+- **A test of "an update keeps X" must put X where the release record can see it.** This
+  is the planning rule's existing *A check states what it prints when it passes and when
+  it fails* applied to an update test, and the reviewer's re-break caught it as that rule
+  says; nothing generalises beyond it, so no new rule.
+- Nothing this plan built is portable beyond the framework itself: it is the framework's
+  own setup.
+
+### Merged because
+
+Every criterion has a test that fails without the change, the fresh-agent check passed on
+the first run, and the self-check and the installed checks are green; the review fixed one
+test that could not fail and recorded the flaky check it surfaced.

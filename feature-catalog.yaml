@@ -4709,3 +4709,22 @@
     - framework/doc-architecture.md
     - templates/README.md
   refs: []
+# 2026-11-01, found while executing docs/superpowers/plans/2026-11-01-project-has-one-display-name.md:
+# two guards/main-status.test.js cases, "--pull-request › brings a branch that is behind up
+# to date once, and waits on" and "never asks twice to update the same head", exited 3
+# instead of 0 in the self-check's clean baseline at 0a27f09 and again at d354efc, then
+# passed alone and in the next full run on the same tree (node v22.15.0, macOS 26.2,
+# arm64). Exit 3 is the command's own timeout; the cases pass --interval 0.05 --timeout
+# 0.05, so a loaded run that is slow to start the fake gh plausibly runs out of time. The
+# cause is untested. Both red runs' logs were kept under .self-check/logs/ in that worktree.
+- id: main-status-tests-wait-long-enough
+  title: The main-status tests pass on a busy machine as they do on an idle one
+  status: idea
+  value: Someone running the self-check can trust a red main-status case to mean the
+    command is wrong. Today two of its --pull-request cases failed twice in full runs and
+    passed on a rerun with nothing changed, which the workflow counts as a bug.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
