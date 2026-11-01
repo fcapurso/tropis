@@ -249,7 +249,7 @@ describe('backlog board hooks', () => {
     expect(pkg.scripts.prepare).toBe('node ./scripts/install-board-hooks.mjs');
     expect(readFileSync(join(scripts, 'installed-scripts.txt'), 'utf8').split('\n')).toContain('install-board-hooks.mjs');
     const line = readFileSync(join(scripts, 'check-blueprint.sh'), 'utf8')
-      .split('\n').find((l) => l.includes('npm install --prefix "$TOOLS"'));
+      .split('\n').find((l) => l.includes('npm ci --prefix "$TOOLS"'));
     expect(line).toContain('--ignore-scripts');
   });
 });

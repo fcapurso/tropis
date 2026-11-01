@@ -103,6 +103,7 @@ slug=""
 if [ -n "$name" ]; then slug=$(printf '%s' "$name" | slugify); fi
 if [ -z "$slug" ]; then slug=$(basename "$PROJECT" | slugify); fi
 sed "s/PROJECT_SLUG/$slug/" "$BP/templates/package.json" > "$PROJECT/.tropis/package.json"
+sed "s/PROJECT_SLUG/$slug/" "$BP/templates/package-lock.json" > "$PROJECT/.tropis/package-lock.json"
 
 cp "$BP"/templates/AGENTS.md "$PROJECT/AGENTS.md"
 cp "$BP"/templates/CLAUDE.md "$PROJECT/CLAUDE.md"
@@ -156,4 +157,4 @@ fi
 node "$PROJECT/.tropis/scripts/record-installed.mjs" "$version" "$framework_source"
 
 echo "Set the framework up in $PROJECT."
-echo "Next, from there: npm --prefix .tropis install, then npm --prefix .tropis test, then commit."
+echo "Next, from there: npm --prefix .tropis ci, then npm --prefix .tropis test, then commit."
