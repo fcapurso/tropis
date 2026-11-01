@@ -38,19 +38,6 @@ an-update-never-hangs-unpacking-a-version:
   seen:
     status: idea
     blockers: []
-catalog-rules-name-the-colon-trap:
-  band: B
-  value: 2
-  valueWhy: Saves one failed generator run per unlucky entry.
-  effort: 1
-  effortWhy: One sentence in the catalog rule.
-  bundle: rule-text
-  verdict: "One sentence in the catalog rule; batch with other rule-text fixes."
-  evidence: "2026-10-17 — rules/catalogs.md says nothing about colon-space in
-    unquoted values; only this repository's CLAUDE.md gotchas do."
-  seen:
-    status: idea
-    blockers: []
 cloud-executor-attaches-every-checkout:
   band: B
   value: 2
@@ -227,23 +214,6 @@ isolation-refuses-a-base-without-the-plan:
     already cost an executor a cherry-pick and a failed review check."
   evidence: "2026-10-29 — scripts/isolate-for-plan.mjs:54-80 runs the isolation
     command with no check that the plan is on its base."
-  seen:
-    status: shaped
-    blockers: []
-kept-findings-go-to-the-catalog:
-  band: B
-  value: 3
-  valueWhy: Keeps every found piece of work where the backlog can see it.
-  effort: 2
-  effortWhy: Two sentences in the catalog rule and its fresh-agent check.
-  bundle: rule-text
-  verdict: "Two sentences added to one section of the catalog rule, plus the
-    fresh-agent check a rule change owes. Cheap, and it moves into the
-    repository a correction that so far lived only in one tool's memory; batch
-    with the other rule-text fixes."
-  evidence: "2026-10-28 — rules/catalogs.md, What does not become an entry, says
-    when a finding becomes an entry but not that it must not go to a task card
-    or side session instead, nor that a self-proposed fix starts as an idea."
   seen:
     status: shaped
     blockers: []
@@ -518,22 +488,6 @@ rules-return-after-compaction:
   seen:
     status: idea
     blockers: []
-scripts-never-hide-the-users-git-config:
-  band: B
-  value: 2
-  valueWhy: Prevents a script that passes its tests and fails on first real use.
-  effort: 1
-  effortWhy: One paragraph in the script rules.
-  bundle: rule-text
-  verdict: "A one-paragraph addition to the script rules, from a defect that
-    passed its tests and would have failed on first real use. Cheap; batch it
-    with the next change to that rule."
-  evidence: "2026-10-19 — the defect was in .github/scripts/absorb-flush.mjs and
-    was fixed in review before merge; this machine's credential helper is in the
-    system git config and user.name in the global one."
-  seen:
-    status: idea
-    blockers: []
 self-check-clean-baseline-flake:
   band: D
   value: 2
@@ -574,17 +528,6 @@ self-check-runs-beside-another:
     the machine-wide temporary folder, so another run's folder counts."
   seen:
     status: shaped
-    blockers: []
-set-up-project-can-generate-its-catalog-document:
-  band: B
-  value: 3
-  valueWhy: Every set-up project is told to take a step it cannot take.
-  effort: 1
-  effortWhy: A text fix in the catalog rule.
-  bundle: rule-text
-  verdict: "A rule that orders a step projects cannot take; small text fix, batch it."
-  seen:
-    status: idea
     blockers: []
 set-up-project-installs-from-a-lockfile:
   band: B
