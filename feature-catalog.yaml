@@ -4348,7 +4348,7 @@
 # 18.14 or later. So node 18.0 to 18.13 passes the check and fails when the guards run.
 - id: prerequisite-check-refuses-old-node
   title: The prerequisite check refuses a Node the guards cannot run on
-  status: shaped
+  status: building
   value: Someone setting up a project learns from the prerequisite check, before anything
     else runs, that their Node is too old for the guards. Today a Node from 18.0 to 18.13
     passes the check, and the first sign of trouble is Jest refusing to run.
