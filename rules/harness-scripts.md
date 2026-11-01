@@ -63,8 +63,11 @@ session and almost never read, so a defect here is silent by construction.
   subject — a search, a commit message. Match where a command begins, never inside
   quoted text. The framework ships the matcher: pipe the command to python3
   .tropis/hooks/command-at-position.py with the command's words, as in 'git commit',
-  and it exits 0 when one is at command position. Which other command shapes that
-  tool cannot parse is not settled: a loop ran the hook once on the same version.
+  and it exits 0 when one is at command position. A command it cannot parse, or one
+  whose heredoc never closes, also exits 0, so a hook that refuses a call reads the
+  command again for what it refuses, and lets the call through when it finds nothing
+  there. Which other command shapes that tool cannot parse is not settled: a loop ran
+  the hook once on the same version.
 - **Namespace anything written under `TMPDIR` with a per-installation prefix.** Two
   frameworks on one machine otherwise share marker directories and silently deduplicate
   each other's output. A name `mktemp` makes unique needs no prefix.
