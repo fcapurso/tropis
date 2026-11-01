@@ -10,6 +10,22 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
+a-run-without-its-gate-is-reported:
+  band: B
+  value: 3
+  valueWhy: A pull request waiting on auto-merge can stall for half an hour with every
+    check green and nothing saying why; it happened once in this repository.
+  effort: 2
+  effortWhy: The merge wait reads the pull request's checks and names a finished run
+    with no gate job; the cause itself is out of scope.
+  verdict: "Worth doing while agents merge in parallel: name the stalled state, with the
+    run's address, instead of timing out in silence. Finding why GitHub skipped the gate
+    is not part of it."
+  evidence: "2026-11-01 — run 41291063425 on pull request 74 completed with no
+    pipeline / gate job and the pull request stayed blocked until a manual re-run."
+  seen:
+    status: idea
+    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
@@ -19,6 +35,22 @@ adopt-into-a-project-with-its-own-framework:
   verdict: "Large, designed from one adoption, and two of its draft criteria
     cannot be tested yet. Decide its shape, likely as several entries, before
     anyone builds."
+  seen:
+    status: idea
+    blockers: []
+board-is-the-backlog-view:
+  band: B
+  value: 3
+  valueWhy: Anyone reading the backlog sees it as it stands without running a command,
+    and projects stop being told to keep a document they have no way to generate.
+  effort: 3
+  effortWhy: An automatic rebuild when the backlog changes, the backlog rule's wording,
+    and removing any other readable view a project keeps.
+  verdict: "Put first in the queue by the developer. One readable view of the backlog for
+    every project, rebuilt automatically and never committed."
+  evidence: "2026-11-01 — docs/backlog-board/index.html is gitignored here and in set-up
+    projects (scripts/set-up-project.sh); rules/catalogs.md now asks for a generated
+    catalog document only where a project has one."
   seen:
     status: idea
     blockers: []
