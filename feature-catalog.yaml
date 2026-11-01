@@ -2228,20 +2228,45 @@
 # stays in .tropis/project.json: the developer confirmed it as the one file for a
 # project's own settings, and project-settings-live-under-tropis moves .claude/project.json
 # there to join it.
+# 2026-11-01, shaped. Decisions taken here:
+# - The name is a second, optional argument to set-up-project.sh, not a prompt inside it:
+#   the script never asks anything, and /bootstrap already asks for the name in Stage 1.
+#   Without it the script writes no file and everything falls back to the folder name.
+# - The file holds a JSON object, { "name": "..." }, so project-settings-live-under-tropis
+#   can add the settings it moves as further keys of the same object.
+# - .tropis/project.json joins .tropis/README.md in the release record's exclusions.
+#   Without that the record would list it as a shipped file, and the next update would
+#   delete it as a file the new release no longer ships.
+# - Setup fills the operator guide's name itself; the agent no longer does it by hand.
+#   The guide is the project's own after setup, so an existing project's guide is left.
+# - A project set up before this keeps its package name and gets no file: renaming the
+#   package changes its lock file, and update-keeps-the-package-name exists to stop that.
+#   Its board keeps the folder name until someone writes the file by hand.
 - id: project-has-one-display-name
   title: A project's name is written once and everything the framework writes uses it
-  status: idea
+  status: shaped
   value: Someone setting up a project gives its name once — capitals, spaces, symbols and
     all — and the framework uses that name wherever it writes one, whatever the repository
     folder is called. Today the setup asks for a display name and then drops it, so the
     backlog board is titled after the folder and the framework package is named after
     the folder the project was set up in.
   acceptanceCriteria:
-    - The setup command asks for the project's display name and stores it in
-      .tropis/project.json, a file of the project's own that an update never replaces.
-    - The backlog board, the operator guide, the brief heading and the framework package
-      name all take the name from that file, and fall back to the folder name only when
-      it is absent.
+    - Running set-up-project.sh with a display name as its second argument writes
+      .tropis/project.json holding that name exactly, capitals, spaces and symbols
+      included; run without one, it writes no such file. /bootstrap passes the name it
+      asked for in Stage 1.
+    - An update leaves .tropis/project.json as the project wrote it, and the record of
+      installed files does not list it.
+    - The backlog board is titled "<name> backlog" with the name from that file, and
+      "<folder> backlog" when the file is absent, unreadable or names nothing.
+    - After setup, the operator guide .tropis/README.md opens with the display name, or
+      the folder name when none was given, and holds no {{PROJECT_NAME}} placeholder.
+    - Setup names the framework package after the display name, lowercased with every
+      run of other characters made one hyphen, and after the folder when none was given.
+      An update keeps whatever package name a project already has.
+    - /scope titles the brief with the name from that file, and /bootstrap fills the
+      heading of AGENTS.md from it, using the folder name when the file is absent.
+    - This repository records its own name, Tropis, in .tropis/project.json.
   type: improvement
   layer: product
   modules: []
