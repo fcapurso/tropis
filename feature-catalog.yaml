@@ -4079,13 +4079,15 @@
     - templates/github/tropis-framework-checks.yml
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+# 2026-11-01, value re-worded for the release flow of FW-044; the criteria stand.
 - id: pipeline-does-not-redo-green-work
   title: A tree that already passed is not tested again
-  status: shaped
+  status: building
   value: Two common moments re-run every stage on code that already passed - a
     documents-only push to a pull request, and the push to main after a squash merge. Each
-    costs minutes, and on a pull request a redeploy of its environment. The release still
-    runs the full suite, as FW-030 decides - it is the last check before production.
+    costs minutes, and on a pull request a redeploy of its environment. Deploy to staging
+    still runs every stage, as FW-030 and FW-044 decide - it is the last check before
+    production.
   acceptanceCriteria:
     - A push to a pull request is planned from that pull request's last green run, so a
       push changing only prose and framework files runs the framework checks alone. With
