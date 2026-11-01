@@ -22,18 +22,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-cloud-executor-attaches-every-checkout:
-  band: B
-  value: 2
-  valueWhy: Only plans with more than one checkout need it.
-  effort: 1
-  effortWhy: A step in the dispatch prompt and a test.
-  bundle: dispatch-fixes
-  verdict: "Small change to the prompt dispatch prints; only plans with more than
-    one checkout need it. Batch with the other dispatch fixes."
-  seen:
-    status: shaped
-    blockers: []
 command-matcher-sees-every-shell:
   band: B
   value: 4
@@ -75,22 +63,6 @@ contributors-know-how-to-contribute:
   evidence: "2026-10-31 — still no CONTRIBUTING.md at the repository root;
     docs/superpowers/plans/2026-10-15-contributors-know-how-to-contribute.md
     delivers it and was never dispatched."
-  seen:
-    status: shaped
-    blockers: []
-dispatch-refuses-a-blank-header-field:
-  band: B
-  value: 3
-  valueWhy: A wrapped or empty header field silently tells an executor a plan
-    needs nothing.
-  effort: 2
-  effortWhy: One parser and its tests, plus removing a note from the entry file.
-  bundle: dispatch-fixes
-  verdict: "Now shaped with both shapes in one entry - read a wrapped field whole,
-    refuse one that parses empty. Still a small change to one parser; batch with
-    other dispatch fixes."
-  evidence: "2026-10-17 — scripts/plan-binding.js:164-165 reads Requires and the
-    tier and merge fields and falls back to an empty string with no refusal."
   seen:
     status: shaped
     blockers: []
@@ -184,20 +156,6 @@ instruction-files-have-a-delivery-map:
   verdict: "Useful, but it adds a map every project must keep current, and the
     sender calls it not urgent. Decide whether the weight is worth it before
     building."
-  seen:
-    status: shaped
-    blockers: []
-isolation-refuses-a-base-without-the-plan:
-  band: B
-  value: 3
-  valueWhy: Already cost an executor a cherry-pick and a failed review check.
-  effort: 1
-  effortWhy: One check in the isolation helper.
-  bundle: dispatch-fixes
-  verdict: "A small check at the moment a worktree is cut, against a mistake that
-    already cost an executor a cherry-pick and a failed review check."
-  evidence: "2026-10-29 — scripts/isolate-for-plan.mjs:54-80 runs the isolation
-    command with no check that the plan is on its base."
   seen:
     status: shaped
     blockers: []
