@@ -1598,3 +1598,44 @@ able to do it. The merge-token entry must handle a take that fails for any reaso
 than 422 by reading the marker before it decides. Markers left by a crashed holder stay
 until someone breaks them, as the stale-token rule says. Whether a cloud session can take
 and release, and whether the merge queue is offered, are unanswered.
+
+## FW-050: A sprint session starts a team member in another tool with that tool's command line, and believes the repository over the reply
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** When a sprint session in one tool starts a team member in the other, it runs
+that tool's command line in print mode, one process per team member, in the team member's
+own worktree: `claude -p` or `cursor-agent -p`, with `--output-format json`, a model, and
+the task as the prompt. The team member is allowed to act unattended by exact grants and
+never by granting everything: for Claude Code `--permission-mode acceptEdits` with
+`--allowedTools` rules for the commands the workflow runs, and `--setting-sources project`
+where the user's own settings should not reach it; for Cursor `permissions.allow` rules in
+the worktree's `.cursor/cli.json`. The sprint session learns that a team member is done
+when the process exits, and learns what it reported from two places in this order: the
+branch and handover report on the remote (the truth), then the last line of the JSON
+`result` (a claim). A final line of `SHIPPED` with no pushed branch and handover report
+is treated as `STOPPED`. A team member is resumed with `--resume <session_id>` from the
+same JSON. Cursor's cloud agent API is not used until it has been proven with a key.
+
+**Evidence:** Seven trial runs on 2026-11-02 (Claude Code 2.1.300 and `cursor-agent`
+2026.10.22-27dcf5f, macOS 26.2, arm64) and each tool's own documentation, in the sprint
+spec's section "Second spike - evidence". Both tools pushed a branch with a handover
+report under exact grants; both resumed by `session_id`; both exited 0 whether or not the
+work was done; with nothing granted neither waited, Claude Code denied and reported the
+denials, and Cursor refused every shell command yet still ended its reply `SHIPPED`.
+
+**Rejected:** Reading the result only from the command's output (Cursor reported `SHIPPED`
+for work it had not done). Reading it only from the repository (it does not say why a team
+member stopped; the reply and `permission_denials` do). Granting everything with
+`--dangerously-skip-permissions` or `--force` (not needed: exact grants worked on both
+tools, and the grant-everything flags let a team member run any command). Cursor's cloud
+agent API (needs an API key and a paid cloud agent, which the spike's limits did not
+allow, so every call is unproven). Sending work from Cursor's command line to a cloud
+agent with a leading `&` (documented only for interactive use, not run). The other ways in
+the sprint spec's section 9 stay as they were: the same session, a subagent of the same
+tool, and a printed prompt each need no command line and remain the fallbacks.
+
+**Consequences:** The entry `team-members-start-in-another-tool` can be planned. Cursor's
+user-level skills and configuration load into its runs with no flag to prevent it, so a
+team member started that way may behave differently from the project's rules alone. Claude
+Code's waiting-for-an-answer case and Cursor's exit code on failure were not observed.
