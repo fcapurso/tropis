@@ -4607,7 +4607,7 @@
 # accepted. Finding why GitHub skipped the gate is out of scope.
 - id: a-run-without-its-gate-is-reported
   title: A pull request whose pipeline finished without its required gate check is reported
-  status: shaped
+  status: building
   value: Whoever is waiting on a pull request's auto-merge learns, with the run's
     address, that its pipeline finished without the gate check the branch requires, and
     so will never merge until something starts the gate. Today the pull request just
@@ -4631,7 +4631,8 @@
   type: bug
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-01-a-run-without-its-gate-is-reported.md
 # Raised 2026-11-01 by the developer, from the rule-text bundle's fix to
 # set-up-project-can-generate-its-catalog-document: that fix made the generated catalog
 # document conditional, while the board already rebuilds a readable page from the
