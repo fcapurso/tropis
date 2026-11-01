@@ -42,9 +42,13 @@
   refs:
     - first-adopter-harness:docs/framework-review-2026-07.md
     - first-adopter-harness:docs/superpowers/plans/2026-07-28-p13-rule-delivery-guard.md
+# Shipped by docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
+# (FW-041). Criteria are covered by the rule text in rules/planning.md and by the
+# fresh-agent probes A and B in that plan's handover report. The rule reaches a plan's
+# author through the planning area in .claude/rule-areas.json.
 - id: plan-checks-must-be-falsifiable
   title: A plan states what its checks print when they pass
-  status: building
+  status: shipped
   # Raised 2026-08-12 by the review of the technology-scope plan. Deliberately not part
   # of that arc: it is a defect in how plans are written, not in what the blueprint
   # claims, and it waits on nothing.
@@ -64,7 +68,9 @@
       tell the rule was earned rather than supposed.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - rules/planning.md
+    - framework/workflow.md
   refs:
     - first-adopter-harness:docs/superpowers/plans/2026-08-12-blueprint-technology-scope.md
     - docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
@@ -1349,9 +1355,13 @@
 # project-lives-in-one-repository (first-adopter) built and ran the whole change on
 # throwaway clones to measure the plan's expected outputs, then dispatched an
 # executor to run it again. Not the first time it happened.
+# Shipped by docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
+# (FW-041). Criteria are covered by the rule text in rules/planning.md and by the
+# fresh-agent probes A and B in that plan's handover report. The rule reaches a plan's
+# author through the planning area in .claude/rule-areas.json.
 - id: plans-are-accurate-without-a-rehearsal
   title: A plan is accurate without its author carrying it out first
-  status: building
+  status: shipped
   after:
     - plan-checks-must-be-falsifiable
   value: Someone writing a plan checks what the plan assumes about the repository
@@ -1374,7 +1384,9 @@
       outputs rest on.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - rules/planning.md
+    - framework/workflow.md
   refs:
     - first-adopter:docs/superpowers/plans/2026-10-13-project-lives-in-one-repository.md
     - docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
