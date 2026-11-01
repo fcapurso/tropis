@@ -691,3 +691,62 @@ for its replacement, captures one with `/idea` in the same change. Commit `c2ce7
   I did both." It ran `scripts/features.mjs` too, as expected. Scratch project and
   stream deleted.
 - The catalog comment above the entry now names probe B and the re-run of probe G.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `666b8a1`, with Claude Code 2.1.300
+(Opus 5.5), git 2.49.0, npm 11.6.4 and Node v22.15.0 on Darwin arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: the eleven files of *File Structure*, nothing
+  else; the branch contains `origin/main` (`f6f49a1`).
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 134 passed,
+  134 total`.
+- `guards/board-hooks.test.js` alone, on an export of `HEAD` with the self-check's
+  tools: `Tests: 11 passed, 11 total`.
+- The diff of `rules/`, `framework/` and `templates/README.md` read against *Decision 4*
+  and review round 1: verbatim, and the only removals are the passages it replaces.
+  `scripts/install-board-hooks.mjs` read against *Decisions 1 and 2*: the hook body is
+  byte-for-byte the plan's, the top-of-repository and `core.hooksPath` checks come
+  before any write, and every path exits 0.
+
+### Found
+
+Public exposure: the diff was read for private material; it names no person, project,
+home path or hostname (the guard's identity is `test@example.com`). Nothing found.
+
+- **Probe G failed on the first run, and the clause was the cause.** The agent read the
+  catalog rule, quoted it back, and treated "replaces it with the board through an entry
+  of its own" as someone else's later work. The rule said what a project does and not
+  who captures the entry when. Sent back to the executor as a rule change, not fixed
+  here, because it changes what agents do: the bullet now says an agent that meets such
+  a document while changing the backlog, and finds no entry for its replacement,
+  captures one with `/idea` in the same change. The re-run passed (review round 1).
+- The handover's "What the plan got wrong" about *Decision 4*'s span: the plan said to
+  replace from the opening sentence through the "Never hand-edit" bullet, which is what
+  the executor did; no defect.
+
+### Outstanding disposition
+
+- "Probe G failed": fixed in review round 1, re-probe passed.
+- "The hooks are not active in this repository until a release is installed": that is
+  how every change here ships; nothing to track.
+- "Doc closeout, the lesson of probe G": routed below.
+
+### Learnings routed
+
+- A rule that asks a project for work through a future entry must say who captures that
+  entry and at what moment, or an agent reading it defers it. Written into the clause it
+  came from (`rules/catalogs.md`); one instance, so no general rule yet.
+- The trigger choice and its gaps (uncommitted edits, a git client without `node`, a
+  project's own hooks) are in FW-043, written before dispatch.
+- Nothing else generalises.
+
+### Merged because
+
+Every criterion is covered by the new guard, the text checks or the two probes, all
+re-run or read here, and the one defect review found was fixed by the executor and
+re-probed.
