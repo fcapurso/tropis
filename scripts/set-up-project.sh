@@ -11,12 +11,16 @@
 # run, or a project with its own CLAUDE.md — and when the project holds the framework
 # in the layout this release no longer takes. Never commits.
 #
-# Usage: bash <framework>/scripts/set-up-project.sh <project-root>
+# With a display name, setup writes it to .tropis/project.json, names the package after it
+# and puts it at the head of the operator guide.
+#
+# Usage: bash <framework>/scripts/set-up-project.sh <project-root> [<display name>]
 
 set -euo pipefail
 
 BP="$(cd "$(dirname "$0")/.." && pwd)"
-PROJECT="$(cd "${1:?usage: set-up-project.sh <project-root>}" && pwd -P)"
+PROJECT="$(cd "${1:?usage: set-up-project.sh <project-root> [<display name>]}" && pwd -P)"
+name="${2:-}"
 
 top=$(git -C "$PROJECT" rev-parse --show-toplevel 2>/dev/null || true)
 if [ -z "$top" ] || [ "$(cd "$top" && pwd -P)" != "$PROJECT" ]; then
@@ -77,14 +81,27 @@ cp "$BP"/guards/catalog-entries.test.js "$BP"/guards/rule-areas.test.js \
    "$PROJECT/.tropis/guards/"
 cp "$BP"/templates/project-layout.test.js "$PROJECT/.tropis/guards/"
 cp "$BP"/templates/framework-jest.config.js "$PROJECT/.tropis/jest.config.js"
-cp "$BP"/templates/README.md "$PROJECT/.tropis/README.md"
+# The operator guide carries the display name, or the folder's name when there is none.
+node -e '
+const fs = require("node:fs");
+const value = process.argv[3];
+const text = fs.readFileSync(process.argv[1], "utf8");
+fs.writeFileSync(process.argv[2], text.replaceAll("{{PROJECT_NAME}}", () => value));
+' "$BP/templates/README.md" "$PROJECT/.tropis/README.md" "${name:-$(basename "$PROJECT")}"
+if [ -n "$name" ]; then
+  node -e 'process.stdout.write(JSON.stringify({ name: process.argv[1] }, null, 2) + "\n")' "$name" > "$PROJECT/.tropis/project.json"
+fi
 cp "$BP"/templates/project-brief.md "$BP"/templates/readme-skeleton.md "$PROJECT/.tropis/templates/"
 cp "$BP"/templates/pipeline-caller.yml "$BP"/templates/candidate-caller.yml \
    "$BP"/templates/github/main-branch-ruleset.json "$PROJECT/.tropis/templates/"
 cp "$BP"/templates/backlog-board.html "$BP"/templates/backlog-bands.yaml "$PROJECT/.tropis/templates/"
 mkdir -p "$PROJECT/docs/backlog-board"
 cp "$BP"/templates/backlog-bands.yaml "$PROJECT/docs/backlog-board/bands.yaml"
-slug=$(basename "$PROJECT" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]\{1,\}/-/g; s/^-//; s/-$//')
+# Bytes outside a-z and 0-9 become hyphens on any platform; a name with none falls back to the folder's.
+slugify() { LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C sed 's/[^a-z0-9]\{1,\}/-/g; s/^-//; s/-$//'; }
+slug=""
+if [ -n "$name" ]; then slug=$(printf '%s' "$name" | slugify); fi
+if [ -z "$slug" ]; then slug=$(basename "$PROJECT" | slugify); fi
 sed "s/PROJECT_SLUG/$slug/" "$BP/templates/package.json" > "$PROJECT/.tropis/package.json"
 
 cp "$BP"/templates/AGENTS.md "$PROJECT/AGENTS.md"

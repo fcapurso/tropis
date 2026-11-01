@@ -145,8 +145,19 @@ const escapeHtml = (s) => s
   .replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;')
   .replaceAll('"', '&quot;');
+// The project's display name, from its own settings; the folder's name when the file
+// is absent, unreadable, or names nothing.
+function projectName() {
+  try {
+    const { name } = JSON.parse(readFileSync(resolve(root, '.tropis/project.json'), 'utf8'));
+    if (typeof name === 'string' && name.trim() !== '') return name.trim();
+  } catch {
+    // fall through
+  }
+  return basename(root);
+}
 const html = readFileSync(templatePath, 'utf8')
-  .replaceAll('__TITLE__', `${basename(root)} backlog`)
+  .replaceAll('__TITLE__', escapeHtml(`${projectName()} backlog`))
   .replace('__ENTRIES__', JSON.stringify(entries))
   .replace('__ANNO__', JSON.stringify(anno))
   .replace('__ARCS__', JSON.stringify(arcData))
