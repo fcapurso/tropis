@@ -198,7 +198,7 @@ runs this repository's workflow, opens a pull request or reaches a network remot
 | `framework/DECISIONS.md` | *Decision 2*, one new decision |
 | `feature-catalog.yaml` | the entry to `shipped`, with a comment naming what covers each criterion (Task 6) |
 | `docs/backlog-board/bands.yaml` | the entry's row removed (Task 6) |
-| `docs/superpowers/plans/2026-11-02-another-tools-agent-can-be-started.md` | the handover report |
+| `docs/superpowers/plans/2026-11-01-another-tools-agent-can-be-started.md` | the handover report |
 
 Nothing else. The throwaway repository and the probes' output stay under `$TMPDIR`.
 
@@ -303,7 +303,7 @@ Otherwise, in `feature-catalog.yaml`, set the entry's `status` to `shipped`, lea
 below the existing comment:
 
 ```yaml
-# Shipped by docs/superpowers/plans/2026-11-02-another-tools-agent-can-be-started.md.
+# Shipped by docs/superpowers/plans/2026-11-01-another-tools-agent-can-be-started.md.
 # Criteria 1 to 4 and 6 - the spec's section 9 answer and its Second spike evidence
 # section, re-read in the plan's review record. Criterion 5 - the decision FW-<n>.
 ```

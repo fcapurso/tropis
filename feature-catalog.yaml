@@ -5036,7 +5036,7 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
-    - docs/superpowers/plans/2026-11-02-another-tools-agent-can-be-started.md
+    - docs/superpowers/plans/2026-11-01-another-tools-agent-can-be-started.md
 - id: team-members-start-in-another-tool
   title: A sprint started in one tool can hand entries to team members in another
   status: idea
