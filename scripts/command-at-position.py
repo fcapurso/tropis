@@ -3,18 +3,22 @@
 # Read a shell command on stdin. Exit 0 when any argument — a command written
 # as its words, like "git commit" — is at command position, and 1 otherwise.
 # Print nothing. Quoted text is not a command, except $(...) and backticks,
-# which are checked on their own, including inside double quotes. A heredoc
-# body is not a command unless bash, sh, or zsh is what reads it. A command
-# that cannot be tokenized matches when a watched command appears in it as a
-# substring, once heredoc bodies are removed. A shell keyword (then, do, {, !)
-# opens a command position, and a backslash-newline joins two lines.
+# which are checked on their own, including inside double quotes. A comment,
+# from a # that begins a word to the end of its line, is not a command, and a
+# heredoc operator inside one opens no heredoc. A heredoc body is not a command
+# unless a shell reads it: bash, sh, zsh, dash, ksh or ssh, by name or by path,
+# as the command the heredoc feeds, after its redirections, or later in the
+# same pipeline. A command that cannot be parsed, or a heredoc with no closing
+# line, counts as a match: the caller cannot tell what would run. A shell
+# keyword (then, do, {, !) opens a command position, and a backslash-newline
+# joins two lines.
 
 import re
 import shlex
 import sys
 
 WRAPPERS = {'env', 'npx', 'command', 'exec', 'nohup', 'time', 'sudo'}
-SHELLS = {'bash', 'sh', 'zsh'}
+SHELLS = {'bash', 'sh', 'zsh', 'dash', 'ksh', 'ssh'}
 # Shell keywords after which a command begins: if git commit; then git commit; { git commit; }.
 KEYWORDS = {'if', 'then', 'else', 'elif', 'do', 'while', 'until', '!', '{'}
 # Between the watched command's words these options take the next token.
@@ -24,7 +28,7 @@ CONSUMES_NEXT = {'-C', '-c', '-R', '--repo'}
 SEPARATORS = {'&&', '||', '|', '&', ';', '\n', '('}
 _ASSIGN = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
 _HEREDOC = re.compile(
-    r"""<<(-?)[ \t]*(?:'([^'\n]*)'|"([^"\n]*)"|([A-Za-z_][A-Za-z0-9_]*))"""
+    r"""(?<!<)<<(-?)[ \t]*(?:'([^'\n]*)'|"([^"\n]*)"|([A-Za-z_][A-Za-z0-9_]*))"""
 )
 
 
@@ -35,8 +39,9 @@ def is_assignment(token):
 def tokenize(text):
     lexer = shlex.shlex(text, posix=True, punctuation_chars='();<>|&\n')
     lexer.whitespace = ' \t\r\f\v'
-    # '#' would swallow the rest of a line. A commit message is data, and an
-    # untokenizable command falls back to a substring match instead.
+    # '#' would swallow the rest of a line. Comments are removed by
+    # remove_comments, which knows about quotes; this function stays as it is
+    # because branch-in-worktree.sh calls it.
     lexer.commenters = ''
     return list(lexer)
 
@@ -113,41 +118,174 @@ def _heredoc_body(text, operator_end, word, dash):
     return None, operator_end
 
 
-def _feeder_is_shell(before):
-    start = 0
-    for index, char in enumerate(before):
-        if char in '\n;|&(':
-            start = index + 1
-    fragment = before[start:]
+_PIPE = {'|', '|&'}
+_LINE_SEPARATORS = {'&&', '||', '|', '|&', '&', ';', '(', ')', ';;'}
+_REDIRECTIONS = {'>', '>>', '<', '<>', '>&', '<&', '>|', '&>', '&>>', '<<<'}
+_MARK = '\x01'
+
+
+def _is_shell_word(word):
+    return word.rsplit('/', 1)[-1] in SHELLS
+
+
+def _stage_runs_shell(stage):
+    """Drop redirections, then ask whether the command word is a shell."""
+    kept = []
+    index = 0
+    while index < len(stage):
+        token = stage[index]
+        if token in _REDIRECTIONS:
+            if kept and kept[-1].isdigit():
+                kept.pop()
+            index += 2
+            continue
+        kept.append(token)
+        index += 1
+    kept = [token for token in kept if token != _MARK]
+    start = skip_prefix(kept, 0)
+    return start < len(kept) and _is_shell_word(kept[start])
+
+
+def _shell_reads_heredoc(line, start, end):
+    """line holds the heredoc operator at [start:end]. Is a shell its reader?"""
     try:
-        tokens = [token for token in tokenize(fragment) if token not in {'<', '>', '>>', '<<'}]
+        tokens = tokenize(line[:start] + ' ' + _MARK + ' ' + line[end:])
     except ValueError:
+        # A quote left open on this line, as in "$(cat <<'EOF'. The text around it is
+        # checked as commands on its own.
         return False
-    index = skip_prefix(tokens, 0)
-    return index < len(tokens) and tokens[index] in SHELLS
+    stages = [[]]
+    joined_by_pipe = [False]
+    for token in tokens:
+        if token in _LINE_SEPARATORS:
+            stages.append([])
+            joined_by_pipe.append(token in _PIPE)
+        else:
+            stages[-1].append(token)
+    here = next(i for i, stage in enumerate(stages) if _MARK in stage)
+    if _stage_runs_shell(stages[here]):
+        return True
+    for later in range(here + 1, len(stages)):
+        if not joined_by_pipe[later]:
+            break
+        if _stage_runs_shell(stages[later]):
+            return True
+    return False
+
+
+def _comment_start(line):
+    """Index of the # that begins a comment on this line, outside quotes, or None."""
+    in_single = False
+    in_double = False
+    index = 0
+    while index < len(line):
+        char = line[index]
+        if in_single:
+            in_single = char != "'"
+        elif char == '\\':
+            index += 1
+        elif in_double:
+            in_double = char != '"'
+        elif char == "'":
+            in_single = True
+        elif char == '"':
+            in_double = True
+        elif char == '#' and (index == 0 or line[index - 1] in ' \t;&|('):
+            return index
+        index += 1
+    return None
 
 
 def strip_heredocs(text):
-    """Remove heredoc bodies. Return the text and bodies a shell itself reads."""
+    """Remove heredoc bodies. Return the text and bodies a shell itself reads.
+
+    Works a line at a time: a line's operators are removed and the rest of the line
+    kept, then their bodies, which follow the line in order, are skipped. Raises
+    ValueError when a heredoc never closes."""
     shells = []
     pieces = []
     cursor = 0
-    while True:
-        found = _HEREDOC.search(text, cursor)
-        if not found:
-            pieces.append(text[cursor:])
-            break
-        word = next(group for group in found.groups()[1:] if group is not None)
-        body, next_cursor = _heredoc_body(text, found.end(), word, found.group(1) == '-')
-        if body is None:
-            pieces.append(text[cursor:found.end()])
-            cursor = found.end()
+    while cursor < len(text):
+        line_end = text.find('\n', cursor)
+        if line_end == -1:
+            line_end = len(text)
+        line = text[cursor:line_end]
+        comment = _comment_start(line)
+        operators = [found for found in _HEREDOC.finditer(line)
+                     if comment is None or found.start() < comment]
+        if not operators:
+            pieces.append(text[cursor:line_end + 1])
+            cursor = line_end + 1
             continue
-        pieces.append(text[cursor:found.end()])
-        if _feeder_is_shell(text[:found.start()]):
-            shells.append(body)
-        cursor = next_cursor
+        # The operators go too: their bodies are gone, and a substitution lifted out
+        # later would otherwise hold a heredoc with no body.
+        kept = 0
+        for found in operators:
+            pieces.append(line[kept:found.start()] + ' ')
+            kept = found.end()
+        pieces.append(line[kept:] + '\n')
+        # _heredoc_body starts at the line after the newline it is given.
+        body_from = line_end
+        for found in operators:
+            word = next(group for group in found.groups()[1:] if group is not None)
+            body, after = _heredoc_body(text, body_from, word, found.group(1) == '-')
+            if body is None:
+                raise ValueError('heredoc without a closing line')
+            if _shell_reads_heredoc(line, found.start(), found.end()):
+                shells.append(body)
+            body_from = after - 1
+        cursor = body_from + 1
     return ''.join(pieces), shells
+
+
+def remove_comments(text):
+    """Drop each comment through the end of its line. Quotes and $(...) are tracked."""
+    out = []
+    stack = []  # 'dq' for a double quote, 'sub' for $( ... ) or a ( inside one
+    index = 0
+    count = len(text)
+    while index < count:
+        char = text[index]
+        top = stack[-1] if stack else None
+        if char == '\\':
+            out.append(text[index:index + 2])
+            index += 2
+            continue
+        if top == 'dq':
+            if char == '"':
+                stack.pop()
+            elif text.startswith('$(', index):
+                stack.append('sub')
+                out.append('$(')
+                index += 2
+                continue
+            out.append(char)
+            index += 1
+            continue
+        if char == "'" or char == '`':
+            close = text.find(char, index + 1)
+            close = count - 1 if close == -1 else close
+            out.append(text[index:close + 1])
+            index = close + 1
+            continue
+        if char == '"':
+            stack.append('dq')
+        elif text.startswith('$(', index):
+            stack.append('sub')
+            out.append('$(')
+            index += 2
+            continue
+        elif char == '(' and top == 'sub':
+            stack.append('sub')
+        elif char == ')' and top == 'sub':
+            stack.pop()
+        elif char == '#' and (index == 0 or text[index - 1] in ' \t\n;&|('):
+            end = text.find('\n', index)
+            index = count if end == -1 else end
+            continue
+        out.append(char)
+        index += 1
+    return ''.join(out)
 
 
 def _command_substitution(text, start):
@@ -251,27 +389,17 @@ def extract_substitutions(text):
     return ''.join(pieces), inners
 
 
-def substring_match(text, watched):
-    try:
-        stripped, _shells = strip_heredocs(text)
-    except Exception:
-        stripped = text
-    return any(command in stripped for command in watched)
-
-
 def is_at_position(text, watched):
-    try:
-        stripped, shells = strip_heredocs(text)
-        reduced, inners = extract_substitutions(stripped)
-        if any(is_at_position(inner, watched) for inner in inners):
-            return True
-        if any(is_at_position(body, watched) for body in shells):
-            return True
-        words = [command.split() for command in watched]
-        # The shell deletes a backslash-newline before it reads a command.
-        return at_command_position(tokenize(reduced.replace('\\\n', '')), words)
-    except Exception:
-        return substring_match(text, watched)
+    """Raises when the command cannot be parsed; main answers match for that."""
+    stripped, shells = strip_heredocs(text)
+    reduced, inners = extract_substitutions(remove_comments(stripped))
+    if any(is_at_position(inner, watched) for inner in inners):
+        return True
+    if any(is_at_position(body, watched) for body in shells):
+        return True
+    words = [command.split() for command in watched]
+    # The shell deletes a backslash-newline before it reads a command.
+    return at_command_position(tokenize(reduced.replace('\\\n', '')), words)
 
 
 def main(argv, text):
@@ -281,7 +409,7 @@ def main(argv, text):
     try:
         found = is_at_position(text, watched)
     except Exception:
-        found = substring_match(text, watched)
+        found = True
     return 0 if found else 1
 
 

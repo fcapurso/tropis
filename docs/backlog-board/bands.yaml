@@ -22,21 +22,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-command-matcher-sees-every-shell:
-  band: B
-  value: 4
-  valueWhy: Every command-position hook shares this matcher, so each miss lets a
-    deploy, commit or push through unwarned.
-  effort: 3
-  effortWhy: Parser cases for other shells and heredocs, with a guard.
-  verdict: "Every command-position hook shares this matcher, so each miss lets a
-    deploy, commit or push through unwarned. Worth doing soon; the cases are
-    listed."
-  evidence: "2026-10-29 — scripts/command-at-position.py:17 knows only bash, sh
-    and zsh, and :273-284 fall back to a substring search."
-  seen:
-    status: shaped
-    blockers: []
 command-slots-spike:
   band: A
   value: 5

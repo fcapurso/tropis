@@ -399,3 +399,125 @@ with its actual output, the probe's verdict with the calls quoted, the named sou
 worked from, and the worktree path used. Commit and push the branch
 (`git push -u origin plan/command-matcher-sees-every-shell`), and stop. Do not open a
 pull request, do not write a review record and do not merge.
+
+## Handover report
+
+### Task completion
+
+- Task 0: done. Worktree `../tropis-command-matcher-sees-every-shell` from `origin/main` at `1229093`; `npm --prefix .tropis ci` run; tree clean; baseline self-check ended `Self-check passed`.
+- Task 1: done (script and guard block read in full).
+- Task 2: done. Row 25 now expects 0; rows 34 to 60 added. Against the old script exactly rows 25, 34 to 43, 48, 52, 57, 58 failed (15 failures), as the plan predicted.
+- Task 3: done. All 60 rows pass; the whole self-check passes; `grep -n substring_match scripts/command-at-position.py` prints nothing. Revert proof: with the old script restored in a throwaway commit (dropped afterwards) the failing set was again 25, 34 to 43, 48, 52, 57, 58.
+- Task 4: done. Rule sentence inserted; both phrase checks print `1`. Fresh-agent check run (see Verification results).
+- Task 5: done. Entry shipped with `modules` set and the criteria comment; bands row removed.
+- Task 6: this report.
+
+### Verification results
+
+Tools: Python 3.12.10, git 2.49.0, Node v22.15.0, Claude Code 2.1.300, on Darwin arm64. Started from `1229093`.
+
+- Rows: `command-at-position` block, 60 of 60 pass after Task 3 (run in a staged copy of the working tree; the whole file only runs inside the self-check's project-shaped tree, where it passes).
+- `bash scripts/check-blueprint.sh`, run after the matcher commit and again at the end: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 138 passed, 138 total`.
+- `tr -s ' \n' ' ' < rules/harness-scripts.md | grep -cF 'A command it cannot parse, or one whose heredoc never closes, also exits 0'` prints 1; the "not settled" phrase check prints 1.
+- `git diff --stat origin/main...HEAD`: bands.yaml 15 deletions, feature-catalog.yaml 7, rule-delivery.test.js 32, harness-scripts.md 7, command-at-position.py 211 (the plan file is added by this report).
+
+Fresh-agent check (Claude Code 2.1.300, Darwin arm64, `claude -p --output-format stream-json --verbose`, scoped `--allowedTools`, the developer's user-level instructions loaded, which say nothing about shell parsing). Scratch project set up from this branch with `set-up-project.sh`; its `.claude/rules/harness-scripts.md` carried the new sentence (count 1) and `.tropis/hooks/command-at-position.py` the new header (`dash, ksh or ssh` count 1). Prompt as in Task 4. Stream: the agent ran `cat .claude/rules/harness-scripts.md` and read `.tropis/hooks/command-at-position.py` before writing the hook, so it received the rule. It created its own sibling worktree (the project's workflow), wrote `.tropis/hooks/no-force-push.sh` and wired it in `.claude/settings.json`, and committed (`feat(hooks): refuse force pushes from agent shell commands`). The hook calls the shipped matcher for `git push` and its header comment says: "command-at-position.py also matches a command it cannot parse; this script then reads the command again for the flag, and lets it through if it cannot." Running the hook by hand:
+
+- `git push --force origin main`: exit 2, message on stderr. Pass.
+- `grep -rn "git push --force" docs`: exit 0. Pass.
+- `echo "don't run git push --force` (unbalanced quote): exit 0. Pass.
+
+Verdict: probe passes. Scratch project and stream deleted.
+
+### Scope
+
+All five changed files are in the File Structure table, plus this plan file. Worktree used: `../tropis-command-matcher-sees-every-shell`, a sibling of the primary checkout.
+
+Source worked from: none in particular; written against this script's own names.
+
+### Judgment calls
+
+- `strip_heredocs` now drops the heredoc operator from its output (keeps a space). Without it, a `$(cat <<'EOF'` lifted out of a substitution (guard row 22) held an operator with no body and, under unclosed-means-match, raised. This also makes `<<'EOF' git commit` read as a command.
+- Added a `(?<!<)` lookbehind to the heredoc pattern so a here-string `<<<word` is not read as a heredoc that never closes.
+- `_shell_reads_heredoc` returns False when the operator's own line has an open quote (`"$(cat <<'EOF'`); the surrounding text is checked as commands on its own anyway.
+- `remove_comments` tracks double quotes and `$( )` nesting with a small stack, so a `#` inside a nested substitution is not cut.
+- Wherever the old code fell back to substring search, the new code raises and `main` answers 0; `is_at_position` has no `try`.
+- To run the guard rows alone I staged the working tree in a scratch directory and ran Jest there; the other tests in the file need the self-check's tree.
+
+### What the plan got wrong
+
+- Nothing that stopped the work. Task 2's predicted failing set was exact. The plan did not mention that an unclosed-heredoc-means-match rule collides with the operator left inside a lifted substitution (row 22); handled as above.
+- A heredoc operator in arithmetic such as `$((1<<x))` is read as a heredoc operator and, with no closing line, now matches. This only makes a speaking hook speak.
+
+### Outstanding
+
+- Nothing blocking. Not done by design: no pull request, no review record, no merge.
+
+## Review record
+
+Reviewed by the specifying session, with Python 3.12.10, git 2.49.0, Node v22.15.0 in
+Claude Code 2.1.300 on Darwin arm64, on the branch at `bef6735` and then with the two
+fixes below.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists only the six File Structure files.
+- The executor's diff of `scripts/command-at-position.py`, the rule sentence and the
+  catalog edit read line by line; the rule sentence is the verbatim text of *Decision 4*,
+  and `substring_match` is gone.
+- Extra cases piped through the branch's script and through `origin/main`'s:
+  `x="#" && git commit` and `echo "a" # it's` then `git commit` match; a nested
+  `bash <<A` whose body runs `cat <<B | sh` matches the inner command (it did not on
+  `main`); `cat <<< 'git commit'` does not match.
+- `bash scripts/check-blueprint.sh` at `465af20`, after both fixes: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` `npm --prefix .tropis test`: 13 suites, 138 tests passed.
+
+### Found
+
+Public exposure: the handover's Scope section gave the worktree as an absolute home
+path, which `private-material` refuses (the executor's self-check ran before that
+commit, so it passed). Replaced by the relative path. The branch as first pushed
+(`bef6735`) carries it; the squash leaves it off `main`. Nothing else in the diff names a
+person, host, customer or other project.
+
+**A watched command after a heredoc was missed, on `main` and on the branch.**
+`strip_heredocs` copied text only up to the operator, then jumped past the body, so the
+rest of the operator line was dropped and the line after the body was joined onto the
+command before the heredoc: `cat > f <<'EOF'`, `body`, `EOF`, `git commit -m x` exited
+1, and so did `cat > f <<'EOF' && git commit -m x` with its body. That is the entry's
+title failing in its commonest shape. **Fixed in review**, as an understood, mechanical
+change: `strip_heredocs` now works a line at a time, keeps the line with its operators
+removed, then skips the bodies, which follow in order, several operators on one line
+included. Rows 61 to 65 cover it; rows 61, 62 and 65 fail on both `main`'s script and
+the executor's, row 64 (no match) passes on all three, and row 63 happened to match
+before. This is a reviewer fixing code on the branch it then merges: small, declared
+here, and every row and hook case runs over it in the self-check.
+
+The executor's judgment calls hold: removing the operator from the stripped text is what
+keeps row 22 a non-match, and the `(?<!<)` lookbehind stops a here-string reading as an
+unclosed heredoc. `$((1<<x))` now reads as an unclosed heredoc and matches; that only
+makes a speaking hook speak, and the one refusing hook re-reads, so it stays.
+
+### Outstanding disposition
+
+- Handover Outstanding: nothing listed.
+- `$((1<<x))` matching: dropped as an entry; under *What does not become an entry*, a
+  bug of little impact (a hook speaks once more), and the one refusing hook is safe.
+- No manual check: the change has no screen; the hooks it serves are asserted by
+  running them.
+
+### Learnings routed
+
+- What a hook author needs to know (a match may mean "could not parse") is in
+  `rules/harness-scripts.md`, by this plan.
+- The missed-after-heredoc defect sits in a file the installed release also carries,
+  and it is fixed here in the source, which is the upstream; nothing to queue.
+- An executor whose handover is its last commit ran the self-check before that commit.
+  Nothing generalises beyond "run the self-check after the last commit", which the
+  self-check's own Trap already says; not routed.
+
+### Merged because
+
+Every criterion has rows that fail on `main` and pass here, the hooks' own cases pass
+through the self-check, the probe showed a fresh agent writing a refusing hook that
+re-reads, and the one defect review found is fixed and covered.

@@ -3938,9 +3938,13 @@
     - framework/dispatch.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-22.
+# Shipped by docs/superpowers/plans/2026-11-01-command-matcher-sees-every-shell.md.
+# Criterion 1 is rows 34 to 47 and 60, criterion 2 rows 48 to 55, criterion 3 rows
+# 25, 56 to 58, all in guards/rule-delivery.test.js, command-at-position; criterion 4
+# is that file passing whole.
 - id: command-matcher-sees-every-shell
   title: The command matcher finds a watched command wherever a shell would run it
-  status: building
+  status: shipped
   value: Every hook that speaks at command position shares one matcher. Where it misses,
     a deploy, a commit or a push passes with no warning; where an unparseable command
     becomes a substring search, a grep gets the warning. A project that needs it right
@@ -3959,6 +3963,7 @@
   modules:
     - scripts/command-at-position.py
     - guards/rule-delivery.test.js
+    - rules/harness-scripts.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-24.
 - id: project-settings-are-listed-and-held-once

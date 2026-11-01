@@ -989,6 +989,8 @@ describe('rule delivery', () => {
       ')"',
     ].join('\n');
 
+    const gc = 'git commit -m x';
+
     const rows = [
       ['1', 'git commit -m "x"', ['git commit'], 0],
       ['2', 'git add -A && git commit -m "x"', ['git commit'], 0],
@@ -1014,7 +1016,7 @@ describe('rule delivery', () => {
       ['22', heredocMessage, ['gh pr merge'], 1],
       ['23', heredocMessage, ['git commit'], 0],
       ['24', 'echo "unterminated && git commit', ['git commit'], 0],
-      ['25', 'echo "unterminated quote', ['git commit'], 1],
+      ['25', 'echo "unterminated quote', ['git commit'], 0],
       ['26', 'git commit -m x', ['git commit', 'gh pr merge'], 0],
       // Found in review: shell keywords open a command position, and a backslash at the end
       // of a line continues it. The substring match caught these; the matcher must too.
@@ -1025,6 +1027,41 @@ describe('rule delivery', () => {
       ['31', '! git commit', ['git commit'], 0],
       ['32', ['git add . && \\', 'git commit -m x'].join('\n'), ['git commit'], 0],
       ['33', 'if true; then echo git commit; fi', ['git commit'], 1],
+      // The shells that read a heredoc, comments, and the unparseable-means-match answer.
+      ['34', ["dash <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['35', ["ksh <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['36', ["ssh host <<'EOF'", 'git push', 'EOF'].join('\n'), ['git push'], 0],
+      ['37', ["ssh -p 2222 host <<'EOF'", 'git push', 'EOF'].join('\n'), ['git push'], 0],
+      ['38', ["/bin/bash <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['39', ["cat <<'EOF' | bash", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['40', ["cat <<'EOF' | sh -s", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['41', ["bash > log.txt 2>&1 <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['42', ["2>/dev/null bash <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['43', ["<<'EOF' bash", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['44', ["cat <<'EOF' | grep x", gc, 'EOF'].join('\n'), ['git commit'], 1],
+      ['45', ["cat <<'EOF' > bash.txt", gc, 'EOF'].join('\n'), ['git commit'], 1],
+      ['46', ["cat <<'EOF' || bash", gc, 'EOF'].join('\n'), ['git commit'], 1],
+      ['47', ["bashful <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 1],
+      ['48', ['# notes: cat <<EOF', gc, 'EOF'].join('\n'), ['git commit'], 0],
+      ['49', ['# see <<EOF', 'echo hi'].join('\n'), ['git commit'], 1],
+      ['50', ["# don't", 'echo hi'].join('\n'), ['git commit'], 1],
+      ['51', ["# don't", gc].join('\n'), ['git commit'], 0],
+      ['52', 'echo hi # ; git commit', ['git commit'], 1],
+      ['53', '# git commit', ['git commit'], 1],
+      ['54', 'git commit -m fix#12', ['git commit'], 0],
+      ['55', "echo 'a # b' && git commit", ['git commit'], 0],
+      ['56', ["cat <<'EOF'", gc].join('\n'), ['git commit'], 0],
+      ['57', ["cat > f <<'EOF'", 'nothing here'].join('\n'), ['git commit'], 0],
+      ['58', "echo 'unterminated", ['gh pr merge'], 0],
+      ['59', 'grep -rn "git commit" scripts/ # a search', ['git commit'], 1],
+      ['60', ["sudo -u ci bash <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      // Found in review: the rest of a heredoc's own line, and every line after its body,
+      // are commands too. The old matcher joined them to the command before the heredoc.
+      ['61', ["cat > f <<'EOF'", 'body', 'EOF', gc].join('\n'), ['git commit'], 0],
+      ['62', ["cat > f <<'EOF' && git commit -m x", 'body', 'EOF'].join('\n'), ['git commit'], 0],
+      ['63', ["cat <<'A' <<'B'", 'a', 'A', 'b', 'B', gc].join('\n'), ['git commit'], 0],
+      ['64', ["cat > f <<'EOF'", gc, 'EOF', 'echo done'].join('\n'), ['git commit'], 1],
+      ['65', ["cat <<'A' | bash <<'B'", 'a', 'A', gc, 'B'].join('\n'), ['git commit'], 0],
     ];
 
     for (const [n, command, watched, expected] of rows) {
