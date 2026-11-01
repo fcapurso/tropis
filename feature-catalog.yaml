@@ -270,9 +270,12 @@
 # recurring moment it is looked at whole, and a clause removed there goes out in that
 # release's notes. After rule-is-measured-with-and-without, so the trial uses a repeatable
 # comparison if that spike finds one worth having, rather than being built twice.
+# Shipped by docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md; each
+# criterion's test or check is in that plan's handover report. The first real trial runs
+# at the developer's next release.
 - id: rules-are-retired-on-evidence
   title: A rule that no longer changes behaviour is found and removed
-  status: building
+  status: shipped
   after:
     - rule-is-measured-with-and-without
   value: A rule stops being carried once there is evidence it is doing nothing.
@@ -300,8 +303,13 @@
       not a second door into the rule files.
   type: improvement
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - .github/scripts/rule-trial.mjs
+    - guards/rule-trial.test.js
+    - .claude/commands/rule-trial.md
+    - .claude/commands/release.md
+  refs:
+    - docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md
 # The third, and the one with real downside risk, which is why it goes last: strip the
 # mechanism along with the story and the rules get quietly worse in a way no guard sees.
 # After a couple of sittings of the entry above there is evidence about which clauses are
@@ -1379,9 +1387,9 @@
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-17-this-repository-takes-v0-3-1.md
 # Borrowed idea 4: Trellis's ablate runs the same task with and without an instruction.
-# Related to rules-are-retired-on-evidence, whose trial removes one clause per flush
-# sitting and watches a single agent; this asks whether a repeatable comparison is worth
-# its cost here.
+# Related to rules-are-retired-on-evidence, whose trial removes at most one clause per
+# release of this repository and watches a single agent; this asks whether a repeatable
+# comparison is worth its cost here.
 # 2026-10-16, backlog cleanup: taken out of the updates arc: it asks whether a rule earns its place,
 # not how a project updates. rules-are-retired-on-evidence now follows it.
 - id: rule-is-measured-with-and-without
@@ -4982,3 +4990,22 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+# Seen executing docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md:
+# the self-check on 879cc07, at a load average near 47 from parallel sessions, failed six
+# capture-at-write cases in guards/rule-delivery.test.js with "Unexpected end of JSON
+# input" (the hook's reply was empty), beside the two main-status cases that
+# main-status-tests-pass-under-load covers. Later runs on the same hook script passed. The
+# cause is not known; the rule-delivery cases spawn the hook with no timeout of their own.
+- id: capture-at-write-tests-pass-under-load
+  title: The capture-at-write hook tests give the same answer however busy the machine is
+  status: idea
+  value: A self-check on a busy machine failed six capture-at-write cases because the
+    hook replied with nothing, and passed on a later run with the hook unchanged. A check
+    that passes on a rerun with nothing changed hides the failures a person needs to see.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules:
+    - guards/rule-delivery.test.js
+  refs:
+    - docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md

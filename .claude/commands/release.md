@@ -22,6 +22,11 @@ releasing does that, after reading what you drafted.
   README commit and Stage 5's notes commit each go on a branch, through a pull request
   that merges itself (`gh pr merge <N> --auto --squash`), and the next stage waits until
   it has merged.
+- Rule trial: before Stage 1, run `/rule-trial` with the last release, found with the
+  command in Stage 2. Go on to Stage 1 only once its pull request has merged and the main
+  branch is green, including a skipped trial, which is recorded the same way. Where it
+  removed a clause, Stage 3's notes name the rule and what it no longer says, under the
+  closing small-corrections heading.
 - Readers: people who set up and run projects with the framework.
 - Breaking: as `RELEASES.md` defines it — a project taking the release must act by hand.
   Below 1.0 the release job raises the middle number only for `bump=major`, and `minor`

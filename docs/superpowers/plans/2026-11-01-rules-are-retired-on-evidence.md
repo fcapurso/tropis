@@ -475,3 +475,86 @@ wrong, Outstanding): each check's command with its actual output, the red checks
 test names, the criteria table, the probe's answer (quoted where it decides the pass), and
 the worktree path used. Commit and push the branch (`git push -u origin plan/rules-are-retired-on-evidence`)
 and stop. Do not open a pull request, write a review record or merge.
+
+## Handover report
+
+Worktree: `../tropis-rules-are-retired-on-evidence`, branch `plan/rules-are-retired-on-evidence`, started from `879cc07`. Environment: git 2.x, Node v22.15.0, Darwin arm64, macOS 26.2, Claude Code 2.1.300.
+
+### Task completion
+
+All six tasks done. Commits: the guard written first against an empty stub; the script and record; the command, the `/release` hook and FW-046 (carrying the probe result in its body); the catalog and band; a one-line follow-up making FW-046 name the record in plain text; this report.
+
+### Verification results
+
+- Guard against the stub: suite failed to run, "does not provide an export named 'parseRecord'".
+- Guard with the script: `Tests: 21 passed, 21 total`.
+- `node .github/scripts/rule-trial.mjs check`: `rule-trials: 0 trials, no problems`.
+- `node .github/scripts/rule-trial.mjs growth v0.7.3`: all five rule files at `+0` (catalogs 2187, harness-scripts 1233, learnings 1025, planning 4917, tests 696), `Nothing tried before from rules/catalogs.md.` and `No rule file grew since v0.7.3: record a skipped trial.`
+- Red checks (each a throwaway commit, dropped):
+  - duplicate-heading problem removed: `the record › a heading may not appear twice`;
+  - "tries again a kept clause" removed: `the record › a clause kept once is not tried again`;
+  - `rankGrowth` ascending: `rankGrowth › orders by growth, then by file name, and counts an absent file from zero` and `the command line › growth lists files by growth and names what was tried before`;
+  - fence skip removed: `the record › a fenced example is not an entry` and `the record › the committed record is sound`.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 144 passed, 144 total`.
+- `bash scripts/check-blueprint.sh` on the final head: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD`: only the files in *File Structure* (the board page was not rebuilt, so `index.html` is untouched).
+- Fresh-agent check (Claude Code 2.1.300, macOS 26.2, arm64, `--allowedTools Read,Grep,Glob`): one run, passed on the first try. It chose the clause from `rules/planning.md` only, preferring one changed since v0.9.0; asked the developer before running; removed it in a scratch clone by copying `rules/*.md` into `.tropis/rules/` and regenerating; gave a planning-area task on an invented probe subject; judged by tool calls; wrote an entry under `## Since v0.9.0`; removed the clause through a branch and pull request before Stage 1. It also noted that the probe clone's `rule-trial.md` was uncommitted, which was an artefact of the probe set-up. Its tool calls in this run were two Bash reads (`cat` of the two command files), although only read tools were allowed on the command line; the allow list did not stop them. It also mentioned the developer's global instructions on provenance, so that machine's user-level instructions were loaded in the probe; they say nothing about rule trials or release steps, so the result stands.
+
+### Scope
+
+Exactly the *File Structure* files plus nothing else.
+
+### Judgment calls
+
+- The first self-check run on the unmodified base failed in `main-status` and `rule-delivery` tests while the machine's load average was about 47 (other sessions' self-checks running); a second and third run on my branch failed only in `main-status` tests, and a run at a lower load passed. I treated these as load, not as a failure of the base, and went on. The plan `main-status-tests-pass-under-load` covers part of it; the `rule-delivery` failures are not covered by it, as far as I know.
+- Trap 1 was not enough: `framework-integrity` also refused `docs/rule-trials.md` in backticks in FW-046, because the guard checks the path against a set-up project's layout, not the export. I named it in plain text (the repository's own gotcha for a file no project will have) instead of adding an exemption to the guard.
+- The command's *Choose the clause* section also says to propose a clause "with the task"; the plan's point 2 and 3 order is kept as headings.
+- Source worked from: none; the script's shape follows `.github/scripts/absorb-flush.mjs` as the plan said.
+
+### What the plan got wrong
+
+Trap 1 says `docs/rule-trials.md` "is exported and may be named" in backticks. The integrity guard refuses it. The note in this repository's `AGENTS.md` about naming an absent file in plain text covers this; the plan could have pointed to it.
+
+### Outstanding
+
+- Parent review before merge. No pull request opened.
+- Possible load flake in `rule-delivery` capture-at-write tests under high load (seen once, on the unmodified base); not reproduced.
+
+## Review record
+
+Reviewed by the specifying session, on the branch at `e86f72d` and after. Tools: Claude Code 2.1.300, Node v22.15.0, macOS 26.2, Darwin arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: nine files, each in *File Structure* (`docs/backlog-board/index.html` not rebuilt, as the handover says).
+- `bash scripts/check-blueprint.sh` on `e86f72d`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` (load average about 29).
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 144 passed, 144 total`.
+- `node .github/scripts/rule-trial.mjs check`: `rule-trials: 0 trials, no problems`. `growth v0.7.3`: all five files `+0`, then `No rule file grew since v0.7.3: record a skipped trial.` `growth v9.9.9`: `v9.9.9 is not a commit here`, exit 1.
+- `guards/rule-trial.test.js` on the archive export: `Tests: 21 passed, 21 total`. Re-broken by disabling the record of kept clauses in `recordProblems` (`if (false) kept.push…`): `Tests: 1 failed, 20 passed, 21 total`.
+- The handover's diagnosis of the self-check failures was checked against the kept log of the first run (`.self-check/logs/20261101T180535Z-879cc07/clean-baseline.log`, local, not committed): two `main-status --pull-request` cases and six `rule-delivery` capture-at-write cases, the latter all `SyntaxError: Unexpected end of JSON input` on the hook's reply, on the unmodified base. Later runs on the same hook script passed. The load explanation is consistent with that but not proven.
+- `git diff origin/main -- .claude/commands/release.md`: one added line group, between the project-owned markers.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The probe's mention of the developer's own instructions is described in general terms only.
+
+- Mechanical, fixed on the branch by the reviewer in `e86f72d`: the rewritten catalog comment above `rule-is-measured-with-and-without` ran past the file's line width; the new band verdict was one unwrapped line unlike its neighbours; FW-046's status line ended `Accepted.` where every other decision has `Accepted`.
+- The script also prints `Nothing tried before from …` above the no-growth line, where the plan said that line would print instead. Harmless and arguably useful; left.
+- The plan's Trap 1 was wrong about `docs/rule-trials.md` being nameable in backticks in a framework document; the executor's plain-text naming is what `AGENTS.md` asks for a file no project has.
+- The probe's read-only allow list did not stop two `cat` calls through Bash. Nothing was written, so the result stands; noted for anyone relying on `--allowedTools` as a sandbox.
+
+### Outstanding disposition
+
+- Parent review before merge: this record.
+- The six `rule-delivery` capture-at-write failures under load: unexplained; recorded as the idea `capture-at-write-tests-pass-under-load` in `feature-catalog.yaml`, with this run as evidence. The two `main-status` failures are `main-status-tests-pass-under-load`, already building.
+- The first real trial happens at the developer's next release of this repository; nothing here runs a release. Only then is criterion 2 observed on a real clause rather than a probe.
+
+### Learnings routed
+
+- A framework document cannot name a repository-only file in backticks, even one present in the export: already in `AGENTS.md` (*A framework document may name an absent file only through the integrity guard*); the plan missed it, nothing new to route.
+- A command-line allow list for a probe is not a sandbox: not routed, it is a property of one tool version observed once and the probe was read-only by prompt as well.
+- A hook test that passes on a rerun: the catalog idea above.
+
+### Merged because
+
+Every check re-ran green on the reviewed head, the new guard goes red when its central check is removed, the fresh-agent probe found the procedure the change intended, and the only fixes were mechanical rewraps made and declared here.

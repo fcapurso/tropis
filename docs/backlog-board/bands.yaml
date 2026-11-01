@@ -221,23 +221,10 @@ rule-is-measured-with-and-without:
   effort: 3
   effortWhy: A spike with repeated agent runs.
   verdict: "Whether with-and-without measurement is reliable and cheap enough is
-    the question; decide whether it is worth a spike before
-    rules-are-retired-on-evidence is planned."
+    the question; the release trial runs one agent, and this would make it a
+    repeatable comparison."
   seen:
     status: idea
-    blockers: []
-rules-are-retired-on-evidence:
-  band: B
-  value: 3
-  valueWhy: Without it rule files only grow, and every clause costs context in
-    every session.
-  effort: 3
-  effortWhy: A release step, a trial procedure and a record.
-  verdict: "Banded on its own value: the only retirement mechanism that produces
-    evidence. It comes after rule-is-measured-with-and-without, which the board
-    marks."
-  seen:
-    status: shaped
     blockers: []
 rules-carry-mechanism-not-provenance:
   band: B
