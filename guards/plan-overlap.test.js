@@ -138,8 +138,34 @@ describe('Merges after in a plan header', () => {
   });
 
   test('an empty field is refused as dispatchable, naming it; one with an id is not', () => {
-    const base = readFileSync(resolve(here, '../docs/superpowers/plans/2026-11-01-overlapping-plans-merge-in-order.md'), 'utf8');
-    const stripped = base.split('\n').filter((l) => !l.startsWith('**Merges after')).join('\n');
+    const stripped = `# P
+
+${HEADER}
+
+## Delivers
+
+None.
+
+## Repositories
+
+| Checkout | Role | Isolation |
+|---|---|---|
+| \`proj\` | execute here | \`git worktree add ../proj-x -b plan/x origin/main\` |
+
+## Global Constraints
+
+- none
+
+## Traps
+
+- none
+
+## File Structure
+
+| File | Change |
+|---|---|
+| \`src/x.js\` | change |
+`;
     const empty = validateDispatchable(`${stripped}\n\n**Merges after:**\n`);
     expect(empty.errors.join('\n')).toMatch(/"Merges after"/);
     const filled = validateDispatchable(withMergesAfter(stripped, ['a']));
