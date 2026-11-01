@@ -2342,9 +2342,14 @@
 # - Recorded as FW-045, which amends FW-032's choice of place.
 # 2026-11-01, dispatched. Plan
 # docs/superpowers/plans/2026-11-01-project-settings-live-under-tropis.md.
+# Shipped by docs/superpowers/plans/2026-11-01-project-settings-live-under-tropis.md.
+# Criteria 1, 2 and 3 - take-version.test.js and installed-files.test.js. Criterion 4 -
+# rule-delivery.test.js and pipeline.test.js. Criterion 5 - dispatch.test.js.
+# Criterion 6 - the documents, and framework-integrity.test.js. Criterion 7 - the
+# fresh-agent check recorded in the commit body.
 - id: project-settings-live-under-tropis
   title: A project's own settings and data live under .tropis/, in one place
-  status: building
+  status: shipped
   value: Someone tailoring a project finds every setting the project owns under .tropis/,
     the framework's own folder, rather than split between it and the folder one agent
     tool reads. Today whether the project is public and why its main branch is not gated
@@ -2374,7 +2379,14 @@
       no .claude/project.json.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/take-version.mjs
+    - scripts/installed-files.js
+    - scripts/pipeline.mjs
+    - scripts/framework-commit-check.sh
+    - scripts/public-exposure-check.sh
+    - scripts/dispatch.mjs
+    - commands/bootstrap.md
   refs: []
 # Raised 2026-10-17. Today /bootstrap requires the project folder to already be a git
 # repository and never touches a remote, so the developer creates the GitHub repository and
