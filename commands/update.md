@@ -108,8 +108,9 @@ If the take exits non-zero, it refused before writing. Abort (Stage 9).
 Do these in order. The take's report is the list: `Next:`, then *Needs a decision*
 (`.new` files, files the project removed, files kept because the project changed them).
 
-1. Run `npm --prefix .tropis install` when `Next:` lists that command. Do not run it
-   otherwise.
+1. Run the install command `Next:` lists — `npm --prefix .tropis ci`, or
+   `npm --prefix .tropis install` where the project changed its package file — and
+   nothing when it lists neither.
 2. **Each `.new` file.** Show the difference between the file and its `.new`. When the
    project's own change is only inside what the new version also changes, propose the
    merge and apply it on yes. Otherwise propose the merged text and ask. Delete the

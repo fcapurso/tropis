@@ -278,7 +278,7 @@ until that file exists.
 From the project root:
 
 ```bash
-npm --prefix .tropis install
+npm --prefix .tropis ci
 npm --prefix .tropis test
 bash .tropis/scripts/check-prerequisites.sh
 ```

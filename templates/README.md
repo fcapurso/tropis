@@ -9,10 +9,6 @@ checks in `.tropis/`, the backlog in `feature-catalog.yaml`, specs and plans in
 
     npm --prefix .tropis ci
 
-On a project just set up, before `.tropis/package-lock.json` is committed, run
-`npm --prefix .tropis install` instead, as setup's closing message says, and commit the
-lock it writes.
-
 A plan's worktree needs the same before its suite can run, and the prompt `/dispatch`
 prints says so for each worktree a plan creates. When this project needs more than the
 line above — a submodule, its own dependency install, a second tools package — write

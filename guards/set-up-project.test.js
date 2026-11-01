@@ -254,7 +254,7 @@ describe('set-up-project.sh', () => {
   it('leaves a lockfile npm ci installs from', () => {
     const { parent, dir } = repository();
     try {
-      expect(runSetup(dir, NAME).status).toBe(0);
+      expect(runSetup(dir, 'Quay Works').status).toBe(0);
       const pkg = JSON.parse(readFileSync(join(dir, '.tropis/package.json'), 'utf8'));
       const lock = JSON.parse(readFileSync(join(dir, '.tropis/package-lock.json'), 'utf8'));
       expect(lock.name).toBe(pkg.name);
