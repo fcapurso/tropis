@@ -409,3 +409,62 @@ Claude Code 2.1.300, Darwin arm64, `claude -p --output-format stream-json --verb
 ### Outstanding
 
 Nothing known. No pull request, no review record, nothing merged.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `c6f713a`, with git 2.49.0 and Node
+v22.15.0 in Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `guards/main-status.test.js` through the Task 0 snippet: `Tests: 47 passed, 47 total`.
+- Re-break, each a throwaway commit then dropped: the `mergeable_state === 'blocked'`
+  condition replaced by `true` gave `Tests: 2 failed, 45 passed` (the two "does not ask
+  the rules" cases); the "every run completed" condition removed gave `Tests: 2 failed,
+  45 passed` (the two in-progress cases).
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 137 passed, 137 total`.
+- `git diff --stat origin/main...HEAD`: `feature-catalog.yaml`, `framework/workflow.md`,
+  `guards/main-status.test.js`, `scripts/main-status.mjs` and this plan file — all in the
+  File Structure table.
+- The criteria table: each named test runs the sequence its criterion describes (read
+  against the test bodies); criterion 6 is the paragraph, read in the diff, and the probe
+  as reported. The probe was not re-run.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing.
+
+One mechanical defect, fixed on the branch by the reviewer in `c6f713a`: the script's top
+comment said "naming why" twice and ran past the file's line width. Wording only.
+
+### Outstanding disposition
+
+- Two executor commits lack the attribution trailer: dropped, the squash-merge carries
+  its own message.
+- The probe's scratch clone under `$TMPDIR` was left in place: dropped, a temporary
+  directory outside the repository.
+- One `bash scripts/check-blueprint.sh` run, started at the same time as
+  `npm --prefix .tropis test` in the same worktree, failed, and passed when run alone.
+  Unexplained; the cause was not tested. Dropped as an entry: two suites run at once in
+  one checkout is not how either is meant to run, and nothing in the workflow does it.
+- The plan's Task 1 red checks let an executor drop a real commit with
+  `git reset --hard HEAD~1` after an edit that did not apply; recovered from the reflog.
+  Routed below.
+
+### Learnings routed
+
+- Red-check steps that end in `git reset --hard HEAD~1` should first check the
+  throwaway commit changed something (`git diff --quiet HEAD~1` fails). Not written as a
+  rule here: it is a habit of this repository's plan template rather than a framework
+  claim, and this review applied it by checking `git diff --stat` before each throwaway
+  commit. If it happens again, it belongs in `rules/planning.md` beside the red-check
+  bullet.
+- Nothing else generalises: the change ships in the next release as the source itself.
+
+### Merged because
+
+Every criterion has a test that runs what it describes, the guards go red when their
+conditions are removed, the workflow paragraph was probed by a fresh agent, and the only
+defect found was wording, fixed on the branch.
