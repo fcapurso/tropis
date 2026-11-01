@@ -613,6 +613,17 @@ describe('the /release steps', () => {
     expect(flat).toContain('You never run a trigger, deploy, or tag');
   });
 
+  it('states the promote step in the workflow document', () => {
+    expect(workflow).toContain(
+      'node .tropis/scripts/pipeline.mjs promote check <commit> --staged <staged> --allow <notes file> --allow <each version file>',
+    );
+    expect(workflow).toContain('It never commits and never pushes a branch');
+    expect(workflow).toContain("The tag sits on a commit the main branch holds, and its code is the staged commit's");
+    expect(workflow).toContain('A promote pipeline never writes to the main branch');
+    expect(workflow).toContain('Only a tag of the form `vX.Y.Z` is a release');
+    expect(workflow).not.toContain('The tag sits one commit above');
+  });
+
   it('the operator guide says how to apply the gate and how to opt out', () => {
     const guide = readFileSync(
       resolve(dirname(fileURLToPath(import.meta.url)), '../templates/README.md'),
