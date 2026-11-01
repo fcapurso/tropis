@@ -199,35 +199,42 @@ def _comment_start(line):
 def strip_heredocs(text):
     """Remove heredoc bodies. Return the text and bodies a shell itself reads.
 
-    Raises ValueError when a heredoc never closes."""
+    Works a line at a time: a line's operators are removed and the rest of the line
+    kept, then their bodies, which follow the line in order, are skipped. Raises
+    ValueError when a heredoc never closes."""
     shells = []
     pieces = []
     cursor = 0
-    while True:
-        found = _HEREDOC.search(text, cursor)
-        if not found:
-            pieces.append(text[cursor:])
-            break
-        line_start = text.rfind('\n', 0, found.start()) + 1
-        line_end = text.find('\n', found.end())
+    while cursor < len(text):
+        line_end = text.find('\n', cursor)
         if line_end == -1:
             line_end = len(text)
-        comment = _comment_start(text[line_start:line_end])
-        if comment is not None and line_start + comment < found.start():
-            pieces.append(text[cursor:found.end()])
-            cursor = found.end()
+        line = text[cursor:line_end]
+        comment = _comment_start(line)
+        operators = [found for found in _HEREDOC.finditer(line)
+                     if comment is None or found.start() < comment]
+        if not operators:
+            pieces.append(text[cursor:line_end + 1])
+            cursor = line_end + 1
             continue
-        word = next(group for group in found.groups()[1:] if group is not None)
-        body, next_cursor = _heredoc_body(text, found.end(), word, found.group(1) == '-')
-        if body is None:
-            raise ValueError('heredoc without a closing line')
-        # The operator goes too: its body is gone, and a substitution lifted out later
-        # would otherwise hold a heredoc with no body.
-        pieces.append(text[cursor:found.start()] + ' ')
-        if _shell_reads_heredoc(text[line_start:line_end],
-                                found.start() - line_start, found.end() - line_start):
-            shells.append(body)
-        cursor = next_cursor
+        # The operators go too: their bodies are gone, and a substitution lifted out
+        # later would otherwise hold a heredoc with no body.
+        kept = 0
+        for found in operators:
+            pieces.append(line[kept:found.start()] + ' ')
+            kept = found.end()
+        pieces.append(line[kept:] + '\n')
+        # _heredoc_body starts at the line after the newline it is given.
+        body_from = line_end
+        for found in operators:
+            word = next(group for group in found.groups()[1:] if group is not None)
+            body, after = _heredoc_body(text, body_from, word, found.group(1) == '-')
+            if body is None:
+                raise ValueError('heredoc without a closing line')
+            if _shell_reads_heredoc(line, found.start(), found.end()):
+                shells.append(body)
+            body_from = after - 1
+        cursor = body_from + 1
     return ''.join(pieces), shells
 
 

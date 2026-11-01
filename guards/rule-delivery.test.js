@@ -1055,6 +1055,13 @@ describe('rule delivery', () => {
       ['58', "echo 'unterminated", ['gh pr merge'], 0],
       ['59', 'grep -rn "git commit" scripts/ # a search', ['git commit'], 1],
       ['60', ["sudo -u ci bash <<'EOF'", gc, 'EOF'].join('\n'), ['git commit'], 0],
+      // Found in review: the rest of a heredoc's own line, and every line after its body,
+      // are commands too. The old matcher joined them to the command before the heredoc.
+      ['61', ["cat > f <<'EOF'", 'body', 'EOF', gc].join('\n'), ['git commit'], 0],
+      ['62', ["cat > f <<'EOF' && git commit -m x", 'body', 'EOF'].join('\n'), ['git commit'], 0],
+      ['63', ["cat <<'A' <<'B'", 'a', 'A', 'b', 'B', gc].join('\n'), ['git commit'], 0],
+      ['64', ["cat > f <<'EOF'", gc, 'EOF', 'echo done'].join('\n'), ['git commit'], 1],
+      ['65', ["cat <<'A' | bash <<'B'", 'a', 'A', gc, 'B'].join('\n'), ['git commit'], 0],
     ];
 
     for (const [n, command, watched, expected] of rows) {
