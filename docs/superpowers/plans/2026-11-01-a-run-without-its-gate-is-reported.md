@@ -357,3 +357,114 @@ its actual output, the red checks' failing test names, the criteria table, the p
 answer, and the worktree path used. Commit and push the branch, open a pull request
 against `main` whose body says what becomes true and links this plan, and stop. Do not
 write a review record and do not merge.
+
+## Handover report
+
+Worktree used: `../tropis-gate-report`, branch `plan/a-run-without-its-gate-is-reported`, rebased onto `origin/main` at the end. Started from `955622c`. git 2.49.0, node v22.15.0, Darwin arm64, Claude Code 2.1.300.
+
+### Task completion
+
+Tasks 0 to 4 done; Task 5 changed by the dispatching session: the branch is pushed and **no pull request is opened**.
+
+### Verification results
+
+- `bash scripts/check-blueprint.sh` (run alone, after the final commit): `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` One earlier run, started in parallel with `npm --prefix .tropis test`, ended `Self-check FAILED`; the same command alone passed, so parallel runs interfere. Not investigated further.
+- `npm --prefix .tropis test`: 13 suites, 135 tests passed.
+- Guard snippet on the tests-only commit: 3 failed, 44 passed. Failing: "stops with exit 4 naming the check, the commit and the newest run", "waits while a run on the head is still going, then stops", "goes on waiting when the rules cannot be read, and asks only once". Every test passing on `main` still passed. With the script change: 47 passed, 47 total.
+- Red checks (throwaway commits, dropped):
+  - `blocked` condition removed: "does not ask the rules when the pull request is clean" and "... is unstable" fail.
+  - "every run completed" condition removed: "waits while a run on the head is still going, then stops" and "exits 3 at the timeout when a run on the head never finishes" fail.
+  - unreadable rules turned into `cannotTell`: "goes on waiting when the rules cannot be read, and asks only once" fails.
+
+### Criteria
+
+| # | Criterion | Covered by |
+|---|---|---|
+| 1 | exit 4, one line naming check, commit, run | "stops with exit 4 naming the check, the commit and the newest run" (exact stdout, rules call, `--commit` without `--event`) |
+| 2 | a run still going: not reported | "waits while a run on the head is still going, then stops" and "exits 3 at the timeout ..." |
+| 3 | required check present: as before | "says nothing when the required check is there" |
+| 4 | rules unreadable or none required: as before | "goes on waiting when the rules cannot be read ..." and "... require no check" |
+| 5 | never re-runs or starts anything | "writes nothing on GitHub" (no `-X`, `rerun`, `workflow run`, `update-branch` in the log) |
+| 6 | workflow paragraph | `framework/workflow.md` paragraph plus the probe below |
+
+### Probe
+
+Claude Code 2.1.300, Darwin arm64, `claude -p --output-format stream-json --verbose --allowedTools Read Grep Glob`, from a scratch clone holding the paragraph. Its one call was a Grep on `framework/workflow.md`. Answer: change nothing on the branch; `gh run rerun 7700112233 --repo acme/example` once; report it with the run address; run the wait again; if the same line returns, stop, no second re-run, report both runs. No push, close or reopen, or auto-merge toggle. Passed first run. The owner's global instructions say nothing about re-running.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: `feature-catalog.yaml`, `framework/workflow.md`, `guards/main-status.test.js`, `scripts/main-status.mjs`, and this plan file.
+
+### Judgment calls
+
+- `runsOn` kept its exact arguments; a new `listRuns` omits `--event`, and `runsOn` calls it with `--event push` added.
+- Named source worked from: nothing in particular; written against this repository's own names.
+- Two earlier commits lack the attribution trailer; the later ones carry it.
+
+### What the plan got wrong
+
+- Tests that reach `MERGED` after a missing gate need their own run for the merge commit, since the stub does not filter by commit; the plan's case list did not say so.
+- The Task 1 snippet's throwaway-commit steps are dangerous if an edit does not apply: a `git reset --hard HEAD~1` after a failed edit drops a real commit. It happened once and was recovered from the reflog.
+
+### Outstanding
+
+Nothing known. No pull request, no review record, nothing merged.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, on `c6f713a`, with git 2.49.0 and Node
+v22.15.0 in Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `guards/main-status.test.js` through the Task 0 snippet: `Tests: 47 passed, 47 total`.
+- Re-break, each a throwaway commit then dropped: the `mergeable_state === 'blocked'`
+  condition replaced by `true` gave `Tests: 2 failed, 45 passed` (the two "does not ask
+  the rules" cases); the "every run completed" condition removed gave `Tests: 2 failed,
+  45 passed` (the two in-progress cases).
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 137 passed, 137 total`.
+- `git diff --stat origin/main...HEAD`: `feature-catalog.yaml`, `framework/workflow.md`,
+  `guards/main-status.test.js`, `scripts/main-status.mjs` and this plan file — all in the
+  File Structure table.
+- The criteria table: each named test runs the sequence its criterion describes (read
+  against the test bodies); criterion 6 is the paragraph, read in the diff, and the probe
+  as reported. The probe was not re-run.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing.
+
+One mechanical defect, fixed on the branch by the reviewer in `c6f713a`: the script's top
+comment said "naming why" twice and ran past the file's line width. Wording only.
+
+### Outstanding disposition
+
+- Two executor commits lack the attribution trailer: dropped, the squash-merge carries
+  its own message.
+- The probe's scratch clone under `$TMPDIR` was left in place: dropped, a temporary
+  directory outside the repository.
+- One `bash scripts/check-blueprint.sh` run, started at the same time as
+  `npm --prefix .tropis test` in the same worktree, failed, and passed when run alone.
+  Unexplained; the cause was not tested. Dropped as an entry: two suites run at once in
+  one checkout is not how either is meant to run, and nothing in the workflow does it.
+- The plan's Task 1 red checks let an executor drop a real commit with
+  `git reset --hard HEAD~1` after an edit that did not apply; recovered from the reflog.
+  Routed below.
+
+### Learnings routed
+
+- Red-check steps that end in `git reset --hard HEAD~1` should first check the
+  throwaway commit changed something (`git diff --quiet HEAD~1` fails). Not written as a
+  rule here: it is a habit of this repository's plan template rather than a framework
+  claim, and this review applied it by checking `git diff --stat` before each throwaway
+  commit. If it happens again, it belongs in `rules/planning.md` beside the red-check
+  bullet.
+- Nothing else generalises: the change ships in the next release as the source itself.
+
+### Merged because
+
+Every criterion has a test that runs what it describes, the guards go red when their
+conditions are removed, the workflow paragraph was probed by a fresh agent, and the only
+defect found was wording, fixed on the branch.
