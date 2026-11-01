@@ -4519,3 +4519,25 @@
     - commands/update.md
   refs:
     - docs/superpowers/plans/2026-10-31-a-session-cannot-move-another-sessions-branch.md
+# 2026-11-01, found landing release-tags-the-notes-commit (pull request 74): its pipeline
+# run 41291063425, on the review-record commit, completed with conclusion success and no
+# gate job at all - not skipped, absent - while run 41290753514 on the commit before it
+# had its gate pass. The ruleset requires pipeline / gate, so auto-merge waited with the
+# pull request BLOCKED and every listed check green; the merge poll ran its 30 minutes
+# and nothing said why. One manual re-run of that run scheduled the gate, which passed,
+# and the pull request merged as 54e7eda. Cause not known: a GitHub scheduling fault is
+# the guess, not tested. The re-run is the kind of retry the workflow says hides
+# failures, which is one more reason the state should be named rather than worked round.
+- id: a-run-without-its-gate-is-reported
+  title: A pull request whose pipeline finished without its required gate check is reported
+  status: idea
+  value: Whoever is waiting on a pull request's auto-merge learns, with the run's
+    address, that its pipeline finished without the gate check the branch requires, and
+    so will never merge until something starts the gate. Today the pull request just
+    stays blocked with every check it shows green, and a wait on it times out saying
+    nothing.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
