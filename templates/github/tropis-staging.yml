@@ -1,16 +1,16 @@
-# Tropis's file, replaced on update. Started through the project's candidate.yml.
+# Tropis's file, replaced on update. Started through the project's staging.yml.
 
-name: Tropis release candidate
+name: Tropis deploy to staging
 
 on:
   workflow_call:
     inputs:
       commit:
-        description: The commit to rehearse, in full.
+        description: The commit to deploy to staging, in full.
         type: string
         required: true
       node-version:
-        description: Node.js version for the candidate
+        description: Node.js version for the run
         type: string
         default: '22'
 
@@ -21,9 +21,9 @@ jobs:
       node-version: ${{ inputs.node-version }}
       ref: ${{ inputs.commit }}
 
-  # There is no gate. The candidate runs every stage and skips none, so this
-  # matrix is the whole run, and GitHub's implicit success() holds rehearse
-  # back when any stage failed.
+  # There is no gate. A deploy to staging runs every stage and skips none, so
+  # this matrix is the whole run, and GitHub's implicit success() holds the
+  # deploy back when any stage failed.
   stages:
     needs: framework
     runs-on: ubuntu-latest
@@ -42,11 +42,11 @@ jobs:
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
 
-  rehearse:
+  deploy:
     needs: stages
     runs-on: ubuntu-latest
     concurrency:
-      group: tropis-candidate-${{ github.repository }}
+      group: tropis-staging-${{ github.repository }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -56,6 +56,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
-      - run: node .tropis/scripts/pipeline.mjs candidate rehearse --summary "$GITHUB_STEP_SUMMARY"
+      - run: node .tropis/scripts/pipeline.mjs staging deploy --summary "$GITHUB_STEP_SUMMARY"
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
