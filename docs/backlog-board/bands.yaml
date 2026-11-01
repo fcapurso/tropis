@@ -22,22 +22,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-an-update-never-hangs-unpacking-a-version:
-  band: C
-  value: 4
-  valueWhy: An update or a self-check that hangs with nothing on screen costs an hour
-    and looks like slowness, not a fault.
-  effort: 3
-  effortWhy: The cause is not known; it needs a reproduction before a fix, then a
-    timeout or a streamed pipe in take-version.
-  bundle: self-check
-  verdict: "Shaped 2026-11-01: the cause need not be found. Remove the pipe that hung
-    and put a time limit on every child, so any stuck step fails by name."
-  evidence: "2026-10-31 — scripts/take-version.mjs:52 runs every child through
-    spawnSync with no timeout, so nothing can stop a stuck tar."
-  seen:
-    status: shaped
-    blockers: []
 cloud-executor-attaches-every-checkout:
   band: B
   value: 2
@@ -487,47 +471,6 @@ rules-return-after-compaction:
     their rules. In the framework-updates arc, which is part of why it is B."
   seen:
     status: idea
-    blockers: []
-self-check-clean-baseline-flake:
-  band: D
-  value: 2
-  valueWhy: A failure seen once; a real one would look the same.
-  effort: 2
-  effortWhy: Diagnosis once it recurs with its output kept.
-  verdict: "Not built with the self-check bundle (2026-11-01). That bundle removes
-    both suspects and keeps a red run's output; wait for a recurrence, then read
-    the kept log."
-  seen:
-    status: idea
-    blockers: []
-self-check-red-runs-keep-their-output:
-  band: B
-  value: 3
-  valueWhy: Makes an intermittent red diagnosable instead of re-run.
-  effort: 1
-  effortWhy: Write a red run's output to a file.
-  bundle: self-check
-  verdict: "Small and self-contained: write a red run's output to a file that
-    outlives the terminal. It is what self-check-clean-baseline-flake waits on,
-    so the next intermittent red becomes diagnosable instead of re-run."
-  evidence: "2026-10-20 — scripts/check-blueprint.sh writes its output only to the
-    terminal; its temporary directories are for staging, not a log."
-  seen:
-    status: shaped
-    blockers: []
-self-check-runs-beside-another:
-  band: B
-  value: 3
-  valueWhy: A parallel flush goes red for nothing, and it may explain the one-off flake.
-  effort: 1
-  effortWhy: One test's temporary folder.
-  bundle: self-check
-  verdict: "A small change to one test, and it stops a parallel flush from going
-    red for nothing. It may also explain self-check-clean-baseline-flake."
-  evidence: "2026-10-29 — guards/take-version.test.js:126 looks for leftovers in
-    the machine-wide temporary folder, so another run's folder counts."
-  seen:
-    status: shaped
     blockers: []
 set-up-project-installs-from-a-lockfile:
   band: B
