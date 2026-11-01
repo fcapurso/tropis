@@ -4586,9 +4586,12 @@
 # converge any other readable view of the backlog onto the board.
 # 2026-11-01, corrected at banding: this repository never committed the page; the claim
 # that it did came from misreading a .gitignore line as a tracked file.
+# 2026-11-01, shaped and dispatched: the rebuild runs from git hooks that the framework
+# package's prepare script installs (FW-043). Plan
+# docs/superpowers/plans/2026-11-01-board-is-the-backlog-view.md.
 - id: board-is-the-backlog-view
   title: The board is every project's readable view of its backlog, and keeps itself current
-  status: idea
+  status: building
   value: Anyone who wants to read the backlog opens the board and sees the backlog as it
     stands, because the page rebuilds itself whenever the backlog changes, without
     banding anything and without being committed, so parallel changes to the backlog
@@ -4596,7 +4599,28 @@
     The backlog rule names the board as the readable view, instead of a generated
     catalog document, and any other mechanism a project already has for the same
     purpose, such as a generated catalog document, is removed in favour of the board.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - In a project set up with scripts/set-up-project.sh and installed with npm --prefix
+      .tropis install, committing a change to feature-catalog.yaml leaves
+      docs/backlog-board/index.html showing the backlog as committed, with no command run
+      by hand, and git status lists nothing for the page.
+    - Merging a branch that changes the backlog, switching to one, and rebasing onto one
+      each leave the page showing the backlog as checked out.
+    - The rebuild bands nothing, so docs/backlog-board/bands.yaml is byte-identical after
+      it, and it never fails or prints, including in a worktree whose framework package
+      is not installed yet.
+    - Installing leaves a git hook the project already has, and a hooks folder set with
+      core.hooksPath, untouched, and prints the line to add to it; installing again
+      changes nothing; one install covers every worktree of the repository.
+    - The framework's own self-check installs its test tools without writing any git hook.
+    - The backlog rule and the workflow's doc closeout name the board as the readable view
+      of the backlog and ask for no generated catalog document, and the backlog rule tells
+      a project that keeps its own generated view of the backlog to replace it with the
+      board through an entry of its own.
+    - The operator guide says the page rebuilds itself at each commit, merge, checkout and
+      rebase, and that npm --prefix .tropis run board rebuilds it at once.
+    - A fresh agent that adds a backlog entry in a set-up project commits no page and no
+      generated document, and names the board as where the backlog is read.
   type: improvement
   layer: product
   modules: []
