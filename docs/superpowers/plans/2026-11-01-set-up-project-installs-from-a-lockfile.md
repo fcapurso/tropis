@@ -441,3 +441,78 @@ Worktree used: `../tropis-lockfile`. Files changed: every file in File Structure
 
 - `guards/main-status.test.js` (`--pull-request` cases, a different one each run) failed in 3 of 6 full self-check runs with status 3 instead of 0 when the machine was loaded (test took 119 to 154 s). The final run on the pushed code passed on the second attempt. It is unrelated to this change; `main-status-tests-pass-under-load` is already building.
 - The change has no screen, so there is no developer check.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0, Node v22.15.0 and npm 11.6.4 on macOS
+26.2, arm64, on the branch rebased onto `origin/main`.
+
+- `git diff --stat origin/main...HEAD` at `b7c4e4b`: 17 files, every one in *File
+  Structure* except `guards/board-hooks.test.js`, declared below.
+- The update half re-broken in a scratch export of the branch (`git archive`, run with the
+  branch's own Jest): with the lockfile block in `take-version.mjs` switched off,
+  `jest guards/take-version.test.js -t lockfile` printed `Tests: 2 failed, 46 skipped, 1
+  passed` — the replace and add cases fail; the leave-alone case passes, as it must when
+  nothing is replaced. The setup half was re-broken by the executor's throwaway commit
+  (Task 3), and the diff confirms the test it names reads the lockfile setup writes and
+  runs `npm ci` on it.
+- `bash scripts/check-blueprint.sh` at `b7c4e4b`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`, exit 0, first attempt.
+- `npm --prefix .tropis test`: `Tests:       145 passed, 145 total`.
+- The take-version change read line by line: the lockfile is written only when the
+  release has one and the project's package file is byte-for-byte the release's; it is
+  pushed to `added` or `replaced`; `Next:` says `ci` in exactly that case and `install`
+  otherwise when the package changed, as before. It sits outside the record walk, so
+  `EXCLUDED` keeping `.tropis/package-lock.json` is unaffected.
+- The handover's diagnosis of the `main-status.test.js` failures: not reproduced here (the
+  self-check passed first time); it matches `main-status-tests-pass-under-load`, already
+  building, and the change touches nothing `main-status.mjs` reads.
+
+### Found
+
+Public exposure: the diff was read for private material, the lockfile included (no email
+address, no deprecation notice; its funding fields are public package addresses).
+Scratch projects in the handover are invented names under `$TMPDIR`.
+
+- **`guards/board-hooks.test.js` was outside the table.** It locates the self-check's
+  install line by its text, so switching that line to `npm ci` broke it. The executor
+  changed the one string and kept its `--ignore-scripts` assertion. Accepted: the plan's
+  error, a mechanical consequence of Decision 2.
+- **The decision number.** `main` took FW-045 for the settings change while the branch
+  was out. **Renumbered to FW-046 by the reviewer** in the rebase's conflict resolution,
+  which kept both entries; the handover's mention of FW-045 is the executor's record
+  and stays.
+- **A comment in `take-version.mjs` ran past the file's width.** **Rewrapped by the
+  reviewer**; no word changed.
+- The plan said the second take-version case might pass before the code; it cannot,
+  since it reads a lockfile setup did not yet write. The plan's error; the case is sound
+  after the change.
+
+### Outstanding disposition
+
+- The load-sensitive `main-status.test.js` cases: owned by
+  `main-status-tests-pass-under-load`, building in another session.
+- No pull request opened by the executor: by instruction; the reviewer opens it under
+  the merge token.
+- No developer check: the change has no screen.
+
+### Learnings routed
+
+- **A guard that finds a line of a script by its text is a consumer of that line's
+  shape.** The planning rule's *what is on the other side of this* already asks for that
+  grep before finalising the table; this plan missed it, and nothing generalises beyond
+  the existing rule, so no new rule.
+- The fresh-agent check's note that `--allowedTools` takes a comma-separated list (a
+  space-separated one swallowed the prompt) is a fact about one tool's flags, recorded in
+  the handover; not a framework rule.
+- Nothing this plan built is portable beyond the framework itself: it is the framework's
+  own setup and update.
+
+### Merged because
+
+Each criterion has a test that fails without its half of the change, the fresh-agent
+check passed on the first run, and the self-check and the installed checks are green on
+the rebased branch; the review renumbered the decision and rewrapped one comment.
