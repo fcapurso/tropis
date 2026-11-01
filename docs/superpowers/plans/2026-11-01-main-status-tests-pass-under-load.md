@@ -442,3 +442,93 @@ Do not put `: ` (colon and space) inside an unquoted YAML value. Commit. Run
 - A leftover temporary folder from the load run was removed. One attempt to remove it
   with a command-substitution path was refused by a safety check; the literal-path
   removal succeeded.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0, Node v22.15.0 and Jest 30.5.2 on macOS
+26.2, arm64 (10 cores).
+
+- `git diff --stat origin/main...HEAD` at `bd02060`: four files, every one in *File
+  Structure*.
+- The one-file run at `HEAD`: `Tests:       48 passed, 48 total`.
+- **The guard re-broken:** in a throwaway commit with `settles` set back to
+  `['--interval', '0.05', '--timeout', '0.05']`, the one-file run printed
+  `Tests:       2 failed, 46 passed, 48 total`: `gives the same answer when every gh call
+  is slow` with `Received: 3`, and `waits for the run on the merge commit and exits 0
+  when main is green`, whose waiting line then reads `up to 0.05 min`. The slow case is
+  what catches a deadline tightened again.
+- `bash scripts/check-blueprint.sh` at `bd02060`, started at load average 11.73 and
+  ending at 32.30 while other sessions ran: `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`,
+  exit 0, no failing test in its log.
+- **The load run (criterion 3), re-run:** `load.sh 30 3` from Task 4 on a tree built from
+  `HEAD`, the tests at `nice -n 20`:
+
+  ```
+  21:36  up 20 days, 12:55, 1 user, load averages: 11.13 6.29 6.14
+  Tests:       48 passed, 48 total
+  Tests:       48 passed, 48 total
+  Tests:       48 passed, 48 total
+  21:42  up 20 days, 13 hrs, 1 user, load averages: 53.38 39.74 22.13
+  ```
+
+  No loop survived (`pgrep -f 'while :; do'` counted 0).
+- **The fresh-agent check (criterion 4), re-run with its tests executed.** The executor's
+  probe wrote its files where it was allowed and could not run them. The reviewer ran
+  the plan's Task 3 prompt again with Claude Code 2.1.300 (`claude -p --output-format
+  stream-json --verbose --permission-mode acceptEdits`, model Opus 5.5), from the
+  worktree, with a scratch folder it could write to and Jest linked into it, and the
+  prompt's last lines asking it to run the tests. Its calls, from the stream: it read
+  `rules/tests.md`, wrote `poll.mjs` and `poll.test.js`, and ran Jest, which answered
+  `Tests:       3 passed, 3 total`. Its exit-0 cases pass `--timeout` as a constant
+  `UNREACHABLE` (3600), its exit-3 case passes `'1'`, and unprompted it added a case where
+  every fake call takes two seconds. Its reason, in its own words: the deadline "is only
+  there to stop a hang, and no machine will take an hour to make three calls". Pass. The
+  probe ran locally; the developer's own instructions loaded with it and say nothing
+  about deadlines in tests.
+- `npm --prefix .tropis test` after the review edit: see *Merged because*.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Paths in the
+handover are relative or written as `$TMPDIR/...`.
+
+- **The plan missed one assertion** (handover, *What the plan got wrong* 1): the waiting
+  line the command prints names the deadline, so the merge-commit case's
+  `up to 0.05 min` had to become `up to 2 min`. The executor's one-line change is right,
+  and the re-break above shows the assertion follows `settles`.
+- **The plan's probe command asked for `bypassPermissions`**, which the agent tool's
+  permission check refused. The plan's error; the executor fell back correctly.
+- **The catalog comment named only the paper probe for criterion 4.** Fixed by the
+  reviewer, mechanically: it now also names this record's executed re-run.
+- No band row exists for the entry, so there is nothing to unband.
+
+### Outstanding disposition
+
+- The installed `.claude/rules/tests.md` carries the new bullet only once a release is
+  installed; the developer handles releases.
+- The release-flow branch adds an idea, `main-status-update-test-passes-on-rerun`, that
+  duplicates this entry. A note in the delivery group's shared notes asks that session
+  to fold it into a comment here instead; if it lands as an entry it should be dropped as
+  a duplicate of this shipped one.
+- No developer check: the change has no screen.
+
+### Learnings routed
+
+- **A deadline in a test stops a hang; it is not something the code must beat** went into
+  `rules/tests.md`, the source of the shipped test rule, and was checked by a fresh agent
+  twice.
+- **A plan that prescribes a fresh-agent probe should not ask for a permission mode the
+  agent tool may refuse, and should give the probe a folder it can write to and a way to
+  run what it writes.** That is the planning rule's *A check states what it prints* applied
+  to a probe; nothing new to route.
+
+### Merged because
+
+The two cases that failed under load and the three others that poll more than once no
+longer race a deadline. A slowed-stub case fails with exit 3 against the old deadline and
+passes against the new one. The file passed three runs of three at load average 53, the
+self-check passed on a busy machine, and a fresh agent followed the new rule with its
+tests run.

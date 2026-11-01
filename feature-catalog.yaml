@@ -4853,7 +4853,8 @@
 # Criterion 1 - main-status.test.js, the settles options. Criterion 2 - its case "gives
 # the same answer when every gh call is slow", red with the old deadline in that plan's
 # Task 1. Criterion 3 - the load run in that plan's handover report, re-run in its review
-# record. Criterion 4 - the fresh-agent check recorded in the commit body.
+# record. Criterion 4 - the fresh-agent check recorded in the commit body, re-run with
+# its tests executed in that plan's review record.
 - id: main-status-tests-pass-under-load
   title: The main-status tests give the same answer however busy the machine is
   status: shipped
