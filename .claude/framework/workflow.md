@@ -14,6 +14,11 @@ The session that shapes a change and writes its plan acts as business analyst an
 technical lead. It writes the plans and does **not** execute them. Execution is
 dispatched to separate agents, which may dispatch their own review subagents.
 
+**The one exception is a change whose result can be stated only by producing it.** Its
+author may build it and send it to a fresh agent to review, instead of describing it
+for an executor, and decides which when writing the plan — never both:
+`.claude/rules/planning.md`, *Do not rehearse the work to write its plan*.
+
 A plan must therefore be **self-contained** — every piece of evidence and reasoning its
 executor needs is in the plan. If an executor has to ask the specifying session what
 something means, the plan was underwritten.
@@ -102,17 +107,33 @@ when the framework half exists to serve the application half. Full rule:
 ## Branching
 
 - One branch per plan: `plan/<id>-<slug>`. Do not commit feature work directly to `main`.
+- **A session creates its branch in a worktree of its own, never in the main
+  checkout.** Two sessions open on one project share the main checkout, so one
+  session's checkout or pull moves the branch the other is working on: a commit lands
+  on the wrong branch, or starts from the other session's work, and nothing says so
+  until a push carries it. So a session about to create a branch — a plan's executor,
+  the session landing a backlog edit or a plan, the one dispatching — runs
+  `git fetch origin && git worktree add ../<repo>-<slug> -b <branch> origin/main` and
+  works there. The base is `origin/main` whatever the main checkout has checked out.
+  The main checkout stays on `main`, used only to pull and read. A hook refuses
+  `git checkout -b`, `git switch -c` and `git branch <name>` in the main checkout and
+  prints that command. Once the branch has merged, remove the worktree and delete the
+  branch, as *Merge and clean up* does.
 - **Where the main branch is gated, nothing goes directly to `main`.** It is gated when
   its host refuses a merge whose checks have not passed — on GitHub, the ruleset Tropis
   ships — and an agent treats it as gated unless `.claude/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
-  `main` through a pull request that merges itself once green: commit on a branch, push
-  it, open the pull request, and run `gh pr merge <N> --auto --squash` with `--subject`
-  and `--body`. Dispatch's move of an entry to `building` is such a change: the
+  `main` through a pull request that merges itself once green: commit on a branch in a
+  worktree of its own (above), push it, open the pull request, run
+  `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  **Setting auto-merge does not finish the job; the change is done when that command
+  reports the main branch green.** Auto-merge does not update a branch, and the host
+  requires one up to date with `main`, so a pull request that falls behind sits
+  unmerged with nobody told. The command brings it up to date and keeps waiting, and
+  stops, naming the pull request, when it conflicts, a check fails, or auto-merge is
+  off. Dispatch's move of an entry to `building` is such a change: the
   dispatching session lands it through its pull request and waits until it has merged
-  before the executor starts. A pull request behind `main` waits too, because the host
-  requires it to be up to date: rebase it on `origin/main` and push, and it merges once
-  green again.
+  before the executor starts.
 - **Where it is not gated, what may go directly to `main` is what cannot change how an
   agent behaves**: the
   backlog, generated documentation, plan and spec files, the release notes `/release`
@@ -183,7 +204,7 @@ when the framework half exists to serve the application half. Full rule:
   whether it had run at all.
 - **A dispatched agent always works in its own worktree**, never in the directory the
   specifying session is using:
-  `git worktree add ../<repo>-<id> -b plan/<id>-<slug>`
+  `git worktree add ../<repo>-<id> -b plan/<id>-<slug> origin/main`
   This is not only for concurrency. A shared working directory means a `git checkout` by
   either party silently redirects the other's commits onto the wrong branch.
   The `../` is load-bearing: a worktree nested inside the repository that gets its own
@@ -245,7 +266,15 @@ leave an orphaned branch behind.
 above. It returns at once, and the host merges when the required check passes. With
 auto-merge enabled, `gh` deletes neither the local nor the remote branch, so the local
 branch is deleted beforehand, as above, and the remote one by the repository setting
-*Automatically delete head branches*. Pull `main` once the pull request says merged.
+*Automatically delete head branches*. Then run
+`node .tropis/scripts/main-status.mjs --pull-request <N>`, in place of the code block's
+last line. It waits until the pull request has merged, bringing its branch
+up to date whenever `main` moves under it, then waits for the run the merge started on
+`main`, on the merge commit itself rather than on `HEAD`. Its exits are those of
+`--wait` below, plus 4 when the pull request did not merge. Its line then names why:
+a conflict, a failed check, auto-merge off, or the pull request closed. On 4, fix what
+it names, set auto-merge again if it was off, and run it again. Pull `main` once it has
+reported.
 
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's
@@ -347,7 +376,7 @@ Before the work is considered done, update the durable artifact the change affec
 
 | If the change… | Update |
 |---|---|
-| adds or alters user-visible behaviour | the feature catalog, then regenerate its document |
+| adds or alters user-visible behaviour | the feature catalog; the backlog board rebuilds itself from it |
 | chose between real alternatives | `DECISIONS.md` |
 | revealed a constraint an agent would otherwise trip over | `.claude/rules/<area>.md`, with a `paths:` header naming its area; or, to add to a shipped rule, `.claude/rule-additions/<name>.md` — plain text, no header, named after the shipped rule. Its area stays in `.claude/rule-areas.json`. Then run `npm --prefix .tropis run rules`. The additions follow the shipped text in the one rule each tool loads, and win where they contradict. Never edit the shipped text in `.tropis/rules/` or a generated file. A project's additions to a framework document go in its own `AGENTS.md` |
 | changed module boundaries or data flow | the architecture document, diagrams included |
@@ -422,6 +451,15 @@ will do. The record is provenance: if a later version behaves differently, it sh
 which version a result came from. A result that holds only on some versions is a
 finding about the framework — change it so it no longer depends on what varies — not
 a reason to require a version.
+
+**Judge the check by what the agent did, not by what it says it did.** A run that prints
+only the agent's final reply hides the commands it ran and what answered them, so a check
+whose pass depends on a hook cannot tell a hook that refused a command from an agent that
+never ran it. Run the probe so its tool calls show — in Claude Code,
+`claude -p --output-format stream-json --verbose` prints each call and each reply, a
+hook's included — and quote the call and its answer in the record. Found reviewing the
+hook FW-040 added: the executor's probe passed but could not say whether the hook had
+fired, and a second run with the calls visible showed the refusal reaching the agent.
 
 **A probe on someone's own machine is not given only the repository.** The agent tool
 also loads that person's own instructions, the ones that apply to every project. When
