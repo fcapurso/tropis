@@ -44,10 +44,12 @@ fi
 if command -v node >/dev/null 2>&1; then
   node_version=$(node --version | sed 's/^v//')
   node_major=${node_version%%.*}
-  if [ "$node_major" -ge 18 ]; then
+  node_minor=$(echo "$node_version" | cut -d. -f2)
+  # Jest, which runs the guards, accepts 18 only from 18.14.
+  if [ "$node_major" -gt 18 ] || { [ "$node_major" -eq 18 ] && [ "$node_minor" -ge 14 ]; }; then
     ok node "$node_version  — runs the guards and the backlog command"
   else
-    gone node "found $node_version, need 18 or newer (the guards use ES modules)"
+    gone node "found $node_version, need 18.14 or newer (Jest, which runs the guards, refuses older)"
   fi
 else
   gone node "install from https://nodejs.org or your package manager"
