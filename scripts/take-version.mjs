@@ -536,6 +536,7 @@ function apply(input) {
   const removedByProject = [];
   const keptButGone = [];
   let packageChanged = false;
+  let lockfileChanged = false;
 
   const paths = [...new Set([...Object.keys(baseline), ...Object.keys(nextFiles)])].sort();
   for (const rel of paths) {
@@ -604,6 +605,23 @@ function apply(input) {
     }
   }
 
+  // The lockfile follows the package file: while the project's is the release's, the
+  // release's lockfile is what matches it. A project that changed its package file owns
+  // its lockfile.
+  const projectPackage = readText(join(project, '.tropis/package.json'));
+  const nextPackage = readText(join(next, '.tropis/package.json'));
+  const nextLock = readText(join(next, '.tropis/package-lock.json'));
+  const packageIsRelease = projectPackage !== null && projectPackage === nextPackage;
+  if (nextLock !== null && packageIsRelease) {
+    const lockPath = join(project, '.tropis/package-lock.json');
+    const projectLock = readText(lockPath);
+    if (projectLock !== nextLock) {
+      writeText(lockPath, nextLock, join(next, '.tropis/package-lock.json'));
+      (projectLock === null ? added : replaced).push('.tropis/package-lock.json');
+      lockfileChanged = true;
+    }
+  }
+
   const hookNames = shippedHookNames([...Object.keys(baseline), ...Object.keys(nextFiles)]);
   const nextSettings = JSON.parse(readFileSync(join(next, '.claude/settings.json'), 'utf8'));
   writeFileSync(
@@ -660,6 +678,7 @@ function apply(input) {
     areasRemoved,
     moved,
     packageChanged,
+    lockfileChanged,
     entry,
   };
 
@@ -698,7 +717,8 @@ function apply(input) {
   ]);
   if (entry.reports.length > 0) lines.push(...entry.reports, '');
   lines.push('Next:');
-  if (packageChanged) lines.push('  npm --prefix .tropis install');
+  if (packageIsRelease && (packageChanged || lockfileChanged)) lines.push('  npm --prefix .tropis ci');
+  else if (packageChanged) lines.push('  npm --prefix .tropis install');
   lines.push('  npm --prefix .tropis test');
   if (newFiles.length > 0) {
     lines.push(

@@ -400,3 +400,121 @@ with `--allow-empty` is fine) and in the handover. Delete the scratch folder aft
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 7 done. Task 8: this report, then the push. The Task 6 probe passed on its first run.
+
+### Verification results
+
+Platform: git 2.49.0, node v22.15.0, npm 11.6.4, macOS 26.2 on arm64. Fresh-agent tool: Claude Code 2.1.300.
+
+- Task 0 baseline self-check: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1 red: the lockfile and the tests were committed; the self-check failed on `set-up-project.sh > leaves a lockfile npm ci installs from` and the three new `take-version.mjs` cases (replaces the project's lockfile when it kept the shipped package file; leaves the lockfile alone when the project changed its package file; adds the lockfile to a project that has none). The second case fails too, not just the first and third, because it reads the project's lockfile before the take and setup wrote none. The fixed `version unknown` test passed.
+- Task 2: after deleting `.self-check/package.json`, `Installing the self-check's test tools from templates/package-lock.json…`. Failing: the same four, plus `backlog board hooks > the package, the installed-scripts list and the self-check carry the wiring` (see What the plan got wrong). That run's lockfile test failed with a ReferenceError in my test (`NAME` undefined), not for the intended reason; fixed in the docs commit and shown to fail for the right reason in the throwaway step below.
+- Task 3: after the setup and update commit, the self-check was red only on the ReferenceError above and on a `main-status` test (load, see Outstanding). Throwaway commit deleting the lockfile line: red on `leaves a lockfile npm ci installs from` and the three take-version cases; dropped with `git reset --hard HEAD~1`.
+- Task 4: `git grep -nF "tropis install"` over the five named files prints only `templates/README.md`'s board paragraph. Self-check after it: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 5, project "Quay Works" set up from the branch: `ci` exit 0; shasum of the lockfile before and after both `a87e0cefd1c2aad1b897b9b6f17e6d6f68e658de`; `"name": "quay-works-framework",`; `Tests:       61 passed, 61 total`.
+- Task 6, `claude -p --output-format stream-json --verbose --allowedTools "Bash,Read,Write,Edit"`, project "Pier Tools": the agent ran setup (exit 0, closing line `Next, from there: npm --prefix .tropis ci, then npm --prefix .tropis test, then commit.`), then `npm --prefix .tropis ci` (exit 0, 257 packages, lockfile shasum unchanged), then `npm --prefix .tropis test`: `Tests:       61 passed, 61 total`. It never ran `npm --prefix .tropis install`.
+- Task 7: `npm --prefix .tropis test`: `Tests:       142 passed, 142 total`.
+
+### Scope
+
+Worktree used: `../tropis-lockfile`. Files changed: every file in File Structure, plus `guards/board-hooks.test.js` (not in the table; see below). Diff stat is the 16 files in the final `git diff --stat origin/main...HEAD`.
+
+### Judgment calls
+
+- Lockfile generated directly under `PROJECT_SLUG-framework`; npm accepted the name, so no text replacement was needed.
+- `FW-045` is the next free number on this base.
+- The new setup test uses the display name `Quay Works`.
+- Source worked from: nothing in particular; written against this repository's own scripts and tests.
+- The probe agent also deleted `_comment` from `.claude/settings.json` in its scratch project; unrelated to the change and discarded.
+
+### What the plan got wrong
+
+- `guards/board-hooks.test.js` finds the self-check's install line by the text `npm install --prefix "$TOOLS"`; switching to `npm ci` made it fail. I changed that one string to `npm ci --prefix "$TOOLS"`, keeping its `--ignore-scripts` assertion. The file was not in File Structure.
+- The second take-version case is red before the code too, not "may pass already".
+
+### Outstanding
+
+- `guards/main-status.test.js` (`--pull-request` cases, a different one each run) failed in 3 of 6 full self-check runs with status 3 instead of 0 when the machine was loaded (test took 119 to 154 s). The final run on the pushed code passed on the second attempt. It is unrelated to this change; `main-status-tests-pass-under-load` is already building.
+- The change has no screen, so there is no developer check.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0, Node v22.15.0 and npm 11.6.4 on macOS
+26.2, arm64, on the branch rebased onto `origin/main`.
+
+- `git diff --stat origin/main...HEAD` at `b7c4e4b`: 17 files, every one in *File
+  Structure* except `guards/board-hooks.test.js`, declared below.
+- The update half re-broken in a scratch export of the branch (`git archive`, run with the
+  branch's own Jest): with the lockfile block in `take-version.mjs` switched off,
+  `jest guards/take-version.test.js -t lockfile` printed `Tests: 2 failed, 46 skipped, 1
+  passed` — the replace and add cases fail; the leave-alone case passes, as it must when
+  nothing is replaced. The setup half was re-broken by the executor's throwaway commit
+  (Task 3), and the diff confirms the test it names reads the lockfile setup writes and
+  runs `npm ci` on it.
+- `bash scripts/check-blueprint.sh` at `b7c4e4b`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`, exit 0, first attempt.
+- `npm --prefix .tropis test`: `Tests:       145 passed, 145 total`.
+- Re-run after the second rebase, onto `a5b49b5`, at `f275d59`: the self-check passed
+  with the same line, and `npm --prefix .tropis test` printed `145 passed, 145 total`.
+- The take-version change read line by line: the lockfile is written only when the
+  release has one and the project's package file is byte-for-byte the release's; it is
+  pushed to `added` or `replaced`; `Next:` says `ci` in exactly that case and `install`
+  otherwise when the package changed, as before. It sits outside the record walk, so
+  `EXCLUDED` keeping `.tropis/package-lock.json` is unaffected.
+- The handover's diagnosis of the `main-status.test.js` failures: not reproduced here (the
+  self-check passed first time); it matches `main-status-tests-pass-under-load`, already
+  building, and the change touches nothing `main-status.mjs` reads.
+
+### Found
+
+Public exposure: the diff was read for private material, the lockfile included (no email
+address, no deprecation notice; its funding fields are public package addresses).
+Scratch projects in the handover are invented names under `$TMPDIR`.
+
+- **`guards/board-hooks.test.js` was outside the table.** It locates the self-check's
+  install line by its text, so switching that line to `npm ci` broke it. The executor
+  changed the one string and kept its `--ignore-scripts` assertion. Accepted: the plan's
+  error, a mechanical consequence of Decision 2.
+- **The decision number.** `main` took FW-045 for the settings change and FW-046 for
+  the rule-trial decision while the branch was out. **Renumbered to FW-047 by the
+  reviewer** in the rebases' conflict resolutions, which kept every entry; the
+  handover's mention of FW-045 is the executor's record and stays.
+- **A comment in `take-version.mjs` ran past the file's width.** **Rewrapped by the
+  reviewer**; no word changed.
+- The plan said the second take-version case might pass before the code; it cannot,
+  since it reads a lockfile setup did not yet write. The plan's error; the case is sound
+  after the change.
+
+### Outstanding disposition
+
+- The load-sensitive `main-status.test.js` cases: owned by
+  `main-status-tests-pass-under-load`, building in another session.
+- No pull request opened by the executor: by instruction; the reviewer opens it under
+  the merge token.
+- No developer check: the change has no screen.
+
+### Learnings routed
+
+- **A guard that finds a line of a script by its text is a consumer of that line's
+  shape.** The planning rule's *what is on the other side of this* already asks for that
+  grep before finalising the table; this plan missed it, and nothing generalises beyond
+  the existing rule, so no new rule.
+- The fresh-agent check's note that `--allowedTools` takes a comma-separated list (a
+  space-separated one swallowed the prompt) is a fact about one tool's flags, recorded in
+  the handover; not a framework rule.
+- Nothing this plan built is portable beyond the framework itself: it is the framework's
+  own setup and update.
+
+### Merged because
+
+Each criterion has a test that fails without its half of the change, the fresh-agent
+check passed on the first run, and the self-check and the installed checks are green on
+the rebased branch; the review renumbered the decision FW-047 and rewrapped one comment.

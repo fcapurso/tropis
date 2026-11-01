@@ -1062,4 +1062,52 @@ describe('take-version.mjs', () => {
     expect(read(worktree, '.tropis/package.json')).toBe(committed);
     expect(JSON.parse(read(worktree, '.tropis/package.json.new')).name).toBe('example-project-update-framework');
   }), SLOW);
+
+  /** Change the release's lockfile by one key, asserting the edit changed it. */
+  const changeLockfile = (root) => edit(root, 'templates/package-lock.json', (t) => {
+    const changed = `${JSON.stringify({ ...JSON.parse(t), probe: 1 }, null, 2)}\n`;
+    expect(changed).not.toBe(t);
+    return changed;
+  });
+  const lockOf = (root) => read(root, '.tropis/package-lock.json');
+
+  it("replaces the project's lockfile when it kept the shipped package file", () => inWorld({}, (w) => {
+    w.release('v0.2.1', changeLockfile);
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    const expected = w.at('v0.2.1', 'templates/package-lock.json').replace(/PROJECT_SLUG/g, 'example-project');
+    expect(lockOf(w.project)).toBe(expected);
+    expect(r.stdout).toMatch(/Replaced:\n(?: {2}.*\n)* {2}\.tropis\/package-lock\.json\n/);
+    const next = r.stdout.split('Next:')[1];
+    expect(next).toContain('npm --prefix .tropis ci');
+    expect(next).not.toContain('npm --prefix .tropis install');
+  }), SLOW);
+
+  it("leaves the lockfile alone when the project changed its package file", () => inWorld({}, (w) => {
+    edit(w.project, '.tropis/package.json', (t) => {
+      const pkg = JSON.parse(t);
+      pkg.scripts.mine = 'echo mine';
+      return `${JSON.stringify(pkg, null, 2)}\n`;
+    });
+    w.commit('our own script');
+    const before = lockOf(w.project);
+    w.release('v0.2.1', changeLockfile);
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(lockOf(w.project)).toBe(before);
+    expect(r.stdout.split('Next:')[1] ?? '').not.toContain('npm --prefix .tropis ci');
+  }), SLOW);
+
+  it('adds the lockfile to a project that has none', () => inWorld({}, (w) => {
+    rmSync(join(w.project, '.tropis/package-lock.json'));
+    w.commit('no lockfile');
+    w.release('v0.2.1', bumpNext);
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(lockOf(w.project)).toBe(w.at('v0.2.1', 'templates/package-lock.json').replace(/PROJECT_SLUG/g, 'example-project'));
+    expect(r.stdout).toMatch(/Added:\n(?: {2}.*\n)* {2}\.tropis\/package-lock\.json\n/);
+  }), SLOW);
 });

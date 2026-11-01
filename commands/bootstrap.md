@@ -107,7 +107,7 @@ the shipped text in the one rule each tool loads, and win where they contradict.
 ## Stage 7 — Install and verify
 
 ```bash
-npm --prefix .tropis install
+npm --prefix .tropis ci
 npm --prefix .tropis test
 bash .tropis/scripts/check-prerequisites.sh
 ```
