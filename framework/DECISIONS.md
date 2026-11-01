@@ -1270,3 +1270,30 @@ applies to its branch.
 is not stopped. A command that `cd`s into a worktree before creating a branch is judged by
 where the hook runs, and may be refused; the command it prints is still correct. The
 developer's own terminal is not affected.
+
+## FW-041: A plan states its result as checks; an unstatable result is built or described, not both
+
+**Date:** 2026-11-01 · **Status:** Accepted
+
+**Decision:** A plan verifies its claims about the repository as it stands before
+dispatch, and states every claim about the result as a check the executor runs, saying
+what it prints on success and on failure, and what to do when it fails. Its author does
+not carry out the work to measure what the checks should expect. Where the result can be
+stated only by producing it, the author chooses while writing the plan between
+describing it for an executor and building it and sending it to a fresh agent to review.
+
+**Evidence:** Three checks in one plan could not pass, each caught only by the agent
+running it (the entry `plan-checks-must-be-falsifiable`). An author rehearsed a whole
+change on a throwaway copy to measure exact figures, then paid an executor to repeat it
+(the entry `plans-are-accurate-without-a-rehearsal`). The rule asked for every claim to
+be verified before dispatch, which reads as covering the result.
+
+**Rejected:** Requiring the author to rehearse and record exact figures: it pays for the
+work twice, and the figures stop matching when the executor's work differs in a detail.
+Letting the author both rehearse and dispatch: the same cost, with two versions of the
+result to reconcile. Forbidding the author from ever building: some results, prose above
+all, have no checkable description short of the result itself.
+
+**Consequences:** A plan's expected outputs are invariants and failure behaviour rather
+than counts. A change built by its author is reviewed by a fresh agent, which writes the
+review record; the specifying session is not its reviewer.
