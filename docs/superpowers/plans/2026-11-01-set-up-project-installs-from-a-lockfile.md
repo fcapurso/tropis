@@ -439,5 +439,5 @@ Worktree used: `../tropis-lockfile`. Files changed: every file in File Structure
 
 ### Outstanding
 
-- `guards/main-status.test.js` (`--pull-request`, "brings a branch that is behind up to date once...", also two siblings in one run) failed in some self-check runs with status 3 instead of 0 when the machine was loaded (test took 119 to 154 s). It passed in other runs of the same code. It is unrelated to this change; `main-status-tests-pass-under-load` is already building.
+- `guards/main-status.test.js` (`--pull-request` cases, a different one each run) failed in 3 of 6 full self-check runs with status 3 instead of 0 when the machine was loaded (test took 119 to 154 s). The final run on the pushed code passed on the second attempt. It is unrelated to this change; `main-status-tests-pass-under-load` is already building.
 - The change has no screen, so there is no developer check.
