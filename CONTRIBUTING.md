@@ -10,9 +10,10 @@ what the project learned or built. Or you change the framework here, in this rep
   `docs/BLUEPRINT-UPSTREAM.md`.
 - **Flush the queue.** `/flush-upstream` is a sitting. Each entry is put to you with all its
   parts, and you flush it, hold it or decline it. A lesson travels as the edit it proposes;
-  a capability travels as a shaped backlog entry. The flush goes out under the name in the
-  queue's `Flushes as:` line. That name is public, so a private project picks one that does
-  not identify it.
+  a capability travels as a shaped backlog entry. The name the flush goes out under is how
+  the maintainer knows your project, and it never changes. A new project is offered a
+  generated one, a name another account already uses is refused, and each entry is shown to
+  you as it will be sent, with the project's own details taken out, for your approval.
 - **Pull requests open.** The plan the flush drafts, once dispatched, opens one pull request
   per flushed entry. Each starts from a fresh clone of the framework's `main`, and opens only
   after the framework's self-check passes in that clone. The branch goes to the framework
@@ -50,8 +51,7 @@ last one, and change only by installing a release.
 A pull request from a fork runs the pipeline once the maintainer approves the run.
 
 No pull request from a fork has yet run through the pipeline, so a fork's first run is the
-first test of it. Nothing yet checks that a flush name is not already used by another
-project, so pick one nobody else is likely to.
+first test of it.
 
 ## Keeping this page true
 
