@@ -1465,7 +1465,7 @@ updated.
 from the rule file that grew most, in words, since the last release, preferably a clause
 added or changed since. One fresh agent does a real task in that clause's area, on an
 invented subject, with the clause removed from what it receives. The outcome goes in
-`docs/rule-trials.md` whichever way it falls, as kept, removed, inconclusive or skipped,
+docs/rule-trials.md whichever way it falls, as kept, removed, inconclusive or skipped,
 with one entry per release and a clause kept once not tried again. A clause is removed
 only through a branch and pull request whose commit body carries the trial as its
 fresh-agent check. The step is this repository's `/rule-trial`, run before `/release`'s
@@ -1484,5 +1484,5 @@ run is what the entry asks for, and the command's *Run* section is the one place
 repeatable with-and-without comparison would replace.
 
 **Consequences:** Each release of this repository starts with a trial or a recorded
-skip. `docs/rule-trials.md` grows by one entry per release. A removed clause is named in
+skip. docs/rule-trials.md grows by one entry per release. A removed clause is named in
 that release's notes, under the closing small-corrections heading.
