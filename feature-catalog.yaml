@@ -272,7 +272,7 @@
 # comparison if that spike finds one worth having, rather than being built twice.
 - id: rules-are-retired-on-evidence
   title: A rule that no longer changes behaviour is found and removed
-  status: shaped
+  status: building
   after:
     - rule-is-measured-with-and-without
   value: A rule stops being carried once there is evidence it is doing nothing.
