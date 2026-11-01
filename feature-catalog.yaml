@@ -44,7 +44,7 @@
     - first-adopter-harness:docs/superpowers/plans/2026-07-28-p13-rule-delivery-guard.md
 - id: plan-checks-must-be-falsifiable
   title: A plan states what its checks print when they pass
-  status: shaped
+  status: building
   # Raised 2026-08-12 by the review of the technology-scope plan. Deliberately not part
   # of that arc: it is a defect in how plans are written, not in what the blueprint
   # claims, and it waits on nothing.
@@ -67,6 +67,7 @@
   modules: []
   refs:
     - first-adopter-harness:docs/superpowers/plans/2026-08-12-blueprint-technology-scope.md
+    - docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
 # 2026-10-31, reshaped with the developer. Required checks on the host (the entry
 # main-is-gated-by-the-host) stop a red pull request merging, so this entry keeps what
 # no gate covers - the main branch going red after a merge, from a deploy or an
@@ -1350,7 +1351,7 @@
 # executor to run it again. Not the first time it happened.
 - id: plans-are-accurate-without-a-rehearsal
   title: A plan is accurate without its author carrying it out first
-  status: shaped
+  status: building
   after:
     - plan-checks-must-be-falsifiable
   value: Someone writing a plan checks what the plan assumes about the repository
@@ -1376,6 +1377,7 @@
   modules: []
   refs:
     - first-adopter:docs/superpowers/plans/2026-10-13-project-lives-in-one-repository.md
+    - docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
 # Raised 2026-10-14 by the developer, found while planning
 # project-is-set-up-in-its-own-repository: check-blueprint.sh runs every guard with
 # FRAMEWORK_ROOT set to the composed fixture project, which has no bootstrap.md, so the
