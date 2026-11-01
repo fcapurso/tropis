@@ -4357,7 +4357,7 @@
 # next agent in these files fixes it once told.
 - id: set-up-project-installs-from-a-lockfile
   title: A freshly set-up project installs the framework's dependencies with npm ci
-  status: shaped
+  status: building
   value: The first command every dispatched agent is told to run works in a project that
     was just set up. Setup writes .tropis/package.json and no lockfile, so
     npm --prefix .tropis ci refuses to run, and an agent falls back to npm install, which
