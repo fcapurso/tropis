@@ -434,3 +434,172 @@ names (*Every plan ends with a handover report*), each check's command with its 
 output, the criteria table, the probe's result, and the worktree path used. Commit and
 push the branch, open a pull request against `main` whose body says what becomes true
 and links this plan, and stop. Do not write a review record and do not merge.
+
+## Handover report
+
+Started from `ec905ae` (`main` = `origin/main`). Platform for every check: git 2.49.0,
+Node v22.15.0, Claude Code 2.1.300, macOS (Darwin), arm64. Named source worked from:
+none; the code is written against this repository's own `plan-binding.js`,
+`dispatch.mjs` and `isolate-for-plan.mjs`.
+
+### Task completion
+
+Tasks 0 to 7 done. The setup self-check passed before any change.
+
+### Verification results
+
+Each guard run below was on committed `HEAD` through the archive snippet of Task 0
+(`guards/dispatch.test.js`, plus `guards/plan-dispatchable.test.js` in Task 1).
+
+- **Task 1 red, tests only:** 3 failed, 18 passed: `reads a Requires field whose bold
+  spans the colon`, `reads a wrapped Requires field whole`, `refuses a header field that
+  reads empty, naming its line`. After *Decision 1*: dispatch and plan-dispatchable
+  suites, 2 passed, 28 tests passed. **Red check** (old three-regex parser restored, new
+  error removed, throwaway commit, then reset): the same three tests failed, 18 passed.
+- **Task 2 red, tests only:** 1 failed (`tells the executor to attach every other
+  checkout it isolates in`), 22 passed. After *Decision 2*: 23 passed. **Red check**
+  (attach step disabled): that test failed, 22 passed.
+- **Task 3 red, tests only:** 2 failed (`refuses a base that does not hold the plan, and
+  creates nothing`, `notes a base that is not on the remote's main branch, and still
+  isolates`), 24 passed, the unchanged case among them. After *Decision 3*: 26 passed.
+  **Red check** (refusal and note disabled): those two failed, 24 passed.
+- **Task 4:** the `must sit on one line` grep printed the new bullet's first line only
+  (`AGENTS.md:46`); `reads empty` printed in `framework/dispatch.md` and
+  `commands/dispatch.md`; `Attaching the other checkouts` printed one line
+  (`framework/dispatch.md:39`).
+- **Task 6, after the catalog commit:** `bash scripts/check-blueprint.sh` last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.`; `npm --prefix .tropis test`: 13 suites
+  passed, 131 tests passed.
+
+### Fresh-agent check (Task 5)
+
+Run once; no second run was needed. Tool: Claude Code 2.1.300 (`claude -p
+--output-format stream-json --verbose`, `--allowedTools` limited to Read and Bash for
+git, node, bash, ls and cat), macOS arm64, from a scratch folder under `$TMPDIR`
+(deleted afterwards; the stream was kept outside the repository). The task was the
+invented two-checkout plan of Task 5, with `example-other` absent and a two-line
+Requires field. The owner's user-level instructions say nothing about attaching or
+cloning checkouts or plan headers, so the probe was a real one.
+
+- **Clone before isolating: passed.** The agent read the plan and the helper (stream
+  events 5 to 15), said "no repository-attach tool available here", then ran a
+  `git clone` of the bare repository into `example-other` and the isolate call in one
+  command (event 17); the clone's output precedes the helper's.
+- **Isolate exit 0 and both worktrees exist: passed.** The helper printed both
+  `isolated in` lines (event 18); `example-project-wt` and `example-other-wt` existed
+  afterwards. The command's reported exit 1 was the agent's own follow-up `git remote`
+  query on the worktree, which has no `origin`, as the agent itself said.
+- **Whole Requires text: passed.** The final message names "a network connection for
+  the clone in Task 1" and "the developer at the application for Task 2".
+
+### Acceptance criteria
+
+| Entry and criterion | Covered by |
+|---|---|
+| header: wrapped field reaches the prompt whole | test `reads a wrapped Requires field whole`; red with old parser |
+| header: bold spanning the colon reaches the prompt whole | test `reads a Requires field whose bold spans the colon`; red with old parser |
+| header: empty field refused at dispatch and by the plan check, naming field and line | test `refuses a header field that reads empty, naming its line` (status 1, empty stdout, line number computed from the text); the plan check calls the same `validateDispatchable`, and `plan-dispatchable.test.js` passes on every plan |
+| header: tests cover the three shapes and go red with the old reading | the three tests above; red check of Task 1 |
+| header: entry file's note holds only for the installed release | `AGENTS.md:46`, text of *Decision 4* |
+| attach: prompt tells the executor to attach and clone each other checkout, before isolating | test `tells the executor to attach every other checkout it isolates in` (order before `Isolate (from`, clone-beside wording, `- example-other` listed, `example-project` not) |
+| attach: no vendor or tool named | same test, regex over the paragraph; the wording says "your tool for adding a repository to the session" |
+| attach: one isolating checkout gets no step, whatever do-not-edit rows | test `prints no attach step for one checkout`, with and without a do-not-edit row |
+| attach: test covers both cases, red with the step removed | the two tests; red check of Task 2 |
+| isolation: refuses a base without the plan, naming plan, checkout, commit, creating nothing; other checkouts not checked | test `refuses a base that does not hold the plan, and creates nothing` (stderr has the plan path, `example-project`, the short hash; worktree absent). Other checkouts: existing test `puts each worktree in the repository its row names`, whose second repository holds no plan and still isolates |
+| isolation: note, not refusal, when the base is not on the remote's main branch | test `notes a base that is not on the remote's main branch, and still isolates` |
+| isolation: a plan on the base isolates as today | test `isolates a base that holds the plan and is on the remote's main branch, with no note`, and the existing isolation tests |
+| isolation: a guard covers refusal, note and unchanged case | the three tests; red check of Task 3 |
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: `AGENTS.md`,
+`commands/dispatch.md`, `feature-catalog.yaml`, `framework/dispatch.md`,
+`guards/dispatch.test.js`, `scripts/dispatch.mjs`, `scripts/isolate-for-plan.mjs`,
+`scripts/plan-binding.js`; 8 files, 298 insertions, 24 deletions. Every file is in the
+File Structure table, and the plan file is added by this report. Worktree used: the
+`tropis` row's sibling worktree, `../tropis-dispatch-fixes`, cut from `origin/main` at
+`ec905ae`.
+
+### Judgment calls
+
+- **The off-main note names the branch behind `origin/HEAD`.** *Decision 3* says to name
+  the ref without `refs/remotes/`. In the test project a fetch from a bare clone creates
+  `origin/HEAD`, so the note read "origin/HEAD" while the plan's own test expects
+  "origin/main". The note now names the target of `origin/HEAD` when it is a symbolic
+  ref (its own commit, `fix(isolation)`), which is what someone pushes to.
+- **Attach step condition.** It prints when more than one row has an isolation command
+  and at least one of them names a directory other than the current one. A plan whose
+  two rows both name the current checkout prints none.
+- The `modules` lists in the catalog include `framework/dispatch.md` and, for the header
+  entry, `commands/dispatch.md`, since *Decision 5* edits them.
+- Implementation commits were made one per step in the order the Tasks give; the
+  throwaway red-check commits were reset and never pushed.
+
+### What the plan got wrong
+
+- The test in *Decision 6* for the note expects the text `origin/main`, which the
+  literal reading of *Decision 3* does not produce when git sets `origin/HEAD` on fetch
+  (see the first judgment call).
+- Task 0's snippet runs the whole Jest suite for one guard path only if the path is
+  passed after `jest`; the snippet in the plan matched that. A hung first attempt was my
+  own: I ran a chained command whose commit step did not run, not a plan fault.
+
+### Outstanding
+
+- Nothing blocked. The fresh-agent check changes a document and a prompt the framework
+  reads, but the changed documents are the source copies (`framework/`, `commands/`),
+  not `.claude/framework/`, so no branch-commit body rule for the installed layer
+  applied; the probe above is the record. Doc closeout: no portable lesson beyond the
+  entries shipped (this repository is the upstream). Merge is for the parent review.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, with git 2.49.0 and Node v22.15.0 in
+Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: nine files, every one in *File Structure*.
+- `guards/dispatch.test.js` and `guards/plan-dispatchable.test.js` on committed content
+  (the Task 0 snippet): `Tests: 33 passed, 33 total`.
+- Re-break: a throwaway commit restoring `scripts/plan-binding.js`,
+  `scripts/isolate-for-plan.mjs` and `scripts/dispatch.mjs` from `origin/main`, then
+  `guards/dispatch.test.js`: `Tests: 6 failed, 20 passed, 26 total`. The six are the
+  three header tests, the attach test, the refusal and the note; the two that pass are
+  the unchanged cases (no attach step for one checkout, no note on a base on the remote's
+  main). Reset, not pushed.
+- `bash scripts/check-blueprint.sh`: last line `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 131 passed`.
+- The specifying session saw the defect live before dispatch: the installed dispatch read
+  this plan's Requires from a quote in its preamble (recorded under *Traps*).
+
+### Found
+
+Public exposure: the diff was read for private material; nothing. (Older catalog comments
+outside this diff carry a placeholder hostname; not touched here.)
+
+- Two new clauses in `commands/dispatch.md` and three in `framework/dispatch.md` ran past
+  the files' line width. Mechanical; the reviewer rewrapped them (`652aa75`), words
+  unchanged.
+- The executor's judgment call on `origin/HEAD` is right: git sets it on fetch, and the
+  branch it points to is what someone pushes to. The plan's Decision 3 was wrong there.
+
+### Outstanding disposition
+
+The handover lists nothing outstanding. The `AGENTS.md` note holds until a release after
+0.7.1 is installed; the session that installs it removes the note, which the note itself
+says. No criterion needs the developer: nothing here has a screen.
+
+### Learnings routed
+
+- The old parser reading a quoted field from a plan's prose is fixed by this plan's own
+  change; nothing further to route.
+- No durable change beyond the entries shipped: this repository is the upstream, and the
+  dispatch documents were updated in the plan.
+
+### Merged because
+
+Every criterion maps to a test that goes red without the change or to the recorded probe,
+the self-check and the installed checks pass, and the one review fix was a rewrap.

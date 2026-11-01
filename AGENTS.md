@@ -43,8 +43,10 @@ with Jest; no package file at the root.
   project will ever have, such as a plan cited by a decision, is named in plain text
   instead, never exempted: FW-031 cited its plan in backticks and drew an exemption that
   review then removed.
-- **A plan header field must sit on one line.** The dispatch script reads the first line
-  of `Requires:` and the other header fields, and drops the rest without saying so.
+- **A plan header field must sit on one line, until a release after 0.7.1 is
+  installed.** The installed dispatch script reads only the first line of `Requires:`
+  and drops the rest without saying so; the source in `scripts/plan-binding.js` reads a
+  field to the end of its paragraph and refuses one that reads empty.
 - **The worktree command may appear in a plan only in its Repositories table.** Anywhere
   else in the plan, the plan check refuses it as undispatchable.
 - **A colon followed by a space inside an unquoted backlog value breaks the YAML.**

@@ -377,9 +377,11 @@
 # release still cuts a wrapped field until a release carrying this fix is installed, so
 # the entry file's note is reworded to say so rather than removed.
 # Plan: docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md.
+# Shipped by docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md; each
+# criterion's test or check is in that plan's handover report.
 - id: dispatch-refuses-a-blank-header-field
   title: Dispatch reads each plan header field whole, and refuses one it still cannot read
-  status: building
+  status: shipped
   value: A plan's tier, requirements and merge authority reach the kick-off prompt whole,
     or dispatch refuses the plan and names the line. An executor reads the header before
     anything else, and a plan that needs the developer announcing that it needs nothing
@@ -399,7 +401,11 @@
       only for the installed release, until a release carrying this fix is installed.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/plan-binding.js
+    - guards/dispatch.test.js
+    - framework/dispatch.md
+    - commands/dispatch.md
   refs:
     - first-adopter-harness:docs/superpowers/plans/2026-09-11-ci-deploys-development-on-green.md
 # Raised 2026-09-12 after the third occurrence in one arc. A colon followed by a space
@@ -2424,9 +2430,11 @@
 # checkouts the plan isolates in, not every row - a do-not-edit row needs no worktree and
 # the isolation helper does not look for it.
 # Plan: docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md.
+# Shipped by docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md; each
+# criterion's test or check is in that plan's handover report.
 - id: cloud-executor-attaches-every-checkout
   title: A cloud executor attaches every checkout the plan names before isolating
-  status: building
+  status: shipped
   value: An executor running in a cloud session, which starts with only the repository
     it was opened on, attaches and clones every other checkout the plan's Repositories
     table names before it isolates, so isolation does not stop on a missing sibling.
@@ -2442,7 +2450,11 @@
     - A dispatch test covers both cases and goes red with the step removed.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/plan-binding.js
+    - scripts/dispatch.mjs
+    - guards/dispatch.test.js
+    - framework/dispatch.md
   refs: []
 
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
@@ -3763,9 +3775,11 @@
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-19.
 # Plan: docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md.
+# Shipped by docs/superpowers/plans/2026-11-01-dispatch-hands-over-the-whole-plan.md; each
+# criterion's test or check is in that plan's handover report.
 - id: isolation-refuses-a-base-without-the-plan
   title: Isolation refuses to branch from a commit that does not hold the plan
-  status: building
+  status: shipped
   value: An executor isolated from a base without its plan finds no instructions in its
     worktree and has to cherry-pick the plan in, and any check that reads the plan from
     the main branch then fails. The workflow already says to push before dispatching;
@@ -3783,7 +3797,10 @@
   type: feature
   layer: product
   modules:
+    - scripts/plan-binding.js
     - scripts/isolate-for-plan.mjs
+    - guards/dispatch.test.js
+    - framework/dispatch.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-22.
 - id: command-matcher-sees-every-shell

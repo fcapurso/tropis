@@ -20,12 +20,12 @@ const here = dirname(fileURLToPath(import.meta.url));
 const blueprint = resolve(here, '..');
 const PLAN = 'docs/superpowers/plans/2026-01-01-example.md';
 
-const plan = (rows) => `# Example plan
+const plan = (rows, header = '') => `# Example plan
 
 **Model tier: small.** Everything is specified.
 
 **Merge authority: parent review.** Somebody else merges.
-
+${header ? `\n${header}\n` : ''}
 ## Delivers
 
 None.
@@ -248,6 +248,74 @@ describe('dispatch command', () => {
     }
   });
 
+  it('reads a wrapped Requires field whole', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY, '**Requires:** the developer at the\napplication for Task 4.'));
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('**Requires:** the developer at the application for Task 4.');
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('reads a Requires field whose bold spans the colon', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY, '**Requires: the developer for Task 4.**'));
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('**Requires:** the developer for Task 4.');
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a header field that reads empty, naming its line', () => {
+    const text = plan(PROJECT_ONLY, '**Requires:**');
+    const line = text.split('\n').findIndex((l) => l === '**Requires:**') + 1;
+    const { parent, root } = project(text);
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain(`Header field "Requires" on line ${line} reads empty`);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('tells the executor to attach every other checkout it isolates in', () => {
+    const { parent, root } = project(plan(BOTH));
+    try {
+      const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+      expect(r.status).toBe(0);
+      const at = r.stdout.indexOf('Before isolating: ');
+      expect(at).toBeGreaterThan(-1);
+      expect(at).toBeLessThan(r.stdout.indexOf('Isolate (from'));
+      const paragraph = r.stdout.slice(at, r.stdout.indexOf('Isolate (from'));
+      expect(paragraph).toContain('clone it beside this one under exactly this directory name:\n  - example-other\n');
+      expect(paragraph).not.toContain('example-project');
+      // The prompt states a capability, never a vendor.
+      expect(paragraph).not.toMatch(/claude|cursor|codex|copilot|github|anthropic|openai/i);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('prints no attach step for one checkout', () => {
+    const doNotEdit = '| other (`example-other`) | do not edit | |';
+    for (const rows of [PROJECT_ONLY, [...PROJECT_ONLY, doNotEdit]]) {
+      const { parent, root } = project(plan(rows));
+      try {
+        const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+        expect(r.status).toBe(0);
+        expect(r.stdout).not.toContain('Before isolating');
+      } finally {
+        rmSync(parent, { recursive: true, force: true });
+      }
+    }
+  });
+
   it('reminds the executor to verify every checkout it edits', () => {
     const { parent, root } = project(plan(BOTH));
     try {
@@ -392,6 +460,59 @@ esac
       expect(out[0]).toBe('Main branch: could not tell — no remote named origin.');
       expect(out[1]).toMatch(/^isolated in /);
       expect(owner(join(parent, 'example-project-wt'))).toBe(realpathSync(join(root, '.git')));
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a base that does not hold the plan, and creates nothing', () => {
+    const { parent, root } = project(plan(PROJECT_ONLY));
+    try {
+      const uncommitted = 'docs/superpowers/plans/2026-01-02-uncommitted.md';
+      writeFileSync(join(root, uncommitted), plan(PROJECT_ONLY));
+      const short = run(root, 'git', ['rev-parse', 'HEAD']).stdout.trim().slice(0, 7);
+      const r = run(root, 'bash', ['.tropis/scripts/isolate-for-plan.sh', uncommitted]);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain(uncommitted);
+      expect(r.stderr).toContain('example-project');
+      expect(r.stderr).toContain(short);
+      expect(existsSync(join(parent, 'example-project-wt'))).toBe(false);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  /** A project whose origin is a bare clone of it, fetched. */
+  function withOrigin() {
+    const made = project(plan(PROJECT_ONLY));
+    const remote = join(made.parent, 'remote.git');
+    git(made.parent, 'clone', '-q', '--bare', made.root, remote);
+    git(made.root, 'remote', 'add', 'origin', remote);
+    git(made.root, 'fetch', '-q', 'origin');
+    return made;
+  }
+
+  it("notes a base that is not on the remote's main branch, and still isolates", () => {
+    const { parent, root } = withOrigin();
+    try {
+      writeFileSync(join(root, 'src/app.js'), 'console.log(2);\n');
+      git(root, 'commit', '-qam', 'ahead of origin');
+      const r = run(root, 'bash', ['.tropis/scripts/isolate-for-plan.sh', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain("is not on origin/main, where the plan's review record is read from");
+      expect(existsSync(join(parent, 'example-project-wt'))).toBe(true);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("isolates a base that holds the plan and is on the remote's main branch, with no note", () => {
+    const { parent, root } = withOrigin();
+    try {
+      const r = run(root, 'bash', ['.tropis/scripts/isolate-for-plan.sh', PLAN]);
+      expect(r.status).toBe(0);
+      expect(r.stdout).not.toContain('Note:');
+      expect(existsSync(join(parent, 'example-project-wt'))).toBe(true);
     } finally {
       rmSync(parent, { recursive: true, force: true });
     }
