@@ -230,22 +230,6 @@ plan-folder-names-no-plugin:
   seen:
     status: idea
     blockers: []
-prerequisite-check-refuses-old-node:
-  band: B
-  value: 2
-  valueWhy: Only Node 18.0 to 18.13 is affected, and Jest's own refusal already names
-    the version it needs.
-  effort: 1
-  effortWhy: Compare the minor version as well as the major in one script, and a test.
-  verdict: "Small and self-contained; it makes the check agree with what the README
-    and RELEASES.md already say. Its plan is written, so it is ready to dispatch."
-  evidence: "2026-10-31 — scripts/check-prerequisites.sh:47 compares the major version
-    only, so any node 18 passes;
-    docs/superpowers/plans/2026-10-31-prerequisite-check-refuses-old-node.md delivers
-    it."
-  seen:
-    status: shaped
-    blockers: []
 project-chooses-its-repository-host:
   band: B
   value: 3
