@@ -2792,7 +2792,7 @@
   layer: product
   modules:
     - scripts/pipeline.mjs
-    - templates/github/tropis-candidate.yml
+    - templates/github/tropis-staging.yml
     - commands/release.md
   refs:
     - first-adopter:docs/superpowers/specs/2026-10-22-pipeline-and-environments-design.md
@@ -4024,7 +4024,7 @@
   layer: product
   modules:
     - templates/github/tropis-pipeline.yml
-    - templates/github/tropis-candidate.yml
+    - templates/github/tropis-staging.yml
     - templates/github/tropis-framework-checks.yml
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
