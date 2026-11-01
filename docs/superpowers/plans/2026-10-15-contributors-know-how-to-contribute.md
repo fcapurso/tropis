@@ -518,3 +518,67 @@ landed meanwhile).
 - `guards/main-status.test.js` timing cases fail the clean baseline under heavy machine load.
   Not caused by this change; worth an entry if it recurs.
 - The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the dispatching session, which holds parent-review authority.
+
+### Checks re-run
+
+All with git 2.49.0 and Node v22.15.0, in Claude Code 2.1.300 on macOS (Darwin 25.2.0),
+arm64, on the branch head `cb636b7`, up to date with `origin/main`.
+
+- `npm --prefix .tropis test`: `Tests: 137 passed, 137 total`.
+- `bash scripts/check-blueprint.sh`: exit 0, last line `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards passed.`,
+  with both `caught      contributing-page: CONTRIBUTING.md planted` lines (the page removed,
+  and the fork-CI sentence deleted). The guard runs with `TROPIS_EXPECT_FRAMEWORK=1` there, so
+  its real cases executed, not its skip case. The `main-status.test.js` failures the executor
+  saw under load did not recur.
+- Scope: `git diff --stat origin/main...HEAD` lists the eleven files in *File Structure*,
+  nothing else.
+- Read the whole page against `commands/flush-upstream.md`, `scripts/submit-upstream.sh`,
+  `.claude/commands/absorb-flush.md` and `.github/workflows/pipeline.yml`: each statement
+  holds today. Each acceptance criterion maps to the evidence in *Criteria and their
+  evidence*.
+- The fresh-agent check's record (commit `d13db07`): run 1 failed honestly and the row was
+  reworded; run 2 shows the agent reading the table and quoting the row.
+
+### Found
+
+- The fixed fork-CI sentence says a fork's run waits for the maintainer's approval; the
+  repository setting applies that to a first-time contributor only. That wording is this
+  session's, from the plan's Decision 5, not the executor's. Accepted as it stands: a flush's
+  contributor is nearly always a first-time one, and FW-011's amendment says it precisely.
+  No change.
+- The executor ran the red step on a staged copy rather than through a throwaway commit and
+  the whole self-check. That is equivalent, since it is the same Jest run against the same
+  `git archive` tree. Accepted.
+- Public exposure: read the whole diff, the probe commit and the handover for people's names,
+  home paths, hostnames, other projects and email addresses: nothing.
+
+No defects fixed by the reviewer.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The `main-status.test.js` failure under load, failing twice and passing on a rerun with
+  nothing changed: a check that passes on a rerun is a bug (`framework/workflow.md`,
+  *Merging*), so it goes into the backlog as its own entry, in the pull request that unbands
+  this one.
+- The stale fork-CI example in the entry's third criterion: left as written, with the
+  catalog comment saying what the page states instead.
+
+### Learnings routed
+
+- The export-ignored catalog path the guard refused: specific to this page, and handled in
+  it. Nothing generalises.
+- The probe that found the right file by another route in run 1: already covered by
+  *Judge the check by what the agent did* in `framework/workflow.md`. The executor applied it.
+- The load-dependent test failure: a backlog entry, as above.
+
+### Merged because
+
+Every criterion has its evidence, the self-check and the installed checks are green, the
+new guard fails on both planted defects, the fresh-agent check passed with its calls shown,
+and the diff is exactly the plan's.
