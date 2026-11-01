@@ -81,6 +81,12 @@ describe('main branch status', () => {
   const log = () => readFileSync(join(dir, 'gh.log'), 'utf8');
   const runs = (list, n) => writeFileSync(join(dir, n ? `runs-${n}.json` : 'runs.json'), JSON.stringify(list));
   const cli = (...args) => spawnSync('node', [script, ...args], { cwd: repo, env, encoding: 'utf8' });
+  // Polling options for a case whose answer is not "still waiting at the deadline". The
+  // stub's last answer ends the wait, so the two-minute deadline only bounds a script
+  // that never stops. A three-second one made cases that poll several times exit 3 on a
+  // busy machine, where one stub gh call can take most of a second. A case that tests the
+  // deadline passes a short --timeout of its own.
+  const settles = ['--interval', '0.05', '--timeout', '2'];
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'main-status-'));
@@ -182,14 +188,13 @@ describe('main branch status', () => {
   });
 
   describe('--wait', () => {
-    const fast = ['--interval', '0.05', '--timeout', '0.05'];
 
     it('waits for the run on the commit to appear and finish, and exits 1 when it failed', () => {
       const head = git(repo, 'rev-parse', 'HEAD');
       runs([], 1);
       runs([run('queued', '', head, '2026-10-31T12:00:00Z')], 2);
       runs([run('completed', 'failure', head, '2026-10-31T12:00:00Z')]);
-      const r = cli('--wait', 'HEAD', ...fast);
+      const r = cli('--wait', 'HEAD', ...settles);
       expect(r.status).toBe(1);
       expect(r.stdout).toBe(
         `Main branch: red — the pipeline failed on ${head.slice(0, 7)} (title of ${head.slice(0, 7)}). `
@@ -207,7 +212,7 @@ describe('main branch status', () => {
     it('exits 0 with the green line when the run passed', () => {
       const head = git(repo, 'rev-parse', 'HEAD');
       runs([run('completed', 'success', head, '2026-10-31T12:00:00Z')]);
-      const r = cli('--wait', head, ...fast);
+      const r = cli('--wait', head, ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toMatch(/^Main branch: green — the pipeline passed on /);
     });
@@ -215,7 +220,7 @@ describe('main branch status', () => {
     it('says it could not tell when the run was cancelled', () => {
       const head = git(repo, 'rev-parse', 'HEAD');
       runs([run('completed', 'cancelled', head, '2026-10-31T12:00:00Z')]);
-      const r = cli('--wait', 'HEAD', ...fast);
+      const r = cli('--wait', 'HEAD', ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toMatch(/^Main branch: could not tell — the pipeline run on \w{7} ended cancelled \(/);
     });
@@ -236,7 +241,7 @@ describe('main branch status', () => {
     );
 
     it('refuses a commit that is not here', () => {
-      const r = cli('--wait', 'no-such-ref', ...fast);
+      const r = cli('--wait', 'no-such-ref', ...settles);
       expect(r.status).toBe(2);
       expect(r.stderr).toBe('main-status: no-such-ref is not a commit here\n');
       expect(log()).toBe('');
@@ -244,7 +249,6 @@ describe('main branch status', () => {
   });
 
   describe('--pull-request', () => {
-    const fast = ['--interval', '0.05', '--timeout', '0.05'];
     const HEAD_SHA = 'feed000' + '1'.repeat(33);
     const MERGED_SHA = 'beef000' + '2'.repeat(33);
     const pull = (fields) => ({
@@ -273,10 +277,10 @@ describe('main branch status', () => {
 
     it('waits for the run on the merge commit and exits 0 when main is green', () => {
       pulls(MERGED);
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toBe(GREEN);
-      expect(r.stderr).toContain('main-status: waiting for pull request #7 to merge, asking every 0.05 s for up to 0.05 min');
+      expect(r.stderr).toContain('main-status: waiting for pull request #7 to merge, asking every 0.05 s for up to 2 min');
       expect(log()).toContain('api repos/{owner}/{repo}/pulls/7\n');
       expect(log()).toContain(`run list --workflow pipeline.yml --commit ${MERGED_SHA} --event push`);
     });
@@ -284,7 +288,7 @@ describe('main branch status', () => {
     it('exits 1 when the merge left main red', () => {
       pulls(MERGED);
       runs([run('completed', 'failure', MERGED_SHA, '2026-10-31T12:00:00Z')]);
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(1);
       expect(r.stdout).toBe(
         'Pull request #7 merged as beef000. Main branch: red — the pipeline failed on beef000 (title of beef000). '
@@ -294,7 +298,7 @@ describe('main branch status', () => {
 
     it('brings a branch that is behind up to date once, and waits on', () => {
       pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'clean' }), MERGED);
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toBe(GREEN);
       expect(r.stderr).toContain('main-status: pull request #7 was behind main; brought it up to date');
@@ -305,7 +309,7 @@ describe('main branch status', () => {
 
     it('never asks twice to update the same head', () => {
       pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'behind' }), MERGED);
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toBe(GREEN);
       expect(updates()).toHaveLength(1);
@@ -314,7 +318,7 @@ describe('main branch status', () => {
     it('gives the same answer when every gh call is slow', () => {
       env.STUB_SLOW = '0.8';
       pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'behind' }), MERGED);
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toBe(GREEN);
       expect(updates()).toHaveLength(1);
@@ -323,7 +327,7 @@ describe('main branch status', () => {
     it('stops with exit 4 when the update is refused', () => {
       pulls(pull({ mergeable_state: 'behind' }));
       writeFileSync(join(dir, 'update-fails'), '');
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(4);
       expect(r.stdout).toBe('Pull request #7: did not merge — it is behind main and could not be brought up to date: '
         + 'merge conflict between base and head (HTTP 422).\n');
@@ -331,7 +335,7 @@ describe('main branch status', () => {
 
     it('stops with exit 4 on a conflict, without asking for an update', () => {
       pulls(pull({ mergeable_state: 'dirty' }));
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(4);
       expect(r.stdout).toBe('Pull request #7: did not merge — it conflicts with main.\n');
       expect(updates()).toHaveLength(0);
@@ -340,7 +344,7 @@ describe('main branch status', () => {
     it('stops with exit 4 naming the check that failed', () => {
       pulls(pull({}));
       checks(['pipeline / host', 'cancelled'], ['pipeline / gate', 'failure'], ['pipeline / skip', 'skipped']);
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(4);
       expect(r.stdout).toBe('Pull request #7: did not merge — the check pipeline / gate failed on feed000. '
         + 'Run: https://github.com/acme/example/runs/15\n');
@@ -350,21 +354,21 @@ describe('main branch status', () => {
     it('does not count a cancelled or skipped check as a failure', () => {
       pulls(pull({}), MERGED);
       checks(['pipeline / host', 'cancelled'], ['pipeline / skip', 'skipped']);
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toBe(GREEN);
     });
 
     it('stops with exit 4 when auto-merge is off', () => {
       pulls(pull({ auto_merge: null }));
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(4);
       expect(r.stdout).toBe('Pull request #7: did not merge — auto-merge is off.\n');
     });
 
     it('stops with exit 4 when it was closed without merging', () => {
       pulls(pull({ state: 'closed' }));
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(4);
       expect(r.stdout).toBe('Pull request #7: did not merge — it was closed without merging.\n');
     });
@@ -378,7 +382,7 @@ describe('main branch status', () => {
 
     it('says it could not tell when gh fails', () => {
       writeFileSync(join(dir, 'bin/gh'), '#!/usr/bin/env bash\necho "HTTP 401: Bad credentials" >&2\nexit 1\n');
-      const r = cli('--pull-request', '7', ...fast);
+      const r = cli('--pull-request', '7', ...settles);
       expect(r.status).toBe(0);
       expect(r.stdout).toBe('Pull request #7: could not tell — gh failed: HTTP 401: Bad credentials.\n');
     });
@@ -400,7 +404,7 @@ describe('main branch status', () => {
         pulls(pull({}));
         runs([{ ...done('https://github.com/acme/example/actions/runs/1'), createdAt: '2026-10-31T11:00:00Z' },
           done(RUN_URL)]);
-        const r = cli('--pull-request', '7', ...fast);
+        const r = cli('--pull-request', '7', ...settles);
         expect(r.status).toBe(4);
         expect(r.stdout).toBe(LINE);
         expect(lines('rules/branches/main').length).toBeGreaterThan(0);
@@ -410,14 +414,14 @@ describe('main branch status', () => {
 
       it('writes nothing on GitHub', () => {
         pulls(pull({}));
-        cli('--pull-request', '7', ...fast);
+        cli('--pull-request', '7', ...settles);
         for (const word of ['-X', 'rerun', 'workflow run', 'update-branch']) expect(lines(word)).toEqual([]);
       });
 
       it('waits while a run on the head is still going, then stops', () => {
         pulls(pull({}));
         runs([run('in_progress', '', HEAD_SHA, '2026-10-31T12:30:00Z'), done(RUN_URL)], 1);
-        const r = cli('--pull-request', '7', ...fast);
+        const r = cli('--pull-request', '7', ...settles);
         expect(r.status).toBe(4);
         expect(r.stdout).toBe(LINE);
         expect(lines('run list').filter((l) => l.includes(HEAD_SHA)).length).toBeGreaterThan(1);
@@ -435,7 +439,7 @@ describe('main branch status', () => {
         pulls(pull({}), MERGED);
         checks([GATE, 'success']);
         runs([done(RUN_URL), mergedRun()]);
-        const r = cli('--pull-request', '7', ...fast);
+        const r = cli('--pull-request', '7', ...settles);
         expect(r.status).toBe(0);
         expect(r.stdout).toBe(GREEN);
         expect(lines('run list').filter((l) => l.includes(HEAD_SHA))).toEqual([]);
@@ -445,7 +449,7 @@ describe('main branch status', () => {
         pulls(pull({}), pull({}), MERGED);
         writeFileSync(join(dir, 'rules-fails'), '');
         runs([mergedRun()]);
-        const r = cli('--pull-request', '7', ...fast);
+        const r = cli('--pull-request', '7', ...settles);
         expect(r.status).toBe(0);
         expect(r.stdout).toBe(GREEN);
         expect(lines('rules/branches')).toHaveLength(1);
@@ -455,7 +459,7 @@ describe('main branch status', () => {
         pulls(pull({}), MERGED);
         writeFileSync(join(dir, 'rules.json'), '[]');
         runs([mergedRun()]);
-        const r = cli('--pull-request', '7', ...fast);
+        const r = cli('--pull-request', '7', ...settles);
         expect(r.status).toBe(0);
         expect(r.stdout).toBe(GREEN);
       });
@@ -463,7 +467,7 @@ describe('main branch status', () => {
       it.each(['clean', 'unstable'])('does not ask the rules when the pull request is %s', (state) => {
         pulls(pull({ mergeable_state: state }), MERGED);
         runs([mergedRun()]);
-        const r = cli('--pull-request', '7', ...fast);
+        const r = cli('--pull-request', '7', ...settles);
         expect(r.status).toBe(0);
         expect(r.stdout).toBe(GREEN);
         expect(lines('rules/branches')).toEqual([]);
@@ -473,7 +477,7 @@ describe('main branch status', () => {
         pulls(pull({}), MERGED);
         runs([], 1);
         runs([mergedRun()]);
-        const r = cli('--pull-request', '7', ...fast);
+        const r = cli('--pull-request', '7', ...settles);
         expect(r.status).toBe(0);
         expect(r.stdout).toBe(GREEN);
       });
