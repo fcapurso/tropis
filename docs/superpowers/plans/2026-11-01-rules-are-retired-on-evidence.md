@@ -253,9 +253,9 @@ Add one line to the block, after the *Main branch* line:
 
 ### 6. Decision record (`framework/DECISIONS.md`)
 
-Append `## FW-045: A rule clause is retired only on a trial at this repository's release`
-(the next free number at `47fbcf0`; if `framework/DECISIONS.md` on your base already has
-FW-045, take the next free one and say so). Date 2026-11-01, Status Accepted, in the house
+Append `## FW-046: A rule clause is retired only on a trial at this repository's release`
+(the next free number at `335c319`; if `framework/DECISIONS.md` on your base already has
+FW-046, take the next free one and say so). Date 2026-11-01, Status Accepted, in the house
 format (**Decision**, **Evidence**, **Rejected**, **Consequences**):
 
 - Decision: Decisions 1, 4 and 5 in short — one clause per release, chosen from the rule
@@ -332,7 +332,7 @@ backticks** (Trap 1).
 | `docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md` | Task 6: the handover report |
 
 Doc closeout, decided by the specifying session: the command, the record's own intro and
-FW-045 are the documents this change owes. No rule: the procedure lives in the command
+FW-046 are the documents this change owes. No rule: the procedure lives in the command
 that runs it. No operator-guide or `CONTRIBUTING.md` change: nothing a project or a
 contributor does changes. No release-note line: the notes are for people who set up
 projects, and this repository's own release step changes nothing for them. Nothing for an
@@ -384,7 +384,7 @@ not spell out the worktree-creating command (Trap 2). Commit with Task 3.
 ### Task 3 — The `/release` hook and the decision (Decisions 5, 6)
 
 Edit the block; check with `git diff origin/main -- .claude/commands/release.md` that
-every changed line is between the markers. Add FW-045. Run `npm --prefix .tropis test`
+every changed line is between the markers. Add FW-046. Run `npm --prefix .tropis test`
 (passes when Jest reports no failed suite, Trap 3 aside). Do not commit the command, the
 block and the decision yet: Task 4's result goes in that commit's body.
 
