@@ -1416,3 +1416,43 @@ and takes the commit and the staged commit instead. Anything merged after stagin
 checked needs a new deploy to staging before promotion; `/release` and `promote check`
 both refuse to carry it. FW-037's condition that a project stays ungated until its
 release only tags is met by following the workflow's release section.
+
+## FW-045: A project's own settings live under .tropis/, and an update moves them there
+
+**Date:** 2026-11-01 · **Status:** Accepted. Amends where FW-032 put the public declaration.
+
+**Context:** FW-032 put whether a project is public in `.claude/project.json`, weighed
+against a key in the README's settings and a call to GitHub, never against `.tropis/`.
+The pipeline's `ungated` reason joined it there, and a project's worktree setup sat in
+`.claude/worktree-setup.txt`. Then the display name was given `.tropis/project.json`.
+A project would keep two settings files in two folders, and settings that apply to
+every agent tool sat in a folder named after one.
+
+**Decision:** The project's own settings live in `.tropis/project.json` — its display
+name, `public` and `ungated`, as keys of one object — and its worktree setup in
+`.tropis/worktree-setup.txt`, one command a line as before. Neither is in the record of
+installed files. An update moves `.claude/project.json`'s keys into
+`.tropis/project.json` and `.claude/worktree-setup.txt` to its new place, and refuses,
+before changing anything, when either file is malformed or the old and new copies
+disagree. The hooks and the pipeline read only the new place, since the update that
+installs them also moves the files; dispatch, which reads sibling checkouts that may be
+on an earlier release, also reads the old worktree setup file where there is no new one.
+
+What stays under `.claude/`: `settings.json`, `rules/` and `commands/`, which Claude
+Code reads only from there; and `rule-areas.json` and `rule-additions/`, the project's
+half of the instruction layer.
+
+**Rejected:** Moving `rule-areas.json` and `rule-additions/` too. Only the framework
+reads them, but the workflow's branch rule and the commit and write hooks treat them as
+one set with `.claude/rules/`, which the rules command writes from them; moving them
+changes how every project edits its rules and lets nobody do anything new. Making the
+worktree setup a key of `project.json` — a list of shell commands is easier to write and
+read one a line. Keeping the update silent on a conflict and letting one side win —
+whichever side loses, a setting is gone with nothing said. Reading both places in the
+hooks — a second copy of every lookup, for a window that the update closes in one step.
+
+**Consequences:** A project's settings are in one folder whatever agent tool it uses. An
+update from an earlier release moves the files and says so; a project whose two files
+disagree is told which key, and fixes it before the update runs. A checkout on an
+earlier release keeps reading `.claude/project.json` with its own hooks until it is
+updated.
