@@ -537,7 +537,8 @@ request 103 are this public repository's own.
   decision; every other record has `**Decision:**` then `**Evidence:**`. Renamed it and
   moved it after the decision. No wording changed.
 - **Decision number:** FW-047 was taken on main by another plan while this one was in
-  review; it is renumbered to the next free number at merge, with FW-028's amendment line.
+  review; renumbered to FW-048 at merge, with FW-028's amendment line. The rebase
+  conflicted only there (both plans appended a decision); the resolution keeps both.
 - Read against the plan: the two-dot diff, the "only into skips" rule, the gate on a pull
   request, `--merged` matching `merge_commit_sha`, and `synchronize` only all match the
   decisions. `"${passed_args[@]}"` under `set -u` needs bash 4.4 or later; GitHub's
@@ -557,7 +558,7 @@ request 103 are this public repository's own.
   summary line from `passed`. No entry: there is nothing to build until a run shows a gap.
 - README and `pipeline/prose.txt`: dropped — the paragraph before the new one introduces
   the file, and the new one says "only prose and framework files".
-- FW number: handled at merge, above.
+- FW number: renumbered to FW-048, above.
 
 ### Learnings routed
 
@@ -566,3 +567,11 @@ recorded in FW-047's *Rejected* and in `gateIsGreen`'s comment, where the next p
 reading run conclusions will be. Nothing else generalises beyond this plan.
 
 ### Merged because
+
+After rebasing on `origin/main` (which carries the `main-status` timing fix),
+`bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its
+defect, the clean baseline passed, and the framework repository's own guards passed.`
+and `npm --prefix .tropis test` reported `13 passed` suites, `145 passed` tests (git
+2.49.0, Node v22.15.0, macOS 26.2 on arm64). The behaviour matches the plan's decisions,
+every new guard goes red when its piece is broken, and deploy to staging still runs
+every stage; the one fix made in review was the decision record's section order.
