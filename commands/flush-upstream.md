@@ -109,17 +109,16 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
      - creates the branch `upstream/<flush name>/<flush-date>-<entry-slug>`;
      - makes the edit, or appends the entry;
      - commits with a body that quotes the approved text from the plan's Decisions, not
-       the queue line, with all its parts, and names
-       the project by its flush name, and by nothing else — not its folder, repository
-       or product name;
+       the queue line, with all its parts, and names the project by its flush name, and
+       by nothing else — not its folder, repository or product name;
      - runs the framework's own check, bash scripts/check-blueprint.sh, in the clone and
        pastes its result. If it fails, the task stops there: no pull request is opened
        for that entry, and the drain task keeps the entry in the queue with the failure
        as its note;
      - writes the pull request body (the approved text from the plan's Decisions, not the
-       queue line, with all its parts, why it is
-       portable, what the project already does) to a file, naming the project by its
-       flush name and by nothing else — not its folder, repository or product name;
+       queue line, with all its parts, why it is portable, what the project already does)
+       to a file, naming the project by its flush name and by nothing else — not its
+       folder, repository or product name;
      - before running `open`, reads its commit message (`git log -1 --format=%B`) and its
        pull request body file for anything of the project's own — its files, paths and
        names, its product and customers, figures the point does not need, home paths and
