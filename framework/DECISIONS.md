@@ -1456,3 +1456,33 @@ update from an earlier release moves the files and says so; a project whose two 
 disagree is told which key, and fixes it before the update runs. A checkout on an
 earlier release keeps reading `.claude/project.json` with its own hooks until it is
 updated.
+
+## FW-046: A rule clause is retired only on a trial at this repository's release
+
+**Date:** 2026-11-01 · **Status:** Accepted.
+
+**Decision:** Before each release of this repository, one rule clause is tried. It comes
+from the rule file that grew most, in words, since the last release, preferably a clause
+added or changed since. One fresh agent does a real task in that clause's area, on an
+invented subject, with the clause removed from what it receives. The outcome goes in
+`docs/rule-trials.md` whichever way it falls, as kept, removed, inconclusive or skipped,
+with one entry per release and a clause kept once not tried again. A clause is removed
+only through a branch and pull request whose commit body carries the trial as its
+fresh-agent check. The step is this repository's `/rule-trial`, run before `/release`'s
+Stage 1, and does not ship; a removed clause is named in that release's notes.
+
+**Evidence:** Rule files only grow, and every clause costs context in every session that
+touches its area. A fresh-agent run is the only retirement evidence the framework has,
+the same one its workflow asks of any change to a rule. The developer moved the trial
+from the flush sitting to the release on 2026-10-16, because a flush now reaches this
+repository as pull requests.
+
+**Rejected:** A periodic audit of every rule, which is a sweep and not a trial. Shipping
+the step in `/release` for every project, since the developer's decision put it at the
+framework's own release. Waiting for the spike `rule-is-measured-with-and-without`: one
+run is what the entry asks for, and the command's *Run* section is the one place a
+repeatable with-and-without comparison would replace.
+
+**Consequences:** Each release of this repository starts with a trial or a recorded
+skip. `docs/rule-trials.md` grows by one entry per release. A removed clause is named in
+that release's notes, under the closing small-corrections heading.
