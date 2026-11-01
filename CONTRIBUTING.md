@@ -33,7 +33,7 @@ The mechanism is decided in `framework/DECISIONS.md` (FW-011) and written out in
 
 Each step is defined in the document it points at.
 
-1. A backlog entry in `feature-catalog.yaml`, started with `/idea`.
+1. A backlog entry in the feature catalog, started with `/idea`.
 2. A plan, written to `rules/planning.md`.
 3. A branch in a worktree of its own: `framework/workflow.md`, *Branching*.
 4. The self-check: `bash scripts/check-blueprint.sh`. It reads committed content only.
