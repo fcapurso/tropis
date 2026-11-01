@@ -124,12 +124,14 @@ after` and the token work per plan, and the bundle reports one final line.
 
 The token is a single named marker on GitHub — a git ref — holding the name of the branch
 or person that has it and when it was taken. Creating a ref that already exists is
-refused, so the marker is a lock that needs no messages: if two team members try at the
-same moment, one gets it.
+refused when it is created through the API or by a push that says the ref must not exist
+yet (a plain push is not refused: see below), so the marker is a lock that needs no
+messages: if two team members try at the same moment, one gets it.
 
-- **Take:** try to create the marker. If it exists, wait and try again every 30 seconds,
+- **Take:** try to create the marker through the API. If it exists, wait and try again every 30 seconds,
   as `main-status.mjs` waits.
-- **Release:** delete the marker.
+- **Release:** delete the marker with a push that names the commit it expects the marker
+  to hold, so a release cannot remove another holder's marker.
 - **Hold:** the developer — or the sprint session on their word — takes the token in
   their own name, for example to run a release, and releases it afterwards. Every team
   member waits meanwhile. One command does this for a person.
@@ -152,12 +154,24 @@ same moment, one gets it.
   cost the token avoids: the holder's branch falls behind, `main-status` brings it up to
   date, checks run again. *Designer's call:* no pipeline check refuses a pull request
   opened without the token.
-- **Open — first spike:** whether GitHub accepts a ref outside `refs/heads/` and
-  `refs/tags/` on a repository with Tropis's ruleset, whether creating an existing one is
-  refused atomically, and what a cloud session's credentials may do. Fallback if not: a
-  dedicated branch as the marker.
-- GitHub's own merge queue would solve the same problem; as far as is known it is not
-  offered on repositories owned by a personal account. The spike confirms this too.
+- **Answered — first spike (2026-11-02):** GitHub accepts a ref under `refs/spike/…` on
+  this repository, by `git push` and by the REST API, and no ruleset touches it. Creating
+  a ref that already exists is refused by the API every time (HTTP 422, "Reference already
+  exists"), and by a push that states the ref must not exist yet; of five attempts made at
+  the same moment, exactly one was accepted in each of nine rounds. A plain `git push` is
+  not a lock: pushing the same commit again succeeds, and pushing a descendant moves the
+  ref. The marker's commit message names the holder and the time, and both the API and
+  `git fetch` read it back. A push that says which commit it expects to delete is refused
+  when someone else holds the marker; the API's delete takes no such condition. The ref
+  started no pipeline run. A cloud session's git proxy is documented to refuse deletions
+  and anything but branches, so whether a cloud session can use the push form is open.
+  So the token is a ref outside `refs/heads/` and `refs/tags/`, taken with the API's
+  create and released with the conditional delete; FW-049 records it, and the evidence is
+  at the end of this document.
+- **Merge queue (first spike):** GitHub's two pages on merge queues do not say which
+  repositories can use one, and turning it on would change this repository's settings,
+  which the spike may not do. This repository belongs to a personal account (owner type
+  `User`). Unanswered; the token does not depend on it.
 
 ### 4. Overlap, judged at claim
 
@@ -303,3 +317,152 @@ and from this repository's own workflow, dispatch, backlog and decision records.
 external project's design was used. Cursor's capabilities were read from its changelog
 and from third-party integration docs on 2026-11-01, not verified against its own
 documentation; the second spike does that.
+
+## Evidence from the first spike
+
+Run on 2026-11-02 against this repository (public, owner type `User`), main at `f86cc62`.
+Tools: git 2.49.0, gh 2.103.2, Node 22.15.0, on macOS 26.2, arm64; git pushed over https
+through the `osxkeychain` credential helper; `gh` token scopes `gist`, `read:org`, `repo`,
+`workflow`. Refs were named `refs/spike/merge-token-<run>-<name>`, each pointing at a
+parentless commit with `main`'s tree whose message reads `holder: probe-x`, `taken: <time>`.
+The commands are shown as run; replies are trimmed to the lines that carry the answer.
+Worked from no named source: the probes were written from the plan's description and
+GitHub's replies.
+
+### Task 2 — Does GitHub accept the ref?
+
+```
+git push origin "$A:$P-push"
+ * [new reference]   6a7b815… -> refs/spike/merge-token-<run>-push        (exit 0)
+gh api -X POST repos/fcapurso/tropis/git/commits -f message=… -f tree="$T"   -> 4567b47…
+gh api -X POST repos/fcapurso/tropis/git/refs -f ref="$P-api" -f sha=4567b47…
+ {"ref":"refs/spike/merge-token-<run>-api", … "object":{"sha":"4567b476…"}}   (exit 0)
+git ls-remote origin "$P-*"
+4567b476…  refs/spike/merge-token-<run>-api
+6a7b815d…  refs/spike/merge-token-<run>-push
+```
+
+Both ways were accepted and both refs came back with the commits sent.
+
+### Task 3 — Is creating one that exists refused?
+
+One at a time, against the held refs:
+
+```
+API, same commit again:   {"message":"Reference already exists", … "status":"422"}   gh: … (HTTP 422)
+API, a new marker:        the same reply
+git push (same commit):   Everything up-to-date          exit 0   <- reports success on a held ref
+git push (descendant):    6a7b815..0df3fb9 -> refs/spike/…-push     exit 0   <- the ref moved
+git push --force-with-lease="$P-push:" (new marker, ref held):
+ ! [rejected] 9a353e5… -> refs/spike/…-push (stale info)             exit 1
+```
+
+A plain push of an unrelated commit onto a held ref also exits 1 when it is not a
+descendant (a push of the original commit onto the moved ref was refused, exit 1).
+
+At the same moment, five attempts per round, each with its own marker, a fresh ref per
+round, the ref's holder checked against the accepted attempt's commit every time:
+
+| Way | Round 1 | Round 2 | Round 3 | Refusals |
+|---|---|---|---|---|
+| API create | 1 accepted | 1 accepted | 1 accepted | all four others HTTP 422 "Reference already exists" |
+| Lock-form push (`--force-with-lease=ref:`) | 1 accepted | 1 accepted | 1 accepted | see below |
+| Lock-form push, objects uploaded beforehand | 1 accepted | 1 accepted | 1 accepted | all four others `[remote rejected] … (cannot lock ref '…': reference already exists)` |
+
+In the lock-form rounds with markers uploaded in the same push, most losers did not reach
+the ref lock. They failed with the server's `remote: error: unable to write file …/pack/…:
+No such file or directory` and `remote: fatal: unable to rename temporary…` (a storage
+error on GitHub's side, which appeared only while five pushes uploaded objects together;
+the cause was not investigated), and only some with `cannot
+lock ref … reference already exists` (one in round 1, one in round 2, none in round 3).
+These are server replies and the push failed, so none reported success; but a failed push
+does not by itself mean the marker is held, and a taker that gets one must read the marker
+before deciding. Uploading the objects first (second lock-form row) removed the storage
+errors and showed the lock refusal in every loser. Exactly one attempt was accepted in
+all nine rounds. The refs of every round were deleted when it ended.
+
+### Task 4 — Reading the holder, releasing safely
+
+```
+gh api "repos/fcapurso/tropis/git/ref/${P#refs/}-api" --jq .object.sha   -> 4567b476…
+gh api repos/fcapurso/tropis/git/commits/4567b476… --jq '.message, .committer.date'
+ merge token / holder: probe-b / taken: 2026-11-01T23:23:08Z      2026-11-01T23:23:08Z
+git fetch origin "$P-api"; git log -1 --format='%B%cI' FETCH_HEAD
+ merge token / holder: probe-b / taken: 2026-11-01T23:23:08Z      2026-11-02T00:23:08+01:00
+```
+
+Both read the holder and the time. Release:
+
+```
+take $P-rel with A (lock-form): [new reference] 71ddc3d…     delete it: [deleted]
+take $P-rel with B (lock-form): [new reference] 4e1d454…
+git push --force-with-lease="$P-rel:$A" origin ":$P-rel"
+ ! [rejected] (delete) -> refs/spike/…-rel (stale info)       exit 1; ls-remote: still 4e1d454… (B)
+git push --force-with-lease="$P-rel:$B" origin ":$P-rel"
+ - [deleted] refs/spike/…-rel                                  ls-remote: empty
+```
+
+The stale holder's delete was refused with the client's `stale info`: git compares the
+expected value with the ref it was just told of, and also sends it with the update, but
+this probe did not make two deletes collide, so the server's own check of a delete is not
+shown. Taking a ref (the rounds above) is shown to be checked on the server.
+
+The API's delete, with no holder named:
+
+```
+gh api -X POST …/git/refs -f ref="$P-rel2" -f sha=<A>           -> refs/spike/…-rel2
+gh api -i -X DELETE "repos/fcapurso/tropis/git/refs/${P#refs/}-rel2"   -> HTTP/2.0 204 No Content
+gh api -X DELETE (again): {"message":"Reference does not exist", … "status":"422"}
+```
+
+It succeeded for whoever asks. GitHub's REST page for deleting a reference (linked from the
+reply as `rest/git/refs#delete-a-reference`) was not read for a condition parameter, and the
+reply carries none; treat the API delete as unconditional.
+
+### Task 5 — Does it start a run, or show as a push?
+
+`gh run list` before the probes (23:22 UTC) and after them (23:27, 23:28, 23:33): the
+runs created since the probes began were three `pull_request` runs and one `push` run on
+`main`, all on another session's backlog branch (`backlog/claim-another-tools-agent-can-be-started`)
+and `main`; none on a `refs/spike/` ref. `.github/workflows/pipeline.yml` runs on pushes to
+`main` only, so this was expected; a project with an unfiltered `on: push` would see runs.
+
+The repository events feed showed no `refs/spike/` push at once, nor five minutes later
+(23:33 UTC): *not seen within about ten minutes of the first push*. The feed also showed
+no push at all since 2026-10-31, although `main` took a push at 23:21 UTC the same day, so
+its absence for the spike refs says nothing: the feed does not list pushes promptly.
+
+### Task 6 — Cloud sessions and the merge queue (documented, not probed)
+
+Claude Code's cloud-sessions pages say that in Anthropic-hosted environments git
+credentials never enter the session's VM and that GitHub operations go through a proxy;
+that the proxy rejects branch deletions and pushes of anything other than a branch; that
+`gh api` calls for attached repositories work through the proxy (the token reads as a
+placeholder); and that GraphQL is refused. So, from a cloud session, a lock-form push to
+`refs/spike/…` and the conditional delete are likely refused, while the REST create and
+delete may work. This was not probed: a cloud session cannot be started from here. A person
+can settle it by pasting this into a cloud session in a repository attached to it:
+
+```bash
+git push --force-with-lease="refs/spike/probe-cloud:" origin "$(git rev-parse HEAD):refs/spike/probe-cloud"
+git ls-remote origin 'refs/spike/*'
+git push origin :refs/spike/probe-cloud
+```
+
+If the first or third is refused, repeat with
+`gh api -X POST repos/{owner}/{repo}/git/refs -f ref=refs/spike/probe-cloud -f sha="$(git rev-parse HEAD)"`
+and `gh api -X DELETE repos/{owner}/{repo}/git/refs/spike/probe-cloud`.
+
+Merge queue: GitHub's page on managing a merge queue, and the page on merging with one,
+state no rule about which repositories may use a queue (they mention a branch protection
+setting only); a third page that might (an "about" page) was not found at the address
+tried. The repository's owner type is `User`. Not answered: finding out would mean turning
+the setting on, which the plan forbids.
+
+### Task 7 — Everything deleted
+
+```
+$ git ls-remote origin 'refs/spike/*'
+$
+```
+(empty output, after the cleanup deleted the `-api` and `-push` refs)

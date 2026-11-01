@@ -1553,3 +1553,48 @@ stage).
 requests, or nothing is skipped and the plan job's summary says so. Framework checks run
 on every run. Whether the skip is sound on a real project can be shown only by real runs
 after a release is installed.
+
+## FW-049: The merge token is a ref outside branches and tags, taken through the API
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** The merge token's marker is a git ref outside `refs/heads/` and
+`refs/tags/`, pointing at a commit whose message names the holder and the time it was
+taken. Taking it is the REST call that creates a reference, which GitHub refuses with
+HTTP 422 when the ref exists. Releasing it is a push that deletes the ref and states the
+commit it expects the ref to hold (`--force-with-lease=<ref>:<commit>`), so a release by
+someone who no longer holds it is refused and the real holder's marker stays. Reading the
+holder is a read of the ref and then of its commit, by API or by `git fetch`. The marker's
+name and the command that wraps these are left to the merge-token entry,
+`merges-take-turns-under-one-token`. Where a cloud session cannot push a ref that is not a
+branch, it reads the marker and, when the holder is itself, deletes it through the API;
+whether it can is open until the cloud probe in the sprint design's evidence section has
+been run.
+
+**Evidence:** On this repository (public, owner type `User`, with rulesets on branches
+and tags only), GitHub accepted a `refs/spike/…` ref made by a push and by the API. The
+API refused a second create every time; of five attempts at the same moment, exactly one
+was accepted in each of three rounds. The lock form of a push (expected value empty) also
+let exactly one of five through in each of six rounds, the losers being refused with
+`cannot lock ref … reference already exists` or failing on a storage error from GitHub,
+and none reporting success. A plain push reported `Everything up-to-date` for the held
+commit and moved the ref to a descendant. The expected-value delete was refused for a stale
+holder and removed the ref for the real one. The API's delete took no condition. The ref
+started no pipeline run. The sprint design's section 3 and its evidence section have the
+commands and replies. Source: none in particular; probes written for this repository.
+
+**Rejected:** A plain `git push` as the take: it succeeds on a ref that is held (same
+commit) and moves it (descendant), so a second session would believe it had the token.
+The lock-form push as the take: it works, but under simultaneous pushes the losers often
+fail on a storage error rather than the lock, which a taker cannot tell from a network
+failure without reading the marker; the API replies the same way each time. The API's
+delete as the release: it removes any holder's marker. A dedicated branch as the marker
+(the spec's fallback): not needed, since GitHub accepts the ref. GitHub's merge queue: the pages read do not say a
+personal account's repository can use one, and finding out would need a settings change.
+
+**Consequences:** The take needs a token that may write refs through the API, which `gh`
+has here. The release is a push, so it needs git over https, and a cloud session may not be
+able to do it. The merge-token entry must handle a take that fails for any reason other
+than 422 by reading the marker before it decides. Markers left by a crashed holder stay
+until someone breaks them, as the stale-token rule says. Whether a cloud session can take
+and release, and whether the merge queue is offered, are unanswered.

@@ -353,3 +353,121 @@ hand back with the ref's name.
 | 5 | Cloud credentials; merge queue | 6 |
 | 6 | Tool, version, platform; nothing left | 1, 7 |
 | 7 | The decision | 8 |
+
+## Handover report
+
+### Task completion
+
+Tasks 1 to 8 done. Task 6 is documentation only, as the plan says. The pull request and
+review record were not made, as instructed.
+
+### Verification results
+
+Run with git 2.49.0, gh 2.103.2, Node 22.15.0 on macOS 26.2, arm64.
+
+- `bash scripts/check-blueprint.sh` before the work: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` After the commit: the same line.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 146 passed, 146 total`.
+- `git diff --stat origin/main...HEAD` (before this report): `bands.yaml`, the sprint design, `feature-catalog.yaml`, `framework/DECISIONS.md`; 4 files, 222 insertions, 24 deletions.
+- `git ls-remote origin 'refs/spike/*'` after cleanup: empty (also shown in the spec's evidence section).
+- `npm --prefix .tropis run board` rewrote nothing: `docs/backlog-board/index.html` was unchanged.
+
+### Scope
+
+Only files in the File Structure table, plus this plan file. Worktree used: `../tropis-merge-token`.
+
+### Judgment calls
+
+- Decision in FW-049: take with the API create, release with the expected-value delete push. The lock-form push also locks, but its losers often fail on a GitHub storage error, which a taker cannot tell from a network failure.
+- Ran the lock-form race a second time with the objects uploaded beforehand, to separate the lock from that storage error.
+- Corrected three lines of section 3 (the lock sentence, Take, Release) because a plain push is not a lock.
+
+### What the plan got wrong
+
+- Nothing blocking. Task 3's "expect a refusal" for the plain push of a descendant was wrong: it succeeded and moved the ref, which the plan's Traps had anticipated.
+- The plan's probe snippets use `${PIPESTATUS[0]}`-style exit capture; I ran them under bash, since the login shell is zsh and gave blank statuses at first (re-run under bash).
+
+### Outstanding
+
+- Cloud session behaviour is documented, not probed: a person must paste the three-command probe (in the spec's evidence section) into a cloud session; the proxy is documented to refuse non-branch pushes and deletions.
+- The server-side check of a conditional delete under a collision was not shown; the stale-holder refusal seen was the client's `stale info`.
+- The merge queue on a personal account is unanswered: GitHub's pages read do not say, and testing would change settings.
+- The events feed never showed any push in the window, including a real push to `main`, so it says nothing about whether the spike refs show as pushes.
+- FW-049 may need renumbering at merge if another session took it.
+
+### Acceptance criteria
+
+| # | Task | Evidence subsection |
+|---|---|---|
+| 1 | 2 | Task 2 |
+| 2 | 3 | Task 3 |
+| 3 | 4 | Task 4 |
+| 4 | 5 | Task 5 |
+| 5 | 6 | Task 6 |
+| 6 | 1, 7 | header and Task 7 |
+| 7 | 8 | FW-049 |
+
+### The spike's answer
+
+GitHub accepts a ref outside branches and tags on this repository, and the API refuses to create one that exists, with exactly one of five simultaneous attempts accepted in each of nine rounds. A plain push is not a lock, and a push naming the commit it expects refuses to delete another holder's marker, while the API's delete is unconditional. The ref started no pipeline run, and cloud-session use and the merge queue are unanswered.
+
+## Review record
+
+### Checks re-run
+
+With gh 2.103.2 and git 2.49.0 on macOS 26.2, arm64, by the specifying session:
+
+- `git diff --stat origin/main...HEAD`: five files, the File Structure table's
+  (`docs/backlog-board/index.html` unchanged, as the handover says).
+- `git ls-remote origin 'refs/spike/*'` before and after the probe below: empty both times.
+- An independent probe of the take: `gh api -X POST repos/fcapurso/tropis/git/refs -f ref=refs/spike/merge-token-review-<time> -f sha=<main>` returned the ref; the same call again returned `{"message":"Reference already exists", … "status":"422"}` (`gh: Reference already exists (HTTP 422)`); `gh api -i -X DELETE …` returned `HTTP/2.0 204 No Content`; the listing was then empty. This matches Task 3 and Task 4.
+- GitHub's merge-queue pages were read again through a fetch agent: neither the page on
+  managing a merge queue nor the page on merging with one states which repositories may
+  use it, and the merging-guide address the plan gave returns 404. The handover's
+  *unanswered* stands.
+- The self-check and the installed checks are re-run after the rebase, when the token is
+  held, and their results are in the merge commit's body.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The holder names
+are `probe-…`, the credential helper is named and no token appears, and the only
+repository and branch names are this repository's own.
+
+One untrue line, fixed on the branch by the reviewer as mechanical: FW-049's *Rejected*
+said a dedicated branch would sit under the ruleset that governs branches. Both branch
+rulesets include only `~DEFAULT_BRANCH`, so it would not; the clause is removed, and the
+reason left (GitHub accepts the ref) is sufficient.
+
+The stale-holder refusal of the release was the client's `stale info`, as the handover
+says. The push protocol also sends the expected old value with each update for the server
+to check, so the release is conditional on the server too; that is git's documented
+protocol, not something this spike observed under a collision.
+
+### Outstanding disposition
+
+- **Cloud sessions, documented not probed:** goes to `merges-take-turns-under-one-token`.
+  Its design must not depend on a cloud session taking the token (the spec already says
+  correctness never does), and its plan runs the three-command probe in the sprint
+  design's evidence section, or says why not, before it relies on a cloud session.
+- **Server-side check of a colliding conditional delete:** dropped. The protocol checks
+  the old value on the server, and two holders releasing the same marker at once cannot
+  happen, since only one holds it.
+- **Merge queue on a personal account:** dropped. The token does not depend on it, and
+  answering it would need a settings change on a repository the developer owns.
+- **The events feed:** dropped. The run list answered criterion 4 for this repository's
+  pipelines, and the feed showed no pushes at all in the window.
+- **FW-049 renumbering:** done at merge if another session took the number; the merge
+  commit says so.
+
+### Learnings routed
+
+- *A plain `git push` is not a lock; create through the API and release with an
+  expected-value push.* Written where the next builder stands: FW-049 and the sprint
+  design's section 3, which `merges-take-turns-under-one-token` is planned from.
+- Nothing else generalises beyond this epic.
+
+### Merged because
+
+Every criterion has its evidence in the sprint design's evidence section, the answer is
+recorded where the open question sat and as FW-049, the reviewer's own probe agreed, and
+no probe ref remains.
