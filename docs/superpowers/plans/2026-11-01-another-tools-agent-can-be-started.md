@@ -405,3 +405,72 @@ with a file tool instead.
 - Cursor has no flag to keep the signed-in user's own skills out of a run, so the
   nothing-granted Cursor results may reflect them.
 - The change has no screen, so there is no developer check.
+
+## Review record
+
+### Checks re-run
+
+By the specifying session, Claude Code 2.1.300 with git 2.49.0 and Node v22.15.0 on macOS
+26.2, arm64, on the branch at `ae9ea37` plus the one fix below.
+
+- Scope: `git diff --stat origin/main...HEAD` listed the five files in *File Structure*
+  and nothing else.
+- The spec greps (Task 5) printed `0`, `1`, `1`.
+- Flags the evidence names, against the installed tools' `--help`: Claude Code lists
+  `--setting-sources`, `--permission-prompts`, `--permission-mode`, `--allowedTools`,
+  `--max-budget-usd`, `--bare` and `--resume`; `--max-turns` is not in its `--help`, and
+  the evidence cites the documentation for it, which run C1 used. `cursor-agent`
+  2026.10.22-27dcf5f lists `--trust`, `--force` / `--yolo`, `--sandbox`, `--workspace`,
+  `--worktree`, `--list-models`, `--resume`, `--output-format` and `create-chat`.
+- Run C3 again, in a fresh throwaway repository with a local bare remote:
+  `claude -p <task> --output-format json --model haiku --setting-sources project
+  --max-turns 12` exited 0, `subtype` success, `permission_denials` named Bash, Bash and
+  Write, the reply's last line said it left out `SHIPPED` because the push had not
+  happened, and the remote had only `master`. Matches the evidence.
+- Run U3 again: `cursor-agent -p <task> --output-format json --model gpt-5.3-codex-low
+  --trust` exited 0, `subtype` success, `HANDOVER.md` was written but not committed, the
+  remote had only `master`, and the reply's last line was `SHIPPED`. Matches the evidence,
+  and is the finding FW-049's "believe the repository" rests on.
+- `bash scripts/check-blueprint.sh` and `npm --prefix .tropis test` after the rebase at
+  merge time: see *Merged because*.
+
+### Found
+
+Public exposure: the diff was read for private material — names, other projects, home
+paths, hostnames, session ids, email addresses. Session ids are written `<session-id>`,
+paths are relative; nothing found.
+
+- Fixed on the branch, mechanical: FW-049's *Evidence* named the spec section with a
+  hyphen ("Second spike - evidence") where the heading has a dash.
+- The answer runs to about twenty lines, over the plan's "about fifteen"; kept, since
+  each line carries a command or a finding piece 6 needs.
+- The handover's mention of a hook refusing a command that contained a branch-creating
+  git command inside a script is the worktree hook working as built when a command runs
+  from the main checkout, where the executor's shell starts; not a defect.
+
+### Outstanding disposition
+
+- Cursor's cloud agent API, the `&` handoff in print mode, Claude Code waiting for an
+  answer, `--permission-prompts none`, Cursor's exit code on failure, and a run from a
+  plain terminal: carried by `team-members-start-in-another-tool`, which FW-049 tells to
+  use the command lines only and not the cloud API until it is proven; no entry of their
+  own, since nothing is decided until that piece needs one of them.
+- Cursor loading the signed-in user's own skills with no flag to prevent it: recorded in
+  FW-049's *Consequences*, for the same entry to design around.
+- Parts of two documentation pages read only in part: dropped; the claims taken from them
+  are on the parts read, and the runs carry the rest.
+- No screen, so no developer check.
+
+### Learnings routed
+
+The one lesson that generalises — a headless agent's own last line is not evidence that
+its work happened, and the repository is — is written into FW-049, where piece 6 will
+read it. A second, found at the claim: `guards/catalog-drift.test.js` dates "today" in
+UTC, so a plan named by the local date fails CI between local and UTC midnight; reported
+to the parent session, not routed further here, since renaming the plan is the whole
+fix and the guard is right to use one clock.
+
+### Merged because
+
+Every acceptance criterion is answered from the tools' own documentation and runs, the
+two runs the decision rests on reproduced, and the merge criteria passed after the rebase.

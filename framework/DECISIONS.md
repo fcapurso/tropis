@@ -1619,7 +1619,7 @@ same JSON. Cursor's cloud agent API is not used until it has been proven with a 
 
 **Evidence:** Seven trial runs on 2026-11-02 (Claude Code 2.1.300 and `cursor-agent`
 2026.10.22-27dcf5f, macOS 26.2, arm64) and each tool's own documentation, in the sprint
-spec's section "Second spike - evidence". Both tools pushed a branch with a handover
+spec's section "Second spike — evidence". Both tools pushed a branch with a handover
 report under exact grants; both resumed by `session_id`; both exited 0 whether or not the
 work was done; with nothing granted neither waited, Claude Code denied and reported the
 denials, and Cursor refused every shell command yet still ended its reply `SHIPPED`.
