@@ -56,9 +56,9 @@ const fillBlock = (text, inner) => text.replace(BEGIN_TO_END, (_, begin, end) =>
 
 /**
  * A scratch Tropis repository tagged `v0.2.0` and a project set up from it and committed.
- * `v020` adds files to the Tropis before that tag.
+ * `v020` adds files to the Tropis before that tag; `name` is the display name setup is given.
  */
-function world({ v020 = {} } = {}) {
+function world({ v020 = {}, name } = {}) {
   const parent = mkdtempSync(join(tmpdir(), 'tv-test-'));
   const tropis = join(parent, 'tropis');
   mkdirSync(tropis);
@@ -80,7 +80,8 @@ function world({ v020 = {} } = {}) {
   const project = join(parent, 'example-project');
   mkdirSync(project);
   git(project, 'init', '-q', '-b', 'main');
-  const setup = spawnSync('bash', [join(tropis, 'scripts/set-up-project.sh'), project], { encoding: 'utf8' });
+  const named = name === undefined ? [] : [name];
+  const setup = spawnSync('bash', [join(tropis, 'scripts/set-up-project.sh'), project, ...named], { encoding: 'utf8' });
   if (setup.status !== 0) throw new Error(setup.stderr);
   git(project, 'add', '-A');
   git(project, 'commit', '-qm', 'set up');
@@ -958,10 +959,11 @@ describe('take-version.mjs', () => {
     expect(recordProblems(worktree)).toEqual([]);
   }), SLOW);
 
-  it('leaves .tropis/project.json as the project wrote it', () => inWorld({}, (w) => {
-    const text = `${JSON.stringify({ name: 'Example Project' }, null, 2)}\n`;
-    write(w.project, '.tropis/project.json', text);
-    w.commit('write the display name');
+  // Set up with a name, so the file exists when setup records what it installed: a file
+  // the record listed would be deleted by the update as no longer shipped.
+  it('leaves .tropis/project.json as setup wrote it', () => inWorld({ name: 'Example Project' }, (w) => {
+    const text = read(w.project, '.tropis/project.json');
+    expect(text).toBe(`${JSON.stringify({ name: 'Example Project' }, null, 2)}\n`);
     w.release('v0.2.1', addExtraScript);
     const { r, worktree } = takeInWorktree(w, 'v0.2.1');
     expect(r.stderr).toBe('');

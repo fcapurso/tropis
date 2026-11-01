@@ -172,11 +172,10 @@ Do not restate the workflow in this file. It points at the blueprint.
 ## Step 5 — Draft the entry point
 
 The setup left `AGENTS.md` as the template and `CLAUDE.md` as the single line
-`@AGENTS.md`. Fill `AGENTS.md` from the brief's identity. Title it with the name
-in `.tropis/project.json`. Work through the
-template's comments and replace every placeholder. Then delete the comments,
-including the block at the bottom listing what does *not* belong in `AGENTS.md`
-— read it before deleting it.
+`@AGENTS.md`. Fill `AGENTS.md` from the brief's identity. Title it with the name in
+`.tropis/project.json`. Work through the template's comments and replace every
+placeholder. Then delete the comments, including the block at the bottom listing
+what does *not* belong in `AGENTS.md` — read it before deleting it.
 
 **Write the gotchas section first, and write it from experience.** The highest-value
 content in an entry file is what is *surprising* about this project, not what it is.

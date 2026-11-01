@@ -16,10 +16,10 @@ into `AGENTS.md` afterwards; the setup refuses, changing nothing, and lists what
 
 ## Stage 1 — Name the project
 
-Ask for: the project path, a display name, and the blueprint URL (remote or
-local path the operator names). Confirm before creating anything. Take the
-display name exactly as given — capitals, spaces and symbols included. Setup stores it
-in `.tropis/project.json`, and the framework takes the project's name from there
+Ask for: the project path, a display name, and the blueprint URL (remote or local
+path the operator names). Confirm before creating anything. Take the display name
+exactly as given — capitals, spaces and symbols included. Setup stores it in
+`.tropis/project.json`, and the framework takes the project's name from there
 wherever it writes one.
 
 ## Stage 2 — Set the framework up
@@ -30,12 +30,11 @@ bash "$BP"/scripts/set-up-project.sh <project-root> "<display name>"
 
 Refuse to continue if that exits non-zero. It writes `.claude/`, `.cursor/rules/`,
 `.tropis/`, the entry file and the backlog into the project, and appends to its
-`.gitignore` and `.gitattributes`. It does not commit. With the display name it also writes
-`.tropis/project.json`, a file of the project's own that an update never replaces,
-names the package after the name, and puts the name at the head of `.tropis/README.md`.
-Prune what the project does
-not need, delete the `_comment` key from `.claude/settings.json`, and confirm the
-file parses.
+`.gitignore` and `.gitattributes`. It does not commit. With the display name it also
+writes `.tropis/project.json`, a file of the project's own that an update never
+replaces, names the package after the name, and puts the name at the head of
+`.tropis/README.md`. Prune what the project does not need, delete the `_comment` key
+from `.claude/settings.json`, and confirm the file parses.
 
 ## Stage 3 — Shape
 
@@ -86,11 +85,10 @@ Setup has already written the display name at its head.
 ## Stage 5 — Draft the entry point
 
 Fill `AGENTS.md` from the brief's identity, and title it with the name in
-`.tropis/project.json`. Leave `CLAUDE.md` as it
-is: the single line `@AGENTS.md`, which Claude Code follows to `AGENTS.md`. **Ask for
-gotchas; do not accept silence.** For a greenfield project, leave an
-explicit “expected to grow” note rather than inventing three fake
-gotchas.
+`.tropis/project.json`. Leave `CLAUDE.md` as it is: the single line `@AGENTS.md`,
+which Claude Code follows to `AGENTS.md`. **Ask for gotchas; do not accept
+silence.** For a greenfield project, leave an explicit “expected to grow” note
+rather than inventing three fake gotchas.
 
 ## Stage 6 — Draft the first rules
 
