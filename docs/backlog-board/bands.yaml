@@ -133,19 +133,6 @@ pipeline-bills-no-job-that-decides-nothing:
   seen:
     status: shaped
     blockers: []
-pipeline-does-not-redo-green-work:
-  band: B
-  value: 4
-  valueWhy: With main gated and branches required up to date, every merge to main
-    re-runs a tree that already passed.
-  effort: 3
-  effortWhy: Planning from the last green run, with a fallback.
-  verdict: "Value raised now main is gated: a branch must be up to date to merge, so
-    the push to main always carries a tree its pull request already passed, and
-    every merge pays the stages twice. The release still runs the full suite."
-  seen:
-    status: shaped
-    blockers: []
 plan-folder-names-no-plugin:
   band: C
   value: 2

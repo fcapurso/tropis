@@ -99,6 +99,13 @@ stage with no script is empty and passes. Run one locally with
 `node .tropis/scripts/pipeline.mjs run <stage>`. The run summary says what each
 stage did, including why a deploy was held or skipped.
 
+On GitHub, a push to a pull request skips the four filled stages when only prose and
+framework files changed since that pull request's last green run, and so does the push
+to the main branch when its tree is what the merged pull request's green run tested;
+that push still deploys. Framework checks run every time, and deploy to staging runs
+every stage. This needs the workflow token's default read access to actions and pull
+requests; without it nothing is skipped, and the plan job's summary says why.
+
 Each stage starts from a shallow checkout of the commit, with no submodules and no ref
 for the base branch. The framework stage has `.tropis/` installed; the other stages have
 nothing installed. A stage script that reads git history, such as a file as it stands on

@@ -15,9 +15,12 @@ import {
   stagingSlot,
   stagingSummary,
   environmentName,
+  firstGreenRun,
   gateDecision,
+  gateIsGreen,
   isProseAndFramework,
   matchesProse,
+  runsFromRepository,
   STAGES,
 } from '../scripts/pipeline.mjs';
 
@@ -1076,6 +1079,27 @@ describe('deploy gate', () => {
   });
 });
 
+describe('deploy gate with a passed commit', () => {
+  const PASSED = 'b'.repeat(40);
+  const skippedStages = { sanity: 'skipped', unit: 'skipped', integration: 'skipped', 'end-to-end': 'skipped' };
+  const plan = { ...planOf(skippedStages), passed: PASSED };
+  const results = resultsOf(skippedStages);
+
+  it('does not redeploy the branch environment on a pull request, even with the slot filled', () => {
+    expect(gateDecision({ plan, results, event: 'pull_request', branch: 'filled' })).toBe('skipped');
+  });
+
+  it('still deploys on the push to main', () => {
+    expect(gateDecision({ plan, results, event: 'push' })).toBe('run');
+  });
+
+  it('holds on both events when a stage that was planned to run did not pass', () => {
+    const bad = resultsOf({ ...skippedStages, framework: 'failure' });
+    expect(gateDecision({ plan, results: bad, event: 'push' })).toBe('held');
+    expect(gateDecision({ plan, results: bad, event: 'pull_request', branch: 'filled' })).toBe('held');
+  });
+});
+
 describe('prose patterns', () => {
   const prose = [
     '# comment',
@@ -1317,6 +1341,122 @@ describe('plan from a git repository', () => {
       'plan: the diff lists no paths, so this is a full run',
     );
   });
+
+  describe('with --passed', () => {
+    const NONE = 'a'.repeat(40);
+
+    /** Base, then a code commit that "passed" on the branch. */
+    function passedProject() {
+      const root = repository();
+      write(root, 'pipeline/prose.txt', 'docs/\n');
+      write(root, 'pipeline/unit.sh', 'exit 0\n');
+      write(root, 'pipeline/deploy.sh', 'exit 0\n');
+      write(root, 'src/keep.js', 'keep\n');
+      const base = commit(root, 'base');
+      write(root, 'src/a.js', 'a\n');
+      const passed = commit(root, 'code, which passed');
+      return { root, base, passed };
+    }
+
+    function planWith(root, args) {
+      const result = runPipeline(root, ['plan', ...args]);
+      expect(result.status).toBe(0);
+      const lines = result.stdout.split('\n').filter((line) => line !== '');
+      return { lines, stages: parsePlan(result.stdout).stages, stderr: result.stderr.trim() };
+    }
+
+    const SKIPS = {
+      framework: 'run', sanity: 'skipped', unit: 'skipped', integration: 'skipped', 'end-to-end': 'skipped', deploy: 'run',
+    };
+    const TODAY = {
+      framework: 'run', sanity: 'empty', unit: 'run', integration: 'empty', 'end-to-end': 'empty', deploy: 'run',
+    };
+    const stagesOnly = (stages) => Object.fromEntries(STAGES.map((stage) => [stage, stages[stage]]));
+
+    it('skips the four stages and still deploys when only prose followed the passed commit', () => {
+      const { root, base, passed } = passedProject();
+      write(root, 'docs/a.md', 'a\n');
+      commit(root, 'prose');
+      const out = planWith(root, ['--base', base, '--passed', passed]);
+      expect(stagesOnly(out.stages)).toEqual(SKIPS);
+      expect(out.lines).toEqual([...STAGES.map((stage) => `${stage}=${SKIPS[stage]}`), `passed=${passed}`, 'branch=empty']);
+      expect(out.stderr).toBe(`plan: the code passed at ${passed.slice(0, 7)}, so the stages are skipped`);
+    });
+
+    it('skips them when the tree is identical to the passed one, as on the push to main', () => {
+      const { root, base, passed } = passedProject();
+      const merged = git(root, 'commit-tree', `${passed}^{tree}`, '-p', base, '-m', 'squash');
+      const out = planWith(root, ['--base', base, '--head', merged, '--passed', passed]);
+      expect(stagesOnly(out.stages)).toEqual(SKIPS);
+      expect(out.stages.passed).toBe(passed);
+    });
+
+    it('plans from the whole diff when code changed after the passed commit', () => {
+      const { root, base, passed } = passedProject();
+      write(root, 'src/b.js', 'b\n');
+      commit(root, 'more code');
+      const out = planWith(root, ['--base', base, '--passed', passed]);
+      expect(stagesOnly(out.stages)).toEqual(TODAY);
+      expect(out.lines.some((line) => line.startsWith('passed='))).toBe(false);
+      expect(out.stderr).toBe(`plan: code changed since ${passed.slice(0, 7)} passed, so this is planned from the whole diff`);
+    });
+
+    it('plans from the whole diff when the passed commit does not resolve', () => {
+      const { root, base } = passedProject();
+      const out = planWith(root, ['--base', base, '--passed', NONE]);
+      expect(stagesOnly(out.stages)).toEqual(TODAY);
+      expect(out.lines.some((line) => line.startsWith('passed='))).toBe(false);
+      expect(out.stderr).toBe(`plan: ${NONE} does not resolve, so this is planned from the whole diff`);
+    });
+
+    it('plans as before without --passed (the existing test "runs or leaves empty each stage that has a script" covers the same diff shape)', () => {
+      const { root, base } = passedProject();
+      const out = planWith(root, ['--base', base]);
+      expect(stagesOnly(out.stages)).toEqual(TODAY);
+      expect(out.lines).toHaveLength(STAGES.length + 1);
+      expect(out.stderr).toBe('');
+    });
+
+    it('leaves a prose-only diff skipped, deploy included, and prints no passed line', () => {
+      const { root, passed } = passedProject();
+      write(root, 'docs/a.md', 'a\n');
+      commit(root, 'prose');
+      const out = planWith(root, ['--base', passed, '--passed', passed]);
+      expect(stagesOnly(out.stages)).toEqual({
+        framework: 'run', sanity: 'skipped', unit: 'skipped', integration: 'skipped', 'end-to-end': 'skipped', deploy: 'skipped',
+      });
+      expect(out.lines.some((line) => line.startsWith('passed='))).toBe(false);
+    });
+
+    it('compares trees, so a change the passed commit had and the head dropped counts as code', () => {
+      const root = repository();
+      write(root, 'pipeline/prose.txt', 'docs/\n');
+      write(root, 'pipeline/unit.sh', 'exit 0\n');
+      write(root, 'pipeline/deploy.sh', 'exit 0\n');
+      write(root, 'README.txt', 'x\n');
+      const base = commit(root, 'base');
+      write(root, 'src/b.js', 'b\n');
+      const shared = commit(root, 'shared code');
+      write(root, 'src/a.js', 'a\n');
+      const passed = commit(root, 'passed has a.js');
+      git(root, 'checkout', '-q', '-b', 'other', shared);
+      write(root, 'docs/a.md', 'a\n');
+      commit(root, 'head only adds prose');
+      // From the merge base the head differs from `passed` in prose only; tree to tree it lacks src/a.js.
+      expect(git(root, 'diff', '--name-only', `${passed}...HEAD`)).toBe('docs/a.md');
+      const out = planWith(root, ['--base', base, '--passed', passed]);
+      expect(stagesOnly(out.stages)).toEqual(TODAY);
+      expect(out.lines.some((line) => line.startsWith('passed='))).toBe(false);
+      expect(out.stderr).toContain('code changed since');
+    });
+
+    it('refuses --passed with --closed', () => {
+      const root = repository();
+      const result = runPipeline(root, ['plan', '--closed', '--passed', 'x']);
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain('--closed takes no other arguments');
+    });
+  });
 });
 
 describe('run, gate and commands', () => {
@@ -1397,6 +1537,24 @@ describe('run, gate and commands', () => {
       ...STAGES.slice(0, -1).map((stage) => `${stage}=${results[stage]}`),
     ], { input: input ?? `${STAGES.map((stage) => `${stage}=${plan[stage]}`).join('\n')}\n` });
   }
+
+  it('words a skip because the same code passed, and does not deploy a pull request', () => {
+    const root = repository();
+    const summary = join(root, 'summary.md');
+    const passed = 'c'.repeat(40);
+    const input = `${STAGES.map((stage) => `${stage}=${['sanity', 'unit', 'integration', 'end-to-end'].includes(stage) ? 'skipped' : 'run'}`).join('\n')}\npassed=${passed}\n`;
+    const results = resultsOf({ sanity: 'skipped', unit: 'skipped', integration: 'skipped', 'end-to-end': 'skipped' });
+    const pr = gate(root, { plan: planOf(), event: 'pull_request', results, summary, branch: 'filled', input });
+    expect(pr.status).toBe(0);
+    expect(pr.stdout).toBe('deploy=skipped\n');
+    const text = readFileSync(summary, 'utf8');
+    expect(text).toContain('| unit | skipped — the same code passed at `ccccccc` |');
+    expect(text).toContain('| deploy | skipped — the same code passed at `ccccccc`, and the environment has it |');
+    const push = gate(root, { plan: planOf(), event: 'push', results, input });
+    expect(push.stdout).toBe('deploy=run\n');
+    expect(push.stderr).toContain('| deploy | will run |');
+    expect(push.stderr).toContain('| framework | run — passed |');
+  });
 
   it('holds a deploy when framework failed and the other stage jobs were skipped', () => {
     const root = repository();
@@ -1681,6 +1839,175 @@ exit 99
   });
 });
 
+describe('passed', () => {
+  const HEAD = 'd'.repeat(40);
+  const OTHER = 'e'.repeat(40);
+  const MERGED = 'f'.repeat(40);
+  const GREEN = [{ name: 'pipeline / plan', conclusion: 'success' }, { name: 'pipeline / gate', conclusion: 'success' }];
+  const CLOSED = [{ name: 'pipeline / plan', conclusion: 'success' }, { name: 'pipeline / gate', conclusion: 'skipped' }];
+  const mine = (id, sha = HEAD, repo = 'acme/app') => ({ id, head_sha: sha, head_repository: { full_name: repo } });
+
+  /** A stub gh first on PATH that answers only the calls `passed` should make. */
+  function passedProject() {
+    const root = repository();
+    const bin = mkdtempSync(join(tmpdir(), 'tropis-gh-'));
+    temps.push(bin);
+    writeFileSync(join(bin, 'gh'), `#!/bin/sh
+echo "$*" >> "$STUB_LOG"
+if [ -n "$STUB_FAIL" ]; then echo "$STUB_FAIL" >&2; exit 1; fi
+case "$*" in
+  "api repos/acme/app/actions/runs/77") printf '%s' '{"workflow_id": 5}'; exit 0 ;;
+  "api repos/acme/app/actions/workflows/5/runs?event=pull_request&branch=fix%2Fa&per_page=10") printf '%s' "$STUB_RUNS"; exit 0 ;;
+  "api repos/acme/app/actions/workflows/5/runs?event=pull_request&head_sha=$STUB_HEAD&per_page=10") printf '%s' "$STUB_RUNS"; exit 0 ;;
+  "api repos/acme/app/actions/runs/"*"/jobs?per_page=100")
+    id=\${2#repos/acme/app/actions/runs/}; id=\${id%%/*}
+    eval "printf '%s' \\"\\$STUB_JOBS_$id\\""; exit 0 ;;
+  "api repos/acme/app/commits/"*"/pulls") printf '%s' "$STUB_PULLS"; exit 0 ;;
+esac
+echo "stub gh: unexpected call: $*" >&2
+exit 99
+`);
+    chmodSync(join(bin, 'gh'), 0o755);
+    const log = join(bin, 'calls.log');
+    writeFileSync(log, '');
+    const summary = join(bin, 'summary.md');
+    writeFileSync(summary, '');
+    return { root, bin, log, summary };
+  }
+
+  function passed(project, args, { env = {}, runs = [], jobs = {}, pulls = [], summary = true } = {}) {
+    const jobEnv = Object.fromEntries(Object.entries(jobs).map(([id, list]) => [`STUB_JOBS_${id}`, JSON.stringify({ jobs: list })]));
+    return runPipeline(project.root, ['passed', ...args, ...(summary ? ['--summary', project.summary] : [])], {
+      env: {
+        PATH: `${project.bin}:${process.env.PATH}`,
+        GITHUB_ACTIONS: 'true',
+        GITHUB_REPOSITORY: 'acme/app',
+        GITHUB_RUN_ID: '77',
+        GH_TOKEN: 'stub',
+        STUB_LOG: project.log,
+        STUB_HEAD: HEAD,
+        STUB_RUNS: JSON.stringify({ workflow_runs: runs }),
+        STUB_PULLS: JSON.stringify(pulls),
+        STUB_FAIL: '',
+        ...jobEnv,
+        ...env,
+      },
+    });
+  }
+
+  const calls = (project) => readFileSync(project.log, 'utf8').split('\n').filter((line) => line !== '');
+  const BRANCH = ['--branch', 'fix/a', '--repository', 'acme/app'];
+
+  it('picks the head of the newest run whose gate passed, past a closed run and a fork', () => {
+    const project = passedProject();
+    const result = passed(project, BRANCH, {
+      runs: [mine(1, OTHER, 'fork/app'), mine(2, OTHER), mine(3, HEAD)],
+      jobs: { 2: CLOSED, 3: GREEN },
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`${HEAD}\n`);
+    expect(result.stderr).toBe(`passed: run 3 passed at ${HEAD.slice(0, 7)}\n`);
+    expect(readFileSync(project.summary, 'utf8')).toContain(`passed: run 3 passed at ${HEAD.slice(0, 7)}`);
+    expect(calls(project).some((line) => line.includes('/runs/1/jobs'))).toBe(false);
+  });
+
+  it('prints nothing and says why when no run of the pull request is green', () => {
+    const project = passedProject();
+    const result = passed(project, BRANCH, { runs: [mine(2)], jobs: { 2: CLOSED } });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('passed: no green run of this pull request, so it is planned from the whole diff\n');
+  });
+
+  it('for a merge commit, picks the green run of the pull request that merged as it', () => {
+    const project = passedProject();
+    const pulls = [
+      { number: 9, merge_commit_sha: OTHER, head: { sha: OTHER } },
+      { number: 10, merge_commit_sha: MERGED, head: { sha: HEAD } },
+    ];
+    const result = passed(project, ['--merged', MERGED], { pulls, runs: [mine(4), mine(3)], jobs: { 4: CLOSED, 3: GREEN } });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`${HEAD}\n`);
+    expect(result.stderr).toBe(`passed: pull request #10 passed at ${HEAD.slice(0, 7)}\n`);
+  });
+
+  it('for a merge commit whose pull request has no green run, prints nothing', () => {
+    const project = passedProject();
+    const pulls = [{ number: 10, merge_commit_sha: MERGED, head: { sha: HEAD } }];
+    const result = passed(project, ['--merged', MERGED], { pulls, runs: [mine(4)], jobs: { 4: CLOSED } });
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe(`passed: pull request #10 has no green run at ${HEAD.slice(0, 7)}, so every stage runs\n`);
+  });
+
+  it('for a commit no pull request merged as, prints nothing', () => {
+    const project = passedProject();
+    const pulls = [{ number: 9, merge_commit_sha: OTHER, head: { sha: OTHER } }];
+    const result = passed(project, ['--merged', MERGED], { pulls });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe(`passed: ${MERGED.slice(0, 7)} was not merged from a pull request, so every stage runs\n`);
+  });
+
+  it('never fails the run: a gh failure prints nothing, exits 0, and says why in the summary', () => {
+    const project = passedProject();
+    const result = passed(project, BRANCH, { env: { STUB_FAIL: 'HTTP 403: Resource not accessible by integration' } });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('passed: could not ask GitHub');
+    expect(result.stderr).toContain('HTTP 403');
+    expect(result.stderr).toContain('nothing is skipped');
+    expect(readFileSync(project.summary, 'utf8')).toContain('HTTP 403');
+  });
+
+  it('prints nothing for an answer of the wrong shape', () => {
+    const project = passedProject();
+    const result = passed(project, BRANCH, { env: { STUB_RUNS: '{"total_count": 0}' } });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('unexpected shape');
+  });
+
+  it('prints nothing outside GitHub Actions, and asks nothing', () => {
+    const project = passedProject();
+    const result = passed(project, BRANCH, { env: { GITHUB_ACTIONS: '' } });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('passed: not in GitHub Actions, so nothing is skipped\n');
+    expect(calls(project)).toEqual([]);
+  });
+
+  it('names a missing variable and prints nothing', () => {
+    const project = passedProject();
+    const result = passed(project, BRANCH, { env: { GITHUB_RUN_ID: '' } });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('GITHUB_RUN_ID');
+  });
+
+  it.each([
+    [[]],
+    [['--branch', 'fix/a']],
+    [['--merged', MERGED, '--branch', 'fix/a', '--repository', 'acme/app']],
+    [['--summary', 'x']],
+  ])('exits 2 on a usage error: %j', (args) => {
+    const project = passedProject();
+    const result = passed(project, args, { summary: false });
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('passed: use --branch <ref> --repository <owner/name>, or --merged <commit>\n');
+  });
+
+  it('judges a gate by name, not a run by its conclusion', () => {
+    expect(gateIsGreen(GREEN)).toBe(true);
+    expect(gateIsGreen(CLOSED)).toBe(false);
+    expect(gateIsGreen([{ name: 'gate', conclusion: 'success' }])).toBe(true);
+    expect(gateIsGreen([{ name: 'pipeline / host', conclusion: 'success' }])).toBe(false);
+    expect(runsFromRepository([mine(1, HEAD, 'fork/app'), mine(2)], 'acme/app').map((run) => run.id)).toEqual([2]);
+    expect(firstGreenRun([mine(1), mine(2)], (run) => ({ jobs: run.id === 2 ? GREEN : CLOSED })).run.id).toBe(2);
+    expect(firstGreenRun([mine(1)], () => ({ error: 'boom' }))).toEqual({ error: 'boom' });
+  });
+});
+
 describe('GitHub workflow', () => {
   it('gives each stage its own job, and the four filled stages run side by side', () => {
     const pipelineDoc = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8'));
@@ -1803,6 +2130,25 @@ describe('GitHub workflow', () => {
     expect(callerText).toContain('${{ inputs.commit || github.sha }}');
     expect(callerText).toContain('gh workflow run staging.yml --ref main -f commit=<commit>');
     expect(callerText).toContain('never by an agent');
+  });
+
+  it('plans from a passed commit only on a push to a pull request and on a push to main, and never for staging', () => {
+    const pipelineText = readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8');
+    const planStep = YAML.parse(pipelineText).jobs.plan.steps.find((step) => step.id === 'plan');
+    expect(planStep.env.GH_TOKEN).toBe('${{ github.token }}');
+    expect(planStep.env.HEAD_REPO).toBe('${{ github.event.pull_request.head.repo.full_name }}');
+    const run = String(planStep.run);
+    expect(run.match(/passed --branch/g)).toHaveLength(1);
+    expect(run.match(/passed --merged/g)).toHaveLength(1);
+    expect(run).toMatch(/"\$EVENT_NAME" = "pull_request" \] && \[ "\$ACTION" = "synchronize" \][\s\S]*passed --branch "\$HEAD_REF" --repository "\$HEAD_REPO"/);
+    expect(run).toMatch(/elif \[ "\$EVENT_NAME" = "push" \][\s\S]*passed --merged "\$PUSH_SHA"/);
+    expect(run).toContain('git fetch --no-tags --quiet origin "$passed" || true');
+    expect(run).toContain('passed_args=(--passed "$passed")');
+    expect(run).toContain('"${passed_args[@]}"');
+    const staging = readFileSync(join(blueprint, 'templates/github/tropis-staging.yml'), 'utf8');
+    expect(staging).not.toContain('pipeline.mjs passed');
+    expect(staging).not.toContain('pipeline.mjs plan');
+    expect(staging).not.toContain('--passed');
   });
 
   it('the ruleset requires a pull request and the gate, and lets nobody bypass it', () => {

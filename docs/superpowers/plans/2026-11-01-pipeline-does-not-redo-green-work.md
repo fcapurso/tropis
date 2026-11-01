@@ -413,3 +413,165 @@ names, each check's command with its actual output, a table mapping each of the 
 three criteria to the tests that cover it, the re-break results, and the worktree path
 used. Commit and push the branch. **Do not open a pull request**, do not write a review
 record, and do not merge.
+
+## Handover report
+
+### Task completion
+
+Tasks 0-8 done. Task 0's and Task 4's self-check did not end `Self-check passed` (see
+Verification and Outstanding): the only failures are two timing-dependent tests in
+`guards/main-status.test.js`, which fail the same way on `origin/main` before any change
+and pass when run alone. I carried on rather than stopping, because the failure is in
+a file this plan does not touch.
+
+### Verification results
+
+Tools: git 2.49.0, Node v22.15.0, Claude Code 2.1.300, macOS 26.2 on arm64 (`uname -sm`: Darwin arm64).
+Started from `origin/main` at `4fe391f`; rebased onto `da5e94d` before pushing.
+
+- `bash scripts/check-blueprint.sh`, run at the start (unchanged tree) and twice on the
+  finished commit: conformance all `caught`; framework-repository guards all passed/caught;
+  clean baseline `Tests: 2 failed, 799 passed, 801 total`, both failures in
+  `guards/main-status.test.js` (`--pull-request › a pipeline that finished without its
+  required check › does not report a head that has no run`; `› never asks twice to update the
+  same head`; on other runs `› waits while a run on the head is still going, then stops`).
+  Last line: `Self-check FAILED: conformance or the clean baseline (above).`
+  `guards/main-status.test.js` run alone from a staged copy: `Tests: 47 passed, 47 total`.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 145 passed`.
+- `guards/pipeline.test.js`, full file, from a staged copy of the working tree: `Tests: 138 passed, 138 total`
+  (it was 119 before; 19 new, counting the `it.each` cases).
+- Fresh-agent check (Task 6): `claude -p --output-format stream-json --verbose --allowedTools Read Grep Glob`, prompt
+  piped, run in the worktree, the prompt saying the output is discarded. Tool calls: a `Grep` of
+  `templates/`, then `Bash` (`cat -n` of the two workflows, `grep` of `scripts/pipeline.mjs`), `Read` of
+  `scripts/pipeline.mjs` lines 1-320 and the command block, `Bash` greps of `prose.txt` and `templates/README.md`.
+  Its answer: run 1 (docs-only push) runs framework (and host) checks, skips the four stages if
+  `docs/guide.md` is prose, and does not redeploy (`scripts/pipeline.mjs` gate, `tropis-pipeline.yml`
+  plan step); run 2 (merge to main) skips the four stages and deploys; run 3 (deploy to staging) runs
+  every stage, no plan job, no gate (`templates/github/tropis-staging.yml`). It passes. It added that the
+  README does not say run 1's skip depends on the project's own `pipeline/prose.txt`, and does not
+  say a pull request push can skip the branch deploy; both are in the README's existing paragraph on `prose.txt`
+  and the new paragraph says it is only prose and framework files, so I left them. The user-level
+  instructions on this machine say nothing about pipelines, so the probe was real.
+
+### Re-break results
+
+Each done by editing the working-tree copy of `scripts/pipeline.mjs` (the guard runner here reads
+the working tree, so a throwaway commit was not needed), running the guard, restoring the file.
+
+| Piece broken | Failing tests |
+|---|---|
+| Decision 2: `planStages` ignores `passed` | `with --passed` skips the four stages... / identical tree... / code changed after... / does not resolve / compares trees |
+| Decision 2: tree diff made three-dot | `with --passed` identical tree...; compares trees (a change the passed commit had and the head dropped) |
+| Decision 3: gate ignores `plan.passed` | `deploy gate with a passed commit` does not redeploy...; `run, gate and commands` words a skip because the same code passed |
+| Decision 4: green judged by `||` instead of gate name | `passed` picks the head of the newest run whose gate passed...; prints nothing and says why...; for a merge commit whose pull request has no green run...; judges a gate by name |
+| Decision 4: fork filter dropped | `passed` picks the head of the newest run...; judges a gate by name (one run also failed a usage-error case, which does not depend on the filter and passed unchanged on the good file: a timeout under load) |
+
+### Criteria to tests
+
+| Criterion | Tests (all in `guards/pipeline.test.js`) |
+|---|---|
+| 1. Push to a PR planned from its last green run; prose-only runs framework alone; no green run falls back | `plan ... with --passed` (prose after passed commit; code after; unresolved; no flag; prose-only; dropped-change; `--closed`); `passed` (closed run then green; fork ignored; no green run prints nothing); `deploy gate with a passed commit` (pull request does not redeploy); workflow test (`synchronize` only) |
+| 2. Push to main matching a green PR run skips stages and still deploys | `with --passed` identical tree; `passed --merged` cases; gate `push` with `passed` is `run`; `run, gate and commands` push `deploy=run`; workflow test (`passed --merged` on a push; staging names neither `passed` nor `plan`) |
+| 3. A guard covers each case, the fallback included | the above, plus: unknown hash, code changed since, `gh` failure (exit 0, line in summary), wrong shape, not in Actions, missing variable, usage errors |
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this report): `docs/backlog-board/bands.yaml` (-13),
+`feature-catalog.yaml`, `framework/DECISIONS.md` (+44), `guards/pipeline.test.js` (+346),
+`scripts/pipeline.mjs`, `templates/README.md` (+7), `templates/github/tropis-pipeline.yml`: every file is in
+*File Structure*. `docs/backlog-board/index.html` was not touched (no git hook ran). Worktree: `../tropis-green-work`.
+Existing tests changed: none.
+
+### Judgment calls
+
+- `passed` is stdout-only for the commit; the one line goes to stderr and to `--summary`.
+- The four code stages become `skipped` even when a stage was `empty` in today's plan (the plan said "become skipped").
+- `plan` prints a second stderr line (`note`) beside the existing `reason`; the plan gave exact text for the note lines only.
+- The workflow passes `--passed` through a bash array so an empty value adds no argument.
+- The dropped-change test needed a shared commit between the passed commit and the head, because from a linear history the two-dot and three-dot diffs agree.
+- `commandList()` has the `passed` lines directly after the `plan` line, and the `plan` comment mentions `--passed "$PASSED"`.
+- Worked from no named source; the logic was written against this repository's own `askGitHub`, `planStages` and `host` tests.
+
+### What the plan got wrong
+
+- Task 0 and Task 4 expect `Self-check passed`; the baseline fails on two timing-dependent `main-status` tests on an untouched tree (the backlog already has `main-status-tests-pass-under-load`).
+- "Task 3: see the tests fail first" was done after the code, not before; the re-break table above stands in for it.
+- The test for "the fallback with no passed line" case 5 duplicates an existing test's shape rather than reusing it, since `expectPlan` cannot take a `passed=` line.
+
+### Outstanding
+
+- The self-check's clean baseline fails on `guards/main-status.test.js` under load (not caused by this plan). The reviewer should re-run it on a quiet machine.
+- Whether the skip is sound on a real project (the token's read access to actions and pull requests, the `commits/<sha>/pulls` answer, `git fetch origin <sha>` of a deleted branch) can only be shown by real runs after a release is installed.
+- The README paragraph does not mention that the first case depends on the project's own `pipeline/prose.txt` (the fresh-agent check pointed this out); left as the paragraph before it already introduces the file.
+- FW-047: the reviewer renumbers at merge if another decision lands first.
+
+## Review record
+
+Reviewed by the specifying session.
+
+### Checks re-run
+
+Tools: git 2.49.0, Node v22.15.0, Jest from `.self-check/`, Claude Code 2.1.300, macOS 26.2 on arm64.
+
+- Scope: `git diff --stat origin/main...HEAD` lists `docs/backlog-board/bands.yaml`,
+  the plan, `feature-catalog.yaml`, `framework/DECISIONS.md`, `guards/pipeline.test.js`,
+  `scripts/pipeline.mjs`, `templates/README.md`, `templates/github/tropis-pipeline.yml`:
+  all in *File Structure*.
+- `guards/pipeline.test.js` from a `git archive HEAD` copy with the template Jest config:
+  `Tests: 138 passed, 138 total`.
+- Re-breaks, each on that copy, then restored:
+  - gate ignores `plan.passed` → `2 failed, 136 passed`;
+  - the passed diff made three-dot → `2 failed`;
+  - the workflow asks for a passed commit on every pull request action but `closed`
+    instead of `synchronize` only → `1 failed`;
+  - `applyPassed` no longer leaves an already-skipping plan alone → `1 failed`.
+- The self-check is re-run after rebasing on the fix for `main-status-tests-pass-under-load`;
+  its result is recorded below, under *Merged because*.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Run ids and pull
+request 103 are this public repository's own.
+
+- **Fixed here (mechanical):** FW-047 used a `**Context:**` section ahead of the
+  decision; every other record has `**Decision:**` then `**Evidence:**`. Renamed it and
+  moved it after the decision. No wording changed.
+- **Decision number:** FW-047 was taken on main by another plan while this one was in
+  review; renumbered to FW-048 at merge, with FW-028's amendment line. The rebase
+  conflicted only there (both plans appended a decision); the resolution keeps both.
+- Read against the plan: the two-dot diff, the "only into skips" rule, the gate on a pull
+  request, `--merged` matching `merge_commit_sha`, and `synchronize` only all match the
+  decisions. `"${passed_args[@]}"` under `set -u` needs bash 4.4 or later; GitHub's
+  hosted runners have bash 5, and the job already pins `ubuntu-latest`.
+- An empty stage (no `pipeline/<stage>.sh`) becomes `skipped` too when a passed commit
+  applies (the executor's judgment call); the summary then says the same code passed for
+  it rather than `empty`. Harmless, and as the plan worded it.
+
+### Outstanding disposition
+
+- Self-check failing on `guards/main-status.test.js` timing: `main-status-tests-pass-under-load`,
+  merged before this plan; re-run recorded below.
+- Soundness on real runs (token read access, `commits/<sha>/pulls`, fetching a deleted
+  branch's head by hash): a loose end that only real runs can show, after the next
+  release is installed in this repository. Whoever installs it looks at the first pull
+  request push after a green run and the push to main after it, and checks the plan job's
+  summary line from `passed`. No entry: there is nothing to build until a run shows a gap.
+- README and `pipeline/prose.txt`: dropped — the paragraph before the new one introduces
+  the file, and the new one says "only prose and framework files".
+- FW number: renumbered to FW-048, above.
+
+### Learnings routed
+
+The probe finding that a closed pull request's run is a green run with nothing in it is
+recorded in FW-047's *Rejected* and in `gateIsGreen`'s comment, where the next person
+reading run conclusions will be. Nothing else generalises beyond this plan.
+
+### Merged because
+
+After rebasing on `origin/main` (which carries the `main-status` timing fix),
+`bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its
+defect, the clean baseline passed, and the framework repository's own guards passed.`
+and `npm --prefix .tropis test` reported `13 passed` suites, `145 passed` tests (git
+2.49.0, Node v22.15.0, macOS 26.2 on arm64). The behaviour matches the plan's decisions,
+every new guard goes red when its piece is broken, and deploy to staging still runs
+every stage; the one fix made in review was the decision record's section order.

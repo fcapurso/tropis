@@ -916,6 +916,8 @@ Tropis's repository (it is private, and a project pins a release, not a branch).
 those hosted elsewhere, where they are inert. Changing the stage order or the gate
 is breaking.
 
+**Amended 2026-11-01** — a stage may also be skipped because the same code already passed; FW-048.
+
 ## FW-029: A branch's environment is named from the branch and lives as long as its pull request
 
 **Date:** 2026-10-25 · **Status:** Accepted
@@ -1509,3 +1511,45 @@ varies by project and a project's own install rewrites it.
 changes, and the self-check fails until it is. `dependency-overrides` now fires on a
 regeneration rather than on any CI run. Security updates arrive through a regeneration,
 which GitHub's dependency alerts on this repository prompt.
+
+## FW-048: A run skips the stages when the same code already passed
+
+**Date:** 2026-11-01 · **Status:** Accepted. Amends FW-028: a stage may be skipped for a second reason.
+
+**Decision:** A run is green when its job named `gate`, or ending in `/ gate`, concluded
+`success`; the run's own conclusion is not used, since a closed pull request's run is
+`success` with every stage skipped. Only runs of the same workflow count. A new command,
+`pipeline.mjs passed`, asks GitHub for the head commit of a pull request's last green run
+(on a push to an open pull request, only for `synchronize`) or of the green run of the
+pull request that merged as the commit on main, and prints it or nothing. It never fails
+the run; one line in the plan job's summary says what it found or why not. `plan
+--passed <commit>` first plans as before. Only if that plan runs a code stage, and the
+two-dot diff (tree against tree) from `<commit>` to the head lists nothing or only prose
+and framework files, it turns sanity, unit, integration and end-to-end into skips. The
+framework stage still runs, `deploy` keeps its value, and a `passed=<commit>` line is
+added. Otherwise the plan is exactly today's, with a stderr line saying why. On a pull
+request the gate then does not redeploy (the branch's environment already holds that
+code); on the push to main it deploys. Deploy to staging and promote to production do not
+use the plan and still run every stage.
+
+**Evidence:** The pipeline skipped the four filled stages only when the whole diff was prose
+and framework files. Two runs retested code that had already passed. A push to a pull
+request that changed only a document re-ran every stage on code the previous run had
+passed. And the push to main re-ran them on a tree a green pull request run had tested:
+on a gated main the squash commit's tree is the head's tree, and the push run on one such
+commit took 3 min 34 s repeating the stages that tree had passed (pull request 103 of
+this repository, probed with `gh` on 2026-11-01). The entry came from the first adopter's
+flush of 2026-10-29.
+
+**Rejected:** Planning a pull request from the merge base of the green run (a change the
+green run had and the head dropped is missed). Relying on a run's `pull_requests` list
+(empty for every run in the probe). The run's own conclusion (a closed run is green with
+nothing in it). Letting a code change since the green run plan from that smaller diff (it
+could run fewer checks than a code change gets today; the new path only ever turns
+stages into skips). Skipping in deploy to staging (FW-030 and FW-044: it runs every
+stage).
+
+**Consequences:** The workflow token's default read access must cover actions and pull
+requests, or nothing is skipped and the plan job's summary says so. Framework checks run
+on every run. Whether the skip is sound on a real project can be shown only by real runs
+after a release is installed.
