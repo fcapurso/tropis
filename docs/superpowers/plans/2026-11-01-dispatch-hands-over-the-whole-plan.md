@@ -552,3 +552,54 @@ File Structure table, and the plan file is added by this report. Worktree used: 
   not `.claude/framework/`, so no branch-commit body rule for the installed layer
   applied; the probe above is the record. Doc closeout: no portable lesson beyond the
   entries shipped (this repository is the upstream). Merge is for the parent review.
+
+## Review record
+
+Reviewed by the specifying session, 2026-11-01, with git 2.49.0 and Node v22.15.0 in
+Claude Code 2.1.300 on Darwin arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: nine files, every one in *File Structure*.
+- `guards/dispatch.test.js` and `guards/plan-dispatchable.test.js` on committed content
+  (the Task 0 snippet): `Tests: 33 passed, 33 total`.
+- Re-break: a throwaway commit restoring `scripts/plan-binding.js`,
+  `scripts/isolate-for-plan.mjs` and `scripts/dispatch.mjs` from `origin/main`, then
+  `guards/dispatch.test.js`: `Tests: 6 failed, 20 passed, 26 total`. The six are the
+  three header tests, the attach test, the refusal and the note; the two that pass are
+  the unchanged cases (no attach step for one checkout, no note on a base on the remote's
+  main). Reset, not pushed.
+- `bash scripts/check-blueprint.sh`: last line `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 131 passed`.
+- The specifying session saw the defect live before dispatch: the installed dispatch read
+  this plan's Requires from a quote in its preamble (recorded under *Traps*).
+
+### Found
+
+Public exposure: the diff was read for private material; nothing. (Older catalog comments
+outside this diff carry a placeholder hostname; not touched here.)
+
+- Two new clauses in `commands/dispatch.md` and three in `framework/dispatch.md` ran past
+  the files' line width. Mechanical; the reviewer rewrapped them (`652aa75`), words
+  unchanged.
+- The executor's judgment call on `origin/HEAD` is right: git sets it on fetch, and the
+  branch it points to is what someone pushes to. The plan's Decision 3 was wrong there.
+
+### Outstanding disposition
+
+The handover lists nothing outstanding. The `AGENTS.md` note holds until a release after
+0.7.1 is installed; the session that installs it removes the note, which the note itself
+says. No criterion needs the developer: nothing here has a screen.
+
+### Learnings routed
+
+- The old parser reading a quoted field from a plan's prose is fixed by this plan's own
+  change; nothing further to route.
+- No durable change beyond the entries shipped: this repository is the upstream, and the
+  dispatch documents were updated in the plan.
+
+### Merged because
+
+Every criterion maps to a test that goes red without the change or to the recorded probe,
+the self-check and the installed checks pass, and the one review fix was a rewrap.
