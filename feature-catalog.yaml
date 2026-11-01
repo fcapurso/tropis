@@ -4904,9 +4904,11 @@
 # a merge token, parallel starts on dependencies) made a feature every project has. The
 # design is the spec in refs; these entries are its pieces, in order. Acceptance criteria
 # are written when each is shaped, from the spec.
+# Shipped by plan docs/superpowers/plans/2026-11-01-merge-token-can-live-on-github.md;
+# the answer is in the sprint design's section 3 and its evidence section, and FW-049.
 - id: merge-token-can-live-on-github
   title: Find out whether the merge token can be a marker on GitHub that only one session can take
-  status: building
+  status: shipped
   value: Before the merge token is built, we know whether GitHub accepts a git ref outside
     branches and tags on a repository with Tropis's ruleset, whether creating one that
     already exists is refused so that only one session can hold it, what a cloud session's
