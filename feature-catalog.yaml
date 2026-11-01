@@ -1882,9 +1882,11 @@
 # Delivers section, not by refs: refs names only the design (the catalog rule), so a
 # plan written today is never in refs.
 # Plan: docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md.
+# Shipped by docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md; each
+# criterion's test is in that plan's handover report.
 - id: next-shows-which-work-is-planned
   title: The backlog report shows which ready work already has a plan
-  status: building
+  status: shipped
   value: An operator reading the backlog report can tell at a glance which ready entries
     are shaped with a plan waiting to be dispatched, and which still need shaping, and the
     next step points at the plan to dispatch when there is one. Today a planned entry is
@@ -1903,7 +1905,10 @@
     - guards/next-report.test.js covers each criterion.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/next.mjs
+    - scripts/next-work.js
+    - guards/next-report.test.js
   refs: []
 # 2026-10-16, found in the backlog cleanup: the arc of
 # docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md listed
@@ -2412,9 +2417,11 @@
 # Each half alone leaves one kind of work invisible, so they are one entry.
 # 2026-11-01, checked against the report while planning the next-report bundle; the
 # criteria stand. Plan: docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md.
+# Shipped by docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md; each
+# criterion's test is in that plan's handover report.
 - id: next-lets-no-open-work-drop-out
   title: The backlog report shows each layer as its own stream, and names the work bands would hide
-  status: building
+  status: shipped
   value: Someone reading the backlog report sees the next step for product work and for
     framework work, and still sees an unblocked idea worth shaping and an arc that lost
     its turn. Today one mixed list lets one layer's next step hide the other's, and once
@@ -2436,7 +2443,10 @@
     - guards/next-report.test.js covers each criterion.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/next.mjs
+    - scripts/next-work.js
+    - guards/next-report.test.js
   refs: []
 
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
@@ -2481,9 +2491,11 @@
 # if next.mjs starts a process" could not hold; the check is pinned to next.mjs itself.
 # The age threshold needs a waiting entry, or an empty queue would be sent to a flush.
 # Plan: docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md.
+# Shipped by docs/superpowers/plans/2026-11-01-next-report-shows-all-open-work.md; each
+# criterion's test is in that plan's handover report.
 - id: next-names-the-flush-when-due
   title: The backlog report names /flush-upstream when the queue is worth a sitting
-  status: building
+  status: shipped
   value: Someone reading the backlog report is told to run /flush-upstream when the
     upstream queue holds three or more entries or has gone 14 days without a flush.
     Today it prints only a count, and a queue nobody is prompted to flush is how lessons
@@ -2498,7 +2510,10 @@
     - With no queue file the report prints no queue section, as today.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/next.mjs
+    - scripts/next-work.js
+    - guards/next-report.test.js
   refs: []
 
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
