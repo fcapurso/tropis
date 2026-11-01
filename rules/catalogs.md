@@ -2,11 +2,15 @@
 <!-- layer: framework -->
 
 The backlog is the source of truth for what this product does and what is planned, and
-the documents generated from it are not to be edited by hand.
+any document generated from it is not to be edited by hand.
 
-- After any change, run the generator and commit the regenerated Markdown **in the same
-  commit**. A guard compares them byte-for-byte, so splitting them across two commits
-  leaves the first one red.
+- **Where the project generates a document from the backlog**, run its generator after
+  any change and commit the regenerated document **in the same commit**. A guard
+  compares them byte-for-byte, so splitting them across two commits leaves the first one
+  red. A project set up by the framework has no such document until it adds one: the
+  guards, the backlog report and the board read the backlog itself, and the board's page
+  is not committed. Where there is none, there is nothing to run and no step to report
+  as skipped.
 - Never hand-edit a generated document. Change the backlog and regenerate.
 - **A generated region inside a hand-written page gets the same guard.** Where a page
   people write by hand must carry a generated reference, mark the region with two comment
@@ -47,6 +51,15 @@ the documents generated from it are not to be edited by hand.
   treats every spec cited by more than one entry as an arc and reports how far it has
   got, so a grooming or review spec cited on each entry it touched shows as a false arc
   of unrelated work. Name such a document in a comment above the entry instead.
+- **Three things in an unquoted value break the YAML.** A colon followed by a space
+  reads the rest of the line as a nested mapping, and the catalog check fails with
+  "Nested mappings are not allowed in compact mappings". A space followed by `#` starts
+  a comment, which on a value's last line drops the rest of the value with no error at
+  all. A value that begins with a backtick, or with a quotation mark that does not close
+  the whole value, fails; one that begins with another YAML indicator, such as `*`, `&`,
+  `!`, `[` or `{`, fails or parses as something else. Rephrase, or put the whole value
+  in double quotes. These are what needs quoting where a backlog command says to quote
+  nothing that does not need it.
 
 ## What does not become an entry
 
@@ -77,14 +90,32 @@ shipped 21. One review filed two for a single shipped entry: a warning that was 
 only before setup's own commit, and a gap the reviewer had already filled by hand.
 Both were dropped the same day.
 
+**A finding worth keeping is captured as a backlog entry, and nowhere else instead.** A
+task card, or a side or background session of the agent tool, is seen by neither the
+backlog, its report nor its board, so the work it holds is planned by nobody and found
+only by whoever opens that tool. Capture it with `/idea`, and tell the developer if it
+matters now.
+
+**A fix an agent proposes on its own starts as an idea entry, and is shaped before any
+branch or plan is made for it.** That holds for a fix to the project's own process
+machinery too; work the upstream framework must do goes to the upstream queue instead
+(*Layers*). The developer then decides whether and when it is done, rather than finding
+it under way. Work the developer asks for directly is not proposed by the agent, and
+neither paragraph applies to it.
+
+Both were corrected in the framework's own repository before they were written here: a
+guard defect raised as a background task card instead of an entry, and defects found by
+a model-tier refresh taken straight to a branch and then a plan, until the developer had
+asked twice where the entry was.
+
 ## Status transitions
 
 Status changes hands at fixed moments, not whenever it feels right:
 
 - `idea` → `shaped` when acceptance criteria are written, before implementation.
 - `shaped` → `building` **when its plan is dispatched**.
-- `building` → `shipped` **when its plan merges**, in the same commit as the regenerated
-  documentation.
+- `building` → `shipped` **when its plan merges**, in the same commit as any document
+  regenerated from the backlog.
 - `building` → `shaped` if the plan is abandoned; nothing stays `building` without a plan.
 - `idea` or `shaped` → `dropped` when it is decided the work will not be done (see
   *Dropping*).
