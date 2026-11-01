@@ -19,6 +19,98 @@ For the full development history, see the git log.
 
 _Nothing yet._
 
+## [0.7.2] — 2026-11-01
+
+Two agent sessions can now work in one project at the same time without moving each
+other's branches, and an agent that hands a pull request to the host to merge stays with
+it until the main branch is green. The backlog report shows product work and framework
+work side by side, each with its next step, and the backlog page in your browser keeps
+itself current. Taking an update can no longer hang.
+
+### What to do by hand
+
+**1. Optional: add the board's hook lines where the install could not.** The backlog
+page now rebuilds itself through git hooks that `npm --prefix .tropis install` writes.
+If your project already has its own `post-commit`, `post-merge`, `post-checkout` or
+`post-rewrite` hook, or sets `core.hooksPath`, the install leaves those alone and prints
+the line to add. Add that line to each hook it names, or run
+`npm --prefix .tropis run board` yourself whenever you want a fresh page.
+
+**2. Optional: let agents create branches in the main checkout again.** The update adds
+a hook to `.claude/settings.json`, keeping your own entries, and agents are now refused
+`git checkout -b`, `git switch -c` and `git branch <name>` in your project's main
+checkout, and are shown the command that creates the branch in a worktree beside it
+instead. If you want the old behaviour, delete the `branch-in-worktree.sh` entry from
+`.claude/settings.json`.
+
+### Two sessions can share a project
+
+When two agent sessions worked in the same checkout, one session switching or pulling
+could move the other's branch, so a commit landed on the wrong branch or started from the
+other session's work. Every branch is now created in a worktree of its own, beside the
+project's folder and based on the remote's main branch, and a hook refuses to create one
+in the main checkout. `/update` works the same way: it takes a release in a worktree of
+its own and tells you to remove it once the branch has merged.
+
+### Work handed to auto-merge is seen through
+
+An agent that sets a pull request to merge itself used to consider the job done, so a
+pull request that fell behind the main branch, failed a check or hit a conflict sat there
+with nobody told. Agents now run `node .tropis/scripts/main-status.mjs --pull-request <N>`
+after setting auto-merge. It keeps the branch up to date as the main branch moves, waits
+for the merge and then for the main branch's checks, and stops with the pull request and
+the reason if it conflicts, a check fails, auto-merge is off or the pull request is
+closed.
+
+### The backlog report shows all open work
+
+`/next` now shows product work and work on how the project is run as two separate
+streams, each with its own next step, so one never hides the other. It tells apart the
+ready entries that already have a plan waiting — and points at that plan to hand over —
+from the ones that still need a plan. With bands in use it also lists the high-band ideas
+that are ready to shape, and says when work already under way lost its turn to something
+in a higher band. It reminds you to run `/flush-upstream` when three suggestions are
+waiting, or one has waited more than 14 days since the last flush.
+
+### The backlog page is always current
+
+The board, `docs/backlog-board/index.html`, now rebuilds itself after every commit,
+pull, branch switch and rebase, and is never committed, so two changes to the backlog
+never conflict over it. It is the one readable view of the backlog: the backlog rule no
+longer asks for a generated catalog document, and an agent that finds one in your project
+proposes a backlog entry to replace it with the board.
+
+### Plans an executing agent can trust
+
+- **A plan's header reaches the executing agent whole.** A *Requires* field that wraps
+  onto a second line used to arrive cut off, and a field whose bold covered the colon
+  arrived empty. `/dispatch` now reads each field to the end of its paragraph, and
+  refuses a plan whose field reads empty, naming the line.
+- **A plan is not branched from a commit that lacks it.** Isolating for a plan now
+  refuses a base commit that does not hold the plan, so the executing agent never starts
+  in a worktree with no instructions.
+- **An agent in a cloud session gets every checkout the plan needs.** When a plan works
+  across several repositories, the prompt `/dispatch` prints tells an agent that started
+  with only one of them to clone the others before it starts.
+- **Plans state their results as checks that can fail.** The planning rule asks for
+  every claim about the result to be a check whose output differs between success and
+  failure, instead of figures the author measured by doing the work once on a copy.
+
+### Smaller corrections
+
+- Taking or checking an update ends with an error that names the stuck step, instead of
+  waiting forever with nothing on the screen.
+- The backlog rule names the characters that break an unquoted value in
+  `feature-catalog.yaml`: a colon followed by a space, and a space followed by `#`.
+- The backlog rule says a finding worth keeping goes into the backlog, never only into a
+  tool's task card or side session, and a fix an agent proposes on its own starts there
+  as an idea.
+- The rule for scripts under `.tropis/` says a script that runs git uses your git
+  settings as they are; only its tests set them aside, so your credentials and commit
+  identity still work.
+
+Checked on the release candidate: no — no candidate was rehearsed
+
 ## [0.7.1] — 2026-10-31
 
 A fix for projects that gated their main branch in 0.7.0. The pipeline's `host` job no
