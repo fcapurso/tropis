@@ -25,10 +25,15 @@ things are the way they are.
 
 - **An idea becomes a merged change along one path.** It is captured in the backlog,
   shaped, planned by one session, carried out by another, reviewed, and merged.
-- **You see what to do next, in one order**, in the terminal or on one page in a
-  browser. The backlog sits in four bands, from *do now* to *leave it*, ranked inside each
-  by value over effort, and refreshing it proposes merging, bundling or closing entries
-  that overlap, belong together or are already done.
+- **You see what to do next**, in the terminal or on one page in a browser. Product
+  work and work on how the project is run are two streams, each with its own next step:
+  dispatch the plan that is waiting, or write one. The backlog sits in four bands, from
+  *do now* to *leave it*, ranked inside each by value over effort; nothing open drops out
+  of sight, and refreshing it proposes merging, bundling or closing entries that overlap,
+  belong together or are already done.
+- **The backlog page is always current.** It rebuilds itself after every commit, pull,
+  branch switch and rebase, and is never committed, so two changes to the backlog never
+  conflict over it.
 - **Rules reach the agent when it touches their area**, and your project can change where
   a rule applies or add to it in its own files, which updates never overwrite.
 - **What a change taught is recorded where the next agent will meet it**: as a rule, a
@@ -44,9 +49,15 @@ things are the way they are.
 - **Your main branch takes only checked changes.** Tropis ships a GitHub ruleset that
   makes the host refuse a pull request whose checks failed or have not finished, and the
   pipeline fails until the project applies it or records why it will not.
+- **Work handed to the host to merge is seen through.** An agent that sets a pull
+  request to merge itself stays until it has merged and the main branch is green, or
+  says why not.
 - **A red main branch is noticed.** If the main branch fails its checks after a merge,
   the session that merged is told and stops, and anyone starting work next hears it
   first: `/next` and starting a plan both open by saying so.
+- **Two sessions can work in one project at once.** Every branch is created in a
+  worktree of its own, so one session can never move another's branch or land a commit
+  on it.
 - **Your project's own checks hold its records true.** They fail on a backlog that breaks
   its own rules, a page that points nowhere or is past its verified date, a merged plan
   with no review record or with its entry left unshipped, and a rule whose claim about
@@ -107,8 +118,8 @@ settings in `.claude/`, Tropis's own code and checks in `.tropis/`, and the back
 designs and plans beside your code. A fresh clone is a working copy.
 
 Three roles share each change. A specifying session writes a plan that carries everything
-its executor needs. An executing agent carries it out in its own worktree and opens a pull
-request. A developer tries the result before it merges. The cycle is in
+its executor needs. An executing agent carries it out and opens a pull request. Every branch,
+whoever creates it, lives in a worktree of its own beside the project's checkout. A developer tries the result before it merges. The cycle is in
 [`framework/workflow.md`](framework/workflow.md), and handing a plan over in
 [`framework/dispatch.md`](framework/dispatch.md).
 
@@ -125,10 +136,14 @@ fixes and your scripts fill, described in the operator guide your project gets a
 ## Using it day to day
 
 - **`/next`** says first whether the main branch's last pipeline run failed, then
-  reports what is in flight, ready and blocked, and suggests what to take next.
-  `npm --prefix .tropis run board` writes the backlog as one page to open in a browser. `/refresh-board` walks you through banding and scoring new entries and proposes
-  tidy-ups for you to accept or decline; `/refresh-board groom` looks across the whole
-  backlog.
+  reports what is in flight, ready and blocked for product work and for framework work,
+  suggests what to take next in each, and says when it is time to run
+  `/flush-upstream`.
+- **`docs/backlog-board/index.html`** is the backlog as one page to open in a browser.
+  It keeps itself current; `npm --prefix .tropis run board` rebuilds it at once after an
+  edit you have not committed. `/refresh-board` walks you through banding and scoring new
+  entries and proposes tidy-ups for you to accept or decline; `/refresh-board groom`
+  looks across the whole backlog.
 - **`/idea`** adds an entry to the backlog; **`/feature`** moves it along
   `idea → shaped → building → shipped`. An entry can also be parked on purpose, or
   dropped when nobody will do it, and the board then shows it as closed.
