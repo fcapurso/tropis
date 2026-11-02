@@ -28,16 +28,19 @@ export function extractSection(markdown, heading) {
 }
 
 /**
- * Every path a plan's File Structure section claims it will touch: the first backticked
- * span of each table row under that heading. Prose and bullets there are not claims —
- * a plan may name a file it deliberately leaves alone.
+ * Every path a plan's File Structure section claims it will touch: each backticked span
+ * in the first cell of each table row under that heading, so a row may list several
+ * files. Prose and bullets there are not claims — a plan may name a file it deliberately
+ * leaves alone — and nothing after the first cell is read.
  * @param {string} markdown
  * @returns {string[]}
  */
 export function fileStructurePaths(markdown) {
   const section = extractSection(markdown, 'File Structure');
   if (section == null) return [];
-  return [...section.matchAll(/^\|\s*`([^`]+)`/gm)].map((m) => m[1]);
+  return section.split('\n')
+    .filter((line) => /^\|\s*`/.test(line))
+    .flatMap((line) => [...line.split('|')[1].matchAll(/`([^`]+)`/g)].map((m) => m[1]));
 }
 
 /**
