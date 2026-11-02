@@ -42,14 +42,10 @@ rebuilds it at once.
   the same choice by hand. `shipped` says the code landed, not that every eye has been
   on it. Record the unobserved criterion in the review record's *Outstanding
   disposition*, naming who must observe it, and record the observation in
-  `docs/verification-log.md`, through `/manual-check`, when it happens.
-
-  Got wrong in both directions on one plan. Its executor left the entry short of
-  `shipped`, then promoted it while writing the review record to keep the branch green —
-  and the record's own summary two sections below still claimed the entry was not being
-  shipped on an unbacked criterion. The check had in fact been run and reported in
-  conversation; nothing wrote it down, so three separate records said outstanding while
-  the developer believed it closed.
+  `docs/verification-log.md`, through `/manual-check`, when it happens. An observation
+  reported only in conversation is not recorded anywhere: every later record goes on
+  calling it outstanding. (Incident:
+  `.tropis/rules/incidents/catalogs.md#an-entry-promoted-and-called-unshipped`)
 - Comments are part of the record. Say why an entry was re-pointed, shelved, dropped, or
   ordered the way it is, in a comment above the key it explains.
 - **`refs` names the design the entry belongs to, and nothing else.** The backlog report
@@ -77,7 +73,8 @@ becomes an entry only when it would otherwise be lost. Two kinds would not be:
   row someone must later read, band and close.
 - **A bug of little or no impact that the normal flow would catch and neutralise.** If
   the ordinary next step — setup's own commit, a suite run, a review — would surface it
-  and make its consequence disappear, leaving it costs nothing.
+  and make its consequence disappear, leaving it costs nothing. (Incident:
+  `.tropis/rules/incidents/catalogs.md#two-entries-filed-for-one-shipped-entry`)
 
 **A bug that fails silently is always an entry.** A hook that emits nothing, a check
 that cannot fail, a rule that is false about the code: the normal flow never catches
@@ -90,28 +87,20 @@ reply to the developer. A finding with neither an entry nor a reason has not bee
 dealt with. When the developer asks for an entry, it is captured; this section is for
 findings an agent raises itself.
 
-In the five days to 2026-10-20 the backlog this came from gained 49 entries and
-shipped 21. One review filed two for a single shipped entry: a warning that was wrong
-only before setup's own commit, and a gap the reviewer had already filled by hand.
-Both were dropped the same day.
-
 **A finding worth keeping is captured as a backlog entry, and nowhere else instead.** A
 task card, or a side or background session of the agent tool, is seen by neither the
 backlog, its report nor its board, so the work it holds is planned by nobody and found
 only by whoever opens that tool. Capture it with `/idea`, and tell the developer if it
-matters now.
+matters now. (Incident:
+`.tropis/rules/incidents/catalogs.md#a-guard-defect-left-on-a-task-card`)
 
 **A fix an agent proposes on its own starts as an idea entry, and is shaped before any
 branch or plan is made for it.** That holds for a fix to the project's own process
 machinery too; work the upstream framework must do goes to the upstream queue instead
 (*Layers*). The developer then decides whether and when it is done, rather than finding
 it under way. Work the developer asks for directly is not proposed by the agent, and
-neither paragraph applies to it.
-
-Both were corrected in the framework's own repository before they were written here: a
-guard defect raised as a background task card instead of an entry, and defects found by
-a model-tier refresh taken straight to a branch and then a plan, until the developer had
-asked twice where the entry was.
+neither paragraph applies to it. (Incident:
+`.tropis/rules/incidents/catalogs.md#a-refresh-taken-straight-to-a-branch`)
 
 ## Status transitions
 
