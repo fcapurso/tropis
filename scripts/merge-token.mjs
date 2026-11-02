@@ -149,10 +149,10 @@ function markerTree(ctx) {
 }
 
 /** 'taken' | 'held' | { error } for one attempt to create the marker. */
-function tryTake(ctx, holder, kind) {
+function tryTake(ctx, holder, kind, now) {
   const found = markerTree(ctx);
   if (found.error) return { error: found.error, fatal: true };
-  const message = markerMessage({ holder, kind, taken: isoSeconds(Date.now()) });
+  const message = markerMessage({ holder, kind, taken: isoSeconds(now()) });
   if (ctx.github) {
     const made = gh(ctx, ['api', '-X', 'POST', 'repos/{owner}/{repo}/git/commits',
       '-f', `message=${message}`, '-f', `tree=${found.tree}`]);
@@ -267,6 +267,7 @@ function judgeStale(ctx, marker, minutes, now) {
  */
 export async function take(root, {
   env = process.env, ref, holder, hold = false, intervalMs = 30000, timeoutMs = 3600000,
+  now = Date.now, sleep: pause = sleep,
 } = {}) {
   const ctx = open(root, env, ref);
   const failed = (reason) => ({ exit: 2, line: `${LINE} could not take — ${noStop(reason)}.` });
@@ -274,7 +275,7 @@ export async function take(root, {
   const who = holderFor(ctx, { holder, hold });
   if (who.error) return failed(who.error);
   const kind = hold ? 'hold' : 'branch';
-  const deadline = Date.now() + timeoutMs;
+  const deadline = now() + timeoutMs;
   let readErrors = 0;
   let takeErrors = 0;
   let said = false;
@@ -283,7 +284,7 @@ export async function take(root, {
     if (marker.error) {
       readErrors += 1;
       if (readErrors >= 3) return failed(marker.error);
-      await sleep(intervalMs);
+      await pause(intervalMs);
       continue;
     }
     readErrors = 0;
@@ -291,15 +292,15 @@ export async function take(root, {
       return { exit: 0, line: `${LINE} already held by ${who.holder}; keeping it.` };
     }
     if (marker.state === 'held') {
-      if (Date.now() >= deadline) return { exit: 3, line: `STOPPED: waiting for the token, held by ${marker.holder}` };
+      if (now() >= deadline) return { exit: 3, line: `STOPPED: waiting for the token, held by ${marker.holder}` };
       if (!said) {
         process.stderr.write(`merge-token: held by ${marker.holder}; asking every ${intervalMs / 1000} s for up to ${timeoutMs / 60000} min\n`);
         said = true;
       }
-      await sleep(intervalMs);
+      await pause(intervalMs);
       continue;
     }
-    const attempt = tryTake(ctx, who.holder, kind);
+    const attempt = tryTake(ctx, who.holder, kind, now);
     if (attempt === 'taken') return { exit: 0, line: `${LINE} taken by ${who.holder}.` };
     if (attempt === 'held') {
       takeErrors = 0;
@@ -309,7 +310,7 @@ export async function take(root, {
     // The create may have succeeded without telling us: the next read decides.
     takeErrors += 1;
     if (takeErrors >= 3) return failed(attempt.error);
-    await sleep(intervalMs);
+    await pause(intervalMs);
   }
 }
 

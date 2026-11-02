@@ -130,7 +130,7 @@ function claim(root, planPath) {
   return 0;
 }
 
-async function wait(root, opts) {
+export async function waitForPlans(root, opts, { now = Date.now, sleep: pause = sleep } = {}) {
   let text;
   try {
     text = readFileSync(resolve(root, opts.plan), 'utf8');
@@ -144,7 +144,7 @@ async function wait(root, opts) {
     return 0;
   }
   process.stderr.write(`plan-overlap: waiting for ${ids.join(', ')} to ship, asking origin every ${opts.intervalS} s for up to ${opts.timeoutMin} min\n`);
-  const deadline = Date.now() + opts.timeoutMin * 60000;
+  const deadline = now() + opts.timeoutMin * 60000;
   for (;;) {
     const fetched = git(root, 'fetch', '--quiet', 'origin');
     if (fetched.status !== 0) return fail(`Could not fetch origin — ${firstLine(fetched.stderr)}.`);
@@ -166,11 +166,11 @@ async function wait(root, opts) {
       say(`Merges after: ${ids.join(', ')} — shipped on ${branch}; go ahead.`);
       return 0;
     }
-    if (Date.now() >= deadline) {
+    if (now() >= deadline) {
       say(`STOPPED: waiting on ${pending.join(', ')}`);
       return 3;
     }
-    await sleep(opts.intervalS * 1000);
+    await pause(opts.intervalS * 1000);
   }
 }
 
@@ -191,6 +191,6 @@ if (ranDirectly) {
     process.stderr.write(USAGE);
     process.exitCode = 2;
   } else {
-    process.exitCode = opts.mode === 'claim' ? claim(root, opts.plan) : await wait(root, opts);
+    process.exitCode = opts.mode === 'claim' ? claim(root, opts.plan) : await waitForPlans(root, opts);
   }
 }

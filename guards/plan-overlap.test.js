@@ -266,6 +266,38 @@ describe('--wait', () => {
     expect(r.stdout).toMatch(/ghost/);
   });
 
+  test('goes ahead when the entry was parked back to shaped', () => {
+    const { clone } = waitProject({ status: 'shaped' });
+    const r = run(clone, '--wait', P('mine'), ...FAST);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/none building on origin\/main \(a shaped\); go ahead/);
+  });
+
+  test('keeps waiting past an hour while the entry is building, and goes ahead when it ships', async () => {
+    const { root, origin, clone } = waitProject({ status: 'building' });
+    const other = join(root, 'other');
+    git(root, 'clone', '-q', origin, other);
+    identify(other);
+    let ms = Date.now();
+    let pauses = 0;
+    const sleep = async () => {
+      pauses += 1;
+      ms += 20 * 60000;
+      if (pauses === 6) {
+        put(other, 'feature-catalog.yaml', catalog([{ id: 'a', status: 'shipped' }]));
+        git(other, 'commit', '-q', '-am', 'a ships');
+        git(other, 'push', '-q', 'origin', 'main');
+      }
+    };
+    const code = await overlap.waitForPlans(
+      clone,
+      { plan: P('mine'), intervalS: 0, timeoutMin: Infinity },
+      { now: () => ms, sleep },
+    );
+    expect(code).toBe(0);
+    expect(pauses).toBe(6);
+  }, 60000);
+
   test('a plan with no Merges after goes ahead with no origin at all', () => {
     const root = stage();
     put(root, P('mine'), plan(['src/x.js'], { header: HEADER }));
