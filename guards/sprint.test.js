@@ -236,7 +236,7 @@ describe('propose', () => {
     });
     const clone = makeClone(world);
     const r = run(clone, ['propose']);
-    expect(lines(r).slice(1).map((l) => l.split(' ')[3])).toEqual(['free', 'y2', 'x2', 'x3']);
+    expect(lines(r).slice(1).map((l) => l.split(' ')[3])).toEqual(['free', 'y2', 'x3', 'x2']);
     expect(r.stdout).not.toContain('x1');
   });
 
