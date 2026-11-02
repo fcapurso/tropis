@@ -323,9 +323,12 @@
 # leaves ten files as they are has changed nothing anybody receives. It may well split at
 # shaping: the pass over the current rules and the record they point into is one job, and
 # the capture question that stops the accretion starting again is another.
+# 2026-11-01, planned as one entry: the migration and the capture question land together,
+# since the question is what keeps the migrated rules from growing back. Five rule files
+# today, not ten - the count included each generated copy.
 - id: rules-carry-mechanism-not-provenance
   title: A rule carries its mechanism; the incident behind it is one link away
-  status: shaped
+  status: building
   after:
     - rules-are-retired-on-evidence
   value: An injected rule states the constraint and why it holds, and the
@@ -364,7 +367,8 @@
   type: improvement
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md
 # Raised 2026-09-12. The first dispatch of ci-deploys-development-on-green emitted a
 # header reading "Requires:" with nothing after it — on the one plan in its arc that
 # stops for the developer. The plan had written the line as **Requires: the developer …**
