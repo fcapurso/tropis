@@ -331,3 +331,48 @@ hook did not rebuild or stage it.
   (`scripts/plan-binding.js`). The parent reviewer rebases before merge, as the header
   already says.
 - The worktree `../tropis-overlap-row` is left in place, as the plan asks.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Rebased onto `0f8ae55` (the backlog-words plan, which this one merges after). One
+  conflict, in `docs/backlog-board/bands.yaml`: both sides removed their own row;
+  resolved by keeping neither. Bookkeeping, no review needed.
+- Scope: `git diff --stat origin/main...HEAD` lists 6 files, all in *File Structure*.
+- `plan-overlap`, `plan-dispatchable` and `dispatch` run together on a `git archive` of
+  `HEAD`, as the self-check's `run_guard` does: `Tests: 67 passed, 67 total`.
+- Mutation: `scripts/plan-binding.js` put back as it is on `main` (first span only), as a
+  throwaway commit: `plan-overlap` and `plan-dispatchable` printed `Tests: 3 failed, 24
+  passed` — the three new cases. Reset afterwards.
+- The full self-check and the installed checks ran again before the pull request (its
+  description gives the result).
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The handover's correction is right: *Tests* item 3 is one `it` with two assertions, so
+  three cases are red before the fix, not four.
+- Nothing else.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`.
+- The rebase: done above.
+
+### Learnings routed
+
+- Nothing generalises beyond the fix: this repository is the upstream, and the plan
+  rule's File Structure guidance needs no change now that a row may hold several files.
+
+### Merged because
+
+The overlap check and the projection check now read every file a row names, three cases
+pin it and go red with the old reading, and plans written one file per row read as
+before.
