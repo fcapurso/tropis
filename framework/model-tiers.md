@@ -7,6 +7,11 @@ data: `docs/model-picks.md`, written by `/refresh-model-tiers` and read by `/dis
 The framework ships no picks, and an update never touches that file. Until it exists,
 `/dispatch` names no models and says to run `/refresh-model-tiers`.
 
+Inside a tier, the picks list models least usage per task first, and say which
+subscriptions of each supported tool include each one. Which subscriptions the developer
+holds is kept on their machine, never committed; `/dispatch` names the first pick for a
+plan's tier that one of them includes, and never one that would cost extra (FW-053).
+
 **Listed: only models an executor can select in a tool this framework supports.** A
 model in none of them is not a pick however well it scores; the picks file's notes say
 when one matters. `/refresh-model-tiers` says how the list follows the supported tools.

@@ -34,16 +34,54 @@ that names or counts the supported tools.
 
 ## What the picks are for
 
-**Picks place models on fitness for the tier's work, and on nothing else.** Price, and
-how fast a model uses up a plan's limits, are left to whoever dispatches: neither is
-published in a form that can be compared across the supported tools. Do not record
-prices or price changes. Token usage is recorded beside the picks, as *What to record*
-says, but no model moves between tiers because of it or of price.
-
-**Each model sits in the highest tier its evidence supports, and fits every tier below
-it.** A lower tier's row names only the models that reach no higher, and ends with
+**A model's tier rests on fitness for the tier's work, and on nothing else.** Each model
+sits in the highest tier its evidence supports, and fits every tier below it. A lower
+tier's row names only the models that reach no higher, and ends with
 `or any pick from a higher tier`; a lower tier with no model of its own reads
 `Any pick from a higher tier`.
+
+**Inside a tier, the models go least usage first.** A developer's subscriptions last
+longer on the model that does the job with the least of their allowance, and `/dispatch`
+names the first one the developer's subscriptions include. Usage is measured as cost per
+task on one shared board, at one effort setting for every model compared, such as the
+cost per task Artificial Analysis shows for its Intelligence Index. Cost per task folds a
+model's price and the tokens it spends into one figure, so a model with a lower price
+that spends more tokens is not taken for the cheaper one. It stands in for usage because
+no vendor publishes how fast each model draws a subscription's allowance: Cursor bills a
+third-party model at its API price, and Anthropic says only that some models draw a
+Claude subscription's limits faster than others. A model the board does not cover goes
+after the ones it does, marked `unmeasured`. Usage never moves a model between tiers.
+Record cost per task, never list prices.
+
+**Say which subscriptions include each pick.** For every supported tool, read the
+vendor's own pages on which of its subscriptions include each model within the
+allowance, with nothing billed on top: usage credits, on-demand usage and prepaid credit
+are billed on top. A model a subscription includes only up to a share of its allowance
+is included, with the share in parentheses after the subscription. A fact only a
+third-party page states is marked `(third-party)` in the same way. `/dispatch` never
+names a pick that none of the developer's subscriptions include (FW-053).
+
+## Which subscriptions the developer has
+
+`/dispatch` chooses among the picks by the subscriptions the developer holds. They are
+kept on this machine and never committed: the picks file is shared, in a public project
+read by anyone, and a person's subscriptions are theirs.
+
+1. Read what each supported tool reports: `claude auth status --json`, its
+   `subscriptionType` field, and `cursor-agent about`, its `Subscription Tier` line. A
+   tool that is not installed or not signed in reports nothing.
+2. Read the record, `tropis/subscriptions.txt` in the directory
+   `git rev-parse --git-common-dir` prints, if there is one.
+3. Ask the developer, in one question covering every supported tool, when a tool reports
+   nothing, reports a name the *Included on* cells do not use, or disagrees with the
+   record. Show what each tool reported. A report does not say whether a team seat is
+   standard or premium, and a tool can report a name its vendor now lists only as legacy.
+   When every report matches the record and a name the cells use, do not ask.
+4. Write the record: one line per supported tool, `<tool>: <subscription>`, with the tool
+   and the subscription written as the *Included on* cells write them, or
+   `<tool>: none`. Create the `tropis` folder if it is missing. Never commit the record
+   or copy it into the repository, and never write the developer's subscriptions into
+   the picks file or a commit message.
 
 ## What to gather
 
@@ -85,11 +123,11 @@ For each model: at least one coding benchmark score, and the launch or last-upda
   > on two Coding Agent Index scores taken four months apart, across a change to that
   > index. Cursor's own CursorBench 4.0, the one board scoring both, put Grok at 46.3%
   > and Composer at 27.7%.
-- **Token usage, beside the picks, not in them.** Where a shared board reports tokens per
-  task — Cursor's CursorBench does, for every model it runs — record that figure beside
-  the models it covers, with the board's version, harness and effort, so whoever
-  dispatches can weigh cost. Vendors split text into tokens differently, so set token
-  counts side by side only from the same board. No placement rests on them.
+- **Usage per task, in the second table.** Each figure names its board, the board's
+  version, and the effort setting, and is compared only with figures from the same board
+  at the same effort. Where the board also reports tokens per task, give them beside the
+  cost. Vendors split text into tokens differently, so set token counts side by side only
+  from the same board.
 - **Corroboration.** Prefer a figure appearing in two or more independent sources. If a
   model appears in only one, either omit it or mark it explicitly as uncorroborated —
   aggregator sites vary in reliability and some list models that do not exist.
@@ -100,13 +138,18 @@ For each model: at least one coding benchmark score, and the launch or last-upda
 
 ## The file
 
-`/dispatch` reads two things from `docs/model-picks.md`, and both must keep this shape:
+`/dispatch` reads three things from `docs/model-picks.md`, and all must keep this shape:
 
 - one line `**Last verified: YYYY-MM-DD.**` — the date of this pass. `/dispatch` warns when
   it is more than ~45 days old;
 - one table whose header row begins `| Tier | Models |`, with one row per tier, the tier
   named in bold exactly as the definitions name it. `/dispatch` prints the second cell of
   the plan's tier as its picks.
+- one table whose header row begins `| Model | Usage per task | Included on |`, with one
+  row per model in the tier table: its name as the tier table writes it, without the
+  tool tag; its cost per task, or `unmeasured`; and, for each supported tool, the
+  subscriptions that include it, written `<tool>: <subscription>, <subscription>`, tools
+  separated by `; `, and `<tool>: none` where none does.
 
 Start a new file like this, then add the notes and sources below the table:
 
@@ -115,8 +158,9 @@ Start a new file like this, then add the notes and sources below the table:
 
 Which models this project hands each tier to. The tiers are defined in
 `.claude/framework/model-tiers.md`; this file is written by `/refresh-model-tiers`.
-Picks are placed on fitness for the tier's work alone; cost is left to whoever
-dispatches. Token usage, where a shared board reports it, is in the notes below.
+Each model sits in the tier its fitness supports. Inside a tier, models are listed
+least usage per task first, and `/dispatch` names the first one your subscriptions
+include; the second table gives each pick's usage and the subscriptions that include it.
 
 **Last verified: YYYY-MM-DD.**
 
@@ -127,6 +171,10 @@ dispatches. Token usage, where a shared board reports it, is in the notes below.
 | **Medium** | …; or any pick from a higher tier |
 | **Small–medium** | …; or any pick from a higher tier |
 | **Small** | …; or any pick from a higher tier |
+
+| Model | Usage per task | Included on |
+|---|---|---|
+| … | $… per task (board, version, effort) | Claude Code: …; Cursor: … |
 ```
 
 Everything else in the file — caveats, benchmark figures, positioning notes — is for
@@ -135,9 +183,11 @@ people, and `/dispatch` ignores it.
 ## Finishing
 
 1. Update the `Last verified` date.
-2. Replace the source list with the URLs actually used this time, under
+2. Write the subscriptions record (*Which subscriptions the developer has*); it is not
+   part of the commit.
+3. Replace the source list with the URLs actually used this time, under
    `### Sources used this pass`.
-3. Summarise what changed since the previous verification — new entries, tier moves,
+4. Summarise what changed since the previous verification — new entries, tier moves,
    departures — in the commit body, not in the file. The file states the current
-   position; git holds the history.
-4. Commit as `docs(workflow): refresh the model picks`.
+   position; git holds the history. Name no subscription anyone holds.
+5. Commit as `docs(workflow): refresh the model picks`.

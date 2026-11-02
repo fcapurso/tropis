@@ -35,7 +35,11 @@ belongs with the parent session. It is never a constraint on the executor.
   paragraph, and a field that is there but reads empty stops the dispatch, naming its
   line. A plan's `Merges after` field is read and refused the same way; the prompt does
   not carry it, since the executor does not merge. A project with no picks file is told
-  to run `/refresh-model-tiers`; the prompt never invents picks.
+  to run `/refresh-model-tiers`; the prompt never invents picks. Beneath the picks, the
+  pick to use: the first in the tier's order, then the next tier up, that a subscription
+  recorded on this machine includes, with the tool to run it in. Where no subscription is
+  recorded, the picks do not say which subscriptions include each model, or none is
+  included, the line says so and names no pick.
 - **The plan and its checkouts:** which plan, and which checkouts it may edit.
 - **Attaching the other checkouts:** when the plan isolates in more than one checkout, a
   step before isolating tells an executor whose session started with only this one — a
