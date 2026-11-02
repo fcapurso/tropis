@@ -458,3 +458,60 @@ was not rebuilt or staged.
 The change has no screen, so there is no developer check. The reviewer renumbers FW-062
 if `main` took it. Release-note line is for `/release`. No pull request, review record
 or auto-merge.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- The branch is based on `39959cf`, the current `main`; no rebase was needed.
+- Scope: `git diff --name-only origin/main...HEAD` lists 12 files, every one in *File
+  Structure* (with `guards/dispatch.test.js`, which I added to the table, below).
+- `team-member-cli`, `sprint`, `dispatch`, `plan-overlap` and `plan-dispatchable` run
+  together on a `git archive` of `HEAD`, as the self-check's `run_guard` does:
+  `Tests: 128 passed, 128 total`.
+- Mutation, a throwaway commit then reset: `launch` given a lookup that never names a
+  model turned 2 cases of `team-member-cli` red (`Tests: 2 failed, 25 passed`).
+- The full self-check and the installed checks ran again before the pull request (its
+  description gives the result).
+- The decision's reason for rejecting a lookup at launch — Claude Code has no command
+  that lists models — checked against `claude --help` of Claude Code 2.1.300: it offers
+  `--model` and `--fallback-model`, and no listing.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses, names and
+subscriptions; nothing found. Test records use invented plans.
+
+- **The plan's File Structure missed `guards/dispatch.test.js`**, which asserts the
+  three-column header of the picks template that *Decision 4* widens. The executor
+  stopped on it as the plan says. I added the row (commit `docs(plan): list the dispatch
+  test the picks template change touches`), and the executor changed that one assertion
+  to the four-column header. Mechanical, so it went back to the same executor, not to a new plan.
+- The code matches *Decisions 2 and 3*. `commandLineNames` re-reads the table for each
+  model it checks; harmless at this size.
+- The handover's note on `--allowedTools` swallowing the prompt in `claude -p` is a fact
+  about that option taking a list; the probe passed with the prompt on stdin. Not a
+  defect here.
+
+### Outstanding disposition
+
+- FW-062: `main` holds FW-061 as its last decision, so the number stands.
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`.
+- The extra case `keeps the model it is given and adds no line` is plan *Tests* item 5,
+  so it is required rather than extra.
+
+### Learnings routed
+
+- A plan that changes a template's text must list every test that asserts that text.
+  This is an instance of the planning rule's *Something else writes or reads a shape you
+  are changing*, so it needs no new rule and nothing was routed.
+
+### Merged because
+
+A launched team member now runs on the Large pick in its own tool or is told why not,
+cases pin each rule and go red when the lookup is broken, and the fresh agent wrote the
+new column so that `launch` read it.
