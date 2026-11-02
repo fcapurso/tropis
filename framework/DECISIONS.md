@@ -1639,3 +1639,23 @@ tool, and a printed prompt each need no command line and remain the fallbacks.
 user-level skills and configuration load into its runs with no flag to prevent it, so a
 team member started that way may behave differently from the project's rules alone. Claude
 Code's waiting-for-an-answer case and Cursor's exit code on failure were not observed.
+
+## FW-051: Plans that share a file merge in the order they were claimed
+
+**Date:** 2026-11-01 · **Status:** Accepted.
+
+**Decision:** Overlap is judged at claim from the plans' File Structure tables, against
+every entry in `building`. On an overlap the later plan records `Merges after` in its
+header and, before merging, waits until the other has shipped or been dropped, for at
+most 60 minutes, then stops naming it. The bookkeeping files (the catalog, the bands
+file, the board, the release notes, the decision records) never count.
+
+**Rejected:** Judging overlap from entry descriptions (a guess, where the plan lists every
+file). Comparing lines rather than files (a rebase settles unrelated edits, and lines
+move). Counting the bookkeeping files (every pair would overlap and parallel work would
+run one at a time). Building a branch on another unmerged branch (needing the other's
+code is `blockedBy`).
+
+**Consequences:** Two plans touching one file in unrelated places wait for each other. A
+session that ignores the check still cannot put a red or out-of-date change on a gated
+`main`; it only rebases more. Source: the sprint design of 2026-11-01, sections 4 and 5.

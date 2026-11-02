@@ -133,7 +133,8 @@ when the framework half exists to serve the application half. Full rule:
   stops, naming the pull request, when it conflicts, a check fails, or auto-merge is
   off. Dispatch's move of an entry to `building` is such a change: the
   dispatching session lands it through its pull request and waits until it has merged
-  before the executor starts.
+  before the executor starts. Before that pull request opens, the overlap check runs on
+  the plan (*Plans that touch the same files*).
 - **Where it is not gated, what may go directly to `main` is what cannot change how an
   agent behaves**: the
   backlog, generated documentation, plan and spec files, the release notes and version
@@ -239,6 +240,34 @@ Every file must appear in the plan's file list. Anything else means the base was
 **This is the cheapest check in the workflow and it catches the most expensive mistake** —
 one glance at a file count is enough.
 
+## Plans that touch the same files
+
+Two entries can be built at the same time. Each plan lists every file it touches, so
+whether two of them overlap is judged from their plans, never guessed from the entries.
+
+- **At claim, before the move to `building` lands**, run
+  `node .tropis/scripts/plan-overlap.mjs --claim <plan>`. It compares the plan's File
+  Structure table with the plan of every entry already in `building` and, where they
+  share a file, names the entry and the files and writes `**Merges after:** <id>` into
+  the plan's header. Land the claim with that line. Build either way: whoever claimed
+  second waits at merge. Claims land one at a time, so every earlier claim is already
+  on `main` when the check runs.
+- **It compares files, not lines.** Two plans touching one file in unrelated places
+  still wait for each other; the one rebase settles it. It ignores the files every plan
+  touches — the catalog, the bands file, the generated board, the release notes and the
+  decision record — or every pair of plans would overlap. A conflict in one of those on
+  rebase is resolved mechanically, keeping both sides' entries and rebuilding the board,
+  and needs no review. A conflict in any other file needs its resolution reviewed.
+- **A session may add to `Merges after`, never remove from it**, also when it finds a
+  dependency while planning. Needing the other entry's code is not this: that is
+  `blockedBy`, and no branch is built on another unmerged branch.
+- **Before merging**, run `node .tropis/scripts/plan-overlap.mjs --wait <plan>`. It asks
+  `origin` every 30 seconds until every entry the plan merges after has shipped or been
+  dropped, and goes ahead at once when the plan has no `Merges after`. After 60 minutes
+  it exits 3 and prints `STOPPED: waiting on <id>`: report that line and stop. The work
+  resumes with the same command once that entry ships, which also covers waiting on an
+  entry that was parked.
+
 ## Merge and clean up — in this order
 
 The order matters. `gh pr merge --delete-branch` deletes the local branch first, and if
@@ -320,11 +349,13 @@ still lands as one squash-merge.
 Parallel branches share a base, so `main` moves under them as siblings land. Before each
 merge:
 
-1. `git fetch origin && git rebase origin/main`
-2. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
+1. `node .tropis/scripts/plan-overlap.mjs --wait <plan>` — *Plans that touch the same
+   files*.
+2. `git fetch origin && git rebase origin/main`
+3. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
    invalidate a criterion with no textual conflict — new files shift coverage figures and
    can turn another plan's guard red.
-3. Squash-merge.
+4. Squash-merge.
 
 **A check that passes on a rerun with nothing changed is a bug.** Record it in the
 backlog with both runs, as any defect. Nothing retries a failed check automatically —
