@@ -99,7 +99,7 @@ set -e
 # a guard that calls isBlueprintTree and is missing from it is an error, and a listed
 # guard that does not exist fails to run. TROPIS_EXPECT_FRAMEWORK turns a skip into a
 # failure, and each guard must also fail on a planted defect.
-FRAMEWORK_GUARDS="operator-page-closeout readme-usable private-material dependency-overrides contributing-page"
+FRAMEWORK_GUARDS="operator-page-closeout readme-usable private-material dependency-overrides contributing-page rule-incidents"
 framework=0
 echo
 echo "Framework repository: its own guards must pass here and fail on a planted defect"
