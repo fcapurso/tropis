@@ -15,6 +15,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseLastVerified, picksForTier } from '../scripts/plan-binding.js';
+// A namespace, so the file still loads while these are not yet exported.
+import * as binding from '../scripts/plan-binding.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const blueprint = resolve(here, '..');
@@ -120,6 +122,7 @@ describe('dispatch command', () => {
       // The project has no picks file, and the framework ships no picks.
       expect(r.stdout).toContain('**Picks today:** none — this project has no `docs/model-picks.md`. Run /refresh-model-tiers to write it.');
       expect(r.stdout).not.toContain('Last verified');
+      expect(r.stdout).not.toContain('**Use:**');
       expect(r.stdout).toContain(`bash .tropis/scripts/isolate-for-plan.sh ${PLAN}`);
       // No worktree setup file: the framework's install alone, as before.
       expect(r.stdout).toContain('In each worktree it creates that has a .tropis/ folder, before running anything else:\n  npm --prefix .tropis ci\n');
@@ -168,6 +171,8 @@ describe('dispatch command', () => {
     const command = readFileSync(join(blueprint, 'commands/refresh-model-tiers.md'), 'utf8');
     const template = command.split('Start a new file like this')[1].split('```')[1];
     expect(template).toContain('| Tier | Models |\n|---|---|\n');
+    expect(template).toContain('| Model | Usage per task | Included on |\n|---|---|---|\n');
+    expect(binding.inclusionTable(template).size).toBe(1);
     for (const tier of ['Large', 'Medium–large', 'Medium', 'Small–medium', 'Small']) {
       expect(picksForTier(template, tier)).not.toBe('');
     }
@@ -535,5 +540,113 @@ esac
     } finally {
       rmSync(parent, { recursive: true, force: true });
     }
+  });
+});
+
+describe('dispatch names the pick to use', () => {
+  const today = () => new Date().toISOString().slice(0, 10);
+  const picksText = () => `**Last verified: ${today()}.**
+
+| Tier | Models |
+|---|---|
+| **Large** | Birch 2 *(all)*; Alder 3 *(all)* |
+| **Medium–large** | Any pick from a higher tier |
+| **Medium** | Cedar 1 *(Cursor)*; or any pick from a higher tier |
+| **Small–medium** | Any pick from a higher tier |
+| **Small** | Elm 0 *(Cursor)*; Dogwood 1 *(Cursor)*; or any pick from a higher tier |
+
+| Model | Usage per task | Included on |
+|---|---|---|
+| Alder 3 | $9 per task (Example Index v1, high) | Claude Code: Max (to half the weekly limit), Ultra; Cursor: none |
+| Birch 2 | $4 per task (Example Index v1, high) | Claude Code: none; Cursor: Premium |
+| Cedar 1 | $1 per task (Example Index v1, high) | Cursor: Plus, Premium |
+| Dogwood 1 | unmeasured | Cursor: Premium |
+`;
+  const PICKS = picksText();
+
+  /** A project with a picks file and, optionally, a subscriptions record. */
+  function withPicks(picks, record) {
+    const p = project(plan(PROJECT_ONLY));
+    writeFileSync(join(p.root, 'docs/model-picks.md'), picks);
+    if (record !== undefined) {
+      mkdirSync(join(p.root, '.git/tropis'), { recursive: true });
+      writeFileSync(join(p.root, '.git/tropis/subscriptions.txt'), record);
+    }
+    return p;
+  }
+  const dispatch = (p) => run(p.root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
+
+  it('names the first included pick of the tier, with its tool, skipping a model missing from the inclusion table', () => {
+    const p = withPicks(PICKS, 'Cursor: Premium\n');
+    try {
+      expect(dispatch(p).stdout).toContain('**Use:** Dogwood 1, in Cursor — the first pick for this tier that your subscriptions include.');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it("goes up a tier when none of this tier's picks is included", () => {
+    const p = withPicks(PICKS, 'Cursor: Plus\n');
+    try {
+      expect(dispatch(p).stdout).toContain('**Use:** Cedar 1, in Cursor — no pick for this tier is included in your subscriptions; this is the first included pick from the Medium tier.');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('matches a subscription that carries a note', () => {
+    const p = withPicks(PICKS, '# mine\nclaude code: max\nCursor: none\n');
+    try {
+      const out = dispatch(p).stdout;
+      expect(out).toContain('**Use:** Alder 3, in Claude Code — no pick for this tier is included in your subscriptions; this is the first included pick from the Large tier.');
+      expect(out).not.toContain('**Use:** Birch 2');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('names no pick when none is included', () => {
+    const p = withPicks(PICKS, 'Claude Code: Pro\nCursor: none\n');
+    try {
+      expect(dispatch(p).stdout).toContain('**Use:** none — no pick for this tier or above is included in your subscriptions, and a model that costs extra is not used (FW-053).');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('says so when no subscriptions are recorded', () => {
+    const p = withPicks(PICKS);
+    try {
+      expect(dispatch(p).stdout).toContain('**Use:** not chosen — which subscriptions you have is not recorded on this machine. Run /refresh-model-tiers.');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('keeps an earlier picks file working', () => {
+    const p = withPicks(`**Last verified: ${today()}.**\n\n| Tier | Models |\n|---|---|\n| **Small** | Old Model |\n`, 'Cursor: Premium\n');
+    try {
+      const out = dispatch(p).stdout;
+      expect(out).toContain('**Picks today:** Old Model');
+      expect(out).toContain('**Use:** not chosen — the picks do not say which subscriptions include each model. Run /refresh-model-tiers.');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('puts the Use line under the picks, and prints the same from .tropis/', () => {
+    const p = withPicks(PICKS, 'Cursor: Premium\n');
+    try {
+      const out = dispatch(p).stdout;
+      const all = out.split('\n');
+      const i = all.findIndex((l) => l.startsWith('**Picks today:**'));
+      expect(i).toBeGreaterThan(-1);
+      expect(all[i + 1].startsWith('**Use:**')).toBe(true);
+      const fromFw = run(p.fw, 'node', ['scripts/dispatch.mjs', PLAN]);
+      expect(fromFw.stdout).toBe(out);
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('parses the record, the inclusion table and the choice', () => {
+    const parsed = binding.parseSubscriptions('# x\n\nClaude Code: Max\ncursor: none\nnot a line\n');
+    expect([...parsed.keys()].sort()).toEqual(['claude code', 'cursor']);
+    expect([...parsed.get('claude code')]).toEqual(['max']);
+    expect(parsed.get('cursor').size).toBe(0);
+    expect(binding.inclusionTable('| Tier | Models |\n|---|---|\n')).toBeNull();
+    const alder = binding.inclusionTable(PICKS).get('Alder 3').get('claude code');
+    expect(alder.name).toBe('Claude Code');
+    expect([...alder.subscriptions].sort()).toEqual(['max', 'ultra']);
+    expect(binding.pickToUse(PICKS, 'Huge', 'Cursor: Premium')).toBeNull();
+    // The tier's own order, not the inclusion table's.
+    expect(binding.pickToUse(PICKS, 'Large', 'Claude Code: Max\nCursor: Premium'))
+      .toBe('**Use:** Birch 2, in Cursor — the first pick for this tier that your subscriptions include.');
   });
 });
