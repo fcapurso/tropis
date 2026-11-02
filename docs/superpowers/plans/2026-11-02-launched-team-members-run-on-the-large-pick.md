@@ -383,3 +383,78 @@ architecture in the commit body of the final commit (a no-change commit with
 3. `git push -u origin plan/launched-team-members-run-on-the-large-pick`. **Do not open a
    pull request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+**Source worked from:** none in particular; `pickForTool` was written against this
+repository's `pickToUse`, `inclusionTable` and `parseSubscriptions`.
+
+### Task completion
+
+Tasks 0 to 5 done; Task 6 is this report. Commits, in order: red tests, the code, the
+words and decision (FW-062), the dispatch guard's header, the fresh-agent check
+(empty commit carrying its record), the backlog and board.
+
+### Verification results
+
+Tools: git 2.49.0, node v22.15.0, macOS 26.2, arm64 (Darwin).
+
+- Single guard, run as `run_guard` does (`git archive HEAD` extracted to a temporary
+  folder, the framework jest config copied in as `jest.config.js`, a `package.json`
+  reading `{"type":"module"}`, `node_modules` linked to `.self-check/node_modules`,
+  `FRAMEWORK_ROOT` set to the folder, `TROPIS_EXPECT_FRAMEWORK=1`, then
+  `node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js
+  guards/<name>.test.js`).
+- Task 1, red: 4 failed, 23 passed in `team-member-cli`. Failing: both `pickForTool`
+  cases and both † `launch without --model` cases.
+- Task 2, green: `team-member-cli` 27/27, `sprint` 34/34; self-check passed.
+  Mutation (a), `pickForTool` ignoring the tool: red on `pickForTool › † skips a pick
+  that only the other tool includes`. Mutation (b), `launch` dropping the found model:
+  red on `launch without --model › † starts the tool on the pick its picks name, and
+  says so`. Both reset.
+- Task 3: `git grep "left to a later entry" -- framework/DECISIONS.md` prints nothing.
+- Fresh-agent check: Claude Code 2.1.300, model claude-opus-5-5, macOS 26.2, arm64,
+  signed-in plan, `ANTHROPIC_API_KEY` unset, tool calls visible
+  (`--output-format stream-json --verbose`), in a scratch project set up from this
+  branch. The agent globbed and read the installed `refresh-model-tiers.md`, edited
+  `docs/model-picks.md`, and the diff added the `Command-line name` header and
+  separator and `Claude Code: alder-3; Cursor: alder-3-thinking` to Alder 3's row.
+  `pickForTool` from the scratch project's `.tropis/scripts/plan-binding.js` returned
+  `{"model":"alder-3","pick":"Alder 3","reason":null}`. Passed on the first run. The
+  scratch folder is deleted. The developer's user-level instructions say nothing about
+  model picks, so the probe was a real one.
+- `npm --prefix .tropis test`: `Tests: 158 passed, 158 total`.
+- `bash scripts/check-blueprint.sh` last line: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+- I read my own diff for home paths, names and addresses: none.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: 12 files, all in File Structure (including
+`guards/dispatch.test.js`, added by the specifying session). `docs/backlog-board/index.html`
+was not rebuilt or staged.
+
+### Judgment calls
+
+- Added one case beyond the plan: `keeps the model it is given and adds no line`.
+- `pickForTool` treats an unknown tier like the lowest tier (walks all tiers).
+- The existing no-model `launch` cases assert no output lines, so none needed a third
+  line. The backlog item was already `building`.
+
+### What the plan got wrong
+
+- `guards/dispatch.test.js` ("reads the picks table /refresh-model-tiers tells a project
+  to start from") asserts the template's exact three-column header, so Decision 4's
+  four-column template turned the self-check red and the file was missing from File
+  Structure. I stopped and handed back; the specifying session added the file
+  (c724119) and I changed that one `toContain` to the four-column header and separator,
+  keeping the `inclusionTable` size assertion. The self-check then passed.
+- Minor: `claude -p ... --allowedTools "..." "<prompt>"` swallows the prompt as another
+  tool name (the option is variadic); the prompt must go on stdin or before the option.
+
+### Outstanding
+
+The change has no screen, so there is no developer check. The reviewer renumbers FW-062
+if `main` took it. Release-note line is for `/release`. No pull request, review record
+or auto-merge.
