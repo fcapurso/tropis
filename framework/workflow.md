@@ -124,8 +124,8 @@ when the framework half exists to serve the application half. Full rule:
   ships — and an agent treats it as gated unless `.tropis/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
-  worktree of its own (above), take the merge token, push it, open the pull request, run
-  `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  worktree of its own (above), take the merge token, push it, open the pull request,
+  run `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
   Release the token once that command has reported (*The merge token*).
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
@@ -288,10 +288,10 @@ commit names its holder and when it was taken.
 - **Release it once that command has reported**, green or red:
   `node .tropis/scripts/merge-token.mjs release`. Keep it instead for a follow-up pull
   request straight after, such as a move to `shipped`, and release it after the last
-  one. A release names the branch by the one you are on, so from any other, `main`
-  after a merge included, pass the name it was taken in:
-  `release --holder <branch>`. A release removes the token only for its holder; otherwise it
-  says who holds it and leaves it.
+  one. Without `--holder`, a release acts for the branch you are on, so from any
+  other branch, `main` after a merge included, name the branch it was taken in:
+  `release --holder <branch>`. A release removes the token only for its holder;
+  otherwise it says who holds it and leaves it.
 - **Hand it back before a fix that needs judgement.** When the merge criteria fail
   after the rebase in a way that is not mechanical, release the token first, then fix.
   A clean rebase needs no new review; a conflict needs its resolution reviewed, except

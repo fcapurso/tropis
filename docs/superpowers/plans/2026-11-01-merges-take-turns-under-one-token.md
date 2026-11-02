@@ -797,3 +797,76 @@ Named source: none. I worked from this repository's `main-status.mjs`, `plan-ove
 - Nothing blocks review. The change has no screen, so there is no developer check.
 - A cloud session's release by push is still unproven, as FW-049 says; the API fallback is tested only against the stub.
 - The decision is numbered FW-052; renumber if `main` has taken it by merge time.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session with git 2.49.0, node v22.15.0 and Jest from the
+self-check's install, on macOS 26.2, arm64.
+
+- `bash scripts/check-blueprint.sh` on `32cea47`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` Run again after the review fix below, with the same last line.
+- `npm --prefix .tropis test`: `Tests: 149 passed, 149 total`.
+- `git diff --stat origin/main...HEAD`: the fourteen files of *File Structure*, nothing
+  else; base `2fe5011`, the claim's merge.
+- `guards/merge-token.test.js` alone, in a scratch export of `HEAD`: 25 passed. Each of
+  these mutations, applied alone and reverted, turned it red: `release` skipping the
+  holder comparison (3 failed); the token's age always read as 0 minutes (1 failed, the
+  stale case). Dropping the lease from the release push (a plain delete) stayed green:
+  see *Found*.
+- The handover's diagnosis of mutation 1 was checked against how git's receive-pack
+  works: a push sends the old value the client was advertised, and the server refuses
+  the update when the ref no longer has it, forced or not. So a lost race is refused for
+  any push form against a git server, and the test needed the `pre-receive` delay to make
+  both sessions push at all. It holds; the design keeps the lease form, as FW-049 says.
+- The live check on GitHub (Task 6) and the fresh-agent check (Task 7) were not re-run;
+  their records (tool, version, platform, every command and its output) are in the
+  handover. `git ls-remote origin 'refs/tropis/*'` printed nothing at review.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The email
+addresses are `example.com` test identities, and the holder names are invented.
+
+- One line of the new *The merge token* section ran past the file's width, and its
+  sentence on releasing from another branch read "A release names the branch by the one
+  you are on". Fixed on the branch by the reviewer: reworded to "Without `--holder`, a
+  release acts for the branch you are on" and rewrapped, with the same meaning, and a
+  line in the Branching bullet rewrapped. Mechanical; the self-check above ran after it.
+- No test exercises the lease on the release push. It guards one race: the token broken
+  and taken by someone else between a release's read and its push. That cannot be
+  staged without an injection point, and the spike showed on GitHub that the lease
+  refuses a stale holder (FW-049). Accepted as it is.
+- The executor removed `blockedBy` from the shipped entry, which `catalog-entries`
+  requires; the plan should have said so. Correct call.
+
+### Outstanding disposition
+
+- FW-052: still the next free number on `main` at review; checked again at the rebase for
+  merge.
+- A cloud session's release by push: unproven, as FW-049 already records, with the probe
+  to settle it in the sprint design's evidence section. No new entry: the sprint entry
+  that would start team members in the cloud owns it when it is shaped.
+- The slash-named branch read for the stale judgement was not exercised live, because
+  `origin` had no such branch: dropped, since the script encodes each segment and the
+  stub case covers the reply it reads.
+- No screen, so no developer check.
+
+### Learnings routed
+
+- The workflow text the plan gave verbatim did not say how a session on `main` releases
+  after the merge; the fresh-agent check found it and the executor fixed the wording.
+  That is the check working as designed; not routed further.
+- A plain push is a lock against a git server for creating a ref, contrary to the plan's
+  reading of the spike (which saw only the same commit pushed again report success). This
+  record names it for the next plan from this spec; FW-049's choice of the API is
+  unchanged by it.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+Every criterion has a test or a recorded live or fresh-agent check, the guard's cases go
+red when the behaviour they name is broken, the live check left no ref behind, and the
+self-check and the installed checks pass.
