@@ -8,6 +8,7 @@
  * nothing to stdout — there is nothing to paste — and names every problem on stderr.
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -21,6 +22,7 @@ import {
   parseLastVerified,
   isStale,
   picksForTier,
+  pickToUse,
   renderThinPrompt,
 } from './plan-binding.js';
 
@@ -74,6 +76,18 @@ try {
 const protocol = parseExecutionProtocol(markdown);
 const lastVerified = picksText === null ? null : parseLastVerified(picksText);
 
+// Which subscriptions the developer holds: a local record under the git directory shared
+// by every worktree, never committed. No git or no file means none is recorded.
+let subscriptionsText = null;
+try {
+  const g = spawnSync('git', ['rev-parse', '--git-common-dir'], { cwd: root, encoding: 'utf8' });
+  if (g.status === 0) {
+    subscriptionsText = readFileSync(resolve(root, g.stdout.trim(), 'tropis/subscriptions.txt'), 'utf8');
+  }
+} catch {
+  // No record.
+}
+
 // Each worktree's setup comes from its own checkout — this one, or the sibling folder the
 // row names — the way the isolation helper finds them.
 function setupFor(row) {
@@ -104,5 +118,6 @@ process.stdout.write(
     stale: lastVerified ? isStale(lastVerified, new Date()) : false,
     setups,
     here: basename(root),
+    use: picksText === null ? null : pickToUse(picksText, protocol.tier, subscriptionsText),
   }) + '\n',
 );
