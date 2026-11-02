@@ -826,3 +826,72 @@ Run with Claude Code 2.1.300 (model `claude-sonnet-5-5`), Node v22.15.0, macOS 2
 - `npm --prefix .tropis test`: `Tests:       153 passed, 153 total`
 - Diff stat: ` 11 files changed, 601 insertions(+), 43 deletions(-)`; the files are unchanged from the earlier list.
 - Judgment call: the reader in `dispatch.mjs` now shares the writer's directory lookup.
+
+## Review record
+
+### Checks re-run
+
+By the specifying session, on the branch at the commit that adds this record, with git
+2.49.0, Node v22.15.0 and Claude Code 2.1.300 on macOS 26.2, arm64:
+
+- `git diff --stat origin/main...HEAD`: 11 files, every one in *File Structure*.
+- After the two fixes below, `bash scripts/check-blueprint.sh` ended `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`, and `npm --prefix .tropis test` printed
+  `Tests:       153 passed, 153 total`.
+- Re-broken: a throwaway commit dropping the line that pushes the `use` line in
+  `renderThinPrompt`. The self-check failed its clean baseline with eight dispatch cases
+  red, among them *names the first included pick of the tier*, *goes up a tier*, *names
+  no pick when none is included*, *keeps an earlier picks file working* and *records the
+  subscriptions it is given*. Reset afterwards.
+- The handover's diagnosis of the first probe's failure was checked on its own before
+  round 1 (the round's *Finding*): with `claude -p --permission-mode acceptEdits` in a
+  scratch repository, the Write tool refused `.git/tropis/probe.txt` as "a sensitive
+  file", also with `--allowedTools "Write(.git/tropis/**)"`, and a compound shell command
+  writing there was held for approval. The diagnosis held.
+
+### Found
+
+Public exposure: the diff was read for private material and for any subscription
+someone actually holds. Nothing found: the probe's subscriptions and tool reports are
+the plan's invented stubs, and no home path, hostname or address appears.
+
+- Design defect, sent back as review round 1 rather than fixed here: no agent could write
+  the record under `.git` unattended in Claude Code. Round 1 gave the dispatch script a
+  `--subscriptions` writer mode; the second probe recorded both subscriptions through it.
+- Fixed on the branch by the reviewer, mechanical: `commands/dispatch.md`'s edited
+  sentence rewrapped to the file's width, wording unchanged; and the catalog comment for
+  criterion 2, which pointed at a commit the squash will drop, now points at the plan's
+  Round 1 result and this record.
+- The two sentences the executor added to the refresh command beyond the verbatim text
+  (the `; ` separator with italic tool tags, found by the first probe) are kept; the one
+  about writing with a shell command was replaced in round 1.
+
+### Outstanding disposition
+
+- Writing the record asks the developer to allow one `node .tropis/scripts/dispatch.mjs
+  --subscriptions …` command in an interactive session, the first time. That is the
+  command's normal use, since it asks the developer a question anyway; no entry.
+- This repository's own `docs/model-picks.md` keeps its earlier shape until the developer
+  runs `/refresh-model-tiers` after the release; `/dispatch` says so meanwhile. Dropped as
+  an entry: running a command the release brings is not new work.
+- No screen, so no developer check.
+- The sprint's team members and reviewers getting a tier is
+  `team-members-and-reviewers-run-on-a-tier`.
+
+### Learnings routed
+
+- Claude Code refuses every file-tool write under `.git` as sensitive, even with an allow
+  rule naming the path: written into the refresh command where it applies, and into
+  FW-057's dispatch script as the reason for the writer mode. The sprint's own file under
+  the same folder is written by its script, so it is not exposed; nothing else in the
+  framework writes under `.git` through a file tool. No rule: the one command that writes
+  there now says how.
+- Task 2's expectation that the test file passes in full before Task 4's text existed:
+  the planning rule already says to state checks as invariants of the finished work;
+  not routed further.
+
+### Merged because
+
+Every acceptance criterion is covered by a dispatch test case or by the second
+fresh-agent check, the re-broken guard went red, and the scope matches the plan.

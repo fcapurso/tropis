@@ -5203,7 +5203,8 @@
 # Shipped by docs/superpowers/plans/2026-11-02-agents-run-on-the-most-efficient-model.md.
 # Criterion 1 is covered by guards/dispatch.test.js, the case that reads the picks table
 # the refresh command starts from (it holds the inclusion table), and by the fresh-agent check.
-# Criterion 2 is covered by the fresh-agent check, recorded in the commit that ends its task.
+# Criterion 2 is covered by the second fresh-agent check, in the plan's Round 1 result
+# and its review record; the first could not write under .git (see the round's finding).
 # Criterion 3 is covered by the dispatch cases that name the first included pick of the
 # tier, go up a tier, and match a subscription that carries a note.
 # Criterion 4 is covered by the cases that name no pick when none is included and say so
