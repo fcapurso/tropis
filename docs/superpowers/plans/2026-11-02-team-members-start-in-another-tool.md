@@ -597,12 +597,14 @@ back. Kill any process left, then delete the scratch folder.
 
 ## Model tier and merge authority
 
-- **Model tier: Large.** The code is specified by behaviour, not verbatim: a detached
-  process, a stream parser, and live runs whose real output may differ from the fakes
-  and must be reconciled with judgement.
-- **Merge authority: parent review.** The specifying session reviews, re-runs the
-  checks, writes the review record, numbers the decision and merges under the merge
-  token.
+**Model tier: Large.** The code is specified by behaviour, not verbatim: a detached
+process, a stream parser, and live runs whose real output may differ from the fakes and
+must be reconciled with judgement.
+
+**Requires:** `claude` and `cursor-agent` installed and signed in to the developer's plan, for Task 5 and Task 6.
+
+**Merge authority: parent review.** The specifying session reviews, re-runs the checks,
+writes the review record, numbers the decision and merges under the merge token.
 
 ## Handover report
 
@@ -654,3 +656,74 @@ Worked from no named external source: the code is written against this repositor
 ### Outstanding
 
 The change has no screen, so there is no developer check. The reviewer numbers `FW-NNN`. The `watch` and `status` suffix lines were exercised with fakes and with the four live runs only; a run lasting hours has not been tried.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0, node v22.15.0 and the self-check's own
+Jest, on macOS 26.2, arm64, against the branch's committed `HEAD`.
+
+- Scope: `git diff --stat origin/main...HEAD` lists the ten files of *File Structure*
+  that changed and this plan, nothing else; `docs/backlog-board/index.html` did not
+  change.
+- The two guard files alone, staged from the branch: `Tests: 49 passed, 49 total`.
+- Re-breaking, different from the executor's two, each in the staged copy:
+  - Claude Code's command line without `--allowedTools`: `1 failed, 48 passed`.
+  - `bash` added to the granted commands: `1 failed, 48 passed`.
+- `bash scripts/check-blueprint.sh` and `npm --prefix .tropis test`: results in the
+  commit that carries this record.
+- `/dispatch` on this plan prints the tier, the requirement and the merge authority
+  after the reviewer's fix below.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Session ids in
+the handover are written `<session-id>`; the scratch projects are invented names.
+
+- The plan's closing section held the model tier and merge authority as bullets, so
+  `/dispatch` printed them empty and the executor was given them in its prompt. Fixed on
+  the branch by the reviewer: header lines, and a `**Requires:**` line naming the two
+  signed-in tools. Mechanical; the plan's own author's slip.
+- The operator guide's new sentence ran past the paragraph's width. Fixed on the branch
+  by the reviewer (rewrapped, same words).
+- `TROPIS_TEAM_PROMPT`, which the plan specified for the live runs, was not named in
+  `sprint.mjs`'s header beside `TROPIS_SPRINT_NOW`. Fixed on the branch by the reviewer:
+  one comment sentence, no code.
+- The handover's judgment calls (the old log renamed to `.log.1`, `run` deriving the
+  worktree, launch's liveness assertion instead of a clock, whitespace collapsed in the
+  documents case) were each checked against the code and the cases, and stand.
+- The live runs (handover, *Verification results*, Task 6) are the evidence the decision
+  cites: in each tool, the run that claimed `SHIPPED` without the work was recorded as
+  `STOPPED` against `origin/main`, and the run that did the work as `SHIPPED`, with no
+  denials. Accepted as recorded.
+
+### Outstanding disposition
+
+- No screen, so no developer check: none owed.
+- The decision number: given at the merge token from the next free number on `main`.
+- Cursor's stream carries no permission denials, so `denied` is always empty for Cursor
+  and a refused command shows only through the agent's own `STOPPED` line, which the
+  brief tells it to write. Accepted; the brief covers it.
+- A run lasting hours has not been tried live. Its wait and its exit use the same code
+  the fakes exercise; the next real sprint in the other tool is that trial. No new entry.
+
+### Learnings routed
+
+- A plan's tier, requirement and merge authority must be bold header lines, not bullets
+  under a heading, or `/dispatch` prints them empty without refusing. The dispatch
+  script's refusal of an empty field did not fire because it read none. Not routed as a
+  rule: the planning rule already shows the header form; the slip was the author's.
+- In a scratch project for a live run, the framework's own rules (a gated `main`, a
+  criterion with no test) make an honest agent decline. Recorded in the handover for the
+  next live run; not portable beyond that.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+A sprint session can start a team member in the other tool's command line and learn from
+the repository how it ended. The no-key environment, the exact grants and the judgement
+against `origin/main` are each guarded by cases shown to go red. The fresh-agent check
+found the command text does what it says. Live runs in both tools ended as the decision
+says. The defects found were a header format, a line width and a missing comment, all
+fixed on the branch.

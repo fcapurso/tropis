@@ -44,7 +44,8 @@
  * Every command except propose, start, wait and run exits 1 with one line when no sprint is
  * under way; an unknown command exits 2 with the usage line. Every line is on stdout,
  * except the notes of `brief`, which go to stderr so the brief stays whole.
- * TROPIS_SPRINT_NOW (an ISO 8601 time) replaces the clock, for tests. No other file
+ * TROPIS_SPRINT_NOW (an ISO 8601 time) replaces the clock, for tests; TROPIS_TEAM_PROMPT (a
+ * file) replaces the prompt launch writes, for live runs of the launcher. No other file
  * imports this one. Never runs gh unless origin is on GitHub.
  */
 import { spawn, spawnSync } from 'node:child_process';
