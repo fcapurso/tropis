@@ -115,6 +115,20 @@ living-documents-stay-current:
   seen:
     status: idea
     blockers: []
+merges-take-turns-under-one-token:
+  band: A
+  value: 4
+  valueWhy: Sessions working at once on a main branch that requires branches up to
+    date force each other to rebase and re-run their checks every time one lands.
+  effort: 4
+  effortWhy: One script with four commands on two kinds of origin, its tests, a line in
+    the backlog report, and the workflow, release and operator texts that name it.
+  verdict: "Piece 2 of the sprint epic and useful without the rest: merges take turns
+    by a rule every session follows, with no messages. Its spike has shipped, and the
+    sprint command waits for it."
+  seen:
+    status: building
+    blockers: []
 pipeline-bills-no-job-that-decides-nothing:
   band: C
   value: 2
