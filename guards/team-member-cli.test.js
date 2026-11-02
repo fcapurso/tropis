@@ -116,12 +116,12 @@ const run = (clone, args, env = ENV) => spawnSync(
   { cwd: clone, env, encoding: 'utf8' },
 );
 const lines = (r) => r.stdout.split('\n').filter((l) => l !== '');
-const teamDir = (clone) => join(resolve(clone, git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/team');
-const sprintFile = (clone) => join(resolve(clone, git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/sprint.json');
+const teamDir = (clone) => join(resolve(realpathSync(clone), git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/team');
+const sprintFile = (clone) => join(resolve(realpathSync(clone), git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/sprint.json');
 const readSprint = (clone) => JSON.parse(readFileSync(sprintFile(clone), 'utf8'));
 const resultOf = (clone, id) => JSON.parse(readFileSync(join(teamDir(clone), `${id}.json`), 'utf8'));
 const hasResult = (clone, id) => existsSync(join(teamDir(clone), `${id}.json`));
-const worktreeOf = (clone, id) => join(dirname(clone), `${clone.split('/').pop()}-team-${id}`);
+const worktreeOf = (clone, id) => join(dirname(realpathSync(clone)), `${clone.split('/').pop()}-team-${id}`);
 
 const FAKE = `#!/usr/bin/env node
 const fs = require('fs');
@@ -283,7 +283,7 @@ describe('the seam', () => {
       .toBe('STOPPED: Claude Code ended without SHIPPED, PARKED or STOPPED as its last line');
     expect(j(ok({ result: 'done\n**SHIPPED**' })).line).toBe('SHIPPED');
     expect(j(ok(), 'building').line).toBe('STOPPED: it said SHIPPED, but origin/main shows e1 as building');
-    expect(j(ok(), undefined).line).toBe('STOPPED: it said SHIPPED, but origin/main shows e1 as missing');
+    expect(j(ok(), null).line).toBe('STOPPED: it said SHIPPED, but origin/main shows e1 as missing');
     expect(j(ok({ result: 'PARKED: needs a decision' }), 'shaped').line).toBe('PARKED: needs a decision');
     expect(cli.judge({ tool: 'cursor', id: 'e1', exit: null, run: { result: null }, entryStatus: 'shaped' }).line)
       .toBe('STOPPED: Cursor ended without a result (exit null)');
@@ -337,7 +337,11 @@ describe('launch refuses', () => {
       expect(r.status).toBe(1);
       expect(r.stdout).toBe('Sprint: --tool takes claude or cursor.\n');
     }
-    const bare = { ...fakes.env, PATH: `${dirname(process.execPath)}:/usr/bin:/bin` };
+    // A PATH with node and the system's tools only, so no `claude` is found on it.
+    const nodeOnly = join(world.dir, 'nodeonly');
+    mkdirSync(nodeOnly);
+    symlinkSync(process.execPath, join(nodeOnly, 'node'));
+    const bare = { ...fakes.env, PATH: `${nodeOnly}:/usr/bin:/bin` };
     const r = launch(clone, ['e1', '--tool', 'claude'], bare);
     expect(r.status).toBe(1);
     expect(r.stdout).toBe('Sprint: claude is not installed, so Claude Code cannot start a team member.\n');

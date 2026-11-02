@@ -12,7 +12,7 @@
  * origin/main, so a team member in a worktree and the sprint session see one backlog.
  *
  *   sprint.mjs propose [--points <n>]            the proposal; exit 0
- *   sprint.mjs start <id> ... [--points <n>] [--way session|here]
+ *   sprint.mjs start <id> ... [--points <n>] [--way session|here|claude|cursor]
  *                                                writes the sprint file; exit 1 when
  *                                                one exists or an id is unknown
  *   sprint.mjs add <id> | drop <id>              change the sprint; exit 1 on a bad id
@@ -22,20 +22,37 @@
  *       by has shipped, 3 (`PARKED: depends on <id>`) when a blocker was dropped, parked
  *       or stopped, 1 for an id not in the backlog. No time limit; works with no sprint.
  *   sprint.mjs brief <id>                        the team member's brief
+ *   sprint.mjs launch <id> [--tool claude|cursor] [--model <m>] [--interval <seconds>]
+ *       starts the entry's team member in that tool's command line, in print mode, in a
+ *       worktree `<checkout>-team-<id>` beside the checkout, as a detached `run`, and
+ *       returns at once. Records `launched[id]` ({ tool, model, worktree, pid, started,
+ *       log }) in the sprint file and marks the entry planning.
+ *   sprint.mjs run <id> --tool <t> [--model <m>] [--interval <seconds>]
+ *       what launch starts: waits for what blocks the entry, runs the tool on exact
+ *       grants and no API key, judges its last line against origin/main and writes the
+ *       result. Not for a person to run.
+ *   sprint.mjs watch [--interval <seconds>]      exit 0 with the line of the first ended
+ *       command-line team member not yet reported, 1 when none is running or unreported.
  *   sprint.mjs status | report | end             where it stands, the report, the report
  *                                                and then the sprint file removed
  *
- * Every command except propose, start and wait exits 1 with one line when no sprint is
+ * The team folder `<git common dir>/tropis/team/` holds, per launched entry, `<id>.brief.md`
+ * (the prompt), `<id>.log` (the run's output, stream-json) and `<id>.json` (the result:
+ * { tool, line, denied, sessionId, exit, finished, reported? }). It is written by this
+ * script only, and outlives the sprint file.
+ *
+ * Every command except propose, start, wait and run exits 1 with one line when no sprint is
  * under way; an unknown command exits 2 with the usage line. Every line is on stdout,
  * except the notes of `brief`, which go to stderr so the brief stays whole.
  * TROPIS_SPRINT_NOW (an ISO 8601 time) replaces the clock, for tests. No other file
  * imports this one. Never runs gh unless origin is on GitHub.
  */
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
-  existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync,
+  closeSync, existsSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmSync,
+  writeFileSync,
 } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
@@ -43,14 +60,19 @@ import { mergesAfterIds } from './plan-binding.js';
 import { bandOf, inRankOrder, isClosed } from './next-work.js';
 import { originOnGitHub } from './main-status.mjs';
 import { tokenStatus } from './merge-token.mjs';
+import {
+  TOOLS, agentEnv, commandLine, cursorGrants, judge, openCommand, readRun,
+} from './team-member-cli.mjs';
 
 const DEFAULT_BUDGET = 20;
-const WAYS = ['session', 'here'];
-const COMMANDS = ['propose', 'start', 'add', 'drop', 'mark', 'note', 'wait', 'brief', 'status', 'report', 'end'];
+const WAYS = ['session', 'here', 'claude', 'cursor'];
+const COMMANDS = ['propose', 'start', 'add', 'drop', 'mark', 'note', 'wait', 'brief', 'launch', 'run', 'watch',
+  'status', 'report', 'end'];
 const PLANS_DIR = 'docs/superpowers/plans/';
-const USAGE = 'usage: sprint.mjs propose [--points <n>] | start <id> ... [--points <n>] [--way session|here] | '
+const USAGE = 'usage: sprint.mjs propose [--points <n>] | start <id> ... [--points <n>] [--way session|here|claude|cursor] | '
   + 'add <id> | drop <id> | mark <id> planning|parked|stopped|clear [<reason>] | note <id> <text> | '
-  + 'wait <id> [--interval <seconds>] | brief <id> | status | report | end';
+  + 'wait <id> [--interval <seconds>] | brief <id> | launch <id> [--tool claude|cursor] [--model <m>] | '
+  + 'run <id> --tool <t> (started by launch) | watch | status | report | end';
 const NONE_UNDER_WAY = 'Sprint: none under way; run propose, then start.';
 
 const firstLine = (text) => String(text ?? '').split('\n').map((l) => l.trim()).find(Boolean);
@@ -225,6 +247,230 @@ export function proposeSprint(catalog, bandRows, budget = DEFAULT_BUDGET) {
   };
 }
 
+// ---------------------------------------------------------------- command-line team members
+
+const isTool = (tool) => typeof tool === 'string' && Object.hasOwn(TOOLS, tool);
+
+const COMMAND_LINE_NOTE = (name) => [
+  `You were started in ${name}'s command line, in print mode, and nobody is watching this`,
+  'run. A background command does not wake you here: run every wait in the foreground,',
+  'and run it again whenever the tool stops it, until it ends. Everything this entry is',
+  'blocked by has shipped already, so skip the wait for it. When a command you need is',
+  'refused, end with STOPPED and name the command.',
+];
+const CURSOR_NOTE = '`.cursor/cli.json` holds the grants this run was started with. It is not part of your work: never commit it.';
+
+function teamPath(root, env) {
+  return resolve(dirname(sprintPath(root, env)), 'team');
+}
+
+/** The worktree of one team member, beside the checkout. */
+const worktreeFor = (root, id) => resolve(root, '..', `${basename(root)}-team-${id}`);
+
+function isAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+}
+
+function readResult(root, env, id) {
+  const path = join(teamPath(root, env), `${id}.json`);
+  return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
+}
+
+/** Written to a sibling file and renamed, like the sprint file. */
+function writeResult(root, env, id, result) {
+  const path = join(teamPath(root, env), `${id}.json`);
+  mkdirSync(dirname(path), { recursive: true });
+  const partial = `${path}.${process.pid}`;
+  writeFileSync(partial, `${JSON.stringify(result, null, 2)}\n`);
+  renameSync(partial, path);
+}
+
+const DIED = 'the run ended without writing a result';
+
+/**
+ * The sprint's marks overlaid with what command-line team members reported: a result
+ * of PARKED or STOPPED marks its entry, and so does a run that is gone without one. A
+ * SHIPPED result adds nothing: the main branch says shipped.
+ */
+function teamMarks(root, env, sprint) {
+  const marks = { ...(sprint?.marks ?? {}) };
+  for (const [id, launched] of Object.entries(sprint?.launched ?? {})) {
+    const result = readResult(root, env, id);
+    const reported = result && /^(PARKED|STOPPED): ([\s\S]*)$/.exec(result.line);
+    if (reported) marks[id] = { state: reported[1] === 'PARKED' ? 'parked' : 'stopped', reason: reported[2] };
+    else if (!result && !isAlive(launched.pid)) marks[id] = { state: 'stopped', reason: DIED };
+  }
+  return marks;
+}
+
+/** What `status` adds to a launched entry's line. */
+function teamNote(root, env, sprint, id) {
+  const launched = sprint.launched?.[id];
+  if (!launched) return '';
+  const name = TOOLS[launched.tool].name;
+  const result = readResult(root, env, id);
+  if (!result && isAlive(launched.pid)) return ` — in ${name}, running; log ${launched.log}`;
+  return result?.sessionId
+    ? ` — in ${name}, ended; open it with ${openCommand(launched.tool, launched.worktree, result.sessionId)}`
+    : ` — in ${name}, ended`;
+}
+
+function launch(ctx, opts) {
+  const sprint = requireSprint(ctx);
+  const id = opts.ids[0];
+  requireEntry(sprint, id);
+  const tool = opts.tool ?? (isTool(sprint.way) ? sprint.way : undefined);
+  if (!isTool(tool)) throw new Refusal('Sprint: --tool takes claude or cursor.');
+  const { command, name } = TOOLS[tool];
+  const version = spawnSync(command, ['--version'], { env: agentEnv(ctx.env), encoding: 'utf8' });
+  if (version.error || version.status !== 0) {
+    throw new Refusal(`Sprint: ${command} is not installed, so ${name} cannot start a team member.`);
+  }
+  const before = sprint.launched?.[id];
+  if (before && isAlive(before.pid) && !readResult(ctx.root, ctx.env, id)) {
+    throw new Refusal(`Sprint: ${id}'s team member is still running (pid ${before.pid}).`);
+  }
+
+  const backlog = ctx.backlog();
+  requireInBacklog(backlog, id);
+  const worktree = worktreeFor(ctx.root, id);
+  if (!existsSync(worktree)) {
+    const added = git(ctx.root, ctx.env, ['worktree', 'add', '--detach', worktree, 'origin/main']);
+    if (added.status !== 0) {
+      throw new Refusal(`Sprint: could not add the worktree — ${firstLine(added.stderr) ?? `git exited ${added.status}`}`);
+    }
+  }
+  const grants = join(worktree, '.cursor/cli.json');
+  if (tool === 'cursor' && !existsSync(grants)) {
+    mkdirSync(dirname(grants), { recursive: true });
+    writeFileSync(grants, `${JSON.stringify(cursorGrants(), null, 2)}\n`);
+  }
+
+  const team = teamPath(ctx.root, ctx.env);
+  mkdirSync(team, { recursive: true });
+  const promptFile = ctx.env.TROPIS_TEAM_PROMPT;
+  const prompt = promptFile
+    ? readFileSync(promptFile, 'utf8')
+    : `${[...brief(ctx, { ids: [id] }), '', ...COMMAND_LINE_NOTE(name), ...(tool === 'cursor' ? [CURSOR_NOTE] : [])].join('\n')}\n`;
+  writeFileSync(join(team, `${id}.brief.md`), prompt);
+  rmSync(join(team, `${id}.json`), { force: true });
+  // A restarted run must not be read through the last one's events.
+  const log = join(team, `${id}.log`);
+  if (existsSync(log)) renameSync(log, `${log}.1`);
+
+  const fd = openSync(log, 'a');
+  const args = [fileURLToPath(import.meta.url), 'run', id, '--tool', tool,
+    ...(opts.model ? ['--model', opts.model] : []),
+    ...(opts.intervalGiven ? ['--interval', String(opts.intervalMs / 1000)] : [])];
+  const child = spawn(process.execPath, args, {
+    cwd: ctx.root, env: ctx.env, detached: true, stdio: ['ignore', fd, fd],
+  });
+  closeSync(fd);
+  child.on('error', () => {});
+  child.unref();
+  if (!child.pid) throw new Refusal(`Sprint: could not start the run for ${id}.`);
+
+  const latest = requireSprint(ctx);
+  latest.launched = {
+    ...(latest.launched ?? {}),
+    [id]: {
+      tool, ...(opts.model ? { model: opts.model } : {}), worktree, pid: child.pid,
+      started: isoSeconds(ctx.now()), log,
+    },
+  };
+  latest.marks[id] = { state: 'planning' };
+  writeSprint(ctx.root, ctx.env, latest);
+  return [
+    `Sprint: ${id} started in ${name}'s command line (pid ${child.pid}), in ${worktree}.`,
+    `Sprint: its log is ${log}; status names the command that opens its session.`,
+  ];
+}
+
+/** What `launch` starts: the entry's wait, the tool's run, and the judgement of how it ended. */
+async function runMember(ctx, opts, print) {
+  const id = opts.ids[0];
+  const tool = opts.tool;
+  const team = teamPath(ctx.root, ctx.env);
+  const log = join(team, `${id}.log`);
+  const finish = (line, extra = {}) => {
+    writeResult(ctx.root, ctx.env, id, {
+      tool, line, denied: [], sessionId: null, exit: null, finished: isoSeconds(ctx.now()), ...extra,
+    });
+    return { exit: 0, lines: [line] };
+  };
+  try {
+    const waited = await wait(ctx, { ids: [id], intervalMs: opts.intervalMs }, print);
+    if (waited.exit === 3) return finish(waited.lines[0]);
+    if (waited.exit !== 0) return finish(`STOPPED: ${waited.lines[0]}`);
+  } catch (error) {
+    if (error instanceof Refusal) return finish(`STOPPED: ${error.message}`);
+    throw error;
+  }
+
+  const { command, args } = commandLine(tool, {
+    prompt: readFileSync(join(team, `${id}.brief.md`), 'utf8'), model: opts.model,
+  });
+  const fd = openSync(log, 'a');
+  const exit = await new Promise((done) => {
+    const child = spawn(command, args, {
+      cwd: worktreeFor(ctx.root, id), env: agentEnv(ctx.env), stdio: ['ignore', fd, fd],
+    });
+    child.once('error', (error) => {
+      writeFileSync(log, `Sprint: could not start ${command} — ${error.message}\n`, { flag: 'a' });
+      done(null);
+    });
+    child.once('close', (code) => done(code));
+  });
+  closeSync(fd);
+
+  const entryStatus = ctx.backlog().catalog.find((e) => e.id === id)?.status;
+  const run = readRun(readFileSync(log, 'utf8'));
+  const { line, denied } = judge({ tool, id, exit, run, entryStatus });
+  return finish(line, { denied, sessionId: run.sessionId, exit });
+}
+
+/**
+ * Ends with the first command-line team member whose end has not been reported: exit 0
+ * and its line, or exit 1 when none is running or unreported. A run whose process is
+ * gone without a result is written one here. No time limit.
+ */
+async function watch(ctx, opts) {
+  for (;;) {
+    const sprint = requireSprint(ctx);
+    let running = false;
+    for (const [id, launched] of Object.entries(sprint.launched ?? {})) {
+      let result = readResult(ctx.root, ctx.env, id);
+      if (!result && isAlive(launched.pid)) {
+        running = true;
+        continue;
+      }
+      if (!result) {
+        result = {
+          tool: launched.tool, line: `STOPPED: ${DIED}`, denied: [], sessionId: null, exit: null,
+          finished: isoSeconds(ctx.now()),
+        };
+      }
+      if (result.reported) continue;
+      writeResult(ctx.root, ctx.env, id, { ...result, reported: true });
+      const name = TOOLS[launched.tool].name;
+      return {
+        exit: 0,
+        lines: [
+          `Sprint: ${id} ended in ${name} — ${result.line}`,
+          ...(result.sessionId ? [`Sprint: open it with ${openCommand(launched.tool, launched.worktree, result.sessionId)}`] : []),
+        ],
+      };
+    }
+    if (!running) return { exit: 1, lines: ['Sprint: no team member started by command line is running.'] };
+    await sleep(opts.intervalMs);
+  }
+}
+
 // ---------------------------------------------------------------- an entry's status
 
 /**
@@ -264,7 +510,7 @@ function statuses(ctx, sprint, backlog) {
   };
   const byId = {};
   for (const { id } of sprint.entries) {
-    byId[id] = statusOf(id, { catalog: backlog.catalog, marks: sprint.marks, pulls: pulls.value ?? null, planOf });
+    byId[id] = statusOf(id, { catalog: backlog.catalog, marks: teamMarks(ctx.root, ctx.env, sprint), pulls: pulls.value ?? null, planOf });
   }
   return { byId, pulls };
 }
@@ -455,10 +701,11 @@ function status(ctx) {
   const stopped = sprint.entries.filter((e) => needsYou(byId[e.id]));
   if (stopped.length) {
     out.push(`Sprint: needs you — ${stopped.length} stopped or parked.`);
-    out.push(...stopped.map((e) => `  ${e.id} — ${byId[e.id]}`));
+    out.push(...stopped.map((e) => `  ${e.id} — ${byId[e.id]}${teamNote(ctx.root, ctx.env, sprint, e.id)}`));
     out.push('Sprint: the rest.');
   }
-  out.push(...sprint.entries.filter((e) => !needsYou(byId[e.id])).map((e) => `  ${e.id} — ${byId[e.id]}`));
+  out.push(...sprint.entries.filter((e) => !needsYou(byId[e.id]))
+    .map((e) => `  ${e.id} — ${byId[e.id]}${teamNote(ctx.root, ctx.env, sprint, e.id)}`));
   if (pulls.error) {
     out.push(`Sprint: open pull requests unknown — ${pulls.error}.`);
   } else {
@@ -519,7 +766,7 @@ async function wait(ctx, opts, print) {
   for (;;) {
     const backlog = ctx.backlog();
     const entry = requireInBacklog(backlog, id);
-    const marks = readSprint(ctx.root, ctx.env)?.marks ?? {};
+    const marks = teamMarks(ctx.root, ctx.env, readSprint(ctx.root, ctx.env));
     const state = (other) => backlog.catalog.find((e) => e.id === other)?.status;
     const open = [];
     for (const blocker of entry.blockedBy ?? []) {
@@ -551,18 +798,25 @@ function parseArgs(argv) {
     const word = rest[i];
     if (command === 'mark' || command === 'note' || !word.startsWith('--')) {
       opts.ids.push(word);
-    } else if (['--points', '--way', '--interval'].includes(word) && rest[i + 1] !== undefined) {
+    } else if (['--points', '--way', '--interval', '--tool', '--model'].includes(word) && rest[i + 1] !== undefined) {
       const value = rest[i + 1];
       i += 1;
       if (word === '--points') opts.points = value;
       else if (word === '--way') opts.way = value;
-      else if (/^\d+(\.\d+)?$/.test(value)) opts.intervalMs = Number(value) * 1000;
+      else if (word === '--tool') opts.tool = value;
+      else if (word === '--model') opts.model = value;
+      else if (/^\d+(\.\d+)?$/.test(value)) {
+        opts.intervalMs = Number(value) * 1000;
+        opts.intervalGiven = true;
+      }
       else return null;
     } else {
       return null;
     }
   }
-  if (['add', 'drop', 'wait', 'brief'].includes(command) && opts.ids.length !== 1) return null;
+  if (['add', 'drop', 'wait', 'brief', 'launch', 'run'].includes(command) && opts.ids.length !== 1) return null;
+  if (command === 'watch' && opts.ids.length) return null;
+  if (command === 'run' && !opts.tool) return null;
   if (command === 'mark' && opts.ids.length < 2) return null;
   if (command === 'note' && opts.ids.length < 2) return null;
   return opts;
@@ -588,7 +842,7 @@ export async function main(argv, { root, env = process.env, print = () => {} } =
       for (const line of backlog.notes.filter((n) => !told.has(n))) {
         told.add(line);
         if (opts.command === 'brief') process.stderr.write(`${line}\n`);
-        else if (opts.command === 'wait') print(line);
+        else if (opts.command === 'wait' || opts.command === 'run') print(line);
         else first.push(line);
       }
       return backlog;
@@ -596,7 +850,12 @@ export async function main(argv, { root, env = process.env, print = () => {} } =
   };
   try {
     if (opts.command === 'wait') return await wait(ctx, opts, print);
-    const commands = { propose, start, add, drop, mark, note, brief, status, report, end };
+    if (opts.command === 'run') {
+      if (!isTool(opts.tool)) return { exit: 2, lines: [USAGE] };
+      return await runMember(ctx, opts, print);
+    }
+    if (opts.command === 'watch') return await watch(ctx, opts);
+    const commands = { propose, start, add, drop, mark, note, brief, launch, status, report, end };
     const lines = commands[opts.command](ctx, opts);
     return { exit: 0, lines: [...first, ...lines] };
   } catch (error) {
