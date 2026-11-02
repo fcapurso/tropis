@@ -1687,9 +1687,9 @@ not follow it). The API alone (its concurrency could not be tested without GitHu
 origin elsewhere would have no lock).
 
 **Consequences:** FW-055 replaces the 60-minute limit with a wait that lasts while the
-holder is working and ends when the token turns stale. A waiter whose holder died stops after an hour and says so. A cloud
-session's release is unproven, as FW-049 says. Source: the sprint design of 2026-11-01,
-section 3, and FW-049.
+holder is working and ends when the token turns stale. A waiter whose holder died stops
+once the token turns stale and says so. A cloud session's release is unproven, as FW-049
+says. Source: the sprint design of 2026-11-01, section 3, and FW-049.
 
 ## FW-053: Every agent Tropis starts is paid for by a plan the developer already has
 
@@ -1897,3 +1897,25 @@ vendors' names).
 from before this has no inclusion table; `/dispatch` still prints its picks and says to
 refresh. A sprint's team members and the reviewers Tropis starts get a tier through the
 entry `team-members-and-reviewers-run-on-a-tier`.
+
+## FW-058: A wait for the token stops on a stale holder, judged by the branch alone off GitHub
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `merge-token.mjs take` and `plan-overlap.mjs --wait` have no time limit
+unless `--timeout` gives one. The token wait asks, each round, whether the holder is
+stale, as `/next` does, and stops naming the holder and the command that breaks the
+token when it is; the merges-after wait goes ahead when no entry it waits on is
+`building` on origin's main branch. Where `origin` is not on GitHub, pull requests
+cannot be asked, so a token held by a branch for 30 minutes is stale when that branch is
+absent on `origin` or has had no push for 30 minutes; the status line says so too.
+
+**Rejected:** Keeping a limit where `origin` is not on GitHub (two behaviours to explain
+for one wait). Never judging staleness there (a waiter whose holder died would wait
+forever, which FW-052's limit existed to prevent). Going ahead on `shipped` or `dropped`
+only (an entry parked back to `shaped` would hold its followers forever).
+
+**Consequences:** A session runs both waits as background commands that wake it; a
+tool that cannot keep a command running for hours ends the wait early, and running the
+same command again resumes it. Implements FW-055 for the waits shipped with FW-051 and
+FW-052. Source: the entry `waits-end-when-something-happens`.

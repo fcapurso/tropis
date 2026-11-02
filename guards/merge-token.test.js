@@ -251,6 +251,103 @@ describe('against a local origin', () => {
     expect(run(a, ['take', '--holder', 'a\nb']).status).toBe(2);
     expect(spawnSync('git', ['for-each-ref', 'refs/heads/x'], { cwd: origin.bare, encoding: 'utf8' }).stdout).toBe('');
   });
+  describe('with no time limit', () => {
+    const GIT_IDENTITY = {
+      ...ENV,
+      GIT_AUTHOR_NAME: 'Seed', GIT_AUTHOR_EMAIL: 'seed@example.com',
+      GIT_COMMITTER_NAME: 'Seed', GIT_COMMITTER_EMAIL: 'seed@example.com',
+    };
+    const stamp = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+    /** Writes a marker straight into the bare origin, taken `minutesAgo` minutes ago. */
+    function plantMarker({ bare }, holder, minutesAgo, kind = 'branch') {
+      const tree = git(bare, ['rev-parse', 'main^{tree}']);
+      const text = token.markerMessage({ holder, kind, taken: stamp(Date.now() - minutesAgo * 60000) });
+      const sha = git(bare, ['commit-tree', tree, '-m', text], GIT_IDENTITY);
+      git(bare, ['update-ref', REF, sha]);
+    }
+
+    /** take through the command line, with no --timeout, killed if it never stops. */
+    const takeUnlimited = (clone, holder) => spawnSync('node', [
+      scriptOf(clone), 'take', '--holder', holder, '--interval', '0',
+    ], { cwd: clone, env: ENV, encoding: 'utf8', timeout: 15000 });
+
+    /** A clock that moves 20 minutes on each pause; `onPause(n)` runs the n-th one. */
+    function simulatedTime(onPause) {
+      const clock = { ms: Date.now(), pauses: 0 };
+      return {
+        clock,
+        now: () => clock.ms,
+        sleep: async () => {
+          clock.pauses += 1;
+          clock.ms += 20 * 60000;
+          await onPause(clock.pauses, clock.ms);
+        },
+      };
+    }
+
+    it('takes the token after two hours of waiting on a holder that keeps pushing', async () => {
+      const origin = makeOrigin();
+      const a = makeClone(origin, 'a');
+      const b = makeClone(origin, 'b', { branch: 'plan/b' });
+      expect(run(b, ['take']).status).toBe(0);
+      git(b, ['push', '-q', 'origin', 'plan/b']);
+      const { now, sleep: pause, clock } = simulatedTime((n, ms) => {
+        git(b, ['commit', '-q', '--allow-empty', '-m', `work ${n}`], { ...ENV, GIT_COMMITTER_DATE: stamp(ms) });
+        git(b, ['push', '-q', 'origin', 'plan/b']);
+        if (n === 6) expect(run(b, ['release']).status).toBe(0);
+      });
+
+      const result = await token.take(a, {
+        env: ENV, holder: 'plan/a', intervalMs: 0, now, sleep: pause,
+      });
+
+      expect(result.exit).toBe(0);
+      expect(result.line).toContain('taken by plan/a');
+      expect(clock.pauses).toBeGreaterThanOrEqual(6);
+    }, 60000);
+
+    it('stops, naming a holder with no branch and no push for half an hour', () => {
+      const origin = makeOrigin();
+      const a = makeClone(origin, 'a');
+      plantMarker(origin, 'plan/gone', 45);
+      const r = takeUnlimited(a, 'plan/a');
+      expect(r.stdout).toBe('STOPPED: waiting for the token, held by plan/gone, which is stale — '
+        + 'no push for 30 min. Break it only on the developer\'s word: '
+        + 'node .tropis/scripts/merge-token.mjs break --holder plan/gone\n');
+      expect(r.status).toBe(3);
+    }, 20000);
+
+    it('shows that holder as stale in the status line, and not once its branch has a push', () => {
+      const origin = makeOrigin();
+      const a = makeClone(origin, 'a', { branch: 'plan/a' });
+      plantMarker(origin, 'plan/gone', 45);
+      const line = run(a, []).stdout;
+      expect(line).toContain('held by plan/gone for 45 min — stale: no push for 30 min.');
+      expect(line).toContain('break --holder plan/gone');
+
+      git(a, ['push', '-q', 'origin', 'HEAD:refs/heads/plan/gone']);
+      expect(run(a, []).stdout).not.toContain('stale');
+    });
+
+    it('keeps waiting on a hold, however old, until it is released', async () => {
+      const origin = makeOrigin();
+      const a = makeClone(origin, 'a');
+      const b = makeClone(origin, 'b');
+      plantMarker(origin, 'Some Person', 500, 'hold');
+      const { now, sleep: pause, clock } = simulatedTime((n) => {
+        if (n === 6) expect(run(b, ['release', '--holder', 'Some Person']).status).toBe(0);
+      });
+
+      const result = await token.take(a, {
+        env: ENV, holder: 'plan/a', intervalMs: 0, now, sleep: pause,
+      });
+
+      expect(clock.pauses).toBe(6);
+      expect(result.exit).toBe(0);
+      expect(result.line).toContain('taken by plan/a');
+    }, 60000);
+  });
 });
 
 describe('against an origin on GitHub, faked', () => {
@@ -374,6 +471,29 @@ if (method === 'POST' && url.endsWith('/git/commits')) {
     const refused = run(theirs.clone, ['release', '--holder', 'plan/x'], theirs.env);
     expect(refused.status).toBe(1);
     expect(theirs.callsTo('DELETE', '/git/refs')).toHaveLength(0);
+  });
+
+  it('stops naming a holder GitHub shows stale: no pull request and no push for half an hour', () => {
+    const { clone, env } = stage({
+      ref: SHA, commits: { [SHA]: message('plan/x', ago(45)) }, pulls: [], branch: null,
+    });
+    const r = spawnSync('node', [scriptOf(clone), 'take', '--holder', 'plan/a', '--interval', '0'], {
+      cwd: clone, env, encoding: 'utf8', timeout: 15000,
+    });
+    expect(r.stdout).toBe('STOPPED: waiting for the token, held by plan/x, which is stale — '
+      + 'no open pull request and no push for 30 min. Break it only on the developer\'s word: '
+      + 'node .tropis/scripts/merge-token.mjs break --holder plan/x\n');
+    expect(r.status).toBe(3);
+  }, 20000);
+
+  it('does not call a holder with an open pull request stale: only the limit stops the wait', () => {
+    const { clone, env } = stage({
+      ref: SHA, commits: { [SHA]: message('plan/x', ago(45)) },
+      pulls: [{ head: { ref: 'plan/x' } }], branch: null,
+    });
+    const r = run(clone, ['take', '--holder', 'plan/a', '--interval', '0', '--timeout', '0.01'], env);
+    expect(r.status).toBe(3);
+    expect(r.stdout).toBe('STOPPED: waiting for the token, held by plan/x\n');
   });
 
   it('shows a token held 45 minutes by a branch with no pull request and no push as stale', () => {

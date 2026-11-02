@@ -515,3 +515,173 @@ it. Delete the scratch folder afterwards.
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 7 done, in order. Setup, starting grep, red tests, scripts, documents,
+fresh-agent check, catalog and board, verification. The branch is pushed; no pull request.
+
+### Verification results
+
+Platform for everything below: git 2.49.0, node v22.15.0, Claude Code 2.1.300 (model
+sonnet), macOS 26.2 on arm64.
+
+- Task 0: `git status --porcelain` empty; `bash scripts/check-blueprint.sh` last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1, before: `scripts/merge-token.mjs:269` and `:361` (`3600000`),
+  `scripts/plan-overlap.mjs:81` (`timeoutMin: 60`). After Task 3 the same grep prints nothing.
+- Task 2, red (both test files alone, committed seam only): `Tests: 6 failed, 42 passed, 48 total`. Failing:
+  case 1 (takes the token after two hours), case 2 (stops naming a holder with no branch),
+  case 3 (status line stale off GitHub), case 4 (keeps waiting on a hold), case 5 (GitHub
+  faked, stale through the API), case 7 (parked back to shaped).
+- Task 3, green: `Tests: 48 passed, 48 total`; grep empty; self-check `Self-check passed`.
+  Throwaway commit making `take` never ask about staleness: failed
+  `with no time limit › stops, naming a holder with no branch...` and `against an origin
+  on GitHub, faked › stops naming a holder GitHub shows stale...` (cases 2 and 5);
+  `Tests: 2 failed, 29 passed`. Throwaway commit going ahead only on shipped/dropped:
+  failed `--wait › goes ahead when the entry was parked back to shaped` (case 7);
+  `Tests: 1 failed, 16 passed`. Each throwaway commit was dropped with `git reset --hard HEAD~1`.
+- Task 4: `git grep -nF -e "After 60 minutes" -e "The wait has a time limit" -- framework`
+  prints nothing. `git grep -nF "in the background" -- framework/workflow.md` prints the two
+  Merging items (lines 411, 413) and an unrelated line 388; the two bullets say "as a
+  background command" instead (the plan's own wording), so they do not match that phrase.
+  Self-check passed.
+- Task 5, fresh-agent check, run locally with `claude -p --model sonnet --output-format
+  stream-json --verbose`, ANTHROPIC_API_KEY unset, in a scratch project set up from this
+  branch with two `building` entries (`glaze-log` merging after `kiln-timer`) and a token
+  held by a non-stale `plan/kiln-timer` branch. The user's own global instructions load in
+  that run but say nothing about the merge token, the waits or background commands.
+  - Prompt 1 (check out `plan/glaze-log` and start the Merging steps): the agent made a
+    worktree and ran `node .tropis/scripts/plan-overlap.mjs --wait docs/superpowers/plans/glaze-log.md`
+    with `run_in_background: true` and no `--timeout`, and reported it ends when `kiln-timer`
+    is no longer `building` (shipped, dropped or parked), with no limit. It did not start the
+    take, saying it follows once the first wait ends (the workflow's order). Its stderr:
+    `plan-overlap: waiting until kiln-timer is no longer building, asking origin every 30 s`.
+  - Prompt 2 (wait has gone ahead; take the next step): the agent ran
+    `node .tropis/scripts/merge-token.mjs take` with `run_in_background: true`, no
+    `--timeout`, and reported it ends when the token is free, or exits 3 with `STOPPED ...
+    stale` for a stale holder (the developer breaks it), a hold waits for release.
+  - Both passed first time; no wording change was needed. Processes killed and scratch deleted.
+- Task 6: `npm --prefix .tropis test`: `Tests: 152 passed, 152 total`.
+- Task 7: same command `Tests: 152 passed, 152 total`; `bash scripts/check-blueprint.sh`
+  last line `Self-check passed: ...`; diff stat below.
+
+### Scope
+
+Worktree used: `../tropis-waits` (a sibling of `tropis`).
+
+```
+ docs/backlog-board/bands.yaml |  13 -----
+ feature-catalog.yaml          |  18 ++++++-
+ framework/DECISIONS.md        |  24 ++++++++-
+ framework/workflow.md         |  35 +++++++-----
+ guards/merge-token.test.js    | 120 +++++++++++
+ guards/plan-overlap.test.js   |  32 +++++++
+ scripts/merge-token.mjs       |  90 ++++++++++++++++++++++---------
+ scripts/plan-overlap.mjs      |  31 ++++++-----
+ (plus this plan file)
+```
+
+Every file is in File Structure; `docs/backlog-board/index.html` did not change.
+
+### Judgment calls
+
+- Decision number: the next free one on `origin/main` was FW-056 (the plan said FW-055 is
+  taken), written as such.
+- `take` stamps the new marker with `now()` (the seam), not `Date.now()`, so a simulated
+  clock stays consistent.
+- One function, `judgeHolder`, picks the GitHub or git judgement and is used by both
+  `tokenStatus` and `take`; the stale-reason text and break advice are shared constants.
+- The case-4 and case-5 cases sit in their blocks; the local-origin cases share one nested
+  `describe('with no time limit')` block inside *against a local origin*.
+- Source worked from: none outside this repository; the two scripts and their guards were followed.
+- The fresh-agent probe could not use `git checkout -b` in the scratch project (the
+  worktree hook refuses it); branches there were made with `git commit-tree` and a push.
+
+### What the plan got wrong
+
+- Case 8 cannot be red before the change. With the seam already in (Task 2) and
+  `timeoutMin: Infinity` passed explicitly, the old code also waits and goes ahead on
+  `shipped`; the 60-minute default lives in `parseArgs`, which the case does not reach. It
+  stays as a guard against a limit creeping in, but it is not proof of the default's removal;
+  the grep in Task 1 is.
+- Case 4 (hold) is red before the change too, not green: the old 60-minute default stops
+  it after three simulated pauses. It passes after.
+- The plan's `git grep "in the background"` expectation (two items plus two bullets) does
+  not hold for the bullets, which use the plan's "as a background command" wording.
+
+### Outstanding
+
+- The change has no screen, so there is no developer check.
+- The FW number may need renumbering at merge if `main` moved.
+- A tool that cannot keep a background command alive for hours ends a wait early (stated in
+  FW-056); not observed here.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0, node v22.15.0 and the self-check's own
+Jest, on macOS 26.2, arm64, against the branch's committed `HEAD`.
+
+- Scope: `git diff --stat origin/main...HEAD` lists the eight files of *File Structure*
+  and this plan, nothing else.
+- The two changed guard files alone, staged from `HEAD` as the self-check stages them:
+  `Tests: 48 passed, 48 total`.
+- Re-breaking, each as a throwaway commit then dropped:
+  - `take` never asking about staleness: red on *stops, naming a holder with no branch
+    and no push for half an hour* and *stops naming a holder GitHub shows stale*
+    (`2 failed, 46 passed`).
+  - The merges-after wait going ahead only on `shipped`/`dropped`: red on *goes ahead
+    when the entry was parked back to shaped* (`1 failed, 47 passed`).
+  - `take`'s default limit put back to an hour: red on *takes the token after two hours
+    of waiting on a holder that keeps pushing* and *keeps waiting on a hold, however old*
+    (`2 failed, 46 passed`).
+- `bash scripts/check-blueprint.sh` on `3329615`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` `npm --prefix .tropis test`: `Tests: 152 passed, 152 total`.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Test identities
+are `example.com` addresses, and holder names are invented.
+
+- FW-052's edited *Consequences* sentence ran past the file's width. Fixed on the branch
+  by the reviewer (rewrapped, same words): mechanical, and the checks above ran after it.
+- The `plan-overlap.mjs` command line's default (no limit) is shown only by the Task 1
+  grep, not by a test: case 8 passes `timeoutMin: Infinity` itself, as the handover says.
+  The token wait's default is tested through `take`'s own default. Accepted: the
+  command-line default is one literal, and the grep shows it.
+- The handover's three corrections to the plan (case 8 cannot be red, case 4 is red
+  before the change, the `in the background` grep) are right; checked against the cases
+  and the workflow text.
+
+### Outstanding disposition
+
+- No screen, so no developer check: none owed.
+- The decision number: renumbered at merge if `main` has moved (done at the token, if
+  needed; the commit landing it says so).
+- A tool that cannot keep a background command alive for hours ends a wait early: stated
+  in the new decision's *Consequences*, and observing it in Claude Code is already the
+  job of `sprint-plans-and-runs-a-team` (FW-055). No new entry.
+
+### Learnings routed
+
+- The plan's case 8 could not go red because the default it guarded lives in the command
+  line's argument parsing, which the case did not reach. A one-off planning error, named
+  here for the next plan that adds a seam beside a default; not routed further.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+Both waits now end on events and both stop conditions are guarded by cases shown to go
+red, the fresh-agent check found the workflow's new wording does what it says, and the
+only defect found was a line width, fixed on the branch.
+
+### At merge
+
+The rebase on `origin/main` conflicted only in `framework/DECISIONS.md`, where FW-056
+and FW-057 had landed meanwhile. Both sides were kept and this plan's decision became
+FW-058; the handover report above still says FW-056, as written at the time.

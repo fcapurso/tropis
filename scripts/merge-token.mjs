@@ -12,8 +12,9 @@
  *
  *   merge-token.mjs [status]                         who holds it, for how long; exit 0
  *   merge-token.mjs take [--holder <name>] [--hold]  exit 0 taken or already held by this
- *       [--interval <seconds>] [--timeout <minutes>] holder, 3 still held by another at the
- *                                                    timeout, 2 it could not be taken
+ *       [--interval <seconds>] [--timeout <minutes>] holder, 3 the holder turned stale, or
+ *                                                    the --timeout (optional, no default)
+ *                                                    passed, 2 it could not be taken
  *   merge-token.mjs release [--holder <name>] [--hold]  exit 0 released or free, 1 held by
  *                                                    another, 2 it could not be released
  *   merge-token.mjs break --holder <name>            as release, for whoever is named
@@ -72,6 +73,7 @@ const firstLine = (text) => String(text ?? '').split('\n').map((l) => l.trim()).
 const noStop = (text) => String(text).replace(/\.$/, '');
 const isoSeconds = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 const sleep = (ms) => new Promise((done) => { setTimeout(done, ms); });
+const minutesSince = (ms, now) => Math.max(0, Math.floor((now() - ms) / 60000));
 
 function git(ctx, args) {
   return spawnSync('git', args, { cwd: ctx.root, env: ctx.env, encoding: 'utf8' });
@@ -149,10 +151,10 @@ function markerTree(ctx) {
 }
 
 /** 'taken' | 'held' | { error } for one attempt to create the marker. */
-function tryTake(ctx, holder, kind) {
+function tryTake(ctx, holder, kind, now) {
   const found = markerTree(ctx);
   if (found.error) return { error: found.error, fatal: true };
-  const message = markerMessage({ holder, kind, taken: isoSeconds(Date.now()) });
+  const message = markerMessage({ holder, kind, taken: isoSeconds(now()) });
   if (ctx.github) {
     const made = gh(ctx, ['api', '-X', 'POST', 'repos/{owner}/{repo}/git/commits',
       '-f', `message=${message}`, '-f', `tree=${found.tree}`]);
@@ -217,20 +219,52 @@ export function tokenStatus(root, { env = process.env, now = Date.now, ref } = {
   const marker = readMarker(ctx);
   if (marker.error) return unknown(marker.error);
   if (marker.state === 'free') return { state: 'free', line: `${LINE} free.` };
-  const minutes = marker.taken === null ? null : Math.max(0, Math.floor((now() - Date.parse(marker.taken)) / 60000));
+  const minutes = marker.taken === null ? null : minutesSince(Date.parse(marker.taken), now);
   const who = marker.kind === 'hold' ? `${marker.holder} (a hold)` : marker.holder;
   const held = `${LINE} held by ${who}${minutes === null ? '' : ` for ${minutes} min`}`;
-  if (ctx.github && marker.kind === 'branch' && minutes !== null && minutes >= STALE_MINUTES) {
-    const stale = judgeStale(ctx, marker, minutes, now);
-    if (stale) {
-      return {
-        state: 'stale',
-        line: `${held} — stale: no open pull request and no push for ${STALE_MINUTES} min. `
-          + `Break it only on the developer's word: node .tropis/scripts/merge-token.mjs break --holder ${marker.holder}`,
-      };
-    }
+  if (judgeHolder(ctx, marker, now)) {
+    return {
+      state: 'stale',
+      line: `${held} — stale: ${staleReason(ctx)}. ${breakAdvice(marker)}`,
+    };
   }
   return { state: 'held', line: `${held}.` };
+}
+
+const staleReason = (ctx) => `${ctx.github ? 'no open pull request and no push' : 'no push'} for ${STALE_MINUTES} min`;
+const breakAdvice = (marker) => `Break it only on the developer's word: node .tropis/scripts/merge-token.mjs break --holder ${marker.holder}`;
+
+/**
+ * Whether the held token is stale: a branch marker old enough, then the holder's pull
+ * requests (GitHub only) and branch asked about. A hold, a marker with no readable time
+ * and any error are never stale. Used by status and by take, so they agree.
+ */
+function judgeHolder(ctx, marker, now) {
+  if (marker.kind !== 'branch' || marker.taken === null) return false;
+  const minutes = minutesSince(Date.parse(marker.taken), now);
+  if (minutes < STALE_MINUTES) return false;
+  return ctx.github ? judgeStale(ctx, marker, minutes, now) : judgeStaleByGit(ctx, marker, minutes, now);
+}
+
+/**
+ * Where origin is not on GitHub pull requests cannot be asked, so the branch alone
+ * decides: no such branch on origin, or no push to it for STALE_MINUTES. Any error means
+ * not stale.
+ */
+function judgeStaleByGit(ctx, marker, minutes, now) {
+  const listed = git(ctx, ['ls-remote', '--exit-code', 'origin', `refs/heads/${marker.holder}`]);
+  let tipMinutes = null;
+  if (listed.status !== 2) {
+    if (listed.status !== 0) return false;
+    const sha = listed.stdout.split(/\s+/)[0];
+    const fetched = git(ctx, ['fetch', '--quiet', '--no-write-fetch-head', 'origin', sha]);
+    if (fetched.status !== 0) return false;
+    const logged = git(ctx, ['log', '-1', '--format=%ct', sha]);
+    const seconds = Number(logged.stdout.trim());
+    if (logged.status !== 0 || !Number.isFinite(seconds)) return false;
+    tipMinutes = minutesSince(seconds * 1000, now);
+  }
+  return isStale({ kind: marker.kind, minutes, openPull: false, tipMinutes });
 }
 
 /** Asks GitHub about the holder's pull requests and branch; any error means not stale. */
@@ -253,7 +287,7 @@ function judgeStale(ctx, marker, minutes, now) {
     try {
       const date = Date.parse(JSON.parse(branch.stdout).commit.commit.committer.date);
       if (Number.isNaN(date)) return false;
-      tipMinutes = Math.max(0, Math.floor((now() - date) / 60000));
+      tipMinutes = minutesSince(date, now);
     } catch {
       return false;
     }
@@ -266,7 +300,8 @@ function judgeStale(ctx, marker, minutes, now) {
  * @returns {Promise<{ exit: number, line: string }>}
  */
 export async function take(root, {
-  env = process.env, ref, holder, hold = false, intervalMs = 30000, timeoutMs = 3600000,
+  env = process.env, ref, holder, hold = false, intervalMs = 30000, timeoutMs = Infinity,
+  now = Date.now, sleep: pause = sleep,
 } = {}) {
   const ctx = open(root, env, ref);
   const failed = (reason) => ({ exit: 2, line: `${LINE} could not take — ${noStop(reason)}.` });
@@ -274,7 +309,7 @@ export async function take(root, {
   const who = holderFor(ctx, { holder, hold });
   if (who.error) return failed(who.error);
   const kind = hold ? 'hold' : 'branch';
-  const deadline = Date.now() + timeoutMs;
+  const deadline = now() + timeoutMs;
   let readErrors = 0;
   let takeErrors = 0;
   let said = false;
@@ -283,7 +318,7 @@ export async function take(root, {
     if (marker.error) {
       readErrors += 1;
       if (readErrors >= 3) return failed(marker.error);
-      await sleep(intervalMs);
+      await pause(intervalMs);
       continue;
     }
     readErrors = 0;
@@ -291,15 +326,22 @@ export async function take(root, {
       return { exit: 0, line: `${LINE} already held by ${who.holder}; keeping it.` };
     }
     if (marker.state === 'held') {
-      if (Date.now() >= deadline) return { exit: 3, line: `STOPPED: waiting for the token, held by ${marker.holder}` };
+      if (now() >= deadline) return { exit: 3, line: `STOPPED: waiting for the token, held by ${marker.holder}` };
+      if (judgeHolder(ctx, marker, now)) {
+        return {
+          exit: 3,
+          line: `STOPPED: waiting for the token, held by ${marker.holder}, which is stale — ${staleReason(ctx)}. ${breakAdvice(marker)}`,
+        };
+      }
       if (!said) {
-        process.stderr.write(`merge-token: held by ${marker.holder}; asking every ${intervalMs / 1000} s for up to ${timeoutMs / 60000} min\n`);
+        const limit = Number.isFinite(timeoutMs) ? ` (at most ${timeoutMs / 60000} min)` : '';
+        process.stderr.write(`merge-token: held by ${marker.holder}; asking every ${intervalMs / 1000} s until it is free or turns stale${limit}\n`);
         said = true;
       }
-      await sleep(intervalMs);
+      await pause(intervalMs);
       continue;
     }
-    const attempt = tryTake(ctx, who.holder, kind);
+    const attempt = tryTake(ctx, who.holder, kind, now);
     if (attempt === 'taken') return { exit: 0, line: `${LINE} taken by ${who.holder}.` };
     if (attempt === 'held') {
       takeErrors = 0;
@@ -309,7 +351,7 @@ export async function take(root, {
     // The create may have succeeded without telling us: the next read decides.
     takeErrors += 1;
     if (takeErrors >= 3) return failed(attempt.error);
-    await sleep(intervalMs);
+    await pause(intervalMs);
   }
 }
 
@@ -358,7 +400,7 @@ const USAGE = 'usage: merge-token.mjs [status | take | release | break --holder 
 
 /** The options the command line asks for, or null when it is not understood. */
 function parseArgs(argv) {
-  const opts = { command: 'status', intervalMs: 30000, timeoutMs: 3600000, hold: false };
+  const opts = { command: 'status', intervalMs: 30000, timeoutMs: Infinity, hold: false };
   const rest = [...argv];
   if (rest[0] && !rest[0].startsWith('-')) opts.command = rest.shift();
   if (!['status', 'take', 'release', 'break'].includes(opts.command)) return null;
