@@ -616,9 +616,31 @@ path, hostname, address or anyone's real subscription.
   was an invented name. That tests what the change says (that an agent finds and names
   the pick), not whether a real pick holds. Nothing is lost by it.
 
+### Rebase onto `team-members-start-in-another-tool`
+
+Rebased at merge time onto `4aaee2e`, which carries that entry (#142). Conflicts, and
+how each was resolved:
+
+- `scripts/sprint.mjs`: the constants block. Kept that entry's four ways and its
+  `launch`, `run` and `watch` commands, and added `TEAM_TIER` beside them. The model line
+  is still printed only for `session`, as criterion 2 says; the `claude` and `cursor`
+  ways print none.
+- `framework/DECISIONS.md`: both plans took FW-059. That entry keeps it; this one is
+  FW-060. Each decision's consequences pointed at the other entry for giving a team
+  member launched in the other tool's command line this pick as its `--model`, so
+  neither built it. FW-060's consequence now says so plainly and leaves it to a later
+  entry, rather than claiming the other entry builds it.
+- `docs/backlog-board/bands.yaml`: each side removed the other's shipped row. Both rows
+  are gone.
+
+Merged cleanly but read again, because the new ways changed what they say:
+`commands/sprint.md` step 2 now says the model line is for `session` (the `claude` and
+`cursor` ways have their own `--model` paragraph), and the operator guide's sentence says
+"started as a session", rewrapped to the file's width.
+
 ### Outstanding disposition
 
-- FW-059 keeps its number unless another plan lands one first; renumbered at merge if so.
+- Renumbered FW-060 at merge: `team-members-start-in-another-tool` landed FW-059 first.
 - No screen, so no developer check.
 - This plan merges after `team-members-start-in-another-tool`, which changes the sprint
   script, its guard, `/sprint` and the operator guide. The rebase onto it is resolved and
@@ -629,7 +651,7 @@ path, hostname, address or anyone's real subscription.
 - A plan moving an entry to shipped must also drop its `blockedBy`. That is already what
   the catalog check enforces, and the executor found it on the first run; not routed
   further.
-- Nothing else generalises: the change is the delivery of FW-059, recorded there.
+- Nothing else generalises: the change is the delivery of FW-060, recorded there.
 
 ### Merged because
 
