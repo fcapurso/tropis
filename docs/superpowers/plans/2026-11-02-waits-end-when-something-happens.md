@@ -679,3 +679,9 @@ are `example.com` addresses, and holder names are invented.
 Both waits now end on events and both stop conditions are guarded by cases shown to go
 red, the fresh-agent check found the workflow's new wording does what it says, and the
 only defect found was a line width, fixed on the branch.
+
+### At merge
+
+The rebase on `origin/main` conflicted only in `framework/DECISIONS.md`, where FW-056
+and FW-057 had landed meanwhile. Both sides were kept and this plan's decision became
+FW-058; the handover report above still says FW-056, as written at the time.
