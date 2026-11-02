@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 // Namespace imports, so a missing export fails the case that uses it and not the file.
 import * as cli from '../scripts/team-member-cli.mjs';
+import * as binding from '../scripts/plan-binding.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
@@ -420,6 +421,138 @@ describe('launch', () => {
     expect(readFileSync(join(worktreeOf(clone2, 'e1'), '.cursor/cli.json'), 'utf8')).toBe(own);
     expect(await until(() => hasResult(clone2, 'e1'))).toBe(true);
     noteFakePids(fakes2);
+  }, T);
+});
+
+const PICK_TIERS = `**Last verified: 2026-11-02.**
+
+| Tier | Models |
+|---|---|
+| **Large** | Alder 3 *(all)*; Birch 2 *(all)* |
+| **Medium–large** | Any pick from a higher tier |
+| **Medium** | Any pick from a higher tier |
+| **Small–medium** | Any pick from a higher tier |
+| **Small** | Any pick from a higher tier |
+`;
+const NAMED = `${PICK_TIERS}
+| Model | Usage per task | Included on | Command-line name |
+|---|---|---|---|
+| Alder 3 | $9 per task | Claude Code: gold; Cursor: gold | Claude Code: alder-3; Cursor: alder-3-thinking |
+| Birch 2 | $4 per task | Claude Code: silver | Claude Code: birch-2 |
+`;
+const UNNAMED = `${PICK_TIERS}
+| Model | Usage per task | Included on |
+|---|---|---|
+| Alder 3 | $9 per task | Claude Code: gold |
+`;
+
+describe('pickForTool', () => {
+  const GOLD = 'Claude Code: gold\n';
+  it('† names a reason for each way no model can be named', () => {
+    expect(binding.pickForTool(null, 'Large', GOLD, 'Claude Code')).toEqual({
+      model: null, pick: null, reason: 'this project has no model picks. Run /refresh-model-tiers.',
+    });
+    expect(binding.pickForTool(PICK_TIERS, 'Large', GOLD, 'Claude Code')).toEqual({
+      model: null,
+      pick: null,
+      reason: 'the picks do not say which subscriptions include each model. Run /refresh-model-tiers.',
+    });
+    const notRecorded = 'which Claude Code subscription you have is not recorded on this machine. Run /refresh-model-tiers.';
+    expect(binding.pickForTool(NAMED, 'Large', null, 'Claude Code'))
+      .toEqual({ model: null, pick: null, reason: notRecorded });
+    expect(binding.pickForTool(NAMED, 'Large', 'Cursor: gold\n', 'Claude Code'))
+      .toEqual({ model: null, pick: null, reason: notRecorded });
+    expect(binding.pickForTool(NAMED, 'Large', 'Claude Code: bronze\n', 'Claude Code')).toEqual({
+      model: null,
+      pick: null,
+      reason: 'no Large pick or above is included in your Claude Code subscription, and a model that costs extra is not used (FW-053).',
+    });
+    expect(binding.pickForTool(UNNAMED, 'Large', GOLD, 'Claude Code')).toEqual({
+      model: null,
+      pick: 'Alder 3',
+      reason: "the picks do not give Claude Code's name for Alder 3. Run /refresh-model-tiers.",
+    });
+    const none = NAMED.replace('Claude Code: alder-3;', 'Claude Code: none;');
+    expect(binding.pickForTool(none, 'Large', GOLD, 'Claude Code')).toEqual({
+      model: null,
+      pick: 'Alder 3',
+      reason: "the picks do not give Claude Code's name for Alder 3. Run /refresh-model-tiers.",
+    });
+    expect(binding.pickForTool(NAMED, 'Large', 'Claude Code: gold\nCursor: gold\n', 'Cursor'))
+      .toEqual({ model: 'alder-3-thinking', pick: 'Alder 3', reason: null });
+  });
+
+  it('† skips a pick that only the other tool includes', () => {
+    const picks = `${PICK_TIERS}
+| Model | Usage per task | Included on | Command-line name |
+|---|---|---|---|
+| Alder 3 | $9 per task | Cursor: gold | Cursor: alder-3-thinking |
+| Birch 2 | $4 per task | Claude Code: gold | Claude Code: birch-2 |
+`;
+    expect(binding.pickForTool(picks, 'Large', GOLD, 'Claude Code'))
+      .toEqual({ model: 'birch-2', pick: 'Birch 2', reason: null });
+  });
+});
+
+describe('launch without --model', () => {
+  const withPicks = (clone, picks, record) => {
+    mkdirSync(join(clone, 'docs'), { recursive: true });
+    if (picks !== null) writeFileSync(join(clone, 'docs/model-picks.md'), picks);
+    if (record !== null) {
+      mkdirSync(join(clone, '.git/tropis'), { recursive: true });
+      writeFileSync(join(clone, '.git/tropis/subscriptions.txt'), record);
+    }
+  };
+
+  it('† starts the tool on the pick its picks name, and says so', async () => {
+    const world = simple();
+    const clone = makeClone(world);
+    const fakes = withFakes(world, { FAKE_MODE: 'slow', FAKE_SLEEP: '30' });
+    withPicks(clone, NAMED, 'Claude Code: gold\n');
+    expect(run(clone, ['start', 'e1', '--way', 'claude']).status).toBe(0);
+    const r = launch(clone, ['e1'], fakes.env);
+    expect(r.status).toBe(0);
+    expect(lines(r)[2]).toBe(
+      "Sprint: e1 runs on Alder 3 (alder-3), the Large tier's first pick your Claude Code subscription includes.",
+    );
+    expect(readSprint(clone).launched.e1.model).toBe('alder-3');
+    expect(await until(() => fakes.records().length > 0)).toBe(true);
+    noteFakePids(fakes);
+    const prompt = readFileSync(join(teamDir(clone), 'e1.brief.md'), 'utf8');
+    expect(fakes.records()[0].argv).toEqual(cli.commandLine('claude', { prompt, model: 'alder-3' }).args);
+  }, T);
+
+  it('† starts on the default model, with the reason, when there are no picks', async () => {
+    const world = simple();
+    const clone = makeClone(world);
+    const fakes = withFakes(world, { FAKE_MODE: 'slow', FAKE_SLEEP: '30' });
+    rmSync(join(clone, 'docs/model-picks.md'), { force: true });
+    expect(run(clone, ['start', 'e1', '--way', 'cursor']).status).toBe(0);
+    const r = launch(clone, ['e1'], fakes.env);
+    expect(lines(r)[2]).toBe(
+      "Sprint: e1 starts on Cursor's default model — this project has no model picks. Run /refresh-model-tiers.",
+    );
+    expect(readSprint(clone).launched.e1.model).toBeUndefined();
+    expect(await until(() => fakes.records().length > 0)).toBe(true);
+    noteFakePids(fakes);
+    const prompt = readFileSync(join(teamDir(clone), 'e1.brief.md'), 'utf8');
+    expect(fakes.records()[0].argv).toEqual(cli.commandLine('cursor', { prompt }).args);
+    expect(fakes.records()[0].argv).not.toContain('--model');
+  }, T);
+
+  it('keeps the model it is given and adds no line', async () => {
+    const world = simple();
+    const clone = makeClone(world);
+    const fakes = withFakes(world, { FAKE_MODE: 'slow', FAKE_SLEEP: '30' });
+    withPicks(clone, NAMED, 'Claude Code: gold\n');
+    expect(run(clone, ['start', 'e1', '--way', 'claude']).status).toBe(0);
+    const r = launch(clone, ['e1', '--model', 'haiku'], fakes.env);
+    expect(lines(r)).toHaveLength(2);
+    expect(readSprint(clone).launched.e1.model).toBe('haiku');
+    expect(await until(() => fakes.records().length > 0)).toBe(true);
+    noteFakePids(fakes);
+    expect(fakes.records()[0].argv).toContain('haiku');
+    expect(fakes.records()[0].argv).not.toContain('alder-3');
   }, T);
 });
 

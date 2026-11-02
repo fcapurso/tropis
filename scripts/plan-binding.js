@@ -465,6 +465,14 @@ export function pickToUse(picksText, tier, subscriptionsText) {
   return '**Use:** none — no pick for this tier or above is included in your subscriptions, and a model that costs extra is not used (FW-053).';
 }
 
+/**
+ * Stub: see the plan; the real body follows.
+ * @returns {{model: string|null, pick: string|null, reason: string|null}}
+ */
+export function pickForTool() {
+  return { model: null, pick: null, reason: null };
+}
+
 /** A checkout's own worktree setup, read by the dispatch command. */
 export const WORKTREE_SETUP = '.tropis/worktree-setup.txt';
 // A checkout on a release before this one keeps its setup here.
