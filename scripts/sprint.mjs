@@ -16,6 +16,7 @@
  *                                                writes the sprint file; exit 1 when
  *                                                one exists or an id is unknown
  *   sprint.mjs add <id> | drop <id>              change the sprint; exit 1 on a bad id
+ *       (for a `session` sprint, start and add also name the team member's model)
  *   sprint.mjs mark <id> planning|parked|stopped|clear [<reason> ...]
  *   sprint.mjs note <id> <text> ...              a decision a team member reports
  *   sprint.mjs wait <id> [--interval <seconds>]  exit 0 when what the entry is blocked
@@ -57,7 +58,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
-import { mergesAfterIds } from './plan-binding.js';
+import { mergesAfterIds, pickToUse, NO_PICKS_USE } from './plan-binding.js';
 import { bandOf, inRankOrder, isClosed } from './next-work.js';
 import { originOnGitHub } from './main-status.mjs';
 import { tokenStatus } from './merge-token.mjs';
@@ -67,6 +68,7 @@ import {
 
 const DEFAULT_BUDGET = 20;
 const WAYS = ['session', 'here', 'claude', 'cursor'];
+const TEAM_TIER = 'Large';
 const COMMANDS = ['propose', 'start', 'add', 'drop', 'mark', 'note', 'wait', 'brief', 'launch', 'run', 'watch',
   'status', 'report', 'end'];
 const PLANS_DIR = 'docs/superpowers/plans/';
@@ -156,6 +158,22 @@ function sprintPath(root, env) {
   const r = git(root, env, ['rev-parse', '--git-common-dir']);
   if (r.status !== 0) throw new Refusal('Sprint: this is not a git checkout.');
   return resolve(root, r.stdout.trim(), 'tropis/sprint.json');
+}
+
+// The line naming the model a session starts team members on: the pick /dispatch names
+// for a TEAM_TIER plan, from the project's picks and the subscriptions record.
+function teamModelLine(root, env) {
+  const picksPath = resolve(root, 'docs/model-picks.md');
+  const subsPath = resolve(dirname(sprintPath(root, env)), 'subscriptions.txt');
+  const use = existsSync(picksPath)
+    ? pickToUse(
+      readFileSync(picksPath, 'utf8'),
+      TEAM_TIER,
+      existsSync(subsPath) ? readFileSync(subsPath, 'utf8') : null,
+    )
+    : NO_PICKS_USE;
+  const none = use.startsWith('**Use:** not chosen') || use.startsWith('**Use:** none');
+  return `Sprint: team members run on the ${TEAM_TIER} tier. ${use}${none ? " Start them on the tool's default model." : ''}`;
 }
 
 function readSprint(root, env) {
@@ -595,7 +613,9 @@ function start(ctx, opts) {
     marks: {},
     notes: {},
   });
-  return [`Sprint: started with ${entries.length} entries, ${entries.reduce((s, e) => s + e.points, 0)} of ${budget} points; team members start as ${way}.`];
+  const out = [`Sprint: started with ${entries.length} entries, ${entries.reduce((s, e) => s + e.points, 0)} of ${budget} points; team members start as ${way}.`];
+  if (way === 'session') out.push(teamModelLine(ctx.root, ctx.env));
+  return out;
 }
 
 function add(ctx, opts) {
@@ -624,6 +644,7 @@ function add(ctx, opts) {
       ? `Sprint: over the budget by ${over} points — ${leaving.join(', ')} not started yet would leave the sprint to make room.`
       : `Sprint: over the budget by ${over} points — no entry not started yet could leave to make room.`);
   }
+  if (sprint.way === 'session') out.push(teamModelLine(ctx.root, ctx.env));
   return out;
 }
 

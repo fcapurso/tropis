@@ -23,6 +23,8 @@ import {
   isStale,
   picksForTier,
   pickToUse,
+  isTier,
+  NO_PICKS_USE,
   renderThinPrompt,
 } from './plan-binding.js';
 
@@ -57,11 +59,43 @@ if (process.argv[2] === '--subscriptions') {
   process.exit(0);
 }
 
+// The project's own picks, written by /refresh-model-tiers. The framework ships none.
+let picksText = null;
+try {
+  picksText = readFileSync(resolve(root, 'docs/model-picks.md'), 'utf8');
+} catch {
+  // No picks file: the prompt says to run /refresh-model-tiers.
+}
+// Which subscriptions the developer holds: a local record under the git directory shared
+// by every worktree, never committed. No git or no file means none is recorded.
+let subscriptionsText = null;
+try {
+  const dir = commonGitDir();
+  if (dir !== null) subscriptionsText = readFileSync(join(dir, 'tropis/subscriptions.txt'), 'utf8');
+} catch {
+  // No record.
+}
+
+// Prints the pick `/dispatch` would name for a plan of this tier: how a session starting
+// an agent that runs no plan (a fresh reviewer, a probe) chooses its model.
+if (process.argv[2] === '--tier') {
+  const tier = process.argv[3];
+  if (!isTier(tier)) {
+    process.stderr.write(
+      'usage: node .tropis/scripts/dispatch.mjs --tier <tier>, where <tier> is one of Small, Small–medium, Medium, Medium–large, Large\n',
+    );
+    process.exit(1);
+  }
+  process.stdout.write(`${picksText === null ? NO_PICKS_USE : pickToUse(picksText, tier, subscriptionsText)}\n`);
+  process.exit(0);
+}
+
 const planArg = process.argv[2];
 if (!planArg) {
   process.stderr.write(
     'usage: npm --prefix .tropis run dispatch -- <plan-path>\n'
-    + '   or: node .tropis/scripts/dispatch.mjs --subscriptions "<tool>: <subscription>" ...\n',
+    + '   or: node .tropis/scripts/dispatch.mjs --subscriptions "<tool>: <subscription>" ...\n'
+    + '   or: node .tropis/scripts/dispatch.mjs --tier <tier>\n',
   );
   process.exit(1);
 }
@@ -99,25 +133,8 @@ if (existsSync(resolve(root, '.cursor/rules'))) {
   }
 }
 
-// The project's own picks, written by /refresh-model-tiers. The framework ships none.
-let picksText = null;
-try {
-  picksText = readFileSync(resolve(root, 'docs/model-picks.md'), 'utf8');
-} catch {
-  // No picks file: the prompt says to run /refresh-model-tiers.
-}
 const protocol = parseExecutionProtocol(markdown);
 const lastVerified = picksText === null ? null : parseLastVerified(picksText);
-
-// Which subscriptions the developer holds: a local record under the git directory shared
-// by every worktree, never committed. No git or no file means none is recorded.
-let subscriptionsText = null;
-try {
-  const dir = commonGitDir();
-  if (dir !== null) subscriptionsText = readFileSync(join(dir, 'tropis/subscriptions.txt'), 'utf8');
-} catch {
-  // No record.
-}
 
 // Each worktree's setup comes from its own checkout — this one, or the sibling folder the
 // row names — the way the isolation helper finds them.

@@ -613,6 +613,43 @@ describe('dispatch names the pick to use', () => {
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
   });
 
+  const tierRun = (p, ...args) => run(p.root, 'node', ['.tropis/scripts/dispatch.mjs', '--tier', ...args]);
+
+  it('f: --tier names the pick /dispatch names for a plan of that tier', () => {
+    const p = withPicks(PICKS, 'claude code: max\n');
+    try {
+      const r = tierRun(p, 'Large');
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('**Use:** Alder 3, in Claude Code — the first pick for this tier that your subscriptions include.\n');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+    const q = withPicks(PICKS, 'Cursor: Premium\n');
+    try {
+      const useLine = dispatch(q).stdout.split('\n').find((l) => l.startsWith('**Use:**'));
+      expect(tierRun(q, 'small').stdout).toBe(`${useLine}\n`);
+    } finally { rmSync(q.parent, { recursive: true, force: true }); }
+  });
+
+  it('g: --tier says so when the project has no picks file', () => {
+    const p = project(plan(PROJECT_ONLY));
+    try {
+      const r = tierRun(p, 'Large');
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('**Use:** not chosen — this project has no model picks. Run /refresh-model-tiers.\n');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('h: --tier refuses a name that is not a tier, and a missing one', () => {
+    const p = withPicks(PICKS, 'claude code: max\n');
+    try {
+      for (const args of [['Huge'], []]) {
+        const r = tierRun(p, ...args);
+        expect(r.status).toBe(1);
+        expect(r.stdout).toBe('');
+        expect(r.stderr).toContain('Small, Small–medium, Medium, Medium–large, Large');
+      }
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
   it('keeps an earlier picks file working', () => {
     const p = withPicks(`**Last verified: ${today()}.**\n\n| Tier | Models |\n|---|---|\n| **Small** | Old Model |\n`, 'Cursor: Premium\n');
     try {

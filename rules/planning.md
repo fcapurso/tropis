@@ -71,7 +71,8 @@ specifying session what something means, the plan was underwritten.
   one of two shapes while writing the plan, never both. **Describe it for an executor**:
   state what the result must satisfy as checks, and give the judgment it needs a higher
   model tier. Or **build it yourself and send it to a fresh reviewer**: an agent with
-  only the repository reviews it as a reviewing session reviews a plan's work and writes
+  only the repository, run on the model `node .tropis/scripts/dispatch.mjs --tier Large`
+  names, reviews it as a reviewing session reviews a plan's work and writes
   the review record, and the plan, or the pull request where there is no plan, says this
   shape was chosen and why. The sign that the choice is due is an expected output you can
   fill in only by making the change. (Incident:

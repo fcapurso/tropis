@@ -483,3 +483,177 @@ and hand back. Delete `$TMPDIR/tier-agent` afterwards.
    what the change intended, and the tool, its version, the model, the operating system
    and architecture.
 4. Push the branch. Do not open a pull request.
+
+## Handover report
+
+Worked from: nothing in particular; the code is written against this repository's own
+`pickToUse`, `sprintPath` and test fixtures.
+
+### Task completion
+
+Tasks 1 to 6 done, on branch `plan/team-members-and-reviewers-run-on-a-tier`, in the
+worktree `../tropis-tier`. Commits: the scripts and their guards; the documents and
+FW-059; the catalog and board close-out; one fix dropping `blockedBy` from the shipped
+entry; this report. Not done on purpose: no pull request, review record or merge.
+
+### Verification results
+
+Tool for every run: Node on macOS 26.2 arm64 (`uname -sm`: Darwin arm64); the fresh-agent
+check ran Claude Code 2.1.300.
+
+- `guards/dispatch.test.js` and `guards/sprint.test.js`, staged from `HEAD`: 74 passed.
+- Task 3 mutations, each a throwaway commit, then dropped:
+  1. `sprint.mjs` returns the line for every way: `Tests: 4 failed, 30 passed, 34 total`.
+     Failing: case e, plus the `here` start case and the two `add` cases that assert exact
+     output.
+  2. `'Medium'` in place of `TEAM_TIER`: `Tests: 1 failed, 33 passed, 34 total` (case a,
+     the only case that checks the pick against the Large tier).
+  3. `--tier` without `isTier`: `Tests: 1 failed, 39 passed, 40 total` (case h, the only
+     case sending an unknown tier).
+- Fresh-agent check, `env -u ANTHROPIC_API_KEY claude -p --output-format stream-json
+  --verbose --allowedTools "Bash Read Edit Glob Grep"`, prompt on stdin, in a scratch
+  project set up from this branch with the invented picks and `Claude Code: Max`
+  (`Cursor: none`) subscriptions; the agent ran on the tool's default model
+  (`claude-opus-5-5`) because the invented pick has no real model name.
+  - A (probe command line): the agent's first call was
+    `node .tropis/scripts/dispatch.mjs --tier Large; echo "exit=$?"; claude --version`,
+    answered `**Use:** Alder 3, in Claude Code — the first pick for this tier that your
+    subscriptions include.`; its answer's command was `claude -p --model "Alder 3" ...`
+    and said the model came from that command. Pass.
+  - B (sprint team members): the agent read `.claude/commands/sprint.md` and ran
+    `node .tropis/scripts/dispatch.mjs --tier Large`; answered "Start every team member
+    on Alder 3, in Claude Code", citing the sprint command and `TEAM_TIER = 'Large'`, and
+    that `sprint.mjs start --way session` names it on its last line. Pass (it did not run
+    `start`, so it did not read that line itself; it read the command's instruction).
+  - Both passed first time. The user-level instructions loaded on this machine say
+    nothing on tiers; the agent grepped them and found no overlap.
+- `git grep -n -e "--tier Large" -- commands framework rules templates` lists
+  `framework/workflow.md`, `rules/planning.md`, `framework/model-tiers.md` (and the
+  decision); `git grep -c "Large tier" -- commands/sprint.md templates/README.md`: 1 each.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.` (run on
+  the commit before the blocker fix and run again at the final commit; see Outstanding.)
+- `npm --prefix .tropis test`: `Tests: 155 passed, 155 total` after the blocker fix
+  (it failed once before: `team-members-and-reviewers-run-on-a-tier: shipped, but still
+  records blockedBy`).
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: 13 files, 270 insertions, 39
+deletions: `commands/sprint.md`, `docs/backlog-board/bands.yaml`,
+`feature-catalog.yaml`, `framework/DECISIONS.md`, `framework/model-tiers.md`,
+`framework/workflow.md`, `guards/dispatch.test.js`, `guards/sprint.test.js`,
+`rules/planning.md`, `scripts/dispatch.mjs`, `scripts/plan-binding.js`,
+`scripts/sprint.mjs`, `templates/README.md`. Worktree: `../tropis-tier`.
+`docs/backlog-board/index.html` was not touched.
+
+### Judgment calls
+
+- The decision is numbered FW-059: FW-058 was taken by the waits entry on this base.
+- Removed `blockedBy: sprint-plans-and-runs-a-team` from the entry when marking it
+  shipped; the catalog guard refuses a shipped entry that records one.
+- The step-2 sentence in `commands/sprint.md` and the README sentence are wrapped at the
+  files' existing width, so the plan's verbatim lines break differently.
+- Case d is written as three `it.each` cases rather than one.
+
+### What the plan got wrong
+
+- The shipped entry cannot keep `blockedBy`; the plan's Task 6 did not say to drop it.
+- FW-058 was no longer free (it said so).
+- Task 5 says to pass the model as `--model <model>`; the invented pick `Alder 3` is not a
+  real model name, so the probe itself could only run on the default model.
+- The first Task 3 attempt used GNU `sed -i` on macOS and its `git reset` dropped the real
+  commit; recovered from the reflog, no content lost.
+
+### Outstanding
+
+Nothing for the executor. The reviewer renumbers FW-059 if another plan takes it first.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session started by the parent
+delivery session, with Claude Code 2.1.300, git 2.49.0 and Node v22.15.0 on macOS 26.2,
+arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD` (base `e124d09`): 14 files, every one in *File
+  Structure*.
+- `guards/dispatch.test.js` and `guards/sprint.test.js`, each run alone on a
+  `git archive` of HEAD staged as the self-check stages it: `Tests: 40 passed, 40 total`
+  and `Tests: 34 passed, 34 total`.
+- Re-broken on that staged copy, one at a time, and restored:
+  - `'Medium'` in place of `TEAM_TIER` in `teamModelLine`: 1 failed, `the team member's
+    model › † a: start for a session sprint names the first included Large pick, as
+    dispatch does`.
+  - `if (false)` in place of the `isTier` check in `dispatch.mjs`: 1 failed,
+    `dispatch names the pick to use › h: --tier refuses a name that is not a tier, and a
+    missing one`.
+  - `start` pushing the line for every way: 2 failed, `start, and the sprint file › †
+    defaults to one entry at a time and records the default way` and `the team member's
+    model › † e: a sprint whose team members start here names no model`.
+  The handover reported mutations 2 and 3 "by elimination"; these runs name the cases.
+- The handover's diagnosis that the catalog check refuses a shipped entry that keeps
+  `blockedBy` was taken as reported: `npm --prefix .tropis test` is re-run, with the
+  self-check, after the rebase onto `team-members-start-in-another-tool` at merge time.
+- The fresh-agent check was not re-run. Its record names the calls and answers of both
+  prompts (`dispatch.mjs --tier Large` run, `Alder 3` named), the tool, version, model
+  and platform, and `ANTHROPIC_API_KEY` unset. That is what the workflow asks for.
+
+### Found
+
+Public exposure: the diff was read for private material. It holds only invented models
+(`Alder 3`, `Birch 2`) and invented subscriptions in tests and the probe record; no home
+path, hostname, address or anyone's real subscription.
+
+- **Fixed on the branch by the reviewer, mechanical:** the catalog comment above the entry
+  still said its blocker was building; the operator guide's new sentence ran past the
+  file's width; `dispatch.mjs` kept a doubled blank line where the two reads moved out.
+- The executor's removal of `blockedBy` from the shipped entry is right: its blocker has
+  shipped, and the catalog check refuses the field on a shipped entry. The plan's Task 6
+  should have said so.
+- The probe ran on the tool's default model, not on the pick it named, because the pick
+  was an invented name. That tests what the change says (that an agent finds and names
+  the pick), not whether a real pick holds. Nothing is lost by it.
+
+### Rebase onto `team-members-start-in-another-tool`
+
+Rebased at merge time onto `4aaee2e`, which carries that entry (#142). Conflicts, and
+how each was resolved:
+
+- `scripts/sprint.mjs`: the constants block. Kept that entry's four ways and its
+  `launch`, `run` and `watch` commands, and added `TEAM_TIER` beside them. The model line
+  is still printed only for `session`, as criterion 2 says; the `claude` and `cursor`
+  ways print none.
+- `framework/DECISIONS.md`: both plans took FW-059. That entry keeps it; this one is
+  FW-060. Each decision's consequences pointed at the other entry for giving a team
+  member launched in the other tool's command line this pick as its `--model`, so
+  neither built it. FW-060's consequence now says so plainly and leaves it to a later
+  entry, rather than claiming the other entry builds it.
+- `docs/backlog-board/bands.yaml`: each side removed the other's shipped row. Both rows
+  are gone.
+
+Merged cleanly but read again, because the new ways changed what they say:
+`commands/sprint.md` step 2 now says the model line is for `session` (the `claude` and
+`cursor` ways have their own `--model` paragraph), and the operator guide's sentence says
+"started as a session", rewrapped to the file's width.
+
+### Outstanding disposition
+
+- Renumbered FW-060 at merge: `team-members-start-in-another-tool` landed FW-059 first.
+- No screen, so no developer check.
+- This plan merges after `team-members-start-in-another-tool`, which changes the sprint
+  script, its guard, `/sprint` and the operator guide. The rebase onto it is resolved and
+  its resolution reviewed at merge time, then the merge criteria re-run.
+
+### Learnings routed
+
+- A plan moving an entry to shipped must also drop its `blockedBy`. That is already what
+  the catalog check enforces, and the executor found it on the first run; not routed
+  further.
+- Nothing else generalises: the change is the delivery of FW-060, recorded there.
+
+### Merged because
+
+Every criterion is covered by a guard case seen to fail when broken, or by the recorded
+fresh-agent check, and the three defects found were wording and layout, fixed above.

@@ -1950,3 +1950,37 @@ tool until its run ends; the developer follows its log and opens it with `--resu
 `--model` is passed through as given; which model is
 `team-members-and-reviewers-run-on-a-tier`. Ending or dropping a sprint does not stop
 a run.
+
+## FW-060: Team members and fresh reviewers run on the Large tier's included pick
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** An agent Tropis starts that runs no plan is given a model as an executor
+is, from a tier. A sprint's team member, the probe of a fresh-agent check and a fresh
+reviewer of work its author built each run on the Large tier, and on the first Large
+pick that a subscription the developer holds includes — the pick `/dispatch` names for
+a Large plan. `sprint.mjs start` and `add` print it for a sprint whose team members
+start as sessions; `node .tropis/scripts/dispatch.mjs --tier <tier>` prints it for any
+tier, and the workflow and the planning rule tell whoever starts a probe or a reviewer
+to run `--tier Large`. Where no pick is named, the agent starts on the tool's default
+model, and the line says why.
+
+**Evidence:** `framework/model-tiers.md` defines Large as open-ended judgement with no
+mechanical check, and each of these agents does exactly that: a team member shapes,
+plans and reviews; a probe or a reviewer judges work with only the repository. FW-057
+lists a tier's picks least usage per task first, so the first included Large pick is
+the least usage that keeps the tier's quality. Source: none in particular; the sprint
+design §2 and §9 and FW-057.
+
+**Rejected:** A tier per agent kind, such as Medium for a probe (a probe that fails for
+want of capability reads as a defect in the rule it was testing). A setting naming
+each agent kind's tier (nothing needs a different tier yet; the tier is written once
+in each script and document, and that is the seam). Leaving the model to whatever the
+session started with (that is what this replaces: the developer's default model,
+whatever it costs).
+
+**Consequences:** A team member started in another tool's command line (FW-059) is
+still passed `--model` only as the developer gives it: `sprint.mjs launch` does not
+default it to this pick, and that is left to a later entry. An executor's own review
+subagents are its business and are not covered. The repository's
+own `/rule-trial` is not shipped and is left as it is.
