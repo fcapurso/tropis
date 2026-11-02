@@ -316,3 +316,15 @@ backlog-speaks-in-epics-stories-and-points:
   seen:
     status: building
     blockers: []
+overlap-check-reads-every-file-in-a-row:
+  band: A
+  value: 3
+  valueWhy: A plan that groups files in one row can merge out of order with a sibling
+    that shares them, and nothing says so.
+  effort: 1
+  effortWhy: One reading function and its tests.
+  verdict: "A real gap in the claim-time overlap check, found claiming a plan. Cheap,
+    and it protects every parallel sprint."
+  seen:
+    status: building
+    blockers: []
