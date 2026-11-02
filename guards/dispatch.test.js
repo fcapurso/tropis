@@ -635,6 +635,28 @@ describe('dispatch names the pick to use', () => {
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
   });
 
+  it('records the subscriptions it is given, and dispatch then uses them', () => {
+    const p = withPicks(PICKS);
+    try {
+      const w = run(p.root, 'node', ['.tropis/scripts/dispatch.mjs', '--subscriptions', 'Cursor: Premium', 'Claude Code: none']);
+      expect(w.status).toBe(0);
+      expect(w.stdout).toBe('Subscriptions recorded for 2 tools, on this machine only.\n');
+      const file = readFileSync(join(p.root, '.git/tropis/subscriptions.txt'), 'utf8');
+      expect(file.startsWith('# Written by /refresh-model-tiers. Never committed.\n')).toBe(true);
+      expect(dispatch(p).stdout).toContain('**Use:** Dogwood 1, in Cursor — the first pick for this tier that your subscriptions include.');
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('refuses a malformed subscription and writes nothing', () => {
+    const p = withPicks(PICKS);
+    try {
+      const w = run(p.root, 'node', ['.tropis/scripts/dispatch.mjs', '--subscriptions', 'Cursor']);
+      expect(w.status).toBe(1);
+      expect(w.stderr).toContain('usage: node .tropis/scripts/dispatch.mjs --subscriptions');
+      expect(existsSync(join(p.root, '.git/tropis/subscriptions.txt'))).toBe(false);
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
   it('parses the record, the inclusion table and the choice', () => {
     const parsed = binding.parseSubscriptions('# x\n\nClaude Code: Max\ncursor: none\nnot a line\n');
     expect([...parsed.keys()].sort()).toEqual(['claude code', 'cursor']);
