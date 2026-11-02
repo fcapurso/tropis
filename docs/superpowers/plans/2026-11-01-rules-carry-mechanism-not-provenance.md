@@ -233,8 +233,9 @@ record, plant a record that does exist.
 
 ### 7. Decision record and document map
 
-- `framework/DECISIONS.md`: a new entry, numbered **FW-049** (the next free number at
-  `c189fd3`; the reviewing session renumbers at landing if it has been taken), in the
+- `framework/DECISIONS.md`: a new entry, numbered **FW-053** (FW-049 to FW-051 are on
+  `main` and FW-052 is planned by another plan; the reviewing session renumbers at
+  landing if it has been taken), in the
   form of its neighbours: rules carry mechanism, incidents live in a mirrored record one
   pointer away that no tool loads; the records ship beside the rules; a project's own go
   in `docs/rule-incidents/`. Rejected: the decision log (a decision records a choice and
