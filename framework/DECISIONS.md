@@ -1687,9 +1687,9 @@ not follow it). The API alone (its concurrency could not be tested without GitHu
 origin elsewhere would have no lock).
 
 **Consequences:** FW-055 replaces the 60-minute limit with a wait that lasts while the
-holder is working and ends when the token turns stale. A waiter whose holder died stops once the token turns stale and says so. A cloud
-session's release is unproven, as FW-049 says. Source: the sprint design of 2026-11-01,
-section 3, and FW-049.
+holder is working and ends when the token turns stale. A waiter whose holder died stops
+once the token turns stale and says so. A cloud session's release is unproven, as FW-049
+says. Source: the sprint design of 2026-11-01, section 3, and FW-049.
 
 ## FW-053: Every agent Tropis starts is paid for by a plan the developer already has
 
