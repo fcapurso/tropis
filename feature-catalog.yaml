@@ -326,9 +326,11 @@
 # 2026-11-01, planned as one entry: the migration and the capture question land together,
 # since the question is what keeps the migrated rules from growing back. Five rule files
 # today, not ten - the count included each generated copy.
+# Shipped by docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md;
+# each criterion's test or check is in that plan's handover report.
 - id: rules-carry-mechanism-not-provenance
   title: A rule carries its mechanism; the incident behind it is one link away
-  status: building
+  status: shipped
   after:
     - rules-are-retired-on-evidence
   value: An injected rule states the constraint and why it holds, and the
@@ -366,7 +368,11 @@
       after — rather than asserted.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - guards/rule-incidents.test.js
+    - rules/incidents/README.md
+    - commands/capture-learning.md
+    - scripts/set-up-project.sh
   refs:
     - docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md
 # Raised 2026-09-12. The first dispatch of ci-deploys-development-on-green emitted a
