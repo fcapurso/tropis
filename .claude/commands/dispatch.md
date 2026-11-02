@@ -10,5 +10,5 @@ missing heading, a header field that reads empty, no checkout anyone may edit, o
 isolation that is not a sibling worktree. Fix the plan. Do not write a prompt by hand instead.
 
 The command does not start a session, and it does not refresh the model picks: if they
-are stale or the project has none, the prompt says so, and `/refresh-model-tiers` is a
-separate step.
+are stale or the project has none, or no subscription of yours is recorded on this
+machine, the prompt says so, and `/refresh-model-tiers` is a separate step.

@@ -76,6 +76,7 @@ Replace `pending` with one of:
 
 ## 6. Say what it closes
 
-If a step verified an acceptance criterion of a catalog entry, name the entry and quote
-the criterion on the `Closes` line. `/feature` needs that to promote the entry to
-`shipped`, and the catalog rule names this log as the evidence an entry ships on.
+If a step verified an acceptance criterion of a backlog item, name the backlog item and
+quote the criterion on the `Closes` line. `/feature` needs that to promote the backlog
+item to `shipped`, and the backlog rule names this log as the evidence a backlog item
+ships on.

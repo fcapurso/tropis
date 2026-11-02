@@ -32,8 +32,8 @@ a document, or a measurement recorded beside it.
 → The architecture document, diagrams included.
 
 **Branch 5 — Is it about work not yet done?**
-→ A feature catalog entry via `/idea`, not a rule — unless the catalog rule's *What
-does not become an entry* says it needs none; then say why in one line and stop.
+→ A backlog item via `/idea`, not a rule — unless the backlog rule's *What
+does not become a backlog item* says it needs none; then say why in one line and stop.
 
 **Branch 6 — Would this be true for any project using this framework?**
 A learning about the workflow, the documentation architecture, the rule mechanism, or
@@ -42,6 +42,13 @@ this codebase, this platform, or this domain. When in doubt, the strip test belo
 decides.
 → Append to the upstream queue (`docs/BLUEPRINT-UPSTREAM.md` or equivalent), **and**
 apply it locally if it changes something under `.claude/framework/`.
+
+Write the entry in the framework's terms: no file, path or name of the project's own, no
+product or customer, and only the figures the point needs. What it leaves out goes in the
+project's own record: the local rule, decision or document this learning also lands in,
+or, where it lands nowhere else here, the project's `DECISIONS.md` (or its equivalent) as
+the evidence for the queue line. A queue entry the project's own records need in order to
+make sense says so by pointing at that record, not by repeating it.
 
 **Something built here that a seeded project would want** — a command, a guard, a
 script — is a queue line too. Do not skip the queue because porting it is work rather
@@ -64,7 +71,7 @@ learning still says something useful, it belongs upstream. If it evaporates, it 
 <!-- capture-check:begin -->
 ## Phase 2 — Assess operational reach
 
-Three questions. Each has been got wrong on rules that were correct when written.
+Four questions. Each has been got wrong on rules that were correct when written.
 
 **1. Does it state its mechanism?** Not "do not do X", but "X causes Y because of Z".
 A rule that gives only the prohibition cannot be applied to a case its author did not
@@ -100,6 +107,21 @@ at the moment they act?*
 
 > Failed once: a rule about plan granularity went into the commit-format document, which
 > no planning session opens and no hook fires. Correct rule, unreachable location.
+
+**4. Is this mechanism or provenance?** Ask of each sentence about to go into the rule:
+*would removing it change what an agent does in a case the rule does not literally
+cover?* If yes, it is mechanism and goes in the rule. If it only shows the rule was once
+needed — who hit it, when, in which plan, how many times, what it cost — it is
+provenance: write it under a `##` heading in the rule's incident record,
+`docs/rule-incidents/<name>.md` for a project's own rule or addition, and end the
+rule's clause with a pointer to that heading, in backticks after `Incident:` —
+`docs/rule-incidents/<name>.md#<slug>`, the slug being the heading lowercased, with only
+letters, digits, spaces and hyphens kept and each space a hyphen. A story stays inline
+only when it is the only statement of the failure mode.
+
+> Failed once: rule files grew an incident story under nearly every clause. Every
+> session in the area paid to read them, and no agent needed them once the rule was in
+> front of it.
 <!-- capture-check:end -->
 
 ## Then

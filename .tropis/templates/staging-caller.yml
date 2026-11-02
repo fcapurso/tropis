@@ -1,0 +1,22 @@
+# The project owns this file. It is started by hand —
+# gh workflow run staging.yml --ref main -f commit=<commit> —
+# and never by an agent. The run's name carries the commit, so /release can
+# find the run it asked for.
+
+name: Deploy to staging
+run-name: Deploy to staging ${{ inputs.commit || github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: The commit to deploy to staging, in full. Empty means the head of the branch it is started on.
+        type: string
+        required: false
+
+jobs:
+  staging:
+    uses: ./.github/workflows/tropis-staging.yml
+    secrets: inherit
+    with:
+      commit: ${{ inputs.commit || github.sha }}

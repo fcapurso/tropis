@@ -199,12 +199,12 @@ what delivery must achieve, separately from the script that achieves it here.
 **Evidence standard.** This claim does **not** rest on a port. It rests on a structural
 property of the artifact — no shipped guard reads project source — which is mechanically
 checkable and will be checked. That is stronger evidence than the sample of two behind
-`PORTABILITY-NOTES.md`, because it is a property of the thing rather than an observation
-about two uses of it.
+the framework repository's portability notes (docs/history/PORTABILITY-NOTES.md),
+because it is a property of the thing rather than an observation about two uses of it.
 
 It rests on **no experience of an installation outside JavaScript**, and does not pretend
 otherwise. The squash-merge and single-developer assumptions remain exactly as untested as
-`PORTABILITY-NOTES.md` already says.
+the portability notes already say.
 
 **What would widen it:** a third installation in another language, testing three things
 this cannot — whether the properties are complete enough to reimplement from, whether the
@@ -408,6 +408,11 @@ already applied in its project.
 
 **Consequences:** A flush needs `gh` and a GitHub-hosted framework; there is no fallback
 without them. Pull requests from forks get no CI until ci.yml also runs on `pull_request`.
+
+**Amended 2026-11-01 — pull requests from forks run the pipeline.** `pipeline.yml` runs on
+`pull_request`, so the consequence above no longer holds. A first-time contributor's run
+waits for the maintainer's approval, a repository setting. `CONTRIBUTING.md` says which
+is true, and `contributing-page.test.js` holds it to `pipeline.yml`.
 
 ## FW-012: A shipped rule's area is the project's data; only shipped rules are generated
 
@@ -855,7 +860,7 @@ nothing in a set-up project's suite reads its README.
 
 ## FW-027: Model picks rest only on figures that can be compared
 
-**Date:** 2026-10-21 · **Status:** Accepted
+**Date:** 2026-10-21 · **Status:** Accepted; its exclusion of cost now covers placement only (FW-057).
 
 **Decision:** `/refresh-model-tiers` ranks one model above another only on scores that
 share the benchmark and its version, the harness, the effort setting, and a period in
@@ -910,6 +915,8 @@ Tropis's repository (it is private, and a project pins a release, not a branch).
 **Consequences:** Tropis's pipeline files are installed in every project, including
 those hosted elsewhere, where they are inert. Changing the stage order or the gate
 is breaking.
+
+**Amended 2026-11-01** — a stage may also be skipped because the same code already passed; FW-048.
 
 ## FW-029: A branch's environment is named from the branch and lives as long as its pull request
 
@@ -979,6 +986,19 @@ tag of the form `vX.Y.Z`, and `/release` counts from the last one, not from any 
 `v1.0.0`, so a project tagging pre-releases had its pre-production environment reset to
 a version production never ran. A tag of any other form may mark anything a project
 likes; a project-owned pattern was rejected as a setting no project had asked for.
+
+**Amended 2026-11-01 — renamed, and the tag moved.** The release's first step is now
+called deploy to staging, and its last step promote to production: the slot
+pipeline/candidate/ is pipeline/staging/, the commands candidate slot and candidate
+rehearse are staging slot and staging deploy, the variable TROPIS_CANDIDATE is
+TROPIS_STAGING_COMMIT, the workflow tropis-candidate.yml is tropis-staging.yml and its
+caller candidate.yml is staging.yml, the summary heading Release candidate is Deploy to
+staging, the notes line Checked on the release candidate is Checked on staging, the
+check's change line release candidate at is staging deploy at, and the pre-production
+environment is staging. The tag no longer sits one commit above the candidate, made by
+the release pipeline: it sits on the promotion commit the main branch already holds,
+which /release's pull request put there, per FW-044. The text above is kept as it was
+decided.
 
 ## FW-031: A project's entry instructions live in AGENTS.md, and CLAUDE.md points at it
 
@@ -1356,3 +1376,649 @@ rebuilds it at once. A git client that cannot find `node` on its path rebuilds n
 silently. A project with its own hooks folder or hook adds the printed line by hand. The
 self-check installs its test tools with `--ignore-scripts`, so it writes no hooks into
 this repository.
+
+## FW-044: A release is deploy to staging then promote to production, and promoting only tags
+
+**Date:** 2026-11-01 · **Status:** Accepted
+
+**Decision:** A release is two steps, both started by the developer and both guided by
+`/release`. Step 1, deploy to staging: every stage runs on one commit of the main
+branch, staging is put back on production's version, that commit is deployed there, and
+the developer checks it by hand; `/release` prints the trigger, finds the run by the
+commit in its name, waits for it, reports its by-hand list, and drafts and records the
+check as `/manual-check` does. On a pass, `/release` opens the promotion pull request,
+which sets the version in each version file, promotes the notes and writes
+`Checked on staging: yes`, and nothing else. Step 2, promote to production: the
+project's own pipeline runs the shipped `pipeline.mjs promote check`, tags the commit
+that pull request put on the main branch, pushes only the tag, and deploys it. A project
+with nothing in `pipeline/staging/` has only step 2, and `/release` commits the version
+with the notes. `/release` works out the version itself, and resumes from the notes'
+last line and the newest check entry, reading the earlier wording too. The names change
+throughout, as FW-030's amendment maps them; a project still on the earlier slot or
+variable is refused with the command that fixes it.
+
+**Evidence:** FW-037 left a project whose release pipeline pushes to the main branch
+ungated until its release only tags, and FW-030's release made one commit above the
+candidate and merged it into the main branch, so a gated project could not release
+without a bypass. The bundle `release-flow` in the backlog holds the two entries this
+answers, `release-tags-what-main-holds` and `release-guides-through-both-steps`. The
+earlier names read as jargon to the people releasing, and "release" named the whole, the
+pipeline and its last step at once.
+
+**Rejected:** A bypass of the ruleset for the release pipeline, as FW-037 rejected. Tagging
+the staged commit itself, which cannot carry the version and the promoted notes, set only
+once its check has passed. Tropis shipping the whole promote pipeline, as FW-030
+rejected: version files, tags and production differ per project, so Tropis ships the
+check that pipeline runs. Accepting both the old and the new variable name — two names
+for one thing would last forever; the slot refuses the old one and names the change.
+
+**Consequences:** A project that deploys to staging renames its slot, its caller and its
+variable, through the release's by-hand steps, and its promote pipeline stops committing
+and takes the commit and the staged commit instead. Anything merged after staging is
+checked needs a new deploy to staging before promotion; `/release` and `promote check`
+both refuse to carry it. FW-037's condition that a project stays ungated until its
+release only tags is met by following the workflow's release section.
+
+## FW-045: A project's own settings live under .tropis/, and an update moves them there
+
+**Date:** 2026-11-01 · **Status:** Accepted. Amends where FW-032 put the public declaration.
+
+**Context:** FW-032 put whether a project is public in `.claude/project.json`, weighed
+against a key in the README's settings and a call to GitHub, never against `.tropis/`.
+The pipeline's `ungated` reason joined it there, and a project's worktree setup sat in
+`.claude/worktree-setup.txt`. Then the display name was given `.tropis/project.json`.
+A project would keep two settings files in two folders, and settings that apply to
+every agent tool sat in a folder named after one.
+
+**Decision:** The project's own settings live in `.tropis/project.json` — its display
+name, `public` and `ungated`, as keys of one object — and its worktree setup in
+`worktree-setup.txt` beside it, one command a line as before. Neither is in the record of
+installed files. An update moves `.claude/project.json`'s keys into
+`.tropis/project.json` and `.claude/worktree-setup.txt` to its new place, and refuses,
+before changing anything, when either file is malformed or the old and new copies
+disagree. The hooks and the pipeline read only the new place, since the update that
+installs them also moves the files; dispatch, which reads sibling checkouts that may be
+on an earlier release, also reads the old worktree setup file where there is no new one.
+
+What stays under `.claude/`: `settings.json`, `rules/` and `commands/`, which Claude
+Code reads only from there; and `rule-areas.json` and `rule-additions/`, the project's
+half of the instruction layer.
+
+**Rejected:** Moving `rule-areas.json` and `rule-additions/` too. Only the framework
+reads them, but the workflow's branch rule and the commit and write hooks treat them as
+one set with `.claude/rules/`, which the rules command writes from them; moving them
+changes how every project edits its rules and lets nobody do anything new. Making the
+worktree setup a key of `project.json` — a list of shell commands is easier to write and
+read one a line. Keeping the update silent on a conflict and letting one side win —
+whichever side loses, a setting is gone with nothing said. Reading both places in the
+hooks — a second copy of every lookup, for a window that the update closes in one step.
+
+**Consequences:** A project's settings are in one folder whatever agent tool it uses. An
+update from an earlier release moves the files and says so; a project whose two files
+disagree is told which key, and fixes it before the update runs. A checkout on an
+earlier release keeps reading `.claude/project.json` with its own hooks until it is
+updated.
+
+## FW-046: A rule clause is retired only on a trial at this repository's release
+
+**Date:** 2026-11-01 · **Status:** Accepted
+
+**Decision:** Before each release of this repository, one rule clause is tried. It comes
+from the rule file that grew most, in words, since the last release, preferably a clause
+added or changed since. One fresh agent does a real task in that clause's area, on an
+invented subject, with the clause removed from what it receives. The outcome goes in
+docs/rule-trials.md whichever way it falls, as kept, removed, inconclusive or skipped,
+with one entry per release and a clause kept once not tried again. A clause is removed
+only through a branch and pull request whose commit body carries the trial as its
+fresh-agent check. The step is this repository's `/rule-trial`, run before `/release`'s
+Stage 1, and does not ship; a removed clause is named in that release's notes.
+
+**Evidence:** Rule files only grow, and every clause costs context in every session that
+touches its area. A fresh-agent run is the only retirement evidence the framework has,
+the same one its workflow asks of any change to a rule. The developer moved the trial
+from the flush sitting to the release on 2026-10-16, because a flush now reaches this
+repository as pull requests.
+
+**Rejected:** A periodic audit of every rule, which is a sweep and not a trial. Shipping
+the step in `/release` for every project, since the developer's decision put it at the
+framework's own release. Waiting for the spike `rule-is-measured-with-and-without`: one
+run is what the entry asks for, and the command's *Run* section is the one place a
+repeatable with-and-without comparison would replace.
+
+**Consequences:** Each release of this repository starts with a trial or a recorded
+skip. docs/rule-trials.md grows by one entry per release. A removed clause is named in
+that release's notes, under the closing small-corrections heading.
+
+## FW-047: A release's lockfile is the one its self-check installed
+
+**Date:** 2026-11-01. **Status:** Accepted.
+
+**Decision:** The framework ships `templates/package-lock.json`. The self-check installs
+its test tools from it with `npm ci`, setup writes it into every project, and an update
+replaces it while the project's package file is the release's.
+
+**Evidence:** The self-check resolved the newest versions in range on every fresh install,
+and a set-up project resolved its own, so a release was checked with versions its projects
+need not get.
+
+**Rejected:** Letting the self-check keep resolving the newest versions in range, since a
+release would then be checked with versions no project installs from its lockfile. Writing
+the lockfile at setup with `npm install`, which needs the network at setup and takes
+whatever is newest that day. Recording the lockfile in the release record, since its name
+varies by project and a project's own install rewrites it.
+
+**Consequences:** The lockfile is regenerated by hand when `templates/package.json`
+changes, and the self-check fails until it is. `dependency-overrides` now fires on a
+regeneration rather than on any CI run. Security updates arrive through a regeneration,
+which GitHub's dependency alerts on this repository prompt.
+
+## FW-048: A run skips the stages when the same code already passed
+
+**Date:** 2026-11-01 · **Status:** Accepted. Amends FW-028: a stage may be skipped for a second reason.
+
+**Decision:** A run is green when its job named `gate`, or ending in `/ gate`, concluded
+`success`; the run's own conclusion is not used, since a closed pull request's run is
+`success` with every stage skipped. Only runs of the same workflow count. A new command,
+`pipeline.mjs passed`, asks GitHub for the head commit of a pull request's last green run
+(on a push to an open pull request, only for `synchronize`) or of the green run of the
+pull request that merged as the commit on main, and prints it or nothing. It never fails
+the run; one line in the plan job's summary says what it found or why not. `plan
+--passed <commit>` first plans as before. Only if that plan runs a code stage, and the
+two-dot diff (tree against tree) from `<commit>` to the head lists nothing or only prose
+and framework files, it turns sanity, unit, integration and end-to-end into skips. The
+framework stage still runs, `deploy` keeps its value, and a `passed=<commit>` line is
+added. Otherwise the plan is exactly today's, with a stderr line saying why. On a pull
+request the gate then does not redeploy (the branch's environment already holds that
+code); on the push to main it deploys. Deploy to staging and promote to production do not
+use the plan and still run every stage.
+
+**Evidence:** The pipeline skipped the four filled stages only when the whole diff was prose
+and framework files. Two runs retested code that had already passed. A push to a pull
+request that changed only a document re-ran every stage on code the previous run had
+passed. And the push to main re-ran them on a tree a green pull request run had tested:
+on a gated main the squash commit's tree is the head's tree, and the push run on one such
+commit took 3 min 34 s repeating the stages that tree had passed (pull request 103 of
+this repository, probed with `gh` on 2026-11-01). The entry came from the first adopter's
+flush of 2026-10-29.
+
+**Rejected:** Planning a pull request from the merge base of the green run (a change the
+green run had and the head dropped is missed). Relying on a run's `pull_requests` list
+(empty for every run in the probe). The run's own conclusion (a closed run is green with
+nothing in it). Letting a code change since the green run plan from that smaller diff (it
+could run fewer checks than a code change gets today; the new path only ever turns
+stages into skips). Skipping in deploy to staging (FW-030 and FW-044: it runs every
+stage).
+
+**Consequences:** The workflow token's default read access must cover actions and pull
+requests, or nothing is skipped and the plan job's summary says so. Framework checks run
+on every run. Whether the skip is sound on a real project can be shown only by real runs
+after a release is installed.
+
+## FW-049: The merge token is a ref outside branches and tags, taken through the API
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** The merge token's marker is a git ref outside `refs/heads/` and
+`refs/tags/`, pointing at a commit whose message names the holder and the time it was
+taken. Taking it is the REST call that creates a reference, which GitHub refuses with
+HTTP 422 when the ref exists. Releasing it is a push that deletes the ref and states the
+commit it expects the ref to hold (`--force-with-lease=<ref>:<commit>`), so a release by
+someone who no longer holds it is refused and the real holder's marker stays. Reading the
+holder is a read of the ref and then of its commit, by API or by `git fetch`. The marker's
+name and the command that wraps these are left to the merge-token entry,
+`merges-take-turns-under-one-token`. Where a cloud session cannot push a ref that is not a
+branch, it reads the marker and, when the holder is itself, deletes it through the API;
+whether it can is open until the cloud probe in the sprint design's evidence section has
+been run.
+
+**Evidence:** On this repository (public, owner type `User`, with rulesets on branches
+and tags only), GitHub accepted a `refs/spike/…` ref made by a push and by the API. The
+API refused a second create every time; of five attempts at the same moment, exactly one
+was accepted in each of three rounds. The lock form of a push (expected value empty) also
+let exactly one of five through in each of six rounds, the losers being refused with
+`cannot lock ref … reference already exists` or failing on a storage error from GitHub,
+and none reporting success. A plain push reported `Everything up-to-date` for the held
+commit and moved the ref to a descendant. The expected-value delete was refused for a stale
+holder and removed the ref for the real one. The API's delete took no condition. The ref
+started no pipeline run. The sprint design's section 3 and its evidence section have the
+commands and replies. Source: none in particular; probes written for this repository.
+
+**Rejected:** A plain `git push` as the take: it succeeds on a ref that is held (same
+commit) and moves it (descendant), so a second session would believe it had the token.
+The lock-form push as the take: it works, but under simultaneous pushes the losers often
+fail on a storage error rather than the lock, which a taker cannot tell from a network
+failure without reading the marker; the API replies the same way each time. The API's
+delete as the release: it removes any holder's marker. A dedicated branch as the marker
+(the spec's fallback): not needed, since GitHub accepts the ref. GitHub's merge queue: the pages read do not say a
+personal account's repository can use one, and finding out would need a settings change.
+
+**Consequences:** The take needs a token that may write refs through the API, which `gh`
+has here. The release is a push, so it needs git over https, and a cloud session may not be
+able to do it. The merge-token entry must handle a take that fails for any reason other
+than 422 by reading the marker before it decides. Markers left by a crashed holder stay
+until someone breaks them, as the stale-token rule says. Whether a cloud session can take
+and release, and whether the merge queue is offered, are unanswered. A cloud session is
+not excluded on cost: FW-053 allows any agent billed to the developer's plan.
+
+## FW-050: A sprint session starts a team member in another tool with that tool's command line, and believes the repository over the reply
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** When a sprint session in one tool starts a team member in the other, it runs
+that tool's command line in print mode, one process per team member, in the team member's
+own worktree: `claude -p` or `cursor-agent -p`, with `--output-format json`, a model, and
+the task as the prompt. The team member is allowed to act unattended by exact grants and
+never by granting everything: for Claude Code `--permission-mode acceptEdits` with
+`--allowedTools` rules for the commands the workflow runs, and `--setting-sources project`
+where the user's own settings should not reach it; for Cursor `permissions.allow` rules in
+the worktree's `.cursor/cli.json`. The sprint session learns that a team member is done
+when the process exits, and learns what it reported from two places in this order: the
+branch and handover report on the remote (the truth), then the last line of the JSON
+`result` (a claim). A final line of `SHIPPED` with no pushed branch and handover report
+is treated as `STOPPED`. A team member is resumed with `--resume <session_id>` from the
+same JSON. Cursor's cloud agent API is not used until it has been proven with a key.
+
+**Evidence:** Seven trial runs on 2026-11-02 (Claude Code 2.1.300 and `cursor-agent`
+2026.10.22-27dcf5f, macOS 26.2, arm64) and each tool's own documentation, in the sprint
+spec's section "Second spike — evidence". Both tools pushed a branch with a handover
+report under exact grants; both resumed by `session_id`; both exited 0 whether or not the
+work was done; with nothing granted neither waited, Claude Code denied and reported the
+denials, and Cursor refused every shell command yet still ended its reply `SHIPPED`.
+
+**Rejected:** Reading the result only from the command's output (Cursor reported `SHIPPED`
+for work it had not done). Reading it only from the repository (it does not say why a team
+member stopped; the reply and `permission_denials` do). Granting everything with
+`--dangerously-skip-permissions` or `--force` (not needed: exact grants worked on both
+tools, and the grant-everything flags let a team member run any command). Cursor's cloud
+agent API (needs an API key and a paid cloud agent, which the spike's limits did not
+allow, so every call is unproven). Sending work from Cursor's command line to a cloud
+agent with a leading `&` (documented only for interactive use, not run). The other ways in
+the sprint spec's section 9 stay as they were: the same session, a subagent of the same
+tool, and a printed prompt each need no command line and remain the fallbacks.
+
+**Consequences:** The entry `team-members-start-in-another-tool` can be planned. Cursor's
+user-level skills and configuration load into its runs with no flag to prevent it, so a
+team member started that way may behave differently from the project's rules alone. Claude
+Code's waiting-for-an-answer case and Cursor's exit code on failure were not observed.
+Cursor's cloud agent API needs a key billed per use, so FW-053 excludes it rather than
+leaving it to be proven. FW-055 keeps the command line for starting a team member in the
+other tool; within one tool, team members are sessions started together.
+
+## FW-051: Plans that share a file merge in the order they were claimed
+
+**Date:** 2026-11-01 · **Status:** Accepted.
+
+**Decision:** Overlap is judged at claim from the plans' File Structure tables, against
+every entry in `building`. On an overlap the later plan records `Merges after` in its
+header and, before merging, waits until the other has shipped or been dropped, for at
+most 60 minutes, then stops naming it. The bookkeeping files (the catalog, the bands
+file, the board, the release notes, the decision records) never count.
+
+**Rejected:** Judging overlap from entry descriptions (a guess, where the plan lists every
+file). Comparing lines rather than files (a rebase settles unrelated edits, and lines
+move). Counting the bookkeeping files (every pair would overlap and parallel work would
+run one at a time). Building a branch on another unmerged branch (needing the other's
+code is `blockedBy`).
+
+**Consequences:** FW-055 replaces the 60-minute limit with a wait that ends when the
+other plan ships or leaves `building`. Two plans touching one file in unrelated places wait for each other. A
+session that ignores the check still cannot put a red or out-of-date change on a gated
+`main`; it only rebases more. Source: the sprint design of 2026-11-01, sections 4 and 5.
+
+## FW-052: Pull requests take turns under one merge token, and nothing depends on it
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** Every pull request opens under the token, whoever opens it. The ref is
+`refs/tropis/merge-token`. The holder is the branch, or git's `user.name` for a
+developer's hold. Where `origin` is on GitHub the take goes through the API (FW-049);
+elsewhere it is the lock form of a push. A release is by the holder only, by a push
+naming the commit, falling back on GitHub to the API's delete after reading the marker.
+A failed take reads the marker before deciding. A take waits 30 seconds between tries
+and stops after 60 minutes naming the holder. A token held by a branch with no open pull
+request and no push for 30 minutes is shown as stale and broken only on the developer's
+word; a hold is never stale. `/release` holds it from its first pull request to its last.
+
+**Rejected:** A pipeline check that refuses a pull request opened without the token (the
+main branch's safety would then depend on it, and a person merging on GitHub would be
+refused). Breaking a stale token automatically (a slow holder would lose it mid-merge,
+with nobody told). Keeping the rule in a sprint session (a session started by hand would
+not follow it). The API alone (its concurrency could not be tested without GitHub, and an
+origin elsewhere would have no lock).
+
+**Consequences:** FW-055 replaces the 60-minute limit with a wait that lasts while the
+holder is working and ends when the token turns stale. A waiter whose holder died stops
+once the token turns stale and says so. A cloud session's release is unproven, as FW-049
+says. Source: the sprint design of 2026-11-01, section 3, and FW-049.
+
+## FW-053: Every agent Tropis starts is paid for by a plan the developer already has
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** The *plan-only* limitation. An agent Tropis starts, or tells someone to
+start, runs signed in to a subscription the developer already pays for, and nothing it
+does adds a charge on top. It binds all of Tropis, not only the sprint: `/dispatch`, a
+sprint's team members, and any later command that starts an agent. Allowed, wherever it
+runs: a session in the developer's tool, a subagent, another tool's command line, and a
+cloud session, each signed in to the developer's plan. Excluded: an API key billed per
+call (none is passed, `--bare` is not used because it needs one, `ANTHROPIC_API_KEY` is
+removed from what a started agent inherits, and Cursor's cloud agent API is not used); and
+a model that costs extra on the developer's plan. When a plan's allowance runs out, the
+work stops and says so rather than spending more. Keeping overflow billing switched off
+(usage credits on a Claude plan, on-demand usage in Cursor) is the developer's: Tropis
+cannot read an account's settings and says so rather than claiming to check. The
+limitation is named so that a later setting can lift it by that name; no setting exists.
+
+**Evidence:** The vendors' pages, read on 2026-11-02. Anthropic's article on the Agent SDK
+with a Claude plan says that, signed in with a plan, the SDK and `claude -p` draw from the
+subscription's limits; a change announced for 2026-06-15 that would have moved them to a
+separate credit was paused. Claude Code's cloud-sessions page says they are on Pro, Max,
+Ultra and Team, count toward the plan's limits, and carry no separate charge for the VM.
+Anthropic's Pro and Max article says continuing past a limit takes usage credits, billed
+at API rates, and that a set `ANTHROPIC_API_KEY` makes Claude Code bill the API instead
+of the plan. Cursor's models-and-pricing page says the included pool is shared by the
+editor, the command line and cloud agents; its cloud-agent page says cloud agents use the
+plan's usage at the model's rate, need Premium or higher, and ask for a spend limit on
+first use, past which use is billed on demand. No page reached says how the cloud agent
+API bills. Third-party pages quoting Anthropic say Claude Fable 5.1 is included on Max up
+to about half the weekly allowance and needs usage credits on Pro; the official article
+was not reached. Source: none in particular; the pages above.
+
+**Rejected:** Excluding cloud agents as such (the cost is in per-call keys and overflow
+billing, not in where an agent runs; a Claude cloud session bills to the plan). Checking
+the account's overflow setting (no page offers a way to read it). Building the setting now
+(nobody needs it yet; the name is the seam).
+
+**Consequences:** FW-050's Cursor cloud agent API is excluded for as long as this holds,
+rather than waiting on a key. A cloud session is allowed on cost; whether it can take and
+release the merge token is still FW-049's open probe. Removing `ANTHROPIC_API_KEY` from a
+started agent's environment is built with the entry `team-members-start-in-another-tool`.
+Whether a model is included depends on the developer's plan, so the model picks cannot be
+judged without knowing which plans the developer has; the entry
+`agents-run-on-the-most-efficient-model` takes that up. Source: the brainstorm of
+2026-11-02 with the developer.
+
+## FW-054: A rule carries its mechanism, and the incident behind it is one pointer away
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** A shipped rule states each constraint and why it holds. The occasion it
+was learned on (who hit it, when, in which plan, what it cost) lives in an incident
+record that mirrors the rule file, `rules/incidents/<name>.md`, and the rule points at
+the record's section with `` `.tropis/rules/incidents/<name>.md#<slug>` ``. The records
+ship beside the rules, installed at `.tropis/rules/incidents/`, and no agent tool loads
+them. A project's own rule or addition keeps its incidents in
+`docs/rule-incidents/<name>.md`, the same way. The fourth question of the capture check
+in the capture-learning command asks of each sentence whether it is mechanism or
+provenance, and the rule-incidents guard holds pointers and records together.
+
+The split is judged, not mechanical: the test is whether removing a sentence would
+change what an agent does in a case the rule does not literally cover. A clause kept
+inline because its occasion is the only statement of the failure mode is listed in
+`rules/incidents/README.md`, under *Kept inline*, which also records what the split
+bought in bytes and words.
+
+**Rejected:** Moving the incidents into this decision log (a decision records a choice
+and its alternatives, an incident what produced a constraint; mixing them stops the log
+being scannable). Deleting the stories (unrecoverable, and they persuade a person
+reading a rule for the first time). Keeping the records only in this repository, with
+pointers as web addresses (not one pointer away in an installed project, and a moving
+target). A convention for new rules only (leaves every shipped rule as it is, and the
+accretion resumes).
+
+**Consequences:** Every session in a rule's area pays only for the mechanism. A rule
+that reads as unexplained after a story leaves it has lost its mechanism with the story,
+and no guard sees that; the read-through at writing and at review is what catches it.
+
+## FW-055: A sprint starts its whole team on the developer's word, and team members wait for events, not for the developer
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** When the developer agrees a sprint and says to start it, the sprint session
+starts every team member in it in that same turn, as ordinary sessions of its tool that
+the developer can open and watch. Nothing is started later, so no start depends on a turn
+the developer typed. A team member whose entry is `blockedBy` another waits in its own
+session, in a background wait that ends when that entry ships, and then carries on; if
+that entry is parked, it stops and says so. Every wait in a team member's life ends on
+something happening, not on a clock: the wait for a plan it merges after ends when that
+plan ships or leaves `building`, and the wait for the merge token lasts while the holder
+is working and ends, with the team member stopping and naming the holder, only when the
+token turns stale. Time only marks a holder or a waiter as stale in the status.
+
+What the developer approves is the agreed sprint: its entries, order and bundles, each
+carried through the whole workflow to its own merge. A team member stops only for a
+judgement only the developer can make, a check by hand, or work outside the sprint, and
+then ends `PARKED: <why>` or `STOPPED: <why>` in its own session. What a team member may
+run is left to the tool's own permission settings; the sprint adds no limit of its own,
+and a permission the tool asks for is answered in that team member's session. The sprint
+session lists stopped team members first in its status, tells the developer through the
+tool's notification where there is one, and the developer answers in the team member's
+own session. Starting a team member in the other tool stays FW-050's command line.
+
+**Evidence:** Running a sprint by hand in the Claude desktop app on 2026-11-01 and
+2026-11-02. A session there may start another session only on a turn the developer
+typed: a turn begun by another session's message, a background notification or a Remote
+Control message is refused the start and can only leave a card for the developer to
+click, and a session that was itself started by a session cannot start sessions. Each time
+a dependency shipped and the sprint session was woken to start the next entry, the entry
+waited for the developer. Messages between sessions, and a session woken by its own
+background command, went through with nobody present. Separately, the waits shipped with
+FW-051 and FW-052 stop after 60 minutes, and a stopped team member also needs the
+developer to start it again. Source: none in particular; the brainstorm of 2026-11-02
+with the developer.
+
+**Rejected:** Starting each team member when its turn comes (refused on every turn the
+developer did not type, which is what made the developer type "continue" between
+entries). Starting team members through the tool's command line in the background, in the
+same tool (works unattended, but they do not appear in the tool's interface, so the
+developer loses sight of them). Subagents of the sprint session (unattended too, but the
+developer cannot open one). A list of exact command grants recorded by the sprint (what
+an agent may run belongs to the tool's settings; the sprint's job is to stop asking, not
+to add limits). Waits with a time limit (each one that runs out is another stop the
+developer must restart).
+
+**Consequences:** The whole team exists from the start, mostly waiting, so the tool's
+list of sessions holds every entry of the sprint at once. An entry the developer slides
+in later is started on that turn, which the developer typed. Whether a session keeps
+waking from its own background wait over hours is not yet observed; the entry
+`sprint-plans-and-runs-a-team` checks it in Claude Code, and how Cursor's sessions do it
+belongs to `team-members-start-in-another-tool`. Changing the shipped waits of FW-051 and
+FW-052 is the entry `waits-end-when-something-happens`. A holder stuck on a permission
+prompt for longer than the stale time turns stale, and its waiters stop; that needs the
+developer anyway.
+
+## FW-056: A sprint session plans and reports, and the workflow carries every team member's rule
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `/sprint` proposes about 20 story points from the top of the ranking —
+ideas and shaped entries banded A or B, in the order `/next` suggests them — and keeps
+the agreed sprint in `.git/tropis/sprint.json`, local and shared by every worktree. On
+the developer's word it starts every team member at once, as FW-055 says: a session of
+its own tool per entry or bundle, or, where the tool cannot start sessions, itself, one
+entry at a time. Every team member is given the same brief, pointing at the workflow's
+*Delivering an entry*, whose steps — the wait for a blocker first, which ends only when
+the blocker ships or is dropped, parked or stopped — the reasons to stop, and the last
+lines apply to any session delivering an entry. A team member records its own `PARKED`
+or `STOPPED` in the sprint file, which every worktree of the checkout shares. The
+sprint's status is read from the backlog on `origin`'s main branch, the open pull
+requests and the merge token, lists stopped and parked team members first, and reads
+from the sprint file only what nothing on GitHub shows: planning, parked, stopped.
+
+**Rejected:** Keeping the team member's rules in the sprint command (a session started
+by hand would not follow them). Committing the sprint file (a sprint is the
+developer's working state, not the project's). Reading a team member's `SHIPPED` as
+shipped (FW-050: a reply is a claim; the main branch is the truth). The sprint session
+recording every team member's last line (it is not always woken when one ends; the
+team member writing its own mark needs nobody). A tie-break by rank at merge (the
+spec's non-goal). Starting team members in another tool
+(`team-members-start-in-another-tool`).
+
+**Consequences:** A sprint session whose conversation is reset picks the sprint up from
+the file. A session the developer started by hand shows in the status only as an open
+pull request no sprint entry accounts for. A team member's mark reaches only sessions on
+the same machine, which is where FW-055's team runs. A Claude desktop app session waiting
+three hours on its own `sprint.mjs wait`, with nothing else pending, was woken by that
+command ending 17 seconds after the blocker shipped (Claude Code 2.1.300, macOS 26.2,
+arm64, 2026-11-02); this was seen once, in that one tool. Source: the sprint design of
+2026-11-01, sections 1, 2, 5 to 9 and 11, and FW-055.
+
+## FW-057: Inside a tier, picks go least usage first, and dispatch names one the developer's subscriptions include
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `/refresh-model-tiers` still places each model in a tier on fitness alone,
+and now lists a tier's models least usage per task first, measured as cost per task on
+one shared board at one effort setting, and records which subscriptions of each
+supported tool include each pick. Which subscriptions the developer holds is read from
+what the tools report, asked of the developer when that cannot be matched, and kept in
+`<git common dir>/tropis/subscriptions.txt`, never committed. `/dispatch` prints the
+first pick for the plan's tier, then for each tier above, that a recorded subscription
+includes, and names none when none is.
+
+**Evidence:** Read on 2026-11-02. Anthropic's article on Fable models says they are
+included on some Claude subscriptions, up to half the weekly limits, and run on usage
+credits on others; no vendor page gives how fast each other model draws a subscription.
+Cursor's models page says third-party models are billed at the model's API list price,
+outside the included pool. Artificial Analysis shows Claude Sonnet 5.5 and Claude Opus
+5.5 at about $10 per task each at max effort, though Sonnet's token price is half
+Opus's: a per-token price would have ranked them wrongly, and cost per task on one board
+did not. A tool's report can name a plan its vendor lists only as legacy, and does not
+say whether a team seat is premium. Source: none in particular; the pages above.
+
+**Rejected:** Ranking by list price per token (it hides a model that spends more
+tokens, as FW-027 found). Letting usage move a model between tiers (it would put a
+cheaper, less capable model on work it cannot hold). Recording the developer's
+subscriptions in the picks file (it is committed, and in a public project anyone reads
+it). Trusting the tools' reports without asking (they cannot always be matched to the
+vendors' names).
+
+**Consequences:** FW-027's *cost is left out* now covers placement only. A picks file
+from before this has no inclusion table; `/dispatch` still prints its picks and says to
+refresh. A sprint's team members and the reviewers Tropis starts get a tier through the
+entry `team-members-and-reviewers-run-on-a-tier`.
+
+## FW-058: A wait for the token stops on a stale holder, judged by the branch alone off GitHub
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `merge-token.mjs take` and `plan-overlap.mjs --wait` have no time limit
+unless `--timeout` gives one. The token wait asks, each round, whether the holder is
+stale, as `/next` does, and stops naming the holder and the command that breaks the
+token when it is; the merges-after wait goes ahead when no entry it waits on is
+`building` on origin's main branch. Where `origin` is not on GitHub, pull requests
+cannot be asked, so a token held by a branch for 30 minutes is stale when that branch is
+absent on `origin` or has had no push for 30 minutes; the status line says so too.
+
+**Rejected:** Keeping a limit where `origin` is not on GitHub (two behaviours to explain
+for one wait). Never judging staleness there (a waiter whose holder died would wait
+forever, which FW-052's limit existed to prevent). Going ahead on `shipped` or `dropped`
+only (an entry parked back to `shaped` would hold its followers forever).
+
+**Consequences:** A session runs both waits as background commands that wake it; a
+tool that cannot keep a command running for hours ends the wait early, and running the
+same command again resumes it. Implements FW-055 for the waits shipped with FW-051 and
+FW-052. Source: the entry `waits-end-when-something-happens`.
+
+## FW-059: A team member in the other tool is a detached run that waits, works and is judged by the repository
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `sprint.mjs launch <id>` starts a team member in Claude Code's or Cursor's
+command line as a detached process and returns at once. The process waits for what the
+entry is blocked by, then runs the tool in print mode with `stream-json` output, in a
+worktree of its own beside the checkout, on exact grants (one list of commands the
+workflow runs, never a shell) and with no API key in its environment. When the agent
+exits, the process judges its last line against `origin/main` and writes the result
+where `sprint.mjs status` and `sprint.mjs watch` read it. A `SHIPPED` the main branch
+does not show is recorded as `STOPPED`.
+
+**Evidence:** FW-050's runs, and this entry's live runs on 2026-11-02 recorded in
+its plan's review record: one run per tool that did its task and one that claimed
+`SHIPPED` without doing it, each judged as the decision says.
+
+**Rejected:** Blocking until the agent exits (a sprint session whose tool cannot run a
+background command could then start only one team member per turn, against FW-055).
+`json` output, as FW-050 ran it (nothing to follow while the run works). The project's
+own permission settings alone, as FW-055 has for sessions (a command-line run cannot
+ask anyone, and a project with no allow rules would be refused every command; the
+grants file is written only where the project has none). A shell among the grants (it
+grants everything).
+
+**Consequences:** A team member started this way does not appear in the developer's
+tool until its run ends; the developer follows its log and opens it with `--resume`.
+`--model` is passed through as given; which model is
+`team-members-and-reviewers-run-on-a-tier`. Ending or dropping a sprint does not stop
+a run.
+
+## FW-060: Team members and fresh reviewers run on the Large tier's included pick
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** An agent Tropis starts that runs no plan is given a model as an executor
+is, from a tier. A sprint's team member, the probe of a fresh-agent check and a fresh
+reviewer of work its author built each run on the Large tier, and on the first Large
+pick that a subscription the developer holds includes — the pick `/dispatch` names for
+a Large plan. `sprint.mjs start` and `add` print it for a sprint whose team members
+start as sessions; `node .tropis/scripts/dispatch.mjs --tier <tier>` prints it for any
+tier, and the workflow and the planning rule tell whoever starts a probe or a reviewer
+to run `--tier Large`. Where no pick is named, the agent starts on the tool's default
+model, and the line says why.
+
+**Evidence:** `framework/model-tiers.md` defines Large as open-ended judgement with no
+mechanical check, and each of these agents does exactly that: a team member shapes,
+plans and reviews; a probe or a reviewer judges work with only the repository. FW-057
+lists a tier's picks least usage per task first, so the first included Large pick is
+the least usage that keeps the tier's quality. Source: none in particular; the sprint
+design §2 and §9 and FW-057.
+
+**Rejected:** A tier per agent kind, such as Medium for a probe (a probe that fails for
+want of capability reads as a defect in the rule it was testing). A setting naming
+each agent kind's tier (nothing needs a different tier yet; the tier is written once
+in each script and document, and that is the seam). Leaving the model to whatever the
+session started with (that is what this replaces: the developer's default model,
+whatever it costs).
+
+**Consequences:** A team member started in another tool's command line (FW-059) runs
+on this pick in its own tool (FW-062). An executor's own review
+subagents are its business and are not covered. The repository's
+own `/rule-trial` is not shipped and is left as it is.
+
+## FW-061: The backlog's words change; its files and fields keep their names
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** Everything people and agents read says the backlog, backlog item, epic
+and effort points, where it said the catalog, entry, arc and effort. The file
+`feature-catalog.yaml`, the `effort` and `effortWhy` fields, the item types (feature,
+improvement, bug, spike, chore), the statuses and code identifiers keep their names,
+so a project takes the release with no update step. The guard `backlog-words` refuses
+the old words in the framework's prose.
+
+**Rejected:** "User story" for a backlog item (an item keeps its type: a bug or a spike
+is not a story). "Story points" (the effort score is not a story point estimate; the
+developer's call). Renaming fields or the file to `backlog.yaml` (an update step in
+every project for words nobody reads while planning).
+
+**Consequences:** Decisions before this one, incident records, specs and plans keep the
+words of their day. A project's own text is its own. Narrows §10 of the sprint design.
+Source: the backlog item `backlog-speaks-in-epics-stories-and-points`.
+
+## FW-062: A launched team member runs on the Large pick its own tool's subscription includes
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `sprint.mjs launch` without `--model` starts the team member on the first
+Large pick that the developer's recorded subscription in that tool includes, passed by
+the name that tool's command line takes, which the picks file's inclusion table gives
+in a fourth column, `Command-line name`. Where no pick can be named it says why and
+starts the tool on its default model. `--model` still overrides.
+
+**Rejected:** The pick `/dispatch` names whatever its tool (it may be in the other
+tool). Deriving the command-line name from the display name (Cursor's ids follow no
+one rule). Asking the tool at launch (Claude Code has no list command).
+
+**Consequences:** A picks file written before this has no fourth column; `/dispatch`
+reads it as before, and `launch` says the names are missing until
+`/refresh-model-tiers` runs. Completes FW-060 for FW-059's team members. Source: the
+backlog item `launched-team-members-run-on-the-large-pick`.

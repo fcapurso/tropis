@@ -28,19 +28,23 @@ export const SHIPPED_ROOTS = ['.tropis', '.claude/framework', '.claude/commands'
 export const SHIPPED_PATHS = [
   '.github/workflows/tropis-pipeline.yml',
   '.github/workflows/tropis-framework-checks.yml',
-  '.github/workflows/tropis-candidate.yml',
+  '.github/workflows/tropis-staging.yml',
 ];
 
 /**
  * Left out of a release. `.tropis/node_modules` is a directory: it and everything
  * under it are skipped. The others are files. `installed.json` is this record;
- * `README.md` is the project's operator guide.
+ * `README.md` is the project's operator guide. `project.json` is the project's own
+ * settings, written by setup when it is given a name; `worktree-setup.txt` is the
+ * project's own worktree setup.
  */
 export const EXCLUDED = [
   '.tropis/node_modules',
   '.tropis/package-lock.json',
   '.tropis/installed.json',
   '.tropis/README.md',
+  '.tropis/project.json',
+  '.tropis/worktree-setup.txt',
 ];
 
 /**
