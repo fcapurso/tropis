@@ -18,7 +18,7 @@ the executing agent and not at merge. There is no splitting a squash.
 also"*, it is two plans.
 
 Mixing application and framework changes in one plan is fine when it passes that test,
-which it does when the framework half exists *to serve* the application half — a catalog
+which it does when the framework half exists *to serve* the application half — a backlog
 and the commands operating on it, a rule set and the script projecting it. It fails when
 two unrelated changes ride together and the squash message can only describe one.
 
@@ -58,7 +58,7 @@ specifying session what something means, the plan was underwritten.
   check that reads the working tree.
 - **State claims about the code as invariants that survive the plan's own commit.** A
   plan is verified before dispatch and executed after its commit has added the plan
-  file, a catalog entry and regenerated documentation, so "exactly one grep hit" is
+  file, a backlog item and regenerated documentation, so "exactly one grep hit" is
   already false when the executor runs it, while "nothing imports it" still holds.
   A count the author measured by doing the work on a copy is the same trap: the
   executor's work differs in some detail and the figure stops matching. An expected output
@@ -117,9 +117,9 @@ specifying session what something means, the plan was underwritten.
   action *is* the deliverable: an executor that proceeds without it has skipped the only
   thing that was being asked for.
 
-## A plan states which entries it completes
+## A plan states which backlog items it completes
 
-Every plan carries `## Delivers`: the catalog ids that become `shipped` when it merges,
+Every plan carries `## Delivers`: the backlog ids that become `shipped` when it merges,
 or `None.` Completes, not touches — a plan that only advances work another plan will
 finish lists nothing. The heading exists so delivery can be checked: a merged plan
 whose Delivers ids stay unpromoted must fail the build.
@@ -221,7 +221,7 @@ elsewhere, and an executor told not to resolve contradictions will stall or impr
 **The question to ask about every file the plan touches is: what is on the other side of
 this?** Five answers:
 
-- **Something else claims a path you are deleting.** A catalog entry naming a module, a
+- **Something else claims a path you are deleting.** A backlog item naming a module, a
   guard fixture, a hook test case, a generated document. Leave what claims it out of the
   table, and the executor must break the guard that checks the claim or leave a stand-in
   at the old path; a stand-in that says why is the right choice of the two. (Incident:
@@ -417,14 +417,14 @@ Five sections:
   given; the reviewer is the one reader who sees every line before it lands on `main`.
 
 - **Outstanding disposition** — every item in the handover's Outstanding section, each
-  with either a catalog id or a reason for dropping it — the catalog rule's *What does
-  not become an entry* says when dropping is right. An item with neither is not
+  with either a backlog id or a reason for dropping it — the backlog rule's *What does
+  not become a backlog item* says when dropping is right. An item with neither is not
   dispositioned. Two further things belong here: a criterion only the developer can
   observe, named with whoever must observe it, and any symptom reported after the handover
   was written that the review could not explain. This is the only section that carries an
   obligation forward.
 - **Learnings routed** — for each finding that generalises beyond this plan, where it was
-  written: a rule, an ADR, the blueprint queue, a catalog entry. Or an explicit statement
+  written: a rule, an ADR, the blueprint queue, a backlog item. Or an explicit statement
   that it was not, and why. **Review is the step most likely to find defects in the
   framework itself, and it was the only step with nowhere to put them** — a learning
   left in a commit message is saved and never read. If nothing generalises, say so.

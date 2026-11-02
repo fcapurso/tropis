@@ -3,10 +3,10 @@ description: Plan a sprint with the developer and run it with a team
 ---
 
 The developer is the product owner and this session is the sprint session. It plans,
-starts team members and reports. It does not shape, plan, review or merge an entry,
+starts team members and reports. It does not shape, plan, review or merge a backlog item,
 and it does not decide the order of merges: each team member does those under
-`.claude/framework/workflow.md`, *Delivering an entry*. Keep this conversation small:
-read what the script prints, not the team members' work.
+`.claude/framework/workflow.md`, *Delivering a backlog item*. Keep this conversation
+small: read what the script prints, not the team members' work.
 
 Every step runs `node .tropis/scripts/sprint.mjs`, which reads the backlog on `origin`'s
 main branch and keeps the agreed sprint in a local file git does not track, so a sprint
@@ -17,23 +17,23 @@ says none is under way, plan one.
 ## 1. Plan
 
 Run `node .tropis/scripts/sprint.mjs propose`, or `propose --points <n>` when the
-developer names a budget; 20 story points is where it starts. Show the proposal and say
+developer names a budget; 20 effort points is where it starts. Show the proposal and say
 how team members will start (below). The developer adds, drops, reorders and resizes it;
-run `propose` again for a new budget. An entry you find missing a `blockedBy` while
+run `propose` again for a new budget. A backlog item you find missing a `blockedBy` while
 looking is proposed to the developer like any backlog edit. What the developer agrees is
-what the team is approved to do: each entry, in that order, carried through the whole
-workflow to its own merge.
+what the team is approved to do: each backlog item, in that order, carried through the
+whole workflow to its own merge.
 
 ## 2. Start the whole team, on the developer's word
 
 When the developer says to start, in that same turn run
 `node .tropis/scripts/sprint.mjs start <id> ... --points <n> --way <way>`, with the ids
-in the agreed order, and then start every team member at once: one per entry, or per
-bundle (one brief, for the bundle's first entry, naming the others). Do not keep any for
-later — a later turn may not be one the developer typed, and some tools refuse to start
-a session on such a turn. An entry blocked by another starts too: its team member waits
-by itself until that entry ships. Pass each team member the brief
-`node .tropis/scripts/sprint.mjs brief <id>` prints, as it stands, and run
+in the agreed order, and then start every team member at once: one per backlog item, or
+per bundle (one brief, for the bundle's first backlog item, naming the others). Do not
+keep any for later — a later turn may not be one the developer typed, and some tools
+refuse to start a session on such a turn. A backlog item blocked by another starts too:
+its team member waits by itself until that backlog item ships. Pass each team member the
+brief `node .tropis/scripts/sprint.mjs brief <id>` prints, as it stands, and run
 `node .tropis/scripts/sprint.mjs mark <id> planning` for it. For `session`, start each
 team member on the model the last line of `start` names: the first pick of the Large
 tier that a subscription the developer holds includes, since a team member shapes,
@@ -42,16 +42,16 @@ plans and reviews. Where that line names none, start it on the tool's default mo
 | `--way` | How | Where |
 |---|---|---|
 | `session` | one session of this tool per team member, which the developer can open | a tool that starts sessions, such as the Claude desktop app |
-| `here` | this session delivers the entries itself, one at a time, in sprint order | every tool; the fallback |
+| `here` | this session delivers the backlog items itself, one at a time, in sprint order | every tool; the fallback |
 | `claude` | one Claude Code command-line run per team member, started with `sprint.mjs launch` | a sprint session in Cursor |
 | `cursor` | one Cursor command-line run per team member, started with `sprint.mjs launch` | a sprint session in Claude Code |
 
-For `claude` or `cursor`, start each team member with `node .tropis/scripts/sprint.mjs
-launch <id>` in place of a session and its brief, adding `--model <model>` with a
-model the developer's plan includes in that tool (`docs/model-picks.md`), and
-`--tool <tool>` to start one entry in a tool other than the sprint's way. Each run
-starts at once, waits by itself for what its entry is blocked by, and works with
-nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
+For `claude` or `cursor`, start each team member with
+`node .tropis/scripts/sprint.mjs launch <id>` in place of a session and its brief,
+adding `--model <model>` with a model the developer's plan includes in that tool
+(`docs/model-picks.md`), and `--tool <tool>` to start one backlog item in a tool other
+than the sprint's way. Each run starts at once, waits by itself for what its backlog item
+is blocked by, and works with nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
 command where this tool runs them; each time it ends, tell the developer the line it
 printed unless it is `SHIPPED`, and run it again until it says none is running.
 
@@ -72,24 +72,24 @@ token it marks stale is broken only on the developer's word, with the command it
 
 When a team member's last line reaches you, or `status` shows a new stopped or parked
 one, tell the developer the tool's way, with a notification where the tool has one,
-naming the entry and its reason. A `SHIPPED` line needs nothing: `status` reads shipped
-from the main branch, and an entry the main branch does not show as shipped is not
-shipped. Record each decision a team member reports with
+naming the backlog item and its reason. A `SHIPPED` line needs nothing: `status` reads
+shipped from the main branch, and a backlog item the main branch does not show as shipped
+is not shipped. Record each decision a team member reports with
 `node .tropis/scripts/sprint.mjs note <id> <decision>`.
 
-## 4. New entries
+## 4. New backlog items
 
-When `status` lists entries new in the backlog since the start, raise them, bugs first,
-and offer to slide each into the sprint. On the developer's word,
-`node .tropis/scripts/sprint.mjs add <id>` adds one and says which entries not yet
+When `status` lists backlog items new in the backlog since the start, raise them, bugs
+first, and offer to slide each into the sprint. On the developer's word,
+`node .tropis/scripts/sprint.mjs add <id>` adds one and says which backlog items not yet
 started would then fall outside the budget; drop those with
 `node .tropis/scripts/sprint.mjs drop <id>` only on the developer's word. Start the new
-entry's team member in that same turn, as in step 2. Start it on the model the last line
-of `add` names.
+backlog item's team member in that same turn, as in step 2. Start it on the model the
+last line of `add` names.
 
 ## 5. End
 
-When every entry has shipped, parked or stopped, or the developer ends the sprint, run
-`node .tropis/scripts/sprint.mjs end` and report what it prints: what shipped and its
-points, points per hour, what was parked and what the developer must decide, what
-stopped, the decisions team members reported, and the new entries.
+When every backlog item has shipped, parked or stopped, or the developer ends the sprint,
+run `node .tropis/scripts/sprint.mjs end` and report what it prints: what shipped and its
+points, points per hour, what was parked and what the developer must decide, what stopped,
+the decisions team members reported, and the new backlog items.

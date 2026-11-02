@@ -107,7 +107,7 @@ function claim(root, planPath) {
     return 2;
   }
   if (!Array.isArray(catalog)) {
-    process.stderr.write('plan-overlap: feature-catalog.yaml is not a list of entries\n');
+    process.stderr.write('plan-overlap: feature-catalog.yaml is not a list of backlog items\n');
     return 2;
   }
   if (!fileStructurePaths(text).length) {
@@ -153,16 +153,16 @@ export async function waitForPlans(root, opts, { now = Date.now, sleep: pause = 
     const head = git(root, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD');
     const branch = head.status === 0 && head.stdout.trim() ? head.stdout.trim() : 'origin/main';
     const shown = git(root, 'show', `${branch}:feature-catalog.yaml`);
-    if (shown.status !== 0) return fail(`Could not read the catalog on ${branch} — ${firstLine(shown.stderr)}.`);
+    if (shown.status !== 0) return fail(`Could not read the backlog on ${branch} — ${firstLine(shown.stderr)}.`);
     let catalog;
     try {
       catalog = YAML.parse(shown.stdout);
     } catch (e) {
-      return fail(`Could not read the catalog on ${branch} — ${firstLine(e.message)}.`);
+      return fail(`Could not read the backlog on ${branch} — ${firstLine(e.message)}.`);
     }
     const byId = new Map((Array.isArray(catalog) ? catalog : []).map((e) => [e.id, e]));
     const missing = ids.find((id) => !byId.has(id));
-    if (missing) return fail(`${opts.plan} merges after ${missing}, which the catalog on ${branch} does not have.`);
+    if (missing) return fail(`${opts.plan} merges after ${missing}, which the backlog on ${branch} does not have.`);
     const pending = ids.filter((id) => byId.get(id).status === 'building');
     if (!pending.length) {
       const seen = ids.map((id) => `${id} ${byId.get(id).status}`).join(', ');

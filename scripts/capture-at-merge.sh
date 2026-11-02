@@ -35,7 +35,7 @@ Merging a plan — what did it teach, and what did it build?
 
 - What did this teach that is true beyond this plan?
 - What did it build — a command, a guard, a script — that a set-up project would want? That owes an upstream queue entry, exactly as a lesson does.
-- Where was it written: a rule, a decision record, the blueprint upstream, a catalog entry?
+- Where was it written: a rule, a decision record, the blueprint upstream, a backlog item?
 - If nothing generalises, say so in the review record's Learnings routed section rather than leaving it blank.
 - The doc-closeout table applies now too — see .claude/framework/workflow.md.
 - The Review record is owed BEFORE this merge, on the plan file. If you are

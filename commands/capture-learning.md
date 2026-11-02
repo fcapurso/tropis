@@ -32,8 +32,8 @@ a document, or a measurement recorded beside it.
 → The architecture document, diagrams included.
 
 **Branch 5 — Is it about work not yet done?**
-→ A feature catalog entry via `/idea`, not a rule — unless the catalog rule's *What
-does not become an entry* says it needs none; then say why in one line and stop.
+→ A backlog item via `/idea`, not a rule — unless the backlog rule's *What
+does not become a backlog item* says it needs none; then say why in one line and stop.
 
 **Branch 6 — Would this be true for any project using this framework?**
 A learning about the workflow, the documentation architecture, the rule mechanism, or

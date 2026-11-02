@@ -41,7 +41,7 @@ judgement with no mechanical check:
 
 | Agent | Its work | Where its model is named |
 |---|---|---|
-| A sprint's team member | shapes an entry, writes its plan, reviews the executor's branch | the last line of `sprint.mjs start` and `sprint.mjs add` |
+| A sprint's team member | shapes a backlog item, writes its plan, reviews the executor's branch | the last line of `sprint.mjs start` and `sprint.mjs add` |
 | A fresh reviewer: a fresh-agent check's probe, or the reviewer of work its author built | judges, with only the repository, whether the work says and does what it should | `node .tropis/scripts/dispatch.mjs --tier Large` |
 
 Each runs on the first Large pick that a subscription the developer holds includes,

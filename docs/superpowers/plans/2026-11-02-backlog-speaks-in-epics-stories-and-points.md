@@ -518,3 +518,158 @@ asked and whether it did it. Delete the scratch folder afterwards.
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+Worked from no named source: the guard follows `guards/contributing-page.test.js` in this
+repository, and every edit was made by hand against this repository's own text.
+
+### Task completion
+
+- **Task 0** done. `npm --prefix .tropis ci`, a clean tree, and the self-check passed on the
+  untouched `origin/main` (`Self-check passed: ...`). git 2.49.0, node v22.15.0, Darwin arm64.
+- **Task 1** done. The guard and the `check-blueprint.sh` change were committed with the scan
+  returning nothing. Run the way `run_guard` runs it (a `git archive` of `HEAD` in a
+  temporary folder, `templates/framework-jest.config.js` copied as `jest.config.js`,
+  `{"type":"module"}` as `package.json`, `FRAMEWORK_ROOT` and `TROPIS_EXPECT_FRAMEWORK=1`
+  set, jest from `.self-check/node_modules`), the result was `Tests: 4 failed, 5 passed, 9
+  total`; the failing cases were: refuses "arc" in a command; refuses "catalog" in a rule;
+  refuses "story points" in a framework document; refuses an old word in a template
+  comment. With the real scan: 76 lines listed and the real-tree case red (see *What the
+  plan got wrong* for the "catalog" case).
+- **Task 2** done, a folder at a time (commands, framework, rules, templates and the two
+  root files), then the heading citations. The guard alone: `Tests: 1 failed, 8 passed`
+  before the prose, all passing after (the self-check ran it on the framework).
+- **Task 3** done. See *Verification results*.
+- **Task 4** done. See *Verification results*. The board had no case for its epic heading,
+  so I added one (`speaks of epics and effort points, not arcs`) and repeated the step.
+- **Task 5** done once, passed first time. See *Verification results*.
+- **Task 6** done: the item is `shipped` with `modules` set and the criteria comment; its
+  band row is removed. It read `building`, as the plan said.
+- **Task 7** done up to the push. The decision is FW-059 and the spec paragraph carries the
+  same number (the last number on `origin/main` was FW-058).
+
+No step needed the developer.
+
+### Verification results
+
+All on git 2.49.0, node v22.15.0, macOS 26.2, arm64 (`uname -sm`: Darwin arm64).
+
+- `npm --prefix .tropis test` (last run, everything committed): `Tests:       156 passed,
+  156 total`.
+- `bash scripts/check-blueprint.sh` (last run, everything committed): `Self-check passed:
+  every guard caught its defect, the clean baseline passed, and the framework repository's
+  own guards passed.` It also prints `caught      backlog-words: commands/next.md planted`.
+- Task 3, the board and the report. The scripts resolve the project root from their own
+  folder (`.tropis/scripts/`), so running `node scripts/...` from the worktree root with
+  the `node_modules` symlink failed on a missing `feature-catalog.yaml` one folder above.
+  I ran them instead from a scratch project in `$TMPDIR` that held a copy of `scripts/`
+  and `templates/` as `.tropis/`, plus this branch's `feature-catalog.yaml` and
+  `docs/backlog-board/`, with `.tropis/node_modules` linked to the worktree's. Results:
+  `node .tropis/scripts/next.mjs | grep "Epics under way"` printed `Epics under way`;
+  `grep -c "Epics in progress" docs/backlog-board/index.html` printed `1`;
+  `grep -ciE "Arcs in progress|No arc" docs/backlog-board/index.html` printed `1`, not `0`:
+  the one match is the embedded data of a backlog item whose own text contains the words
+  "No arc" (line `const ENTRIES = ...`), not the page's visible text. The worktree's
+  `docs/backlog-board/index.html` was not touched and the scratch folder is deleted.
+- Task 4, each a throwaway commit then `git reset --hard HEAD~1`:
+  1. `Arcs under way` back in `scripts/next.mjs`: `guards/next-report.test.js` went red,
+     `Tests: 4 failed, 35 passed, 39 total` (backlog report: prints arc progress after both
+     streams; prints arc progress after the work, not before it; prints the two streams the
+     same with no bands file, a header-only one, and no plans folder; runs without a plans
+     folder).
+  2. `story points` back in `commands/sprint.md`: `guards/backlog-words.test.js` went red,
+     `the backlog words > finds no old word in the framework repository`, `1 failed, 8
+     passed`.
+  3. `Arcs in progress` back in `templates/backlog-board.html`: first run stayed green
+     (`30 passed`), so I added the case, committed it, and repeated: `backlog board build >
+     speaks of epics and effort points, not arcs` failed, `1 failed, 30 passed, 31 total`.
+- Task 5, the fresh-agent check. Claude Code 2.1.300, model `claude-opus-5-5`, macOS 26.2,
+  arm64, run with `claude -p ... --output-format stream-json --verbose` (allowed tools
+  Bash, Read, Edit, Write, Glob, Grep; accept-edits mode), `ANTHROPIC_API_KEY` unset,
+  signed in to the developer's plan, in a project set up from this branch with
+  `scripts/set-up-project.sh`. Asked: the prompt in the plan, verbatim. It invoked the
+  project's `/idea` command, read `rules/catalogs.md` and the `/refresh-board` command,
+  appended the item to `feature-catalog.yaml`, wrote the band row, and ran the board's
+  stamp. Checked: `git diff --stat` showed `feature-catalog.yaml` (12 lines) and
+  `docs/backlog-board/bands.yaml` (11 lines) only; no `backlog.yaml` existed; the band row
+  had `band: B`, `value: 3`, `valueWhy`, `effort: 2`, `effortWhy`, `verdict`, `seen` (the
+  template's keys); the reply said "backlog item" and "epic" ("It belongs to no epic") and
+  never "arc". It passed first time, so no wording was changed for it. The scratch folder
+  is deleted. The user-level instructions of the machine that ran it say nothing about
+  these words.
+
+### Scope
+
+- `git diff --stat origin/main...HEAD`: 40 files changed, 672 insertions(+), 467 deletions(-).
+  Every file is in *File Structure*; files in that table that the work did not need to
+  change stayed unchanged (for example `commands/bootstrap.md`, `commands/update.md`,
+  `scripts/board-bands.js`, `scripts/next-work.js`, most `guards/*.test.js`). The
+  rebuilt `docs/backlog-board/index.html` was not committed.
+- Worktree used: `../tropis-epics` (sibling of the specifying session's `tropis`).
+
+### Judgment calls
+
+- **Wrapping.** A rename lengthens lines, so I rewrapped paragraphs to 90 characters with a
+  small script run over lines the diff had changed; table rows and long single-line
+  paragraphs that were already over 90 were left. That made the diffs of `rules/catalogs.md`
+  and `templates/README.md` larger than the renames alone. One wrap kept `applies none
+  without` on one line in `commands/refresh-board.md` because a test matches that phrase.
+- **"entry" and "effort" left alone,** by file, counted as lines by the plan's own `git grep` (Task 2's list): `CONTRIBUTING.md` 3 (upstream
+  queue entries); `bootstrap.md` 7 (entry file / entry point, `entry-file.test.js`);
+  `commands/bootstrap.md` 3 (entry file / entry point); `commands/capture-learning.md` 9
+  (upstream queue entries); `commands/feature.md` 1 (a verification-log entry);
+  `commands/flush-upstream.md` 32 (upstream queue entries, and the `<entry-slug>` branch
+  name); `commands/manual-check.md` 8 (verification-log entries); `commands/refresh-board.md`
+  3 (`effort` field names in backticks, and "value or effort points"); `commands/refresh-model-tiers.md`
+  6 (the model effort setting); `commands/release.md` 7 (verification-log entries);
+  `commands/scope.md` 1 (the `entries:` key); `commands/sprint.md` 1 ("20 effort points" matched `effort`, which is the new word); `commands/update.md`
+  2 (entry files); `framework/dispatch.md` 1, `framework/model-tiers.md` 1,
+  `framework/rule-delivery.md` 2, `framework/workflow.md` 2 (entry file / entry point /
+  verification-log entry); `rules/catalogs.md` 5 (a verification-log entry and
+  backticked incident anchors and guard names); `rules/learnings.md` 1 (a learnings
+  entry); `templates/AGENTS.md` 4 (entry point / good entries of the entry file);
+  `templates/README.md` 5 (entry file, upstream queue entries, hook entries, and "effort" in "value over effort points");
+  `templates/backlog-bands.yaml` 4 (the `effort` key, the example id `some-entry`, and
+  "value and effort points (the key is effort)"); `templates/catalog.yaml` 1 (the example
+  item's `title: Example entry`, which is data, not a comment); `templates/verification-log.md`
+  2 (verification-log entries).
+- **Sprint report wording.** `scripts/sprint.mjs` printed "points" without "effort", so I
+  wrote "effort points" in the lines that total a budget (`proposed N of B effort points`,
+  `started with N backlog items, ...`, `over the budget by N effort points`, `N effort
+  points shipped`, `N effort points per hour`) and kept the per-item `N pts`. Its tests
+  were updated to match.
+- **`started with 1 backlog items`** keeps the old plural (it said "1 entries" before).
+- **Unrequested file edit:** none outside *File Structure*.
+- **Board hook:** the board's git hook rebuilt `docs/backlog-board/index.html` in the
+  worktree at commits; it is not tracked, so nothing was staged.
+
+### What the plan got wrong
+
+- **The guard's rule for "catalog" refuses its own case.** The plan says the word must not
+  touch `-`, `.`, `/` or `_` on either side, and case † `Add it to the catalog.` ends in a
+  full stop, so the plan's expression passes it. I changed the end of the pattern to
+  refuse only `-`, `/`, `_` or a full stop followed by a letter (`catalog.yaml`), so a
+  sentence-ending full stop no longer exempts the word. Committed as its own change.
+- **The Task 3 run commands cannot work from the worktree root.** The scripts find their
+  project from `.tropis/scripts/`, so the `node_modules` symlink alone is not enough; I used
+  a scratch project instead (above).
+- **`grep -ciE "Arcs in progress|No arc"` expected `0`** but it counts one match inside the
+  embedded backlog data, where one item's own text says "No arc".
+- **Task 1 wanted the scan empty first.** I had written the real scan in the first commit,
+  then stubbed it to empty for the red run and restored it, so the history has three
+  commits for the guard.
+
+### Outstanding
+
+- **`docs/backlog-board/index.html` is a page people look at.** I did not open it in a
+  browser; I read its text with `grep` only. The reviewer decides whether the developer
+  checks the epic heading, the "Effort points" labels and the "No epic" group by hand.
+- **FW-059 may need renumbering** if `main` took that number meanwhile, and the spec
+  paragraph names the same number.
+- **Rebase onto the two plans that edit `scripts/sprint.mjs`, `commands/sprint.md`
+  and `templates/README.md`** (`team-members-start-in-another-tool`,
+  `team-members-and-reviewers-run-on-a-tier`) is the reviewer's, as the plan says; I did
+  not rebase.
+- **`templates/catalog.yaml` still has `title: Example entry`** in the example item (data,
+  not a comment, so outside the plan); the reviewer may want "Example backlog item".

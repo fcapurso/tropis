@@ -32,23 +32,23 @@ now believes it cannot.
 | What the code currently is | Generated and guarded, never hand-written |
 | Why a choice was made | A decision record, written when the choice is made |
 | What produced a rule | Its incident record, one pointer away from the rule, never delivered |
-| What the product does | A catalog with a lifecycle; only shipped entries guarded |
-| What is planned | The same catalog, at a non-shipped status, read on the backlog board |
+| What the product does | A backlog with a lifecycle; only shipped backlog items guarded |
+| What is planned | The same backlog, at a non-shipped status, read on the backlog board |
 
-The catalog line carries the subtlety. One file holds both what ships and what is only
+The backlog line carries the subtlety. One file holds both what ships and what is only
 intended, distinguished by a status field — because an idea and the feature it becomes
 are the same thing at different times, and giving them separate homes means every
-promotion is a migration. **Only `shipped` entries are guarded against real code.**
-Entries at any other status are intent, not claims about the product, and the board
-shows them apart from what has shipped. Never guard a non-shipped entry, and never let
-one show as though it ships; that is how a documentation file starts lying.
+promotion is a migration. **Only `shipped` backlog items are guarded against real code.**
+Backlog items at any other status are intent, not claims about the product, and the board
+shows them apart from what has shipped. Never guard a non-shipped backlog item, and never
+let one show as though it ships; that is how a documentation file starts lying.
 
 ## Stable identity
 
-An entry keeps one id from the moment it is first captured, through spec, plan, decision
-record, and shipped documentation. The id describes the outcome, never the mechanism, so
-it survives the implementation changing under it. This is what lets a commit message,
-a plan, and a feature list refer to the same thing without a lookup table.
+A backlog item keeps one id from the moment it is first captured, through spec, plan,
+decision record, and shipped documentation. The id describes the outcome, never the
+mechanism, so it survives the implementation changing under it. This is what lets a commit
+message, a plan, and a feature list refer to the same thing without a lookup table.
 
 ## The closing step
 

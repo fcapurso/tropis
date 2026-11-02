@@ -1,4 +1,4 @@
-# The backlog: one entry per unit of work, from idea to shipped.
+# The backlog: one backlog item per unit of work, from idea to shipped.
 #
 # This file is DATA. A renderer, a generator script, the guards, and any backlog command
 # read it; nothing in the application does. It lives at the repository root because it
@@ -29,13 +29,13 @@
 # layer   product    the thing this repository builds
 #         framework  this repository's own process machinery
 # value   What someone can do and why it matters. Functional, not technical. If the
-#         value cannot be stated, the entry is not ready to capture.
+#         value cannot be stated, the backlog item is not ready to capture.
 # acceptanceCriteria
 #         Observable conditions that define done — what a person could check, not what
 #         the code does. Written at `shaped`, before implementation.
 # modules Implementing paths. Required at `shipped`, where a guard asserts each one
 #         exists. Empty until then.
-# refs    Spec, plan and decision-record paths. Entries sharing a spec path form an arc.
+# refs    Spec, plan and decision-record paths. Items sharing a spec path form an epic.
 #
 # ── OPTIONAL ─────────────────────────────────────────────────────────────────
 #
@@ -43,23 +43,23 @@
 #               genuinely not work. Omit when nothing blocks it; never write an empty
 #               list.
 # after         Ids this follows in a designed sequence. Weaker than blockedBy: starting
-#               early would work, it is merely not the intended order. An entry may
+#               early would work, it is merely not the intended order. A backlog item may
 #               carry both.
-# supersededBy  Ids that replaced this entry, typically when a shaping split one idea
-#               into several. The entry stays, because specs cite ids and those
+# supersededBy  Ids that replaced this item, typically when a shaping split one idea
+#               into several. The item stays, because specs cite ids and those
 #               citations must keep resolving.
-# shelved       true when an entry is parked until something changes. Only `idea`
-#               and `shaped` entries may carry it. Never write false.
+# shelved       true when a backlog item is parked until something changes. Only `idea`
+#               and `shaped` backlog items may carry it. Never write false.
 # externalRef   A tracker link, if the project uses one.
 #
 # Comments are part of the record. Put the reasoning for a re-pointing, a shelving, a
 # drop or an unusual decision in a `#` comment above the key it explains — that is why
 # this is YAML and not JSON.
 
-# Replace this entry with a real one, or delete it. It shows the shape of each field,
+# Replace this item with a real one, or delete it. It shows the shape of each field,
 # including acceptance criteria written as things a person could check rather than as
 # descriptions of the implementation. Its module, AGENTS.md, stands in for the paths of
-# what you build: at `shipped`, the catalog check fails on a module path that does not
+# what you build: at `shipped`, the backlog check fails on a module path that does not
 # exist.
 - id: example-stable-id
   title: Example entry

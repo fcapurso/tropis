@@ -78,7 +78,8 @@ If the picks are stale or missing the prompt says so.
 
 ## Rules
 
-- **A dispatched plan states which catalog entries it completes** (`## Delivers`), or `None.`
+- **A dispatched plan states which backlog items it completes** (`## Delivers`), or
+  `None.`
 - **Name the traps on the plan,** under its **Traps** heading. A deliberately-failing
   intermediate step, a guard that must be observed failing, a step needing the developer
   — say so, or the agent will "fix" it.

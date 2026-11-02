@@ -10,7 +10,7 @@ this guide — fix it rather than guessing.
 
 **Vocabulary.** *Entry file* — `AGENTS.md`, which holds this project's entry
 instructions. `CLAUDE.md` is the single line `@AGENTS.md`. *Rule* — a compact constraint
-delivered at the moment it applies. *Catalog* — the pure-data source of truth for what
+delivered at the moment it applies. *Backlog* — the pure-data source of truth for what
 the product does. *Framework folders* — `.claude/` (rules, framework documents, commands,
 hook wiring) and `.tropis/` (the framework's code and checks), both committed in the
 project's repository. *Project* — the repository being built; an exported copy of it
@@ -103,8 +103,8 @@ though someone decided it applied. From the project root:
   command's project-owned block, and build the pipeline the workflow's release section
   describes. Otherwise delete it.
 - `.claude/commands/feature.md`, `idea.md`, `.claude/rules/catalogs.md` — the setup
-  includes the catalog; keep these. Prune all three together only if you are
-  deliberately not using a catalog.
+  includes the backlog; keep these. Prune all three together only if you are
+  deliberately not using a backlog.
 - `.claude/framework/model-tiers.md`, `.claude/commands/refresh-model-tiers.md` — keep
   only if plans get dispatched to different models. The framework ships the tier
   definitions and no picks; `/refresh-model-tiers` writes this project's own to
@@ -141,7 +141,7 @@ From the project root, run `/scope`. Do not invent the brief from inference — 
 conversation is the source.
 
 `/scope` writes `docs/project-brief.md` and the initial `feature-catalog.yaml`
-entries (`idea` or `shaped` only). It refuses to overwrite an existing brief.
+backlog items (`idea` or `shaped` only). It refuses to overwrite an existing brief.
 
 If your tool cannot run `/scope`, follow `commands/scope.md` by hand from the
 project root.
@@ -294,8 +294,8 @@ git archive HEAD | tar -t | grep -E '^(\.claude|\.cursor|\.tropis)/'
 
 The setup did **not** copy this blueprint's own checks of itself into the project. It
 copied six into `.tropis/guards/`: `project-layout.test.js`, a smoke check that the
-framework is where the setup put it; `catalog-entries.test.js`, which fails when a catalog
-entry lacks a required field or `/idea` stops naming one; `rule-areas.test.js`, which
+framework is where the setup put it; `catalog-entries.test.js`, which fails when a backlog
+item lacks a required field or `/idea` stops naming one; `rule-areas.test.js`, which
 fails a rule with no area; `rules-generated.test.js`, which fails a generated rule
 file that is out of date or was edited by hand; `installed-files.test.js`, which fails a
 framework file edited after it was installed; and `entry-file.test.js`, which fails a
@@ -329,7 +329,7 @@ still empty.
 - [ ] The setup ran on the project's own repository, and nothing was written outside it
 - [ ] Commands with no subject in this project pruned
 - [ ] `.claude/settings.json` parses, `_comment` removed
-- [ ] `/scope` (or `commands/scope.md`) produced a brief and catalog from conversation
+- [ ] `/scope` (or `commands/scope.md`) produced a brief and backlog from conversation
 - [ ] README level chosen (`docs/readme/readme.yaml`)
 - [ ] `.tropis/README.md` placeholders filled
 - [ ] Entry file written, gotchas section first (or an explicit "expected to grow" note)

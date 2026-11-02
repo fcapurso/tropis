@@ -10,7 +10,7 @@ what the project learned or built. Or you change the framework here, in this rep
   `docs/BLUEPRINT-UPSTREAM.md`.
 - **Flush the queue.** `/flush-upstream` is a sitting. Each entry is put to you with all its
   parts, and you flush it, hold it or decline it. A lesson travels as the edit it proposes;
-  a capability travels as a shaped backlog entry. The name the flush goes out under is how
+  a capability travels as a shaped backlog item. The name the flush goes out under is how
   the maintainer knows your project, and it never changes. A new project is offered a
   generated one, a name another account already uses is refused, and each entry is shown to
   you as it will be sent, with the project's own details taken out, for your approval.
@@ -34,7 +34,7 @@ The mechanism is decided in `framework/DECISIONS.md` (FW-011) and written out in
 
 Each step is defined in the document it points at.
 
-1. A backlog entry in the feature catalog, started with `/idea`.
+1. A backlog item in the backlog, started with `/idea`.
 2. A plan, written to `rules/planning.md`.
 3. A branch in a worktree of its own: `framework/workflow.md`, *Branching*.
 4. The self-check: `bash scripts/check-blueprint.sh`. It reads committed content only.

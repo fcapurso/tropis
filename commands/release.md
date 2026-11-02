@@ -118,7 +118,7 @@ other tag, such as `v1.1.0-rc.1`, is not a release, and the window runs from the
 release however many such tags came after it.
 
 **No previous tag:** every commit is in scope and the proposed bump is **major** — the
-first release. Say so; the developer can still change it. Skip the catalog join; Stage 3
+first release. Say so; the developer can still change it. Skip the backlog join; Stage 3
 says what a first release covers.
 
 **Otherwise** list the window and classify it: a breaking commit (`feat!:`,
@@ -133,11 +133,11 @@ Then map the window onto the backlog. Squash commits are meant to carry an
 git log <last-tag>..HEAD --format='%h|%s|%(trailers:key=Implements,valueonly)'
 ```
 
-A commit with ids in the last field points at its entries. A commit without them is the
-residue, read from its subject and body. **Nothing enforces that line, so assume some
-squashes lack it:** match a residue subject against the titles of shipped entries before
-calling it uncatalogued. Do both halves — the backlog says what a change means, the log
-says what actually landed in the window, and neither alone is enough.
+A commit with ids in the last field points at its backlog items. A commit without them is
+the residue, read from its subject and body. **Nothing enforces that line, so assume some
+squashes lack it:** match a residue subject against the titles of shipped backlog items
+before calling it uncatalogued. Do both halves — the backlog says what a change means, the
+log says what actually landed in the window, and neither alone is enough.
 
 ## Stage 3 — Draft the notes
 
@@ -162,13 +162,13 @@ line is whether one of them, who never saw the work, can tell from it what the r
 does for them and what they must do. Never a list of commit subjects.
 
 **Decide what goes in: draft from the backlog, then check against the log.** For each
-entry Stage 2 found, read its `title` and `value`: most say what someone can now do;
-turn any written as a defect ("Today X is broken…") into what is now true. Keep an entry
-only if it changes what a reader can do or see — the `layer` field is not that test: an
-entry about how the product is built or released changes nothing for them. Then go
-through the residue and add what each commit changed for a reader, if anything. Where
-the log and the backlog disagree about what shipped, the log decides *whether* and the
-backlog *what it means* — say which you found.
+backlog item Stage 2 found, read its `title` and `value`: most say what someone can now
+do; turn any written as a defect ("Today X is broken…") into what is now true. Keep a
+backlog item only if it changes what a reader can do or see — the `layer` field is not
+that test: a backlog item about how the product is built or released changes nothing for
+them. Then go through the residue and add what each commit changed for a reader, if
+anything. Where the log and the backlog disagree about what shipped, the log decides
+*whether* and the backlog *what it means* — say which you found.
 
 **Then write it in this shape:**
 
@@ -204,7 +204,7 @@ While writing:
   path.
 
 **A first release** has no window: the notes describe the product as it stands, from
-every shipped entry that passes the test above, in the shape above, with no by-hand
+every shipped backlog item that passes the test above, in the shape above, with no by-hand
 section unless there is something to do.
 
 If `## [Unreleased]` already has content other than its placeholder, it was most likely

@@ -154,6 +154,14 @@ describe('backlog board build', () => {
     expect(page(dir).startsWith('<!doctype html>\n<meta charset="utf-8">')).toBe(true);
   });
 
+  it('speaks of epics and effort points, not arcs', () => {
+    const html = page(dir);
+    expect(html).toContain('Epics in progress');
+    expect(html).toContain('<b>Effort points ');
+    expect(html).not.toContain('Arcs in progress');
+    expect(html).not.toContain('No arc');
+  });
+
   it('embeds data the page can parse, covering every entry and flagging the closed ones', () => {
     const html = page(dir);
     const entries = grab(html, 'ENTRIES');
@@ -312,7 +320,7 @@ dropped-one:
   it('reports a band on a replaced, dropped or shelved entry as stale, and not as moved', () => {
     expect(run.status).toBe(0);
     const stale = run.stdout.slice(run.stdout.indexOf('been shelved or gone'));
-    expect(run.stdout).toContain('3 bands in bands.yaml for entries that have shipped, been dropped, been replaced, been shelved or gone — delete them:');
+    expect(run.stdout).toContain('3 bands in bands.yaml for backlog items that have shipped, been dropped, been replaced, been shelved or gone — delete them:');
     expect(stale).toContain('- replaced');
     expect(stale).toContain('- parked');
     expect(stale).toContain('- dropped-one');
@@ -324,9 +332,9 @@ dropped-one:
   it('reports a band outside A to D, and a band with no valid scores', () => {
     expect(run.stdout).toContain('1 band not A to D — re-band them:\n  - open-b — E\n');
     expect(run.stdout).toContain(
-      '2 bands with no value or effort score (1 to 5) — score them:\n  - open-b\n  - waiting\n',
+      '2 bands with no value or effort points (1 to 5) — score them:\n  - open-b\n  - waiting\n',
     );
-    expect(run.stdout.indexOf('not A to D')).toBeLessThan(run.stdout.indexOf('no value or effort score'));
+    expect(run.stdout.indexOf('not A to D')).toBeLessThan(run.stdout.indexOf('no value or effort points'));
   });
 
   it('flags closed entries for the page and lists only unshipped waits', () => {
@@ -355,7 +363,7 @@ dropped-one:
     try {
       const out = build(own);
       expect(out.status).toBe(0);
-      expect(out.stdout).toContain('2 active entries have no band');
+      expect(out.stdout).toContain('2 active backlog items have no band');
       expect(out.stdout).toContain('  - open-b\n  - waiting\n');
       expect(out.stdout).not.toContain('  - parked');
     } finally {
@@ -509,8 +517,8 @@ describe('backlog board without a bands file', () => {
 describe('/refresh-board', () => {
   it('asks, when banding, whether finishing an arc under way raises the band', () => {
     const cmd = readFileSync(resolve(here, '../commands/refresh-board.md'), 'utf8');
-    expect(cmd).toMatch(/arc already under way/);
-    expect(cmd).toMatch(/finishing (that|the) arc/i);
+    expect(cmd).toMatch(/epic already under way/);
+    expect(cmd).toMatch(/finishing (that|the) epic/i);
   });
 
   it('grooms: names groom, the four findings, and that nothing is applied without a yes', () => {
@@ -556,7 +564,7 @@ waiting:
   });
 
   it('reports a bundle with one row left', () => {
-    expect(run.stdout).toContain('bundle alone has one entry — remove the field:\n  - waiting\n');
-    expect(run.stdout).not.toContain('bundle pair has one entry');
+    expect(run.stdout).toContain('bundle alone has one backlog item — remove the field:\n  - waiting\n');
+    expect(run.stdout).not.toContain('bundle pair has one backlog item');
   });
 });

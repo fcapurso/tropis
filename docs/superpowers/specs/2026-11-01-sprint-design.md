@@ -305,6 +305,9 @@ effort score and adds no arithmetic. Whether the rename reaches field names (`ef
 every project's bands file, which needs a step in `/update`) or only the words people
 read is decided when the piece is shaped; it sets the piece's size.
 
+*Decided when shaped (2026-11-02):* the words are epic, backlog item and effort points;
+the item types keep their names, and no file or field is renamed (FW-061).
+
 ### 11. Running without the developer
 
 The developer's intent: the team works without them on what they agreed, and nobody types

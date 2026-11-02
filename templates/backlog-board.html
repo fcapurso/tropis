@@ -208,8 +208,8 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
   <header class="mast">
     <div>
       <h1>__TITLE__</h1>
-      <p class="sub">Every active entry in <span class="mono">feature-catalog.yaml</span>, banded A to D and ranked
-      inside a band by value over effort. Verdicts and scores are advisory; the catalog stays the source of truth.</p>
+      <p class="sub">Every active backlog item in <span class="mono">feature-catalog.yaml</span>, banded A to D and ranked
+      inside a band by value over effort points. Verdicts and scores are advisory; the backlog stays the source of truth.</p>
     </div>
     <div class="meta">
       <div><b>__OPEN__</b> open &middot; <b>__SHIPPED__</b> shipped</div>
@@ -225,14 +225,14 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
 
   <div class="controls">
     <div class="crow">
-      <input type="search" id="q" placeholder="filter by id, title or verdict…" aria-label="Search entries">
+      <input type="search" id="q" placeholder="filter by id, title or verdict…" aria-label="Search backlog items">
       <span class="lbl">Group</span>
       <select id="groupby" aria-label="Group by">
         <option value="band">Band</option>
         <option value="l">Layer</option>
         <option value="s">Status</option>
         <option value="ty">Type</option>
-        <option value="arc">Arc</option>
+        <option value="arc">Epic</option>
       </select>
       <span class="lbl">Sort</span>
       <select id="sortby" aria-label="Sort within group">
@@ -249,7 +249,7 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
     <div class="crow" id="bandchips"><span class="lbl">Band</span></div>
     <div class="crow" id="layerchips"><span class="lbl">Layer</span></div>
     <div class="crow" id="statechips"><span class="lbl">State</span></div>
-    <div class="crow" id="arcchips"><span class="lbl">Arc</span></div>
+    <div class="crow" id="arcchips"><span class="lbl">Epic</span></div>
   </div>
 
   <main id="board"></main>
@@ -259,19 +259,19 @@ button.link{background:none;border:none;padding:0;font-family:var(--sans);font-s
   <footer class="foot">
     <p><b>Bands.</b> <b>A</b> do now — high value, and urgent or blocking other work.
     <b>B</b> do next — worth doing, no deadline. <b>C</b> decide first — an open question only the
-    developer can answer stands between the entry and a plan. <b>D</b> leave it — nothing to do until
-    something happens. Inside a band, entries are ranked by <b>value divided by effort</b>, each scored
-    1 to 5 in the bands file with a reason; an entry without both scores comes last. An entry waiting on
+    developer can answer stands between the backlog item and a plan. <b>D</b> leave it — nothing to do until
+    something happens. Inside a band, backlog items are ranked by <b>value divided by effort points</b>, each scored
+    1 to 5 in the bands file with a reason; a backlog item without both scores comes last. A backlog item waiting on
     another is banded on its own value and marked with what it waits on. Shipped, replaced and dropped
-    entries are not banded: they are listed under Closed. A shelved entry is parked until something
+    backlog items are not banded: they are listed under Closed. A shelved backlog item is parked until something
     changes: it sits in D, marked shelved, and needs no row in the bands file. Claims marked
     <span class="mono">checked against the code</span> were verified against the source, not taken from
-    the entry text.</p>
-    <p style="margin-top:9px"><b>Arcs</b> are derived by the same code as <span class="mono">npm run next</span>
-    — entries sharing a design spec, ordered by <span class="mono">after</span>. A <b>replaced</b> or
+    the backlog item's own text.</p>
+    <p style="margin-top:9px"><b>Epics</b> are derived by the same code as <span class="mono">npm run next</span>
+    — backlog items sharing a design spec, ordered by <span class="mono">after</span>. A <b>replaced</b> or
     <b>dropped</b> step is set aside: it is left out of the count, since its work moved or will not be
-    done. An arc with nothing open left is <b>done</b>, or <b>parked</b> when a shelved step remains.
-    Group by Arc to see each design's full sequence: shipped steps in green, open ones hollow, shelved,
+    done. An epic with nothing open left is <b>done</b>, or <b>parked</b> when a shelved step remains.
+    Group by Epic to see each design's full sequence: shipped steps in green, open ones hollow, shelved,
     replaced or dropped ones struck through.</p>
   </footer>
 </div>
@@ -337,11 +337,11 @@ chip(stateHost,"blocked","blocked",count(e=>e.bb.length),S.states);
 
 const arcHost=document.getElementById("arcchips");
 LIVE_ARCS.forEach(a => chip(arcHost, a.key, a.label, count(e=>e.arc.includes(a.key)), S.arcs));
-chip(arcHost, "_none", "no arc", count(e=>!e.arc.length), S.arcs);
+chip(arcHost, "_none", "no epic", count(e=>!e.arc.length), S.arcs);
 
 document.getElementById("arcs").innerHTML =
-  '<div class="ah"><span class="lbl">Arcs in progress</span>'+
-  '<span class="note">entries sharing a design spec, in the order the design set — shipped over total</span></div>'+
+  '<div class="ah"><span class="lbl">Epics in progress</span>'+
+  '<span class="note">backlog items sharing a design spec, in the order the design set — shipped over total</span></div>'+
   LIVE_ARCS.map(a => {
     const pct = Math.round(100*a.shipped/a.counted);
     const aside = a.total - a.counted;
@@ -363,7 +363,7 @@ document.getElementById("arcs").innerHTML =
 // /next give one answer. Nothing banded A or B and ready leaves the suggestion empty.
 document.getElementById("nextup").innerHTML =
   '<div class="ah"><span class="lbl">Next</span>'+
-  '<span class="note">what /next suggests — the best-ranked ready entry in the highest band</span></div>'+
+  '<span class="note">what /next suggests — the best-ranked ready backlog item in the highest band</span></div>'+
   '<div class="arc"><div class="an">'+
     (NEXT && NEXT.id
       ? esc(NEXT.t)+' <span class="sp">'+esc(NEXT.id)+'</span>'
@@ -421,7 +421,7 @@ function row(e){
   const open=S.open.has(e.id);
   const tags=[];
   tags.push(e.sc
-    ? '<span class="score">value '+e.sc.value+' · effort '+e.sc.effort+'</span>'
+    ? '<span class="score">value '+e.sc.value+' · effort points '+e.sc.effort+'</span>'
     : '<span class="score none">not scored</span>');
   if(e.bb.length) tags.push('<span class="tag tag-blocked">blocked</span>');
   e.bb.forEach(id => tags.push('<span class="tag tag-wait">blocked by '+esc(id)+'</span>'));
@@ -453,7 +453,7 @@ function detail(e){
   let h='<div class="dsec"><h4>Value</h4><p>'+esc(e.v)+"</p></div>";
   h+='<div class="dsec"><h4>Scores</h4>'+(e.sc
     ? '<p><b>Value '+e.sc.value+'</b> — '+esc(e.vw||"no reason given")+'</p>'+
-      '<p><b>Effort '+e.sc.effort+'</b> — '+esc(e.ew||"no reason given")+'</p>'
+      '<p><b>Effort points '+e.sc.effort+'</b> — '+esc(e.ew||"no reason given")+'</p>'
     : '<p>not scored</p>')+'</div>';
   if(e.evidence) h+='<div class="dsec"><h4>Checked against the code</h4>'+
     '<div class="evid">'+esc(e.evidence)+"</div></div>";
@@ -473,7 +473,7 @@ function render(){
   const board=document.getElementById("board");
   const list=data.filter(matches);
   board.innerHTML="";
-  if(!list.length){ board.innerHTML='<p class="empty">No entry matches these filters.</p>'; return; }
+  if(!list.length){ board.innerHTML='<p class="empty">No backlog item matches these filters.</p>'; return; }
   const keys=[...new Set(list.map(GKEY))].sort((a,b)=>{
     const o=GORDER[S.groupby]||[]; const ia=o.indexOf(a), ib=o.indexOf(b);
     return (ia<0?99:ia)-(ib<0?99:ib) || String(a).localeCompare(String(b));
@@ -501,8 +501,8 @@ function render(){
           return (i?'<span class="arrow">→</span>':'')+'<span class="st '+cls+'" title="'+esc(o.t)+'">'+esc(o.id)+'</span>';
         }).join("")+"</div>";
     } else if (isArc) {
-      head='<div class="ghead"><span class="gmark">—</span><span class="gtitle">No arc</span>'+
-        '<span class="gnote">entries with no shared design spec</span>'+
+      head='<div class="ghead"><span class="gmark">—</span><span class="gtitle">No epic</span>'+
+        '<span class="gnote">backlog items with no shared design spec</span>'+
         '<span class="gcount">'+items.length+"</span></div>";
     } else {
       head='<div class="ghead"><span class="gmark">'+esc(k)+"</span>"+

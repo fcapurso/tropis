@@ -99,7 +99,7 @@ set -e
 # a guard that calls isBlueprintTree and is missing from it is an error, and a listed
 # guard that does not exist fails to run. TROPIS_EXPECT_FRAMEWORK turns a skip into a
 # failure, and each guard must also fail on a planted defect.
-FRAMEWORK_GUARDS="operator-page-closeout readme-usable private-material dependency-overrides contributing-page rule-incidents"
+FRAMEWORK_GUARDS="operator-page-closeout readme-usable private-material dependency-overrides contributing-page rule-incidents backlog-words"
 framework=0
 echo
 echo "Framework repository: its own guards must pass here and fail on a planted defect"
@@ -161,6 +161,26 @@ plant contributing-page CONTRIBUTING.md "A pull request from a fork runs the pip
 plant dependency-overrides templates/package.json '"test-exclude": "^8.0.0"'
 plant rule-incidents rules/incidents/planning.md
 plant rule-incidents rules/tests.md '.tropis/rules/incidents/tests.md#two-polling-cases-that-lost-to-a-busy-machine'
+
+# plant_word: append a line with an old word to a copy and expect backlog-words to fail.
+plant_word() {
+  local tree
+  if ! run_guard "$STAGE" backlog-words; then
+    keep_log backlog-words "clean"
+    echo "  FAILED      backlog-words fails on the framework repository"; framework=1; return
+  fi
+  tree="$(mktemp -d "${TMPDIR:-/tmp}/blueprint-plant-XXXXXX")"
+  cp -R "$STAGE/." "$tree/"
+  printf 'Pick an arc.\n' >> "$tree/commands/next.md"
+  if run_guard "$tree" backlog-words; then
+    keep_log backlog-words "an arc planted"
+    echo "  NOT CAUGHT  backlog-words passed with an arc planted"; framework=1
+  else
+    echo "  caught      backlog-words: commands/next.md planted"
+  fi
+  rm -rf "$tree"
+}
+plant_word
 
 # plant_add <kind> <text>: append a line to a file under an export-ignored path of the
 # full copy and expect private-material to fail. The text is assembled by the caller so

@@ -2,7 +2,7 @@
 /**
  * The sprint script: it proposes a sprint from the backlog, keeps the agreed sprint in a
  * local file git does not track, waits for a blocker to ship, and says where the sprint
- * stands (framework/workflow.md, *Delivering an entry*; commands/sprint.md).
+ * stands (framework/workflow.md, *Delivering a backlog item*; commands/sprint.md).
  *
  * The command-line cases run a copy of the script installed at .tropis/scripts/ in a
  * clone of a local bare repository, as a team member would, so the fetch of origin's main
@@ -188,7 +188,7 @@ describe('propose', () => {
     const r = run(clone, ['propose']);
     expect(r.status).toBe(0);
     expect(lines(r)).toEqual([
-      `Sprint: proposed 17 of 20 points, from main at ${sha}.`,
+      `Sprint: proposed 17 of 20 effort points, from main at ${sha}.`,
       '  1. a2 — 2 pts, band A — Title a2',
       '  2. a1 — 5 pts, band A — Title a1',
       '  3. a3 — 4 pts, band A — Title a3',
@@ -204,7 +204,7 @@ describe('propose', () => {
     const sha = git(clone, ['rev-parse', '--short=7', 'origin/main']);
 
     expect(lines(run(clone, ['propose', '--points', '5']))).toEqual([
-      `Sprint: proposed 3 of 5 points, from main at ${sha}.`,
+      `Sprint: proposed 3 of 5 effort points, from main at ${sha}.`,
       '  1. a2 — 2 pts, band A — Title a2',
       '  2. b2 — 1 pts, band B — Title b2',
       'Sprint: next in line, over the budget — a1 (5 pts).',
@@ -222,7 +222,7 @@ describe('propose', () => {
     const r = run(clone, ['propose']);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain(
-      'Sprint: nothing to propose — no idea or shaped entry banded A or B is free to start.\n',
+      'Sprint: nothing to propose — no idea or shaped backlog item banded A or B is free to start.\n',
     );
   });
 
@@ -281,7 +281,7 @@ describe('start, and the sprint file', () => {
     expect(none.status).toBe(1);
     const unknown = run(clone, ['start', 'e1', 'nope']);
     expect(unknown.status).toBe(1);
-    expect(unknown.stdout).toBe('Sprint: no entry nope in the backlog.\n');
+    expect(unknown.stdout).toBe('Sprint: no backlog item nope in the backlog.\n');
     const way = run(clone, ['start', 'e1', '--way', 'subagent']);
     expect(way.status).toBe(1);
     expect(way.stdout).toContain('--way');
@@ -290,7 +290,7 @@ describe('start, and the sprint file', () => {
     const started = run(clone, ['start', 'e2', 'e1', '--points', '12', '--way', 'session'], at(T0));
     expect(started.status).toBe(0);
     expect(started.stdout).toBe(
-      'Sprint: started with 2 entries, 5 of 12 points; team members start as session.\n'
+      'Sprint: started with 2 backlog items, 5 of 12 effort points; team members start as session.\n'
       + "Sprint: team members run on the Large tier. **Use:** not chosen — this project has no model picks. Run /refresh-model-tiers. Start them on the tool's default model.\n",
     );
     expect(sprintFile(clone).endsWith('.git/tropis/sprint.json')).toBe(true);
@@ -326,7 +326,7 @@ describe('start, and the sprint file', () => {
     const world = makeWorld(entries, bands);
     const clone = makeClone(world);
     const r = run(clone, ['start', 'e1']);
-    expect(r.stdout).toBe('Sprint: started with 1 entries, 3 of 20 points; team members start as here.\n');
+    expect(r.stdout).toBe('Sprint: started with 1 backlog items, 3 of 20 effort points; team members start as here.\n');
     expect(readSprint(clone).way).toBe('here');
   });
 });
@@ -347,7 +347,7 @@ describe('wait', () => {
     }
     const missing = run(clone, ['wait', 'nope']);
     expect(missing.status).toBe(1);
-    expect(missing.stdout).toBe('Sprint: no entry nope in the backlog.\n');
+    expect(missing.stdout).toBe('Sprint: no backlog item nope in the backlog.\n');
   });
 
   it('† keeps waiting without a time limit and carries on within a few intervals of the blocker shipping on origin', async () => {
@@ -414,7 +414,7 @@ describe('status', () => {
     const r = run(clone, ['status'], at('2026-11-02T10:30:00Z'));
     expect(r.status).toBe(0);
     const out = lines(r);
-    expect(out[0]).toBe('Sprint: started 2026-11-02T09:00:00Z, 1.5 h ago; 5 of 6 points shipped, 20 budgeted.');
+    expect(out[0]).toBe('Sprint: started 2026-11-02T09:00:00Z, 1.5 h ago; 5 of 6 effort points shipped, 20 budgeted.');
     expect(out).toContain('  e1 — shipped');
     expect(out).toContain('  e2 — shipped');
     expect(out).toContain('  e3 — not started');
@@ -427,7 +427,7 @@ describe('status', () => {
     expect(run(clone, ['start', 'e1', 'e2'], at(T0)).status).toBe(0);
     expect(run(clone, ['mark', 'e2', 'planning']).status).toBe(0);
     const out = lines(run(clone, ['status'], at(T0)));
-    expect(out[0]).toMatch(/^Sprint: started 2026-11-02T09:00:00Z, 0\.0 h ago; 0 of 5 points shipped, 20 budgeted\.$/);
+    expect(out[0]).toMatch(/^Sprint: started 2026-11-02T09:00:00Z, 0\.0 h ago; 0 of 5 effort points shipped, 20 budgeted\.$/);
     expect(out[1]).toMatch(/^Merge token: /);
     expect(out.slice(2, 4)).toEqual(['  e1 — not started', '  e2 — planning']);
     expect(out.join('\n')).not.toContain('needs you');
@@ -475,7 +475,7 @@ describe('status', () => {
     const out = lines(r);
     expect(out[0]).toMatch(/^Sprint: could not fetch origin — .+; reading origin\/main as last fetched\.$/);
     expect(out.slice(1, 3)).toEqual([
-      'Sprint: started 2026-11-02T09:00:00Z, 1.5 h ago; 3 of 33 points shipped, 20 budgeted.',
+      'Sprint: started 2026-11-02T09:00:00Z, 1.5 h ago; 3 of 33 effort points shipped, 20 budgeted.',
       expect.stringMatching(/^Merge token: /),
     ]);
     expect(out.slice(3)).toEqual([
@@ -549,13 +549,13 @@ describe('add, drop, mark and note', () => {
     const first = run(clone, ['add', 'e3']);
     expect(first.status).toBe(0);
     expect(lines(first)).toEqual([
-      'Sprint: added e3 (3 pts); 12 of 9 points.',
-      'Sprint: over the budget by 3 points — e5 not started yet would leave the sprint to make room.',
+      'Sprint: added e3 (3 pts); 12 of 9 effort points.',
+      'Sprint: over the budget by 3 effort points — e5 not started yet would leave the sprint to make room.',
     ]);
     const second = run(clone, ['add', 'e4']);
     expect(lines(second)).toEqual([
-      'Sprint: added e4 (3 pts); 15 of 9 points.',
-      'Sprint: over the budget by 6 points — e3, e5 not started yet would leave the sprint to make room.',
+      'Sprint: added e4 (3 pts); 15 of 9 effort points.',
+      'Sprint: over the budget by 6 effort points — e3, e5 not started yet would leave the sprint to make room.',
     ]);
     expect(readSprint(clone).entries.map((e) => e.id)).toEqual(['e1', 'e2', 'e5', 'e3', 'e4']);
 
@@ -567,14 +567,14 @@ describe('add, drop, mark and note', () => {
     const world = makeWorld(entries, bands);
     const clone = makeClone(world);
     expect(run(clone, ['start', 'e1', 'e2'], at(T0)).status).toBe(0);
-    expect(run(clone, ['add', 'e3']).stdout).toBe('Sprint: added e3 (3 pts); 9 of 20 points.\n');
+    expect(run(clone, ['add', 'e3']).stdout).toBe('Sprint: added e3 (3 pts); 9 of 20 effort points.\n');
 
     run(clone, ['mark', 'e2', 'planning']);
     expect(run(clone, ['note', 'e2', 'took', 'FW-060']).stdout).toBe('Sprint: noted for e2.\n');
     expect(readSprint(clone).notes).toEqual({ e2: ['took FW-060'] });
 
     const dropped = run(clone, ['drop', 'e2']);
-    expect(dropped.stdout).toBe('Sprint: dropped e2; 6 of 20 points.\n');
+    expect(dropped.stdout).toBe('Sprint: dropped e2; 6 of 20 effort points.\n');
     const file = readSprint(clone);
     expect(file.entries.map((e) => e.id)).toEqual(['e1', 'e3']);
     expect(file.marks).toEqual({});
@@ -591,9 +591,9 @@ describe('add, drop, mark and note', () => {
 });
 
 describe('brief', () => {
-  const BRIEF = (id, title, design) => `Take the backlog entry \`${id}\` (${title}) in \`feature-catalog.yaml\` to shipped.
+  const BRIEF = (id, title, design) => `Take the backlog item \`${id}\` (${title}) in \`feature-catalog.yaml\` to shipped.
 ${design ? `Its design: ${design}.\n` : ''}
-Follow \`.claude/framework/workflow.md\`, *Delivering an entry*, from the wait for what it
+Follow \`.claude/framework/workflow.md\`, *Delivering a backlog item*, from the wait for what it
 is blocked by to the merge: take the merge token yourself and land your own pull
 requests. The developer has agreed this sprint, so make the decisions yourself and
 report each one. Stop only for what that section allows.
@@ -648,7 +648,7 @@ describe('report and end', () => {
     const later = '2026-11-02T11:00:00Z';
     const report = [
       'Sprint report: 2026-11-02T09:00:00Z to 2026-11-02T11:00:00Z, 2.0 h.',
-      'Shipped: 2 entries, 5 points, 2.5 points per hour.',
+      'Shipped: 2 backlog items, 5 effort points, 2.5 effort points per hour.',
       '  s1 — 3 pts',
       '  s2 — 2 pts',
       'Parked, needs your decision:',
@@ -659,7 +659,7 @@ describe('report and end', () => {
       '  nd — not started',
       'Decisions team members reported:',
       '  nd — took FW-060 for the sound',
-      'New entries:',
+      'New backlog items:',
       '  newbug [bug] — A fresh bug',
     ];
 
@@ -680,7 +680,7 @@ describe('report and end', () => {
     expect(run(clone, ['start', 'e1'], at(T0)).status).toBe(0);
     expect(lines(run(clone, ['report'], at(T0)))).toEqual([
       'Sprint report: 2026-11-02T09:00:00Z to 2026-11-02T09:00:00Z, 0.0 h.',
-      'Shipped: 0 entries, 0 points, 0.0 points per hour.',
+      'Shipped: 0 backlog items, 0 effort points, 0.0 effort points per hour.',
       '  none.',
       'Parked, needs your decision:',
       '  none.',
@@ -690,7 +690,7 @@ describe('report and end', () => {
       '  e1 — not started',
       'Decisions team members reported:',
       '  none.',
-      'New entries:',
+      'New backlog items:',
       '  none.',
     ]);
   });
@@ -717,9 +717,9 @@ describe('with no sprint under way', () => {
 describe('the documents', () => {
   const read = (path) => readFileSync(resolve(here, '..', path), 'utf8');
 
-  it('the workflow has "Delivering an entry" before "The cycle", with the rules a team member follows', () => {
+  it('the workflow has "Delivering a backlog item" before "The cycle", with the rules a team member follows', () => {
     const text = read('framework/workflow.md');
-    const section = text.indexOf('## Delivering an entry');
+    const section = text.indexOf('## Delivering a backlog item');
     expect(section).toBeGreaterThan(-1);
     expect(section).toBeLessThan(text.indexOf('## The cycle'));
     for (const phrase of ['sprint.mjs wait', 'PARKED: <why>', 'moves back', 'sprint.mjs brief']) {

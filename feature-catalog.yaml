@@ -5224,9 +5224,17 @@
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-team-members-start-in-another-tool.md
 # The last piece of the epic, and it may be left out: nothing else depends on it.
+# Shipped by docs/superpowers/plans/2026-11-02-backlog-speaks-in-epics-stories-and-points.md.
+# Criterion 1 - the backlog-board.test.js case for the epic heading and effort points, and
+# the plan's Task 3 check of the built board. Criterion 2 - the next-report.test.js and
+# sprint.test.js cases for the epic, backlog item and effort points lines. Criterion 3 -
+# backlog-words.test.js, which fails on arc, catalog or story points in the prose, with the
+# planted case in check-blueprint.sh. Criterion 4 - the fresh-agent check in the plan's
+# handover and the unchanged catalog-entries.test.js. Criterion 5 - catalog-entries.test.js
+# still accepts only the five item types.
 - id: backlog-speaks-in-epics-stories-and-points
   title: The backlog speaks of epics, backlog items and effort points
-  status: building
+  status: shipped
   value: The backlog speaks the language of a sprint, so a developer planning one reads
     the backlog, backlog items, epics and effort points rather than the catalog,
     entries, arcs and effort. Renames the words across the rules, the commands, the
@@ -5250,7 +5258,10 @@
   layer: product
   after:
     - sprint-plans-and-runs-a-team
-  modules: []
+  modules:
+    - guards/backlog-words.test.js
+    - templates/backlog-board.html
+    - scripts/next.mjs
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-backlog-speaks-in-epics-stories-and-points.md

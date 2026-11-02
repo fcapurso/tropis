@@ -3,7 +3,7 @@
 /**
  * The sprint: a proposal of about 20 story points from the top of the backlog's ranking,
  * the agreed sprint kept in a local file, a team member's wait for what blocks it, and
- * where the sprint stands (framework/workflow.md, *Delivering an entry*; the /sprint
+ * where the sprint stands (framework/workflow.md, *Delivering a backlog item*; the /sprint
  * command; decisions FW-055 and the one that follows it).
  *
  * The sprint file is `<git common dir>/tropis/sprint.json`: local, shared by every
@@ -557,7 +557,7 @@ function requireEntry(sprint, id) {
 
 function requireInBacklog(backlog, id) {
   const entry = backlog.catalog.find((e) => e.id === id);
-  if (!entry) throw new Refusal(`Sprint: no entry ${id} in the backlog.`);
+  if (!entry) throw new Refusal(`Sprint: no backlog item ${id} in the backlog.`);
   return entry;
 }
 
@@ -579,10 +579,10 @@ function propose(ctx, opts) {
   const backlog = ctx.backlog();
   const { entries, total, nextInLine } = proposeSprint(backlog.catalog, backlog.bandRows, budget);
   if (!entries.length) {
-    return ['Sprint: nothing to propose — no idea or shaped entry banded A or B is free to start.'];
+    return ['Sprint: nothing to propose — no idea or shaped backlog item banded A or B is free to start.'];
   }
   return [
-    `Sprint: proposed ${total} of ${budget} points, from main at ${backlog.sha}.`,
+    `Sprint: proposed ${total} of ${budget} effort points, from main at ${backlog.sha}.`,
     ...entries.map((e, i) => `  ${i + 1}. ${e.id} — ${e.points} pts, band ${e.band}${e.bundle ? `, bundle ${e.bundle}` : ''} — ${e.title}`),
     ...(nextInLine ? [`Sprint: next in line, over the budget — ${nextInLine.id} (${nextInLine.points} pts).`] : []),
   ];
@@ -591,7 +591,7 @@ function propose(ctx, opts) {
 function start(ctx, opts) {
   const existing = readSprint(ctx.root, ctx.env);
   if (existing) throw new Refusal(`Sprint: one is under way since ${existing.started}; end it first.`);
-  if (!opts.ids.length) throw new Refusal('Sprint: start takes at least one entry id.');
+  if (!opts.ids.length) throw new Refusal('Sprint: start takes at least one backlog item id.');
   if (opts.way !== undefined && !WAYS.includes(opts.way)) {
     throw new Refusal(`Sprint: --way takes ${WAYS.join(' or ')}.`);
   }
@@ -613,7 +613,7 @@ function start(ctx, opts) {
     marks: {},
     notes: {},
   });
-  const out = [`Sprint: started with ${entries.length} entries, ${entries.reduce((s, e) => s + e.points, 0)} of ${budget} points; team members start as ${way}.`];
+  const out = [`Sprint: started with ${entries.length} backlog items, ${entries.reduce((s, e) => s + e.points, 0)} of ${budget} effort points; team members start as ${way}.`];
   if (way === 'session') out.push(teamModelLine(ctx.root, ctx.env));
   return out;
 }
@@ -628,7 +628,7 @@ function add(ctx, opts) {
   sprint.entries.push(added);
   writeSprint(ctx.root, ctx.env, sprint);
   const total = pointsOf(sprint);
-  const out = [`Sprint: added ${id} (${added.points} pts); ${total} of ${sprint.budget} points.`];
+  const out = [`Sprint: added ${id} (${added.points} pts); ${total} of ${sprint.budget} effort points.`];
   if (total > sprint.budget) {
     const { byId } = statuses(ctx, sprint, backlog);
     const over = total - sprint.budget;
@@ -641,8 +641,8 @@ function add(ctx, opts) {
       freed += e.points;
     }
     out.push(leaving.length
-      ? `Sprint: over the budget by ${over} points — ${leaving.join(', ')} not started yet would leave the sprint to make room.`
-      : `Sprint: over the budget by ${over} points — no entry not started yet could leave to make room.`);
+      ? `Sprint: over the budget by ${over} effort points — ${leaving.join(', ')} not started yet would leave the sprint to make room.`
+      : `Sprint: over the budget by ${over} effort points — no backlog item not started yet could leave to make room.`);
   }
   if (sprint.way === 'session') out.push(teamModelLine(ctx.root, ctx.env));
   return out;
@@ -656,7 +656,7 @@ function drop(ctx, opts) {
   delete sprint.marks[id];
   delete sprint.notes[id];
   writeSprint(ctx.root, ctx.env, sprint);
-  return [`Sprint: dropped ${id}; ${pointsOf(sprint)} of ${sprint.budget} points.`];
+  return [`Sprint: dropped ${id}; ${pointsOf(sprint)} of ${sprint.budget} effort points.`];
 }
 
 function mark(ctx, opts) {
@@ -695,10 +695,10 @@ function brief(ctx, opts) {
   const entry = requireInBacklog(ctx.backlog(), id);
   const specs = (entry.refs ?? []).filter((r) => r.includes('/specs/')).map((r) => `\`${r}\``);
   return [
-    `Take the backlog entry \`${id}\` (${entry.title}) in \`feature-catalog.yaml\` to shipped.`,
+    `Take the backlog item \`${id}\` (${entry.title}) in \`feature-catalog.yaml\` to shipped.`,
     ...(specs.length ? [`Its design: ${specs.join(', ')}.`] : []),
     '',
-    'Follow `.claude/framework/workflow.md`, *Delivering an entry*, from the wait for what it',
+    'Follow `.claude/framework/workflow.md`, *Delivering a backlog item*, from the wait for what it',
     'is blocked by to the merge: take the merge token yourself and land your own pull',
     'requests. The developer has agreed this sprint, so make the decisions yourself and',
     'report each one. Stop only for what that section allows.',
@@ -717,7 +717,7 @@ function status(ctx) {
   const shippedPoints = sprint.entries.filter((e) => byId[e.id] === 'shipped').reduce((s, e) => s + e.points, 0);
   const elapsed = ctx.now() - Date.parse(sprint.started);
   const out = [
-    `Sprint: started ${sprint.started}, ${hours(elapsed)} h ago; ${shippedPoints} of ${pointsOf(sprint)} points shipped, ${sprint.budget} budgeted.`,
+    `Sprint: started ${sprint.started}, ${hours(elapsed)} h ago; ${shippedPoints} of ${pointsOf(sprint)} effort points shipped, ${sprint.budget} budgeted.`,
     tokenStatus(ctx.root, { env: ctx.env }).line,
   ];
   const stopped = sprint.entries.filter((e) => needsYou(byId[e.id]));
@@ -759,14 +759,14 @@ function report(ctx) {
   const notes = sprint.entries.flatMap((e) => (sprint.notes[e.id] ?? []).map((n) => `  ${e.id} — ${n}`));
   return [
     `Sprint report: ${sprint.started} to ${isoSeconds(now)}, ${hours(elapsed)} h.`,
-    `Shipped: ${done.length} entries, ${points} points, ${perHour} points per hour.`,
+    `Shipped: ${done.length} backlog items, ${points} effort points, ${perHour} effort points per hour.`,
     ...(done.length ? done.map((e) => `  ${e.id} — ${e.points} pts`) : ['  none.']),
     ...section('Parked, needs your decision:', reasons('parked')),
     ...section('Stopped:', reasons('stopped')),
     ...section('Not done:', sprint.entries.filter((e) => byId[e.id] !== 'shipped' && !needsYou(byId[e.id]))
       .map((e) => `  ${e.id} — ${byId[e.id]}`)),
     ...section('Decisions team members reported:', notes),
-    ...section('New entries:', newSinceStart(sprint, backlog.catalog)
+    ...section('New backlog items:', newSinceStart(sprint, backlog.catalog)
       .map((e) => `  ${e.id} [${e.type}] — ${e.title}`)),
   ];
 }
