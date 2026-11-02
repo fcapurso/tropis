@@ -1919,3 +1919,34 @@ only (an entry parked back to `shaped` would hold its followers forever).
 tool that cannot keep a command running for hours ends the wait early, and running the
 same command again resumes it. Implements FW-055 for the waits shipped with FW-051 and
 FW-052. Source: the entry `waits-end-when-something-happens`.
+
+## FW-059: A team member in the other tool is a detached run that waits, works and is judged by the repository
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `sprint.mjs launch <id>` starts a team member in Claude Code's or Cursor's
+command line as a detached process and returns at once. The process waits for what the
+entry is blocked by, then runs the tool in print mode with `stream-json` output, in a
+worktree of its own beside the checkout, on exact grants (one list of commands the
+workflow runs, never a shell) and with no API key in its environment. When the agent
+exits, the process judges its last line against `origin/main` and writes the result
+where `sprint.mjs status` and `sprint.mjs watch` read it. A `SHIPPED` the main branch
+does not show is recorded as `STOPPED`.
+
+**Evidence:** FW-050's runs, and this entry's live runs on 2026-11-02 recorded in
+its plan's review record: one run per tool that did its task and one that claimed
+`SHIPPED` without doing it, each judged as the decision says.
+
+**Rejected:** Blocking until the agent exits (a sprint session whose tool cannot run a
+background command could then start only one team member per turn, against FW-055).
+`json` output, as FW-050 ran it (nothing to follow while the run works). The project's
+own permission settings alone, as FW-055 has for sessions (a command-line run cannot
+ask anyone, and a project with no allow rules would be refused every command; the
+grants file is written only where the project has none). A shell among the grants (it
+grants everything).
+
+**Consequences:** A team member started this way does not appear in the developer's
+tool until its run ends; the developer follows its log and opens it with `--resume`.
+`--model` is passed through as given; which model is
+`team-members-and-reviewers-run-on-a-tier`. Ending or dropping a sprint does not stop
+a run.

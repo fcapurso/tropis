@@ -597,9 +597,133 @@ back. Kill any process left, then delete the scratch folder.
 
 ## Model tier and merge authority
 
-- **Model tier: Large.** The code is specified by behaviour, not verbatim: a detached
-  process, a stream parser, and live runs whose real output may differ from the fakes
-  and must be reconciled with judgement.
-- **Merge authority: parent review.** The specifying session reviews, re-runs the
-  checks, writes the review record, numbers the decision and merges under the merge
-  token.
+**Model tier: Large.** The code is specified by behaviour, not verbatim: a detached
+process, a stream parser, and live runs whose real output may differ from the fakes and
+must be reconciled with judgement.
+
+**Requires:** `claude` and `cursor-agent` installed and signed in to the developer's plan, for Task 5 and Task 6.
+
+**Merge authority: parent review.** The specifying session reviews, re-runs the checks,
+writes the review record, numbers the decision and merges under the merge token.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 8 done. Worktree `../tropis-team-cli` (made by the isolate helper). Task 5's fresh-agent check and Task 6's four live runs were done with the signed-in tools only; no key, no `--bare`, no cloud agent; scratch folders deleted and processes killed afterwards.
+
+### Verification results
+
+Platform: git 2.49.0, Node v22.15.0, Claude Code 2.1.300, cursor-agent 2026.10.22-27dcf5f, macOS 26.2 on arm64 (`uname -sm`: Darwin arm64).
+
+- Task 0 baseline: `bash scripts/check-blueprint.sh` last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1: `git grep -nF -e "team-member-cli" -e "sprint.mjs launch" -- scripts guards commands templates` printed nothing before the work. After: hits in `scripts/sprint.mjs`, `scripts/installed-scripts.txt`, `guards/sprint.test.js`, `guards/team-member-cli.test.js`, `commands/sprint.md`, `templates/README.md`. `claude --help` says `--allowedTools <tools...>` is variadic, "Comma or space-separated"; the code passes one comma-joined argument.
+- Task 2 (red): all 22 cases of `guards/team-member-cli.test.js` failed before the code (`Tests: 22 failed, 22 total`), the documents case included.
+- Task 3: both files green except the documents cases (`Tests: 2 failed, 47 passed, 49 total`) until Task 4. Throwaway mutations, run against the working tree and reverted with `git checkout`: removing judge rule 4 turned red "a run ends > STOPPED when it claimed SHIPPED…" and "the seam > judge…"; making `agentEnv` return `env` turned red "launch > starts the tool at once…" and "the seam > agentEnv…".
+- Task 4/8: `bash scripts/check-blueprint.sh` last line `Self-check passed: …`; `npm --prefix .tropis test` `Tests: 154 passed, 154 total`.
+- Task 5 (Claude Code 2.1.300, no `--model`, `--allowedTools Bash`, a fake `cursor-agent` in mode `slow` first on PATH): the agent called the `sprint` skill, then `node .tropis/scripts/sprint.mjs status`, then `node .tropis/scripts/sprint.mjs launch glaze-log --model composer-2.5` (reply: `Sprint: glaze-log started in Cursor's command line (pid …), in …/kiln-yard-team-glaze-log.`), then `node .tropis/scripts/sprint.mjs watch` with `run_in_background: true`, and its report said the developer hears through `watch` and `status`. The fake recorded one start with the brief as prompt. Passed at the first attempt. The probe ran on the developer's machine, whose global instructions do not mention the sprint, so they could not make it pass.
+- Task 6 (live; the model for Claude Code was `haiku`, for Cursor `composer-2.5`):
+  - Claude, `claim.md`: `Sprint: probe-entry ended in Claude Code — STOPPED: it said SHIPPED, but origin/main shows probe-entry as shaped`; result `{"tool":"claude","line":"STOPPED: it said SHIPPED, but origin/main shows probe-entry as shaped","denied":[],"sessionId":"<session-id>","exit":0,…}`.
+  - Claude, `do.md`: `Sprint: probe-entry ended in Claude Code — SHIPPED`; `git show main:feature-catalog.yaml` on origin: `status: shipped`; `denied: []`; result `{"tool":"claude","line":"SHIPPED","denied":[],"sessionId":"<session-id>","exit":0,…}`.
+  - Cursor, `claim.md`: `… ended in Cursor — STOPPED: it said SHIPPED, but origin/main shows probe-entry as shaped`; `.cursor/cli.json` in the worktree held `Shell(git)`, `Shell(gh)`, …
+  - Cursor, `do.md`: `… ended in Cursor — SHIPPED`; origin's main has the commit `probe` and `status: shipped`; result `{"tool":"cursor","line":"SHIPPED","denied":[],"sessionId":"<session-id>","exit":0,…}`.
+  - Two earlier Claude `do.md` attempts ended `STOPPED`/`PARKED` for a reason of the scratch project's own, not the launcher: the agent read the framework's rules there (a gated `main` refuses a direct push; a criterion without a test cannot ship). Both lines were correctly recorded as the agent's. I then gave the scratch project `"ungated"` in `.tropis/project.json` and an entry with no criteria.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: `commands/sprint.md`, `docs/backlog-board/bands.yaml`, `feature-catalog.yaml`, `framework/DECISIONS.md`, `guards/sprint.test.js`, `guards/team-member-cli.test.js`, `scripts/installed-scripts.txt`, `scripts/sprint.mjs`, `scripts/team-member-cli.mjs`, `templates/README.md` (10 files, 1052 insertions, 40 deletions) plus this plan. Every file is in *File Structure*; `docs/backlog-board/index.html` did not change. Worktree: `../tropis-team-cli`.
+
+Worked from no named external source: the code is written against this repository's `sprint.mjs`, `claude --help` and `cursor-agent --help`.
+
+### Judgment calls
+
+- The decision keeps `FW-NNN` for the reviewer to number. Every sentence of it was checked against the build and stands.
+- `launch` renames an existing `<id>.log` to `<id>.log.1` before starting, so a restarted run is not judged through the previous run's events (the first session id and last result would otherwise come from the old log).
+- `run` takes its worktree from the same function `launch` uses, not from `sprint.launched`, which `launch` writes only after the process starts.
+- `launch` re-reads the sprint file just before writing `launched` and the `planning` mark.
+- `claude --allowedTools` gets one comma-joined argument (variadic option).
+- The guards could not be named "case 1…12" as the plan numbers them; the catalog comment maps criteria to the `describe` blocks and cases by name. The `launch` timing assertion was replaced by "the run is alive and has no result when launch returns", because a clock limit failed once on a loaded machine.
+- The documents case collapses whitespace before looking for the exception sentence (it wraps across lines).
+- `isolate-for-plan.sh` was run once from the specifying session's checkout as dispatched.
+
+### What the plan got wrong
+
+- Case 12's exact sentence cannot be found in a wrapped paragraph; whitespace is collapsed instead.
+- "within a second" for `launch` is not stable on a busy machine (the self-check ran at over 200 s for the suite).
+- The live run for `do.md` needs the scratch project to be ungated and to have an entry without acceptance criteria, or the framework's own rules make the agent decline.
+- Cursor's stream reports no `permission_denials`, so `denied` is always empty for Cursor.
+
+### Outstanding
+
+The change has no screen, so there is no developer check. The reviewer numbers `FW-NNN`. The `watch` and `status` suffix lines were exercised with fakes and with the four live runs only; a run lasting hours has not been tried.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0, node v22.15.0 and the self-check's own
+Jest, on macOS 26.2, arm64, against the branch's committed `HEAD`.
+
+- Scope: `git diff --stat origin/main...HEAD` lists the ten files of *File Structure*
+  that changed and this plan, nothing else; `docs/backlog-board/index.html` did not
+  change.
+- The two guard files alone, staged from the branch: `Tests: 49 passed, 49 total`.
+- Re-breaking, different from the executor's two, each in the staged copy:
+  - Claude Code's command line without `--allowedTools`: `1 failed, 48 passed`.
+  - `bash` added to the granted commands: `1 failed, 48 passed`.
+- `bash scripts/check-blueprint.sh` and `npm --prefix .tropis test`: results in the
+  commit that carries this record.
+- `/dispatch` on this plan prints the tier, the requirement and the merge authority
+  after the reviewer's fix below.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Session ids in
+the handover are written `<session-id>`; the scratch projects are invented names.
+
+- The plan's closing section held the model tier and merge authority as bullets, so
+  `/dispatch` printed them empty and the executor was given them in its prompt. Fixed on
+  the branch by the reviewer: header lines, and a `**Requires:**` line naming the two
+  signed-in tools. Mechanical; the plan's own author's slip.
+- The operator guide's new sentence ran past the paragraph's width. Fixed on the branch
+  by the reviewer (rewrapped, same words).
+- `TROPIS_TEAM_PROMPT`, which the plan specified for the live runs, was not named in
+  `sprint.mjs`'s header beside `TROPIS_SPRINT_NOW`. Fixed on the branch by the reviewer:
+  one comment sentence, no code.
+- The handover's judgment calls (the old log renamed to `.log.1`, `run` deriving the
+  worktree, launch's liveness assertion instead of a clock, whitespace collapsed in the
+  documents case) were each checked against the code and the cases, and stand.
+- The live runs (handover, *Verification results*, Task 6) are the evidence the decision
+  cites: in each tool, the run that claimed `SHIPPED` without the work was recorded as
+  `STOPPED` against `origin/main`, and the run that did the work as `SHIPPED`, with no
+  denials. Accepted as recorded.
+
+### Outstanding disposition
+
+- No screen, so no developer check: none owed.
+- The decision number: FW-059, the next free number on `main` at the merge token.
+- Cursor's stream carries no permission denials, so `denied` is always empty for Cursor
+  and a refused command shows only through the agent's own `STOPPED` line, which the
+  brief tells it to write. Accepted; the brief covers it.
+- A run lasting hours has not been tried live. Its wait and its exit use the same code
+  the fakes exercise; the next real sprint in the other tool is that trial. No new entry.
+
+### Learnings routed
+
+- A plan's tier, requirement and merge authority must be bold header lines, not bullets
+  under a heading, or `/dispatch` prints them empty without refusing. The dispatch
+  script's refusal of an empty field did not fire because it read none. Not routed as a
+  rule: the planning rule already shows the header form; the slip was the author's.
+- In a scratch project for a live run, the framework's own rules (a gated `main`, a
+  criterion with no test) make an honest agent decline. Recorded in the handover for the
+  next live run; not portable beyond that.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+A sprint session can start a team member in the other tool's command line and learn from
+the repository how it ended. The no-key environment, the exact grants and the judgement
+against `origin/main` are each guarded by cases shown to go red. The fresh-agent check
+found the command text does what it says. Live runs in both tools ended as the decision
+says. The defects found were a header format, a line width and a missing comment, all
+fixed on the branch.

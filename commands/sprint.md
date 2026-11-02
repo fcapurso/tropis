@@ -40,9 +40,22 @@ by itself until that entry ships. Pass each team member the brief
 |---|---|---|
 | `session` | one session of this tool per team member, which the developer can open | a tool that starts sessions, such as the Claude desktop app |
 | `here` | this session delivers the entries itself, one at a time, in sprint order | every tool; the fallback |
+| `claude` | one Claude Code command-line run per team member, started with `sprint.mjs launch` | a sprint session in Cursor |
+| `cursor` | one Cursor command-line run per team member, started with `sprint.mjs launch` | a sprint session in Claude Code |
 
-Never start a team member the developer cannot open, such as a subagent of this
-session or a command line run in the background. Every team member runs signed in to
+For `claude` or `cursor`, start each team member with `node .tropis/scripts/sprint.mjs
+launch <id>` in place of a session and its brief, adding `--model <model>` with a
+model the developer's plan includes in that tool (`docs/model-picks.md`), and
+`--tool <tool>` to start one entry in a tool other than the sprint's way. Each run
+starts at once, waits by itself for what its entry is blocked by, and works with
+nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
+command where this tool runs them; each time it ends, tell the developer the line it
+printed unless it is `SHIPPED`, and run it again until it says none is running.
+
+Never start a team member of this tool that the developer cannot open, such as a
+subagent of this session or this tool's own command line run in the background. The
+other tool's command line is the exception: `status` names the command that opens
+each run's session. Every team member runs signed in to
 the plan the developer already pays for, never on a key billed per use. The sprint adds
 no limit of its own to what a team member may run: that is the tool's permission
 settings, and a permission prompt is answered in that team member's session.

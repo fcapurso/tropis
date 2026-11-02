@@ -28,7 +28,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
 const FILES = [
   'sprint.mjs', 'next-work.js', 'board-bands.js', 'plan-binding.js', 'projections.js',
-  'main-status.mjs', 'merge-token.mjs',
+  'main-status.mjs', 'merge-token.mjs', 'team-member-cli.mjs',
 ];
 
 const spawned = [];
@@ -731,7 +731,7 @@ describe('the documents', () => {
     expect(text).toContain('in that same turn');
     expect(text).toContain('--way');
     const ways = text.split('\n').map((l) => l.match(/^\| `([a-z]+)` \|/)?.[1]).filter(Boolean);
-    expect(ways).toEqual(['session', 'here']);
+    expect(ways).toEqual(['session', 'here', 'claude', 'cursor']);
   });
 
   it('setup installs the script and the project\'s package has the script', () => {

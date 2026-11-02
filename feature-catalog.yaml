@@ -5162,9 +5162,19 @@
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-01-another-tools-agent-can-be-started.md
+# Shipped by docs/superpowers/plans/2026-11-02-team-members-start-in-another-tool.md.
+# Criteria and the cases in guards/team-member-cli.test.js that cover them:
+# 1 starts at once and refuses: "launch refuses" (both cases), "launch" (the first case).
+# 2 no key, no --bare: "the seam" agentEnv and command line cases, and the "launch" environment check.
+# 3 exact grants: "the seam" command line case; "launch" for cursor (grants file written, existing one kept).
+# 4 waits for blockers: "a blocked entry" (all three cases).
+# 5 judged by the repository: "the seam" judge, finalLine and readRun cases; "a run ends" (all cases).
+# 6 status and watch: "a run ends" (shipped and running status), "a blocked entry" (parks too), "watch".
+# 7 the command and the brief: "the documents" case and the brief lines in "launch"; the fresh agent is
+#   the probe recorded in the commit body and the handover.
 - id: team-members-start-in-another-tool
   title: A sprint started in one tool can hand entries to team members in another
-  status: building
+  status: shipped
   value: A developer can run the sprint from the tool they prefer and have work done in
     another, for example a sprint session in Claude Code starting team members in
     Cursor, because team members coordinate only through the repository and GitHub.
@@ -5204,11 +5214,12 @@
       set up from the release starts a team member in the other tool when asked to.
   type: feature
   layer: product
-  blockedBy:
-    - another-tools-agent-can-be-started
   after:
     - sprint-plans-and-runs-a-team
-  modules: []
+  modules:
+    - scripts/team-member-cli.mjs
+    - scripts/sprint.mjs
+    - guards/team-member-cli.test.js
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-team-members-start-in-another-tool.md
