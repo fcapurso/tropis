@@ -353,6 +353,14 @@ export function picksForTier(tiersText, tier) {
 }
 
 const TIER_ORDER = ['Small', 'Small–medium', 'Medium', 'Medium–large', 'Large'];
+
+/** True when `name` is a tier, matched as `pickToUse` matches it. */
+export function isTier(name) {
+  return TIER_ORDER.some((t) => normalizeTier(t) === normalizeTier(name || ''));
+}
+
+/** What `/dispatch` and `dispatch.mjs --tier` print when a project has no picks file. */
+export const NO_PICKS_USE = '**Use:** not chosen — this project has no model picks. Run /refresh-model-tiers.';
 const INCLUSION_HEADER = '| Model | Usage per task | Included on |';
 
 /** A name with any parenthesised note and the spaces around it removed, lower-cased. */

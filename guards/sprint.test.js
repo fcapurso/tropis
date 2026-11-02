@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 // A namespace import, so a missing export fails the case that uses it and not the file.
 import * as sprint from '../scripts/sprint.mjs';
+import * as binding from '../scripts/plan-binding.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
@@ -288,7 +289,10 @@ describe('start, and the sprint file', () => {
 
     const started = run(clone, ['start', 'e2', 'e1', '--points', '12', '--way', 'session'], at(T0));
     expect(started.status).toBe(0);
-    expect(started.stdout).toBe('Sprint: started with 2 entries, 5 of 12 points; team members start as session.\n');
+    expect(started.stdout).toBe(
+      'Sprint: started with 2 entries, 5 of 12 points; team members start as session.\n'
+      + "Sprint: team members run on the Large tier. **Use:** not chosen — this project has no model picks. Run /refresh-model-tiers. Start them on the tool's default model.\n",
+    );
     expect(sprintFile(clone).endsWith('.git/tropis/sprint.json')).toBe(true);
     expect(readSprint(clone)).toEqual({
       started: T0,
@@ -742,5 +746,92 @@ describe('the documents', () => {
   it('exports its pure parts', () => {
     expect(typeof sprint.proposeSprint).toBe('function');
     expect(typeof sprint.statusOf).toBe('function');
+  });
+});
+
+describe('the team member\'s model', () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const PICKS = `**Last verified: ${today}.**
+
+| Tier | Models |
+|---|---|
+| **Large** | Birch 2 *(all)*; Alder 3 *(all)* |
+| **Medium–large** | Any pick from a higher tier |
+| **Medium** | Cedar 1 *(Cursor)*; or any pick from a higher tier |
+| **Small–medium** | Any pick from a higher tier |
+| **Small** | Elm 0 *(Cursor)*; Dogwood 1 *(Cursor)*; or any pick from a higher tier |
+
+| Model | Usage per task | Included on |
+|---|---|---|
+| Alder 3 | $9 per task (Example Index v1, high) | Claude Code: Max (to half the weekly limit), Ultra; Cursor: none |
+| Birch 2 | $4 per task (Example Index v1, high) | Claude Code: none; Cursor: Premium |
+| Cedar 1 | $1 per task (Example Index v1, high) | Cursor: Plus, Premium |
+| Dogwood 1 | unmeasured | Cursor: Premium |
+`;
+  const RECORD = 'Claude Code: Max\n';
+  const entries = [entry('e1'), entry('e2'), entry('e3')];
+  const bands = { e1: row('A', 3, 3), e2: row('A', 2, 2), e3: row('B', 1, 1) };
+  const DEFAULT = " Start them on the tool's default model.";
+
+  /** A clone, with a picks file and a subscriptions record when given. */
+  function setup(picks, record) {
+    const world = makeWorld(entries, bands);
+    const clone = makeClone(world);
+    if (picks !== null) {
+      mkdirSync(join(clone, 'docs'), { recursive: true });
+      writeFileSync(join(clone, 'docs/model-picks.md'), picks);
+    }
+    if (record !== null) {
+      mkdirSync(join(clone, '.git/tropis'), { recursive: true });
+      writeFileSync(join(clone, '.git/tropis/subscriptions.txt'), record);
+    }
+    return clone;
+  }
+  const modelLine = (r) => lines(r).find((l) => l.includes('Large tier'));
+
+  it('† a: start for a session sprint names the first included Large pick, as dispatch does', () => {
+    const clone = setup(PICKS, RECORD);
+    const r = run(clone, ['start', 'e1', '--way', 'session']);
+    expect(lines(r)).toHaveLength(2);
+    expect(lines(r)[1]).toBe(
+      'Sprint: team members run on the Large tier. **Use:** Alder 3, in Claude Code — the first pick for this tier that your subscriptions include.',
+    );
+    expect(lines(r)[1].split('tier. ')[1]).toBe(binding.pickToUse(PICKS, 'Large', RECORD));
+  });
+
+  it('† b: add under a session sprint ends with the same line', () => {
+    const clone = setup(PICKS, RECORD);
+    const started = run(clone, ['start', 'e1', '--way', 'session']);
+    const added = run(clone, ['add', 'e2']);
+    expect(lines(added)).toHaveLength(2);
+    expect(lines(added)[0].startsWith('Sprint: added e2')).toBe(true);
+    expect(lines(added)[1]).toBe(lines(started)[1]);
+  });
+
+  it('† c: with no picks file the line says so and the default model is used', () => {
+    const clone = setup(null, RECORD);
+    const r = run(clone, ['start', 'e1', '--way', 'session']);
+    expect(modelLine(r).endsWith(
+      `**Use:** not chosen — this project has no model picks. Run /refresh-model-tiers.${DEFAULT}`,
+    )).toBe(true);
+  });
+
+  it.each([
+    ['no record', PICKS, null],
+    ['no inclusion table', '**Last verified: 2026-11-02.**\n\n| Tier | Models |\n|---|---|\n| **Large** | Birch 2 *(all)*; Alder 3 *(all)* |\n', RECORD],
+    ['no included pick', PICKS, 'Claude Code: Pro\nCursor: none\n'],
+  ])('† d: %s names no model and uses the default', (_name, picks, record) => {
+    const clone = setup(picks, record);
+    const line = modelLine(run(clone, ['start', 'e1', '--way', 'session']));
+    expect(line.endsWith(DEFAULT)).toBe(true);
+    expect(line).toContain(binding.pickToUse(picks, 'Large', record));
+    expect(line).not.toContain('Alder 3');
+    expect(line).not.toContain('Birch 2');
+  });
+
+  it('† e: a sprint whose team members start here names no model', () => {
+    const clone = setup(PICKS, RECORD);
+    expect(lines(run(clone, ['start', 'e1']))).toHaveLength(1);
+    expect(run(clone, ['add', 'e2']).stdout).not.toContain('Large tier');
   });
 });
