@@ -262,12 +262,14 @@ whether two of them overlap is judged from their plans, never guessed from the e
 - **A session may add to `Merges after`, never remove from it**, also when it finds a
   dependency while planning. Needing the other entry's code is not this: that is
   `blockedBy`, and no branch is built on another unmerged branch.
-- **Before merging**, run `node .tropis/scripts/plan-overlap.mjs --wait <plan>`. It asks
-  `origin` every 30 seconds until every entry the plan merges after has shipped or been
-  dropped, and goes ahead at once when the plan has no `Merges after`. After 60 minutes
-  it exits 3 and prints `STOPPED: waiting on <id>`: report that line and stop. The work
-  resumes with the same command once that entry ships, which also covers waiting on an
-  entry that was parked.
+- **Before merging**, run `node .tropis/scripts/plan-overlap.mjs --wait <plan>` as a
+  background command that wakes you when it ends. It asks `origin` every 30 seconds
+  until no entry the plan merges after is `building` there — shipped, dropped, or parked
+  back to `shaped` — and goes ahead at once when the plan has no `Merges after`. It has
+  no time limit: an entry still building after hours is still being worked on, and its
+  session ends the wait by landing or parking it. `--timeout <minutes>` sets a limit,
+  after which it exits 3 and prints `STOPPED: waiting on <id>`: report that line and
+  stop.
 
 ## The merge token
 
@@ -296,9 +298,15 @@ commit names its holder and when it was taken.
   after the rebase in a way that is not mechanical, release the token first, then fix.
   A clean rebase needs no new review; a conflict needs its resolution reviewed, except
   in the files every plan touches (*Plans that touch the same files*).
-- **The wait has a time limit.** After 60 minutes `take` exits 3 and prints
-  `STOPPED: waiting for the token, held by <holder>`: report that line and stop. A
-  holder that died leaves every waiter stopped and reported, not waiting forever.
+- **The wait ends when something happens, not after a time.** Run `take` as a
+  background command that wakes you when it ends. It waits as long as the holder is
+  working, however long that is, and takes the token once it is free. When the token
+  turns stale (below), it exits 3 and prints `STOPPED: waiting for the token, held by
+  <holder>, which is stale`, the reason and the command that breaks it: report that line
+  and stop, because breaking a token is the developer's call. A hold never turns stale,
+  so a session waits for the developer to release it. `--timeout <minutes>` sets a
+  limit, after which `take` exits 3 and prints `STOPPED: waiting for the token, held by
+  <holder>`.
 - **A hold is the developer's.** `node .tropis/scripts/merge-token.mjs take --hold`
   takes the token in their own name, git's `user.name`, for example while a release
   runs, and `release --hold` gives it back. An agent runs these only on the
@@ -307,6 +315,9 @@ commit names its holder and when it was taken.
   token and for how long. A token held by a branch with no open pull request and no
   push for 30 minutes is shown as stale, with the command that breaks it,
   `node .tropis/scripts/merge-token.mjs break --holder <holder>`. A hold is never stale.
+  Where `origin` is not on GitHub, pull requests cannot be asked, so a token held by a
+  branch for 30 minutes is stale when that branch is absent on `origin` or has had no
+  push for 30 minutes.
 - **Nothing about the main branch's safety depends on it.** A session that ignores the
   token, a project on an older release, or a person merging on GitHub still cannot put
   a red or out-of-date change on a gated main branch; the cost is the extra update and
@@ -397,9 +408,9 @@ still lands as one squash-merge.
 Parallel branches share a base, so `main` moves under them as siblings land. Before each
 merge:
 
-1. `node .tropis/scripts/plan-overlap.mjs --wait <plan>` — *Plans that touch the same
-   files*.
-2. `node .tropis/scripts/merge-token.mjs take` — *The merge token*.
+1. `node .tropis/scripts/plan-overlap.mjs --wait <plan>`, in the background — *Plans
+   that touch the same files*.
+2. `node .tropis/scripts/merge-token.mjs take`, in the background — *The merge token*.
 3. `git fetch origin && git rebase origin/main`
 4. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
    invalidate a criterion with no textual conflict — new files shift coverage figures and
