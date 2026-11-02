@@ -807,3 +807,22 @@ already in *File Structure*.
    architecture of the probe, and one sentence on what the probe was asked and whether
    it did it. Put the probe record in the body of the commit that adds it too. Commit,
    push. Open no pull request.
+
+### Round 1 result
+
+Run with Claude Code 2.1.300 (model `claude-sonnet-5-5`), Node v22.15.0, macOS 26.2, arm64.
+
+- New cases red first: `Tests: 2 failed, 35 passed, 37 total` (*records the subscriptions it
+  is given…* and *refuses a malformed subscription…*); after the code `Tests: 37 passed, 37
+  total`. Throwaway commit dropping the format check: `Tests: 1 failed, 36 passed`, the
+  failing case *refuses a malformed subscription and writes nothing*; reset.
+- Probe, asked to run the refresh command as written with only the `--subscriptions` call
+  allowed: it ran
+  `node .tropis/scripts/dispatch.mjs --subscriptions "Claude Code: Max" "Cursor: Plus"`,
+  the reply was `Subscriptions recorded for 2 tools, on this machine only.`, and the record
+  read `# Written by /refresh-model-tiers. Never committed.`, `Claude Code: Max`,
+  `Cursor: Plus`. It then wrote and committed the picks file naming no subscription.
+- `bash scripts/check-blueprint.sh` last line: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests:       153 passed, 153 total`
+- Diff stat: ` 11 files changed, 601 insertions(+), 43 deletions(-)`; the files are unchanged from the earlier list.
+- Judgment call: the reader in `dispatch.mjs` now shares the writer's directory lookup.
