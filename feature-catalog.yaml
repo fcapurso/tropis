@@ -5151,3 +5151,24 @@
     - guards/rule-delivery.test.js
   refs:
     - docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md
+# From the brainstorm of 2026-11-02 that recorded FW-053. Tiers today place models on
+# fitness alone and leave cost to whoever dispatches (docs/model-picks.md says so), the
+# session a sprint starts per entry has no tier at all, and whether a pick is included
+# depends on the developer's plan: Claude Fable 5.1 is reported included on Max up to
+# about half the weekly allowance and to need usage credits on Pro.
+- id: agents-run-on-the-most-efficient-model
+  title: Every agent runs on the model that does its job with the least usage
+  status: idea
+  value: A developer's plan lasts longer when each agent Tropis starts - an executor, a
+    sprint's team member, a reviewer - runs on the model that uses the least of the
+    allowance without losing quality on that job. Today a plan's tier names several models
+    in no order of cost, a sprint's team member has no tier, and the picks do not say
+    which models the developer's own plans include, so a pick can need paid extras.
+    /refresh-model-tiers would find out which subscriptions the developer has, asking when
+    it cannot tell reliably, and mark each pick as included or not on them.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
