@@ -5480,3 +5480,32 @@
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-overlap-check-reads-every-file-in-a-row.md
+# Left by FW-060: a team member started with sprint.mjs launch (FW-059) gets a model only
+# when the developer passes --model. Asked for by the developer on 2026-11-02.
+- id: launched-team-members-run-on-the-large-pick
+  title: A team member launched in a command line runs on the Large tier's pick
+  status: building
+  value: A team member started in Claude Code's or Cursor's command line runs on the
+    same model a session team member does - the Large tier's first pick that the
+    developer's subscription in that tool includes - without the developer naming it,
+    and is told why when no pick can be named, so a sprint neither runs on a model too
+    weak for the work nor on one that costs extra.
+  acceptanceCriteria:
+    - sprint.mjs launch without --model starts the tool on the first Large pick that
+      the recorded subscription in that tool includes, by the name the tool's command
+      line takes, and says which.
+    - When no pick can be named it says why in one line and starts the tool on its
+      default model.
+    - A pick included only in the other tool is not used.
+    - --model still overrides the pick.
+    - /refresh-model-tiers writes each tool's command-line name for each model, and a
+      fresh agent following it writes them so launch can read them.
+  type: improvement
+  layer: product
+  after:
+    - team-members-start-in-another-tool
+    - team-members-and-reviewers-run-on-a-tier
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-02-launched-team-members-run-on-the-large-pick.md

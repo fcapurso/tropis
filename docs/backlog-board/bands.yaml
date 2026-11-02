@@ -290,3 +290,16 @@ version-check-tells-a-red-baseline:
   seen:
     status: idea
     blockers: []
+launched-team-members-run-on-the-large-pick:
+  band: A
+  value: 3
+  valueWhy: A launched team member runs on the tool's default model unless the developer
+    names one, which may be too weak for shaping and review or cost extra.
+  effort: 2
+  effortWhy: One function over the picks file, its use in launch, a column the
+    model-picks command writes, and tests with fake tools.
+  verdict: "Closes the gap FW-060 left open: the two ways of starting a team member
+    should run on the same pick."
+  seen:
+    status: building
+    blockers: []
