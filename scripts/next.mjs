@@ -21,6 +21,7 @@ import {
 } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';
 import { mainStatus } from './main-status.mjs';
+import { tokenStatus } from './merge-token.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -36,6 +37,8 @@ const bundles = bandRows ? bandBundles(bandRows) : {};
 
 // First, whether the main branch's pipeline is red: main-status.mjs.
 console.log(mainStatus(root).line);
+// Then who holds the merge token: merge-token.mjs.
+console.log(tokenStatus(root).line);
 
 // Plans not yet executed, by the entry ids they deliver. A catalog entry's refs name
 // only its design, so this is the only way a waiting plan shows up.
