@@ -17,6 +17,17 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.8.0] — 2026-11-02
+
+This release lets you run a sprint: `/sprint` proposes a sprint from the top of your
+backlog and a team of agent sessions delivers it in parallel, taking turns to merge so
+they do not trip over each other. Every agent Tropis starts now runs on the cheapest
+model your own subscriptions include that is good enough for its job. Releasing is two
+plainly named steps, deploy to staging and promote to production, and promoting only
+tags, so a release works on a protected main branch.
+
 ### What to do by hand
 
 These steps are for a project that deploys to staging before it releases, the step
@@ -38,11 +49,12 @@ would break. Where `.github/workflows/candidate.yml` exists, run
 `run-name: Deploy to staging ${{ inputs.commit || github.sha }}` on the line under it,
 which is how `/release` finds the run.
 
-**3. Rename two lines in your release command and add two.** `/release` now reads the
-triggers by their new names and needs to know your version files. In the block your
-project fills in `.claude/commands/release.md`, rename *Trigger* to *Promote trigger*
-and *Candidate trigger* to *Staging trigger*, and add *Version files* (each file that
-carries the version, and where in it) and *Staging workflow* (`staging.yml`).
+**3. Add two lines to your release command.** `/release` needs to know which files carry
+your version and which workflow deploys to staging, and asks each time until it does. In
+the block your project fills in `.claude/commands/release.md`, add *Version files* (each
+file that carries the version, and where in it) and *Staging workflow* (`staging.yml`).
+Rename *Trigger* to *Promote trigger* and *Candidate trigger* to *Staging trigger* while
+you are there; the old names are still read.
 
 **4. Change your release pipeline so it only tags.** `/release` now commits the version
 and the notes through a pull request, so a release no longer writes to your main
@@ -52,6 +64,94 @@ inputs, `commit` and `staged`; first run
 and stop if it refuses; tag `commit`; push only the tag; and stop committing the version
 and the notes. The release section of `.claude/framework/workflow.md` lists everything
 it must do.
+
+**5. Optional: refresh your model picks.** Run `/refresh-model-tiers` once, so the picks
+are ordered by cost and say which subscriptions include each, and record which
+subscriptions you have; until then the prompt `/dispatch` prints says the picks are stale
+or that no subscription of yours is recorded.
+
+### Run a sprint with a team of agents
+
+Run `/sprint` when you open a project. It proposes about 20 points of work from the top
+of your backlog's ranking; you refine it, and a team of sessions delivers it in
+parallel, each item through the whole workflow: shaped, planned, built, reviewed and
+merged. Ask the sprint where it stands at any time. When a team member finds new work,
+bugs first, you are told and can slide it into the sprint, and you get a report at the
+end. Team members coordinate only through the repository and GitHub, so a sprint run in
+Claude Code can start team members in Cursor's command line, or the other way round. In
+a tool that cannot start sessions, the sprint runs one item at a time.
+
+### Parallel work merges in turn, and in the order its files need
+
+Sessions working at the same time take turns to open and merge their pull requests,
+under one token any session can take. A session takes it when its branch is reviewed,
+brings the branch up to date once, merges, waits for the main branch to go green, and
+gives it back, so nobody rebases and re-runs their checks every time another lands. You
+can hold the token yourself, for example during a release, and a token left on a branch
+nobody is working on is shown and can be broken. When a plan touches a file that a plan
+already being built touches, it records that it merges after that one, and waits for it
+to ship. A session waiting for the token or for another plan now waits until it happens,
+however long that takes, rather than giving up after an hour.
+
+### Agents run on the cheapest model your subscriptions include
+
+`/dispatch` names one model for each plan: the first pick of the plan's tier that your
+subscriptions include. `/refresh-model-tiers` now orders each tier by how much of the
+allowance a task uses, and marks which subscriptions include each pick; it finds out
+which subscriptions you have, asks when it cannot tell, and keeps that on your machine
+only. A sprint's team members, the fresh reviewers Tropis starts, and team members
+launched in a command line run on the same included pick, so no agent runs on a model
+too weak for its work or on one that costs extra.
+
+### Releasing is deploy to staging, then promote to production
+
+`/release` carries you through both steps and picks up where it left off: it drafts the
+notes, prints the trigger to deploy to staging, waits for your check there, then prints
+the trigger to promote. Promoting tags the commit you checked and pushes only the tag,
+so production gets exactly the build that was checked, and the release never writes to
+your main branch. You can turn on your host's protection for the main branch without
+giving the release pipeline a way around it.
+
+### The backlog speaks of epics, backlog items and effort points
+
+What earlier releases called the catalog, entries, arcs and effort is now the backlog,
+backlog items, epics and effort points, in the commands, the rules, the framework
+documents, the board and the backlog report. Files, fields and statuses keep their
+names, so nothing in your project needs changing.
+
+### Your project's settings live in one place
+
+Every setting your project owns, such as whether it is public, why its main branch is
+not protected, its display name and its worktree setup, now sits under `.tropis/`
+rather than partly under `.claude/`. The update moves them for you. The name you give
+your project at setup, capitals and spaces included, is now used wherever the framework
+writes one, such as the backlog board's title, whatever the folder is called.
+
+### Rules cost less to carry
+
+A rule now states the constraint and why it holds; the incident that produced it sits
+one link away, in a record that is not loaded into every session. Each Tropis release
+also tries one rule clause with a fresh agent that does not receive it, and removes the
+clause when the agent does the work correctly without it.
+
+### Smaller corrections
+
+- A freshly set-up project has a lockfile, so `npm --prefix .tropis ci` works the first
+  time, with the versions the release was tested with.
+- The warnings for a deploy, commit or push now fire wherever a shell would run the
+  command, after `then`, `do` or `{` or across a continued line, and no longer fire on a
+  `grep` that only mentions one.
+- A documents-only push to a pull request, and the push to the main branch after a
+  squash merge, no longer re-run checks on code that already passed. Deploying to
+  staging still runs every check.
+- When you flush lessons back to Tropis, you are told what the flush name is for and
+  that it is public, a name another project already uses is refused, and you approve
+  each lesson as it will be sent, with your project's own details taken out.
+- The check for plans touching the same files now sees every file in a row of a plan's
+  file table, not only the first.
+- The main branch status tests give the same answer however busy the machine is.
+
+Checked on the release candidate: no — no candidate was rehearsed
 
 ## [0.7.3] — 2026-11-01
 
