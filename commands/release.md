@@ -54,6 +54,19 @@ below it before anything else:
      workflow is missing, ask the developer, and suggest adding the line here. -->
 <!-- project-owned: end -->
 
+## The merge token
+
+A release holds the merge token (workflow.md, *The merge token*) in the developer's
+name: their running `/release` is their word for it. Take it with
+`node .tropis/scripts/merge-token.mjs take --hold` right before the first pull request
+this command opens, Stage 1b's or Stage 5's, or where the main branch is not gated,
+before the first push to `main`. Keep it through *Step 1* and Stage 6, so nothing
+merges between the staged commit and the promotion. Give it back with
+`node .tropis/scripts/merge-token.mjs release --hold` once the last pull request has
+reported — Stage 7's, or Stage 5's on an empty slot — and whenever this command stops
+on a failure or a refusal, so a fix can merge. On *Resume at staging*, take it again
+first. Say each take and release in your report.
+
 ## Stage 1 — Pre-flight
 
 ```bash

@@ -72,6 +72,14 @@ in `building` it writes `Merges after` into the plan's header, and
 entries have shipped. The catalog, the bands file, the board, the release notes and the
 decision record do not count as shared.
 
+Pull requests open one at a time, under a merge token on `origin`:
+`node .tropis/scripts/merge-token.mjs take` before a session opens one, waiting while
+another holds it, and `release` once `main-status.mjs` has reported. To make every
+session wait — while you run something by hand, say — run
+`node .tropis/scripts/merge-token.mjs take --hold`, and `release --hold` after; `/release`
+does this itself. `node .tropis/scripts/merge-token.mjs` alone says who holds the token
+and for how long, as the second line of `/next` does.
+
 ## Where the framework lives
 
 This project was set up from the framework at `{{BLUEPRINT_URL}}`. General adoption,
