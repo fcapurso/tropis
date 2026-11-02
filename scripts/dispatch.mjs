@@ -7,7 +7,8 @@
  * Paste what it prints into a new session. On a plan that is not dispatchable it prints
  * nothing to stdout — there is nothing to paste — and names every problem on stderr.
  */
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -21,16 +22,50 @@ import {
   parseLastVerified,
   isStale,
   picksForTier,
+  pickToUse,
   renderThinPrompt,
 } from './plan-binding.js';
 
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+
+// The git directory every worktree of this project shares: where the local, never
+// committed subscriptions record lives. Null when git cannot say.
+function commonGitDir() {
+  const g = spawnSync('git', ['rev-parse', '--git-common-dir'], { cwd: root, encoding: 'utf8' });
+  return g.status === 0 ? resolve(root, g.stdout.trim()) : null;
+}
+
+// Writer mode, used by /refresh-model-tiers: the record sits under .git, which Claude
+// Code treats as sensitive for every file tool and shell redirect, so a script writes it.
+if (process.argv[2] === '--subscriptions') {
+  const given = process.argv.slice(3).map((a) => a.trim());
+  if (given.length === 0 || !given.every((a) => /^[^:]+:\s*\S/.test(a) && !a.startsWith(':'))) {
+    process.stderr.write('usage: node .tropis/scripts/dispatch.mjs --subscriptions "<tool>: <subscription>" ...\n');
+    process.exit(1);
+  }
+  const dir = commonGitDir();
+  if (dir === null) {
+    process.stderr.write('Cannot record subscriptions: this is not a git checkout.\n');
+    process.exit(1);
+  }
+  mkdirSync(join(dir, 'tropis'), { recursive: true });
+  writeFileSync(
+    join(dir, 'tropis/subscriptions.txt'),
+    `# Written by /refresh-model-tiers. Never committed.\n${given.join('\n')}\n`,
+  );
+  process.stdout.write(`Subscriptions recorded for ${given.length} tools, on this machine only.\n`);
+  process.exit(0);
+}
+
 const planArg = process.argv[2];
 if (!planArg) {
-  process.stderr.write('usage: npm --prefix .tropis run dispatch -- <plan-path>\n');
+  process.stderr.write(
+    'usage: npm --prefix .tropis run dispatch -- <plan-path>\n'
+    + '   or: node .tropis/scripts/dispatch.mjs --subscriptions "<tool>: <subscription>" ...\n',
+  );
   process.exit(1);
 }
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 let markdown;
 try {
   markdown = readFileSync(resolve(root, planArg), 'utf8');
@@ -74,6 +109,16 @@ try {
 const protocol = parseExecutionProtocol(markdown);
 const lastVerified = picksText === null ? null : parseLastVerified(picksText);
 
+// Which subscriptions the developer holds: a local record under the git directory shared
+// by every worktree, never committed. No git or no file means none is recorded.
+let subscriptionsText = null;
+try {
+  const dir = commonGitDir();
+  if (dir !== null) subscriptionsText = readFileSync(join(dir, 'tropis/subscriptions.txt'), 'utf8');
+} catch {
+  // No record.
+}
+
 // Each worktree's setup comes from its own checkout — this one, or the sibling folder the
 // row names — the way the isolation helper finds them.
 function setupFor(row) {
@@ -104,5 +149,6 @@ process.stdout.write(
     stale: lastVerified ? isStale(lastVerified, new Date()) : false,
     setups,
     here: basename(root),
+    use: picksText === null ? null : pickToUse(picksText, protocol.tier, subscriptionsText),
   }) + '\n',
 );

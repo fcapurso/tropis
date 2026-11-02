@@ -633,3 +633,265 @@ Delete `$TMPDIR/picks-probe` and `$TMPDIR/picks-probe-bin` afterwards.
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+- Task 0 done. Task 1 done: cases committed before the code. Task 2 done. Task 3 done:
+  four throwaway commits, each reset. Task 4 done. Task 5 done.
+- Task 6 done in part. The agent ran both report commands, asked about the second
+  tool's unmatched name, and wrote a correct picks file and commit. It did **not** write
+  the subscriptions record, because its harness refuses a path under `.git` (below). Two
+  runs were made; the plan's stop-after-two rule applies, so I did not try a third.
+- Task 7 done except opening a pull request, which the plan forbids. No developer check
+  was owed (see Outstanding).
+
+### Verification results
+
+Run with git 2.49.0, Node v22.15.0, Claude Code 2.1.300, on macOS 26.2, arm64.
+
+- Task 0 baseline: `bash scripts/check-blueprint.sh` last line `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.`
+- Task 1 command: `scripts/runtest.sh`-style, a scratch script that stages `HEAD` with
+  `git archive`, writes `{"type":"module"}` as `package.json`, copies
+  `templates/framework-jest.config.js` to `jest.config.js`, links
+  `.self-check/node_modules`, and runs
+  `node --experimental-vm-modules .self-check/node_modules/.bin/jest --config jest.config.js guards/dispatch.test.js`.
+  Red run: `Tests: 9 failed, 26 passed, 35 total`. Failing: the eight cases of
+  *dispatch names the pick to use*, and *reads the picks table /refresh-model-tiers tells a
+  project to start from*. Case 8 (no `Use` line without a picks file) passes before and
+  after, as it only asserts an absence.
+- Task 2: after the code, `Tests: 1 failed, 34 passed, 35 total`; the one failure is the
+  template case, which needs Task 4's template. After Task 4 the self-check passed.
+- Task 3 red runs (each also fails the template case, which was red at that commit):
+  1. own tier only: cases 2 and 3 (*goes up a tier…*, *matches a subscription that carries
+     a note*).
+  2. ignore the record: cases 2, 3 and 4 (*names no pick when none is included*).
+  3. no parenthesis stripping: case 3 and the unit case *parses the record, the inclusion
+     table and the choice*.
+  4. walk the table's rows: cases 1, 2, 3 and the unit case.
+- Task 5: `npm --prefix .tropis test` `Tests: 153 passed, 153 total`.
+- Task 6 evidence (Claude Code 2.1.300, model `claude-sonnet-5-5`, started by absolute
+  path, `--output-format stream-json --verbose --permission-mode acceptEdits` with an
+  allow-list for the stub commands, git, printf, mkdir, cat and the editing tools):
+  - ran `claude auth status --json` and `cursor-agent about` in one Bash call; the stubs
+    answered `{"loggedIn":true,…,"subscriptionType":"max"}` and `Subscription Tier   Pro`.
+  - asked: "Claude Code reports Max and Cursor reports Pro. Which Cursor subscription do
+    you hold: Plus, Premium or Ultra?"
+  - record NOT written. Its calls: `mkdir -p .git/tropis` answered "Claude requested
+    permissions to edit …/.git/tropis which is a sensitive file." Run 1 got the same for
+    the Write tool.
+  - `docs/model-picks.md` in the last commit: Large row `Birch 2 *(all)*; Alder 3
+    *(all)*`; the second table has four rows; Dogwood 1 reads `unmeasured`. `Max` and
+    `Plus` appear only in *Included on* cells (grep of the file) and the commit message
+    names neither (0 matches).
+  - `pickToUse` from this worktree, given that picks file, `Large` and a record I wrote
+    by hand (`Claude Code: Max`, `Cursor: Plus`): `**Use:** Birch 2, in Claude Code — the
+    first pick for this tier that your subscriptions include.`
+  - Scratch folders deleted.
+- Task 7: `npm --prefix .tropis test` `Tests: 153 passed, 153 total`;
+  `bash scripts/check-blueprint.sh` last line `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+
+### Scope
+
+```
+ commands/dispatch.md            |   3 +-
+ commands/refresh-model-tiers.md |  93 ++++++++++++++++++++++++++-------
+ docs/backlog-board/bands.yaml   |  14 -----
+ feature-catalog.yaml            |  17 +++++-
+ framework/DECISIONS.md          |  37 ++++++++++++-
+ framework/dispatch.md           |   6 ++-
+ framework/model-tiers.md        |   5 ++
+ guards/dispatch.test.js         | 113 ++++++++++++++++++++++++++++++++++++++++
+ scripts/dispatch.mjs            |  15 ++++++
+ scripts/plan-binding.js         | 106 ++++++++++++++++++++++++++++++++++++-
+```
+
+(`git diff --stat origin/main...HEAD` before this report; the plan file is added by it.)
+Every file is in *File Structure*. Worktree: `../tropis-agents-run-on-the-most-efficient-model`.
+I read the whole diff for private material and for any real subscription: nothing found.
+The only subscription names in it are invented (Alder, Birch and similar, and the
+stubs' invented reports). Named source worked from: none in particular; the repository's
+own `picksForTier`, `dispatch.mjs` and `guards/dispatch.test.js`.
+
+### Judgment calls
+
+- Decision number FW-057 taken: no FW-056 or FW-057 existed on the base (the last was
+  FW-055).
+- The catalog entry read `building`; set to `shipped` as the plan says.
+- Added two sentences to `commands/refresh-model-tiers.md` beyond the verbatim text,
+  after probe run 1: tier cells separate models with `; ` and tag each in italics; the
+  record is written with a shell command because an editing tool may refuse `.git`.
+- `parseSubscriptions` takes one value per tool (no comma list); the inclusion cells
+  strip parentheses before splitting, so a note holding `;` or `,` is safe.
+- The probe's allow-list was added because non-interactive runs refused the stub commands.
+
+### What the plan got wrong
+
+- Task 2 says the test file passes in full after the code. The template case needs the
+  command text from Task 4, so one case stays red until then.
+- Criterion 2 as built cannot be met by an agent in a non-interactive Claude Code run:
+  that tool refuses a write under `.git` as sensitive, even through the shell. In an
+  interactive session the developer would be asked. The refresh command therefore may
+  leave no record in unattended runs.
+- Task 3 mutation 3 also turns the unit case red, and mutation 4 reddens cases 2 and 3
+  as well as 1 and 10; the expected lists were minimums.
+
+### Outstanding
+
+- The record write under `.git` was never seen to succeed by an agent. The reviewer
+  decides whether to accept the entry as shipped, or move the record elsewhere, or have
+  the command tell the developer to approve the write. I made no design change.
+- No screen, so there is no developer check. This repository's own `docs/model-picks.md`
+  is refreshed by running the command after the release.
+
+## Review round 1 — instruction from the reviewing session
+
+**Finding.** Criterion 2 failed in the fresh-agent check: the probe could not write
+`.git/tropis/subscriptions.txt`. The reviewer re-ran the cause on its own, Claude Code
+2.1.300 with `claude-haiku-5-5`, macOS 26.2, arm64, in a scratch repository, with
+`claude -p --permission-mode acceptEdits`: the Write tool refuses any path under `.git`
+as "a sensitive file", **even with `--allowedTools "Write(.git/tropis/**)"`**, and a
+compound shell command writing there waits for approval. So a file tool can never be
+allowed to write the record ahead of time, and a shell redirect needs a person to say
+yes each time. The sprint plan writes its file under the same folder through a
+framework script, which is what this round does.
+
+**What to change.** Model tier and merge authority are unchanged. Files: only those
+already in *File Structure*.
+
+1. `scripts/dispatch.mjs` gains a second mode, before it reads a plan: when its first
+   argument is `--subscriptions`, every later argument must be of the form
+   `<tool>: <subscription>` (a non-empty name, a colon, a non-empty value; the value may
+   be `none`). If any is not, or there is none, print
+   `usage: node .tropis/scripts/dispatch.mjs --subscriptions "<tool>: <subscription>" ...`
+   to stderr, write nothing and exit 1. Otherwise create `tropis/` in the directory
+   `git rev-parse --git-common-dir` prints (resolved against the project root), write
+   `subscriptions.txt` there as the line `# Written by /refresh-model-tiers. Never committed.`
+   followed by one argument per line, trimmed, replacing any earlier record, print
+   `Subscriptions recorded for <n> tools, on this machine only.` and exit 0. If git
+   cannot give the directory, print `Cannot record subscriptions: this is not a git checkout.`
+   to stderr and exit 1. Update the usage line the script prints with no arguments to
+   mention both modes.
+2. `commands/refresh-model-tiers.md`, step 4 of *Which subscriptions the developer has*:
+   replace the sentence ``Create the `tropis` folder if it is missing, and write the file
+   with a shell command, since an editing tool may refuse a path under `.git`.`` with
+   ``Write it with `node .tropis/scripts/dispatch.mjs --subscriptions "<tool>:
+   <subscription>" ...`, one argument per supported tool, never with a file tool or a
+   shell redirect: Claude Code treats every path under `.git` as sensitive and asks each
+   time, even where a rule allows it.`` Keep the rest of the step. Rewrap to the file's
+   width.
+3. `guards/dispatch.test.js`, two cases: † *records the subscriptions it is given, and
+   dispatch then uses them* — in a test project with `PICKS`, run the script with
+   `--subscriptions 'Cursor: Premium' 'Claude Code: none'`; exit 0, stdout
+   `Subscriptions recorded for 2 tools, on this machine only.`, the file starts with the
+   comment line, and a dispatch of the plan then prints the Dogwood 1 line of case 1; †
+   *refuses a malformed subscription and writes nothing* — `--subscriptions 'Cursor'`
+   exits 1 and leaves no `.git/tropis/subscriptions.txt`.
+4. Run the new cases red first (commit the tests, run the file alone), then green; then a
+   throwaway commit that drops the format check, showing the second case red; reset it.
+5. Re-run the Task 6 probe once more as Task 6 describes, with two changes: copy every
+   file of this worktree's `scripts/` into the scratch project's `.tropis/scripts/`, add
+   `.tropis/package.json` reading `{"type":"module"}`, and commit them; and pass
+   `--allowedTools "Bash(node .tropis/scripts/dispatch.mjs --subscriptions *)"` beside the
+   options the first runs used, which stands in for the developer allowing that command.
+   Check, and paste: the call to `dispatch.mjs --subscriptions`, and the record's content
+   reading `Claude Code: Max` and `Cursor: Plus` after the comment line. If it fails,
+   stop and hand back with the call and its reply.
+6. `bash scripts/check-blueprint.sh` (last line), `npm --prefix .tropis test` (`Tests:`
+   line), the diff stat. Append `### Round 1 result` under this section with the
+   commands and their output, the tool, version, model, operating system and
+   architecture of the probe, and one sentence on what the probe was asked and whether
+   it did it. Put the probe record in the body of the commit that adds it too. Commit,
+   push. Open no pull request.
+
+### Round 1 result
+
+Run with Claude Code 2.1.300 (model `claude-sonnet-5-5`), Node v22.15.0, macOS 26.2, arm64.
+
+- New cases red first: `Tests: 2 failed, 35 passed, 37 total` (*records the subscriptions it
+  is given…* and *refuses a malformed subscription…*); after the code `Tests: 37 passed, 37
+  total`. Throwaway commit dropping the format check: `Tests: 1 failed, 36 passed`, the
+  failing case *refuses a malformed subscription and writes nothing*; reset.
+- Probe, asked to run the refresh command as written with only the `--subscriptions` call
+  allowed: it ran
+  `node .tropis/scripts/dispatch.mjs --subscriptions "Claude Code: Max" "Cursor: Plus"`,
+  the reply was `Subscriptions recorded for 2 tools, on this machine only.`, and the record
+  read `# Written by /refresh-model-tiers. Never committed.`, `Claude Code: Max`,
+  `Cursor: Plus`. It then wrote and committed the picks file naming no subscription.
+- `bash scripts/check-blueprint.sh` last line: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests:       153 passed, 153 total`
+- Diff stat: ` 11 files changed, 601 insertions(+), 43 deletions(-)`; the files are unchanged from the earlier list.
+- Judgment call: the reader in `dispatch.mjs` now shares the writer's directory lookup.
+
+## Review record
+
+### Checks re-run
+
+By the specifying session, on the branch at the commit that adds this record, with git
+2.49.0, Node v22.15.0 and Claude Code 2.1.300 on macOS 26.2, arm64:
+
+- `git diff --stat origin/main...HEAD`: 11 files, every one in *File Structure*.
+- After the two fixes below, `bash scripts/check-blueprint.sh` ended `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`, and `npm --prefix .tropis test` printed
+  `Tests:       153 passed, 153 total`.
+- Re-broken: a throwaway commit dropping the line that pushes the `use` line in
+  `renderThinPrompt`. The self-check failed its clean baseline with eight dispatch cases
+  red, among them *names the first included pick of the tier*, *goes up a tier*, *names
+  no pick when none is included*, *keeps an earlier picks file working* and *records the
+  subscriptions it is given*. Reset afterwards.
+- The handover's diagnosis of the first probe's failure was checked on its own before
+  round 1 (the round's *Finding*): with `claude -p --permission-mode acceptEdits` in a
+  scratch repository, the Write tool refused `.git/tropis/probe.txt` as "a sensitive
+  file", also with `--allowedTools "Write(.git/tropis/**)"`, and a compound shell command
+  writing there was held for approval. The diagnosis held.
+
+### Found
+
+Public exposure: the diff was read for private material and for any subscription
+someone actually holds. Nothing found: the probe's subscriptions and tool reports are
+the plan's invented stubs, and no home path, hostname or address appears.
+
+- Design defect, sent back as review round 1 rather than fixed here: no agent could write
+  the record under `.git` unattended in Claude Code. Round 1 gave the dispatch script a
+  `--subscriptions` writer mode; the second probe recorded both subscriptions through it.
+- Fixed on the branch by the reviewer, mechanical: `commands/dispatch.md`'s edited
+  sentence rewrapped to the file's width, wording unchanged; and the catalog comment for
+  criterion 2, which pointed at a commit the squash will drop, now points at the plan's
+  Round 1 result and this record.
+- The two sentences the executor added to the refresh command beyond the verbatim text
+  (the `; ` separator with italic tool tags, found by the first probe) are kept; the one
+  about writing with a shell command was replaced in round 1.
+
+### Outstanding disposition
+
+- Writing the record asks the developer to allow one `node .tropis/scripts/dispatch.mjs
+  --subscriptions …` command in an interactive session, the first time. That is the
+  command's normal use, since it asks the developer a question anyway; no entry.
+- This repository's own `docs/model-picks.md` keeps its earlier shape until the developer
+  runs `/refresh-model-tiers` after the release; `/dispatch` says so meanwhile. Dropped as
+  an entry: running a command the release brings is not new work.
+- No screen, so no developer check.
+- The sprint's team members and reviewers getting a tier is
+  `team-members-and-reviewers-run-on-a-tier`.
+
+### Learnings routed
+
+- Claude Code refuses every file-tool write under `.git` as sensitive, even with an allow
+  rule naming the path: written into the refresh command where it applies, and into
+  FW-057's dispatch script as the reason for the writer mode. The sprint's own file under
+  the same folder is written by its script, so it is not exposed; nothing else in the
+  framework writes under `.git` through a file tool. No rule: the one command that writes
+  there now says how.
+- Task 2's expectation that the test file passes in full before Task 4's text existed:
+  the planning rule already says to state checks as invariants of the finished work;
+  not routed further.
+
+### Merged because
+
+Every acceptance criterion is covered by a dispatch test case or by the second
+fresh-agent check, the re-broken guard went red, and the scope matches the plan.

@@ -22,20 +22,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-agents-run-on-the-most-efficient-model:
-  band: B
-  value: 4
-  valueWhy: Every plan dispatched runs on the pick that costs the developer least and
-    needs no paid extras, instead of whichever of several the developer happens to choose.
-  effort: 3
-  effortWhy: The picks file gains an order and an inclusion table, dispatch reads them
-    and a local subscriptions file, and the refresh command says how to fill both.
-  verdict: "Shaped from the plan-only decision, FW-053: until the picks say which
-    subscriptions include each model, a dispatched plan can need paid extras without
-    anyone noticing."
-  seen:
-    status: building
-    blockers: []
 command-slots-spike:
   band: A
   value: 5

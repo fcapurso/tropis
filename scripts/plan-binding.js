@@ -352,6 +352,108 @@ export function picksForTier(tiersText, tier) {
   return '';
 }
 
+const TIER_ORDER = ['Small', 'Small–medium', 'Medium', 'Medium–large', 'Large'];
+const INCLUSION_HEADER = '| Model | Usage per task | Included on |';
+
+/** A name with any parenthesised note and the spaces around it removed, lower-cased. */
+function bareName(text) {
+  return text.replace(/\([^)]*\)/g, '').trim().toLowerCase();
+}
+
+/**
+ * The subscriptions the developer holds, from the local record: one `<tool>: <value>`
+ * line per tool, `none` for a tool with no subscription. Blank lines, `#` lines and
+ * lines of any other shape are ignored.
+ * @param {string} text
+ * @returns {Map<string, Set<string>>} lower-cased tool → lower-cased subscriptions
+ */
+export function parseSubscriptions(text) {
+  const held = new Map();
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (line === '' || line.startsWith('#')) continue;
+    const m = line.match(/^([^:]+):\s*(.+)$/);
+    if (!m) continue;
+    const value = bareName(m[2]);
+    held.set(m[1].trim().toLowerCase(), value === 'none' || value === '' ? new Set() : new Set([value]));
+  }
+  return held;
+}
+
+/**
+ * Which subscriptions of each tool include each model, from the picks file's
+ * `| Model | Usage per task | Included on |` table. Null when the file has no such table.
+ * @param {string} picksText
+ * @returns {Map<string, Map<string, {name: string, subscriptions: Set<string>}>>|null}
+ */
+export function inclusionTable(picksText) {
+  const all = picksText.split('\n');
+  const start = all.findIndex((l) => l.startsWith(INCLUSION_HEADER));
+  if (start === -1) return null;
+  const table = new Map();
+  for (const line of all.slice(start + 1)) {
+    if (!line.startsWith('|')) break;
+    if (/^\|\s*-{3}/.test(line)) continue;
+    const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+    if (cells.length < 3) continue;
+    const tools = new Map();
+    // A note in parentheses may hold a comma or semicolon; drop it before splitting.
+    for (const part of cells[2].replace(/\([^)]*\)/g, '').split(';')) {
+      const m = part.match(/^([^:]+):\s*(.*)$/);
+      if (!m) continue;
+      const name = m[1].trim();
+      const subscriptions = new Set(
+        m[2].split(',').map((x) => x.trim().toLowerCase()).filter((x) => x !== '' && x !== 'none'),
+      );
+      tools.set(name.toLowerCase(), { name, subscriptions });
+    }
+    table.set(cells[0], tools);
+  }
+  return table;
+}
+
+/**
+ * The prompt line naming the pick to run a plan on: the first model in the plan's tier,
+ * then each tier above it, that one of the developer's recorded subscriptions includes
+ * without a charge on top (FW-053). Null when the tier is not one of the five.
+ * @param {string} picksText
+ * @param {string} tier
+ * @param {string|null} subscriptionsText the local record, or null when there is none
+ * @returns {string|null}
+ */
+export function pickToUse(picksText, tier, subscriptionsText) {
+  const from = TIER_ORDER.findIndex((t) => normalizeTier(t) === normalizeTier(tier || ''));
+  if (from === -1) return null;
+  const included = inclusionTable(picksText);
+  if (included === null) {
+    return '**Use:** not chosen — the picks do not say which subscriptions include each model. Run /refresh-model-tiers.';
+  }
+  const held = subscriptionsText === null ? new Map() : parseSubscriptions(subscriptionsText);
+  if (held.size === 0) {
+    return '**Use:** not chosen — which subscriptions you have is not recorded on this machine. Run /refresh-model-tiers.';
+  }
+  for (let i = from; i < TIER_ORDER.length; i++) {
+    const models = picksForTier(picksText, TIER_ORDER[i])
+      .split(';')
+      .map((part) => part.trim())
+      .filter((part) => part !== '' && !/^(or\s+)?any pick from a higher tier\.?$/i.test(part))
+      .map((part) => part.replace(/\s*\*\([^)]*\)\*\s*$/, ''));
+    for (const model of models) {
+      const tools = included.get(model);
+      if (!tools) continue;
+      for (const [key, { name, subscriptions }] of tools) {
+        const mine = held.get(key);
+        if (mine && [...mine].some((sub) => subscriptions.has(sub))) {
+          return i === from
+            ? `**Use:** ${model}, in ${name} — the first pick for this tier that your subscriptions include.`
+            : `**Use:** ${model}, in ${name} — no pick for this tier is included in your subscriptions; this is the first included pick from the ${TIER_ORDER[i]} tier.`;
+        }
+      }
+    }
+  }
+  return '**Use:** none — no pick for this tier or above is included in your subscriptions, and a model that costs extra is not used (FW-053).';
+}
+
 /** A checkout's own worktree setup, read by the dispatch command. */
 export const WORKTREE_SETUP = '.tropis/worktree-setup.txt';
 // A checkout on a release before this one keeps its setup here.
@@ -382,11 +484,12 @@ export function parseWorktreeSetup(text) {
  *   stale: boolean,
  *   setups?: Array<{checkout: string, steps: string[]|null}>,
  *   here?: string,
+ *   use?: string|null,
  * }} opts
  * @returns {string}
  */
 export function renderThinPrompt(opts) {
-  const { planPath, protocol, repos, picks, lastVerified, stale, setups = [], here = '' } = opts;
+  const { planPath, protocol, repos, picks, lastVerified, stale, setups = [], here = '', use = null } = opts;
   const lines = [
     `**Tier:** ${protocol.tier} · **Requires:** ${protocol.requires} · **Merge:** ${protocol.merge}`,
   ];
@@ -396,6 +499,7 @@ export function renderThinPrompt(opts) {
     lines.push('**Picks today:** none — this project has no `docs/model-picks.md`. Run /refresh-model-tiers to write it.');
   } else {
     lines.push(`**Picks today:** ${picks}`);
+    if (use !== null) lines.push(use);
     lines.push(`**Last verified: ${lastVerified}** (\`docs/model-picks.md\`)`);
     if (stale) {
       lines.push('Picks are older than ~45 days — run /refresh-model-tiers before trusting them.');

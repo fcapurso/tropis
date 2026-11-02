@@ -860,7 +860,7 @@ nothing in a set-up project's suite reads its README.
 
 ## FW-027: Model picks rest only on figures that can be compared
 
-**Date:** 2026-10-21 · **Status:** Accepted
+**Date:** 2026-10-21 · **Status:** Accepted; its exclusion of cost now covers placement only (FW-057).
 
 **Decision:** `/refresh-model-tiers` ranks one model above another only on scores that
 share the benchmark and its version, the harness, the effort setting, and a period in
@@ -1826,3 +1826,38 @@ belongs to `team-members-start-in-another-tool`. Changing the shipped waits of F
 FW-052 is the entry `waits-end-when-something-happens`. A holder stuck on a permission
 prompt for longer than the stale time turns stale, and its waiters stop; that needs the
 developer anyway.
+
+## FW-057: Inside a tier, picks go least usage first, and dispatch names one the developer's subscriptions include
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `/refresh-model-tiers` still places each model in a tier on fitness alone,
+and now lists a tier's models least usage per task first, measured as cost per task on
+one shared board at one effort setting, and records which subscriptions of each
+supported tool include each pick. Which subscriptions the developer holds is read from
+what the tools report, asked of the developer when that cannot be matched, and kept in
+`<git common dir>/tropis/subscriptions.txt`, never committed. `/dispatch` prints the
+first pick for the plan's tier, then for each tier above, that a recorded subscription
+includes, and names none when none is.
+
+**Evidence:** Read on 2026-11-02. Anthropic's article on Fable models says they are
+included on some Claude subscriptions, up to half the weekly limits, and run on usage
+credits on others; no vendor page gives how fast each other model draws a subscription.
+Cursor's models page says third-party models are billed at the model's API list price,
+outside the included pool. Artificial Analysis shows Claude Sonnet 5.5 and Claude Opus
+5.5 at about $10 per task each at max effort, though Sonnet's token price is half
+Opus's: a per-token price would have ranked them wrongly, and cost per task on one board
+did not. A tool's report can name a plan its vendor lists only as legacy, and does not
+say whether a team seat is premium. Source: none in particular; the pages above.
+
+**Rejected:** Ranking by list price per token (it hides a model that spends more
+tokens, as FW-027 found). Letting usage move a model between tiers (it would put a
+cheaper, less capable model on work it cannot hold). Recording the developer's
+subscriptions in the picks file (it is committed, and in a public project anyone reads
+it). Trusting the tools' reports without asking (they cannot always be matched to the
+vendors' names).
+
+**Consequences:** FW-027's *cost is left out* now covers placement only. A picks file
+from before this has no inclusion table; `/dispatch` still prints its picks and says to
+refresh. A sprint's team members and the reviewers Tropis starts get a tier through the
+entry `team-members-and-reviewers-run-on-a-tier`.
