@@ -5164,11 +5164,44 @@
     - docs/superpowers/plans/2026-11-01-another-tools-agent-can-be-started.md
 - id: team-members-start-in-another-tool
   title: A sprint started in one tool can hand entries to team members in another
-  status: idea
+  status: building
   value: A developer can run the sprint from the tool they prefer and have work done in
     another, for example a sprint session in Claude Code starting team members in
     Cursor, because team members coordinate only through the repository and GitHub.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - With a sprint under way, the sprint session starts an entry's team member in
+      Claude Code's or Cursor's command line, in print mode, in a worktree of its own
+      beside the checkout, and gets its turn back at once, told where the team member
+      works and where its log is. It is refused for an entry not in the sprint, a tool
+      it does not know, a tool that is not installed, and an entry whose team member is
+      still running.
+    - A team member started this way runs on no key billed per use. ANTHROPIC_API_KEY,
+      ANTHROPIC_AUTH_TOKEN and CURSOR_API_KEY are not in its environment, and --bare is
+      never passed.
+    - It runs on exact grants and never on all of them. In Claude Code that means
+      --permission-mode acceptEdits, --setting-sources project, and --allowedTools
+      naming the commands the workflow runs. In Cursor those commands are
+      permissions.allow rules in the worktree's .cursor/cli.json, written only when the
+      worktree has none of its own. --dangerously-skip-permissions, --force and --yolo
+      are never passed.
+    - An entry blocked by another starts its agent only once everything it is blocked
+      by has shipped, with no time limit. If a blocker is dropped, parked or stopped, the
+      agent is never started and the entry is recorded as PARKED, naming the blocker.
+    - When the agent ends, its last line is believed only as far as the repository
+      agrees. SHIPPED counts only when origin's main branch shows the entry shipped, and
+      is otherwise recorded as STOPPED, saying why. A run with no result, an error, or
+      no final line is recorded as STOPPED with the reason, and the commands the tool
+      denied are named.
+    - The sprint's status shows each team member started this way as running, or with
+      the line it ended on, stopped and parked ones first, and names the command that
+      opens its session. An entry blocked by one that parked this way parks too. A
+      watch command ends when such a team member ends and prints its line, so a sprint
+      session running it in the background is woken.
+    - /sprint tells the sprint session when and how to start a team member in the other
+      tool. The brief such a team member receives says that nobody is watching it, that
+      it runs every wait in the foreground and again whenever the tool stops it, and
+      that the grants file is not part of its work. A fresh agent given only a project
+      set up from the release starts a team member in the other tool when asked to.
   type: feature
   layer: product
   blockedBy:
@@ -5178,6 +5211,7 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-02-team-members-start-in-another-tool.md
 # The last piece of the epic, and it may be left out: nothing else depends on it.
 - id: backlog-speaks-in-epics-stories-and-points
   title: The backlog calls arcs epics, entries user stories, and effort story points
