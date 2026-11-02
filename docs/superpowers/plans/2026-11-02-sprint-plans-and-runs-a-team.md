@@ -4,24 +4,29 @@
 > including *Decisions* and *Traps*. Nothing in it stops for the developer.
 
 **Goal:** a developer runs `/sprint`, agrees a proposed sprint of about 20 story points,
-and a team of sessions or subagents delivers it, each entry through the workflow; the
-developer can ask where the sprint stands, hears about new entries, and gets a report at
-the end. In a tool that cannot start sessions or subagents, the sprint session works
-through the entries itself, one at a time.
+says to start, and the sprint session starts the whole team in that turn: one session
+per entry, which the developer can open, each delivering its entry through the workflow
+and waiting by itself for what it depends on. The developer can ask where the sprint
+stands, with stopped team members first, hears about new entries, and gets a report at
+the end. In a tool that cannot start sessions, the sprint session works through the
+entries itself, one at a time.
 
-**Spec:** `docs/superpowers/specs/2026-11-01-sprint-design.md`, §1, §2, §5 to §9 and
-*Goals*; decisions FW-049 to FW-052 in `framework/DECISIONS.md`; the seven acceptance
-criteria of the entry `sprint-plans-and-runs-a-team` in `feature-catalog.yaml`. Build
-only this entry. Starting a team member in another tool (`team-members-start-in-another-tool`,
-FW-050) and renaming the backlog's words (`backlog-speaks-in-epics-stories-and-points`)
-are other entries: do not build them.
+**Spec:** `docs/superpowers/specs/2026-11-01-sprint-design.md`, §1, §2, §5 to §9, §11
+and *Goals*; decisions FW-049 to FW-053 and FW-055 in `framework/DECISIONS.md`; the eight
+acceptance criteria of the entry `sprint-plans-and-runs-a-team` in `feature-catalog.yaml`.
+Build only this entry. Starting a team member in another tool
+(`team-members-start-in-another-tool`, FW-050), renaming the backlog's words
+(`backlog-speaks-in-epics-stories-and-points`) and taking the 60-minute limits off the
+token wait and the merges-after wait (`waits-end-when-something-happens`) are other
+entries: do not build them. The new wait this plan adds, for a blocker to ship, has no
+time limit from the start (FW-055).
 
 **One plan:** what becomes true is one sentence — a developer plans a sprint with
 `/sprint` and a team delivers it under rules every delivering session follows. The script,
 its tests, the command, the workflow section and the operator guide's paragraph all serve
 that one thing.
 
-**What the specifying session verified on 2026-11-02, against `origin/main` at `b89f278`:**
+**What the specifying session verified on 2026-11-02, against `origin/main` at `d434d75`:**
 
 - **The merge token and the overlap check exist.** `scripts/merge-token.mjs` exports
   `tokenStatus(root, { env, now, ref })`, returning `{ state, line }` with `line` starting
@@ -70,13 +75,27 @@ that one thing.
   starting `src/`, `docs/`, `scripts/`, `.claude/` or `.github/` in framework documents
   and commands. Write `.tropis/scripts/sprint.mjs`, never `scripts/sprint.mjs`, in
   backticks there.
-- **One other entry is in `building`**, `rules-carry-mechanism-not-provenance`; its plan
-  touches `rules/`, `commands/capture-learning.md`, `scripts/set-up-project.sh`,
-  `scripts/check-conformance.sh`, `scripts/capture-at-write.sh`,
-  `scripts/check-blueprint.sh`, `guards/rule-delivery.test.js`,
-  `guards/rule-incidents.test.js`, `framework/doc-architecture.md` and the bookkeeping
-  files. No file in this plan's table is among them; the claim ran
-  `plan-overlap.mjs --claim` to confirm.
+- **No other entry is in `building`** on `origin/main`; the claim ran
+  `plan-overlap.mjs --claim` to confirm no plan in `building` shares a file.
+- **FW-055 decides how the team starts and waits.** On the developer's word the sprint
+  session starts every team member in that same turn, as ordinary sessions of its tool
+  the developer can open; nothing starts later except an entry slid in, on the turn it is
+  added. Subagents of the sprint session and command lines run in the background were
+  rejected: the developer cannot open them. A team member whose entry is `blockedBy` an
+  unshipped one waits in a background wait in its own session until it ships, then
+  carries on; if that entry is parked it stops `PARKED: depends on <id>`. Waits end on
+  events, not clocks. What a team member may run is the tool's own permission settings;
+  the sprint adds no list of commands. The status lists stopped team members first and
+  the sprint session notifies the developer where the tool can. **Unobserved:** whether
+  a Claude Code session keeps waking from its own background wait over hours; this entry
+  must check it (*Decision 8*).
+- **FW-053, the plan-only limitation.** Every agent Tropis starts runs signed in to a
+  plan the developer already pays for; no API key billed per call. A cloud session billed
+  to the plan is allowed on cost.
+- **The Claude desktop app** lets a session start another only on a turn the developer
+  typed, and a session started by a session cannot start sessions (FW-055's evidence).
+  So a team member in that app dispatches its executor as a subagent, never as a
+  session.
 - **The last two plans from this spec** (review records read): import a module under
   test as a namespace (`import * as sprint from '../scripts/sprint.mjs'`), or a missing
   export fails the whole test file at link time; a red self-check stops at its
@@ -89,16 +108,17 @@ that one thing.
   nothing about sprints, parking or final lines, so a local fresh-agent probe in a
   scratch folder outside this repository is a real one.
 - **No cloud agent and nothing billed beyond the developer's plan.** The developer has
-  ruled this out for building and testing. The fresh-agent check uses the agent command
-  line already signed in on this machine, never a cloud session or an API key.
+  ruled this out for building and testing this entry. The fresh-agent check uses the
+  agent command line already signed in on this machine, never a cloud session or an API
+  key.
 
-**Model tier: Medium.** One script with ten small commands over a local file, the
+**Model tier: Medium.** One script with eleven small commands over a local file, the
 backlog on `origin/main`, `gh` and the token, with stubbed tests; the prose is given
-verbatim. The ordering and the status rules need care, not invention.
+verbatim. The ordering, the wait and the status rules need care, not invention.
 
-**Merge authority: parent review.** The specifying session reviews, opens the pull
-request and merges. Stop after Task 8; do not open a pull request, write a review record
-or merge.
+**Merge authority: parent review.** The specifying session reviews, runs the hours-long
+wake check (*Decision 8*), opens the pull request and merges. Stop after Task 8; do not
+open a pull request, write a review record or merge.
 
 **Requires:** `gh` signed in, for nothing but reading this repository's open pull requests in the Task 5 live run, and an agent command-line tool that starts a fresh local session from a prompt, for the fresh-agent check in Task 6 (record which, and its version).
 
@@ -157,7 +177,7 @@ shape, written with two-space indentation and a trailing newline:
 {
   "started": "2026-11-02T09:00:00Z",
   "budget": 20,
-  "way": "subagent",
+  "way": "session",
   "entries": [
     { "id": "glaze-log", "points": 3 },
     { "id": "kiln-alarm", "points": 2, "bundle": "kiln" }
@@ -170,9 +190,11 @@ shape, written with two-space indentation and a trailing newline:
 }
 ```
 
-`started` is ISO 8601 UTC to the second. `way` is `here`, `subagent` or `session`.
-`points` is the entry's `effort` score from the bands file, or 0 when it has none.
-`marks` and `notes` start empty.
+`started` is ISO 8601 UTC to the second. `way` is `session` (every team member a session
+of the tool, started at once) or `here` (the sprint session delivers the entries itself,
+one at a time). `points` is the entry's `effort` score from the bands file, or 0 when it
+has none. `marks` and `notes` start empty. Team members write marks too: they share the
+file through the common dir, since each works in a worktree of the same checkout.
 
 ### 2. `scripts/sprint.mjs`
 
@@ -231,8 +253,9 @@ catalog on `origin/main`:
    `docs/superpowers/plans/`, read at `origin/main`) names in `Merges after` an entry that
    is neither shipped nor dropped on main → `waiting to merge, after <id>[, <id>]`
 6. `building` on main → `building`
-7. marked `planning` → `planning`
-8. otherwise → `not started`
+7. an id in its `blockedBy` is not shipped on main → `waiting for <id>[, <id>] to ship`
+8. marked `planning` → `planning`
+9. otherwise → `not started`
 
 Open pull requests come from `gh pr list --state open --limit 100 --json
 number,headRefName` run in the root, only when `originOnGitHub` says origin is on GitHub,
@@ -252,7 +275,7 @@ decimal place, `<time>` ISO 8601 UTC to the second. Two spaces indent every list
   The last line only when a candidate was skipped for the budget alone, naming the first
   such. The sha is `origin/main`'s, or `working tree` in its place when there is none.
   With no candidate added: `Sprint: nothing to propose — no idea or shaped entry banded A or B is free to start.`
-- `start <id> [<id> ...] [--points <n>] [--way here|subagent|session]` — writes the file
+- `start <id> [<id> ...] [--points <n>] [--way session|here]` — writes the file
   with the ids in the order given, the budget (default 20), `way` (default `here`), the
   points from the bands file, `started` now and `baseline` every catalog id on main.
   Prints `Sprint: started with <n> entries, <p> of <budget> points; team members start as <way>.`,
@@ -268,7 +291,19 @@ decimal place, `<time>` ISO 8601 UTC to the second. Two spaces indent every list
 - `drop <id>` — removes it, and its mark and notes. `Sprint: dropped <id>; <total> of <budget> points.`
 - `mark <id> planning|parked|stopped|clear [<reason> ...]` — records or, with `clear`,
   removes the entry's mark; `parked` and `stopped` need a reason. `Sprint: <id> marked <state>.`
-  or `Sprint: <id> mark cleared.`
+  or `Sprint: <id> mark cleared.` Run by the sprint session and by team members.
+- `wait <id> [--interval <seconds>]` — the team member's wait for its blockers. Every
+  interval (default 30 seconds) it fetches origin and reads the catalog on `origin/main`
+  as *Reading the backlog* says, and the sprint file if there is one. When every id in
+  the entry's `blockedBy` is shipped on main (or it has none) it prints
+  `Sprint: <id> can start — nothing it is blocked by is still open.` and exits 0. When
+  one is dropped on main, or marked `parked` or `stopped` in the sprint file, it prints
+  `PARKED: depends on <blocker>` and exits 3. Otherwise it keeps waiting, with no time
+  limit, printing nothing more than one line when it starts:
+  `Sprint: <id> waits for <blocker>[, <blocker>] to ship.` A failed fetch does not end
+  the wait; it reads `origin/main` as last fetched, as the other commands do, and says so
+  once. An id not in the catalog exits 1. It works with no sprint file, so a session the
+  developer started by hand can use it too.
 - `note <id> <text> ...` — appends the words as one note. `Sprint: noted for <id>.`
 - `brief <id>` — prints the team member's brief, *Decision 3*, for an entry in the
   sprint. Exit 1 for an id not in the sprint.
@@ -276,12 +311,18 @@ decimal place, `<time>` ISO 8601 UTC to the second. Two spaces indent every list
   ```
   Sprint: started <time>, <h> h ago; <p> of <total> points shipped, <budget> budgeted.
   Merge token: <tokenStatus line, as it stands>
+  Sprint: needs you — <n> stopped or parked.
+    <id> — <parked: reason | stopped: reason>
+  Sprint: the rest.
     <id> — <status of the entry>
     ...
   Sprint: other open pull requests — #<N> <branch>, #<N> <branch>.
   Sprint: new in the backlog since the start — <id> [<type>] <title>; <id> [<type>] <title>.
   ```
-  Entries in sprint order. The other-pull-requests line only when an open pull request's
+  The `needs you` line and its entries only when an entry's status is parked or
+  stopped; then `Sprint: the rest.` and every other entry. With none, the entries follow
+  the token line directly. Entries in sprint order within each group. The
+  other-pull-requests line only when an open pull request's
   head branch contains no sprint entry's id; the new-entries line only when the catalog
   on main has ids not in `baseline`, bugs first, then catalog order.
 - `report` — exit 0.
@@ -306,7 +347,7 @@ decimal place, `<time>` ISO 8601 UTC to the second. Two spaces indent every list
 - `end` — prints the report, then removes the sprint file and prints
   `Sprint: ended; the sprint file is removed.`
 
-Every command except `propose` and `start`, run with no sprint file, prints
+Every command except `propose`, `start` and `wait`, run with no sprint file, prints
 `Sprint: none under way; run propose, then start.` and exits 1. An unknown command
 prints the usage line from the module comment and exits 2.
 
@@ -320,12 +361,13 @@ joined with `, `):
 Take the backlog entry `<id>` (<title>) in `feature-catalog.yaml` to shipped.
 Its design: `<spec ref>`.
 
-Follow `.claude/framework/workflow.md`, *Delivering an entry*, from shaping to merge:
-take the merge token yourself and land your own pull requests. Make the decisions
-yourself and report each one. Park only for what that section allows.
+Follow `.claude/framework/workflow.md`, *Delivering an entry*, from the wait for what it
+is blocked by to the merge: take the merge token yourself and land your own pull
+requests. The developer has agreed this sprint, so make the decisions yourself and
+report each one. Stop only for what that section allows.
 
-Work on this machine only: start no cloud session or cloud agent, and nothing billed
-beyond the plan the developer already pays for.
+Run every agent signed in to the plan the developer already pays for, never on a key
+billed per use.
 
 End your last message with exactly one line: SHIPPED, PARKED: <why> or STOPPED: <why>.
 ```
@@ -340,6 +382,10 @@ Insert into `framework/workflow.md` directly before `## The cycle`, verbatim:
 A session that takes one backlog entry to shipped — a team member a sprint started, or a
 session the developer started by hand — runs the whole of this document, in this order:
 
+0. If the entry is `blockedBy` one that has not shipped, run
+   `node .tropis/scripts/sprint.mjs wait <id>` as a background command and do nothing
+   else until it ends. It ends when everything the entry is blocked by has shipped, and
+   has no time limit. If it prints `PARKED: depends on <id>`, end with that line.
 1. Shape the entry (`/feature`) and write its plan.
 2. Claim it: run the overlap check on the plan (*Plans that touch the same files*), then
    land the plan, the shaping and the move to `building` through one pull request, under
@@ -351,22 +397,27 @@ session the developer started by hand — runs the whole of this document, in th
    the token for a follow-up pull request, then release it.
 5. End with exactly one line: `SHIPPED`, `PARKED: <why>` or `STOPPED: <why>`. `STOPPED`
    is for a wait that ran out, a usage limit, or an error you could not get past; the
-   lines the overlap and token waits print are `STOPPED` lines.
+   lines the overlap and token waits print are `STOPPED` lines. In a sprint, record a
+   `PARKED` or `STOPPED` line first with
+   `node .tropis/scripts/sprint.mjs mark <id> parked <why>` (or `stopped <why>`), so the
+   sprint's status and the team members waiting on this entry see it.
 
-**Park only for one of three things:** an action you are not allowed to take or that
-is dangerous, a judgement only the developer can make, or a check only a person can
-perform by hand. Anything else you decide, and report the decision. A parked entry
-goes back on the board as needing a decision. **An entry parked after its claim moves
-back** from `building` to `shaped`, its plan kept in `refs` and the reason in a comment
-directly above the entry, landed under the token like any backlog edit; it then leaves
-the overlap check, which counts only entries in `building`. An entry parked before its
-claim changes nothing in the backlog.
+**Stop only for one of three things:** a judgement only the developer can make, a check
+only a person can perform by hand (written to the verification log as `pending` through
+`/manual-check` first), or work outside what was agreed. Anything else you decide, and
+report the decision. What you may run is the tool's own permission settings; a prompt
+for a permission is answered in your session. A parked entry goes back on the board as
+needing a decision. **An entry parked after its claim moves back** from `building` to
+`shaped`, its plan kept in `refs` and the reason in a comment directly above the entry,
+landed under the token like any backlog edit; it then leaves the overlap check, which
+counts only entries in `building`. An entry parked before its claim changes nothing in
+the backlog.
 
 **A sprint starts these sessions; the rules are here so that any session follows them.**
-`/sprint` plans the sprint with the developer, starts one session or subagent per entry
-or bundle with the brief `node .tropis/scripts/sprint.mjs brief <id>` prints, and shows
-where each stands. It never merges, reviews or orders merges: the token and the overlap
-check do that.
+`/sprint` plans the sprint with the developer, starts one session per entry or bundle,
+all at once, with the brief `node .tropis/scripts/sprint.mjs brief <id>` prints, and
+shows where each stands. It never merges, reviews or orders merges: the token and the
+overlap check do that.
 ```
 
 ### 5. The command
@@ -394,60 +445,57 @@ says none is under way, plan one.
 
 Run `node .tropis/scripts/sprint.mjs propose`, or `propose --points <n>` when the
 developer names a budget; 20 story points is where it starts. Show the proposal and say
-which way you will start team members (below). The developer adds, drops, reorders and
-resizes it; run `propose` again for a new budget. An entry you find missing a
-`blockedBy` while looking is proposed to the developer like any backlog edit. Once they
-agree, run `node .tropis/scripts/sprint.mjs start <id> ... --points <n> --way <way>`,
-with the ids in the agreed order.
+how team members will start (below). The developer adds, drops, reorders and resizes it;
+run `propose` again for a new budget. An entry you find missing a `blockedBy` while
+looking is proposed to the developer like any backlog edit. What the developer agrees is
+what the team is approved to do: each entry, in that order, carried through the whole
+workflow to its own merge.
 
-## 2. Start team members
+## 2. Start the whole team, on the developer's word
 
-One team member per entry, or per bundle (one brief, for the bundle's first entry,
-naming the others). Its brief is what
-`node .tropis/scripts/sprint.mjs brief <id>` prints; pass it as it stands. Then run
-`node .tropis/scripts/sprint.mjs mark <id> planning`.
+When the developer says to start, in that same turn run
+`node .tropis/scripts/sprint.mjs start <id> ... --points <n> --way <way>`, with the ids
+in the agreed order, and then start every team member at once: one per entry, or per
+bundle (one brief, for the bundle's first entry, naming the others). Do not keep any for
+later — a later turn may not be one the developer typed, and some tools refuse to start
+a session on such a turn. An entry blocked by another starts too: its team member waits
+by itself until that entry ships. Pass each team member the brief
+`node .tropis/scripts/sprint.mjs brief <id>` prints, as it stands, and run
+`node .tropis/scripts/sprint.mjs mark <id> planning` for it.
 
-Ways of starting one, by what this tool can do:
-
-| Way | `--way` | Where |
+| `--way` | How | Where |
 |---|---|---|
-| A session of this tool per team member | `session` | an app that starts sessions, such as the Claude desktop app |
-| A background subagent per team member | `subagent` | Claude Code, Cursor |
-| This session, one entry at a time | `here` | every tool; the fallback |
+| `session` | one session of this tool per team member, which the developer can open | a tool that starts sessions, such as the Claude desktop app |
+| `here` | this session delivers the entries itself, one at a time, in sprint order | every tool; the fallback |
 
-With `here`, deliver each entry yourself as the brief says, in sprint order, and report
-its line before starting the next. A subagent that cannot start its own subagent
-executes its plan itself, as the workflow allows.
-
-Start in sprint order, as many at a time as the tool allows. Do not start an entry whose
-`blockedBy` names one that has not shipped, nor two whose descriptions suggest they will
-touch the same files; a wrong guess costs waiting, never a broken merge. Team members run
-on this machine only: start no cloud session or cloud agent, and nothing billed beyond
-the plan the developer already pays for. Stop starting team members before the tool's
-usage limit runs out, in the tool's own way.
-
-When a team member reports its last line, record it:
-
-- `SHIPPED`: nothing to record; `status` reads it from the main branch, and an entry the
-  main branch does not show as shipped is not shipped.
-- `PARKED: <why>`: `mark <id> parked <why>`. Skip the entries that depend on it.
-- `STOPPED: <why>`: `mark <id> stopped <why>`. A team member that stopped waiting on
-  another entry is started again, with `mark <id> clear`, once that entry ships.
-
-Record each decision a team member reports with `note <id> <decision>`.
+Never start a team member the developer cannot open, such as a subagent of this
+session or a command line run in the background. Every team member runs signed in to
+the plan the developer already pays for, never on a key billed per use. The sprint adds
+no limit of its own to what a team member may run: that is the tool's permission
+settings, and a permission prompt is answered in that team member's session.
 
 ## 3. Where are we?
 
 When the developer asks, run `node .tropis/scripts/sprint.mjs status` and report it as it
-stands. It also shows who holds the merge token: a token it marks stale is broken only on
-the developer's word, with the command it names.
+stands. Team members that stopped or parked come first, with their reasons: each one
+waits for the developer in its own session. It also shows who holds the merge token: a
+token it marks stale is broken only on the developer's word, with the command it names.
+
+When a team member's last line reaches you, or `status` shows a new stopped or parked
+one, tell the developer the tool's way, with a notification where the tool has one,
+naming the entry and its reason. A `SHIPPED` line needs nothing: `status` reads shipped
+from the main branch, and an entry the main branch does not show as shipped is not
+shipped. Record each decision a team member reports with
+`node .tropis/scripts/sprint.mjs note <id> <decision>`.
 
 ## 4. New entries
 
 When `status` lists entries new in the backlog since the start, raise them, bugs first,
-and offer to slide each into the sprint. `node .tropis/scripts/sprint.mjs add <id>` adds
-one and says which entries not yet started would then fall outside the budget; drop
-those with `drop <id>` only on the developer's word.
+and offer to slide each into the sprint. On the developer's word,
+`node .tropis/scripts/sprint.mjs add <id>` adds one and says which entries not yet
+started would then fall outside the budget; drop those with
+`node .tropis/scripts/sprint.mjs drop <id>` only on the developer's word. Start the new
+entry's team member in that same turn, as in step 2.
 
 ## 5. End
 
@@ -468,61 +516,67 @@ stopped, the decisions team members reported, and the new entries.
 
   ```markdown
   `/sprint` plans a sprint with you and runs it: it proposes about 20 story points from
-  the top of the ranking, you agree the entries and their order, and it starts one team
-  member per entry, each of which delivers its entry through the workflow and merges its
-  own work under the merge token. Ask it where the sprint stands at any time.
-  `node .tropis/scripts/sprint.mjs status` prints the same from the shell; the agreed
-  sprint lives in a file under `.git/`, never committed.
+  the top of the ranking, you agree the entries and their order, and when you say to
+  start it starts the whole team at once, one session per entry, each of which delivers
+  its entry through the workflow, waits by itself for what it depends on, and merges its
+  own work under the merge token. Ask it where the sprint stands at any time; team
+  members that need you come first. `node .tropis/scripts/sprint.mjs status` prints the
+  same from the shell; the agreed sprint lives in a file under `.git/`, never committed.
   ```
 
   In the sentence starting ``Commands you will type here:``, add `` `/sprint`,`` after
   `` `/dispatch`,`` and rewrap the two lines so neither runs past 90 characters.
 - **`framework/DECISIONS.md`:** append, after the last decision, numbered with the next
-  free FW number on `main` when you write it (FW-053 at the time of writing; the reviewer
+  free FW number on `main` when you write it (FW-056 at the time of writing; the reviewer
   confirms it at merge):
 
   ```markdown
-  ## FW-053: A sprint session plans and reports, and the workflow carries every team member's rule
+  ## FW-056: A sprint session plans and reports, and the workflow carries every team member's rule
 
   **Date:** 2026-11-02 · **Status:** Accepted.
 
   **Decision:** `/sprint` proposes about 20 story points from the top of the ranking —
   ideas and shaped entries banded A or B, in the order `/next` suggests them — and keeps
-  the agreed sprint in `.git/tropis/sprint.json`, local and shared by every worktree. It
-  starts one team member per entry or bundle: a session of its own tool, a background
-  subagent, or, where the tool has neither, itself, one entry at a time. Every team
-  member is given the same brief, pointing at the workflow's *Delivering an entry*,
-  whose steps, parking rule and last lines apply to any session delivering an entry. The
+  the agreed sprint in `.git/tropis/sprint.json`, local and shared by every worktree. On
+  the developer's word it starts every team member at once, as FW-055 says: a session of
+  its own tool per entry or bundle, or, where the tool cannot start sessions, itself, one
+  entry at a time. Every team member is given the same brief, pointing at the workflow's
+  *Delivering an entry*, whose steps — the wait for a blocker first, which ends only when
+  the blocker ships or is dropped, parked or stopped — the reasons to stop, and the last
+  lines apply to any session delivering an entry. A team member records its own `PARKED`
+  or `STOPPED` in the sprint file, which every worktree of the checkout shares. The
   sprint's status is read from the backlog on `origin`'s main branch, the open pull
-  requests and the merge token, and only the steps nothing on GitHub shows — planning,
-  parked, stopped — from the sprint file. Team members run on the developer's machine,
-  never in the cloud, and nothing is billed beyond the developer's plan.
+  requests and the merge token, lists stopped and parked team members first, and reads
+  from the sprint file only what nothing on GitHub shows: planning, parked, stopped.
 
   **Rejected:** Keeping the team member's rules in the sprint command (a session started
   by hand would not follow them). Committing the sprint file (a sprint is the
   developer's working state, not the project's). Reading a team member's `SHIPPED` as
-  shipped (FW-050: a reply is a claim; the main branch is the truth). A tie-break by
-  rank at merge (the spec's non-goal). Starting team members in another tool
-  (`team-members-start-in-another-tool`) or in the cloud.
+  shipped (FW-050: a reply is a claim; the main branch is the truth). The sprint session
+  recording every team member's last line (it is not always woken when one ends; the
+  team member writing its own mark needs nobody). A tie-break by rank at merge (the
+  spec's non-goal). Starting team members in another tool
+  (`team-members-start-in-another-tool`).
 
   **Consequences:** A sprint session whose conversation is reset picks the sprint up from
   the file. A session the developer started by hand shows in the status only as an open
-  pull request no sprint entry accounts for. In Claude Code a subagent cannot start its
-  own subagent, so a team member started as one executes its plan itself, which the
-  workflow allows. Source: the sprint design of 2026-11-01, sections 1, 2 and 5 to 9.
+  pull request no sprint entry accounts for. A team member's mark reaches only sessions on
+  the same machine, which is where FW-055's team runs. <the wake check's outcome, one
+  sentence, written by the reviewer from *Decision 8*.> Source: the sprint design of
+  2026-11-01, sections 1, 2, 5 to 9 and 11, and FW-055.
   ```
 
-  Rewrap to 90 characters if a line runs over; change only the number if FW-053 is
-  taken.
+  Rewrap to 90 characters if a line runs over; change only the number if FW-056 is
+  taken. Leave the angle-bracketed sentence as it is: the reviewer replaces it.
 
 ### 7. The tests
 
 `guards/sprint.test.js`, `// Level: unit` first, then a module comment in the style of
 `merge-token.test.js`. Import the script as a namespace for its pure parts and run a copy
-of it, with `next-work.js`, `board-bands.js`, `plan-binding.js`, `main-status.mjs` and
-`merge-token.mjs` and the `yaml` package resolvable, installed at `.tropis/scripts/` in
-a clone of a local bare repository, as `merge-token.test.js` does. Each case marked †
-must fail before the script exists.
+of it, with `next-work.js`, `board-bands.js`, `plan-binding.js`, `projections.js`,
+`main-status.mjs` and `merge-token.mjs` and the `yaml` package resolvable, installed at
+`.tropis/scripts/` in a clone of a local bare repository, as `merge-token.test.js` does.
+Each case marked † must fail before the script exists.
 
 - † `propose` fills 20 points in rank order: a catalog with A and B ideas and shaped
   entries of known scores, a C entry, an unbanded one, a shelved one, a shipped one, and
@@ -534,23 +588,32 @@ must fail before the script exists.
 - † a bundle of two whose sum does not fit is left out whole, and one that fits comes
   whole, at its first member's place.
 - † `start` writes the file under `git rev-parse --git-common-dir` (with its `baseline`,
-  points and `way`), refuses a second start, an unknown id and a bad `--way`; and the
-  file is read from a second worktree of the same clone.
+  points and `way`), refuses a second start, an unknown id and a `--way` of `subagent`;
+  and the file is read, and a `mark` written, from a second worktree of the same clone.
+- † `wait`: with every blocker shipped it exits 0 at once with its line; with a blocker
+  open it is still running after three intervals of 1 second, and exits 0 within a few
+  intervals of the blocker being shipped on origin from another clone (so it fetches);
+  it exits 3 with `PARKED: depends on <blocker>` once the blocker is marked parked in
+  the sprint file, and once it is dropped on origin; it runs with no sprint file. Use
+  `--interval 1`, spawn it asynchronously, and kill it in the test's cleanup.
 - † on a local origin, `status` reads an entry shipped on origin's main after the clone
   last fetched as `shipped` (so the fetch is tested), and an entry marked parked that
   main shows shipped reads `shipped`.
-- † on a GitHub origin, `status` shows each of the ten states: one shipped, one
+- † on a GitHub origin, `status` shows each of the eleven states: one shipped, one
   dropped, one marked parked, one marked stopped, one with an open pull request while
   `building` (merging), one with an open pull request while `shaped` (claiming), one
-  `building` whose plan merges after an unshipped entry, one `building`, one marked
-  planning, one not started. Set it up by cloning from a local bare repository, so
-  `origin/main` is fetched, then pointing `origin` at a `github.com` URL with
-  `git remote set-url`, and spawning the script with `GIT_ALLOW_PROTOCOL=file` in its
-  environment: the fetch is then refused at once without reaching the network
-  (checked: `fatal: transport 'https' not allowed`, exit 128, git 2.49.0 on macOS 26.2,
-  arm64), the script prints its `could not fetch origin` line and reads `origin/main` as
-  last fetched, while `git remote get-url origin` still prints the GitHub URL. A stub
-  `gh` first on PATH answers `pr list` and fails every other call with exit 99.
+  `building` whose plan merges after an unshipped entry, one `building`, one waiting for
+  an unshipped blocker, one marked planning, one not started; the parked and stopped ones
+  come first, under `Sprint: needs you — 2 stopped or parked.`, then `Sprint: the rest.`.
+  Set it up by cloning from a local bare repository, so `origin/main` is fetched, then
+  pointing `origin` at a `github.com` URL with `git remote set-url`, and spawning the
+  script with `GIT_ALLOW_PROTOCOL=file` in its environment: the fetch is then refused at
+  once without reaching the network (checked: `fatal: transport 'https' not allowed`,
+  exit 128, git 2.49.0 on macOS 26.2, arm64), the script prints its `could not fetch
+  origin` line and reads `origin/main` as last fetched, while `git remote get-url origin`
+  still prints the GitHub URL. A stub `gh` first on PATH answers `pr list` and fails
+  every other call with exit 99.
+- † with nothing stopped or parked, `status` prints no `needs you` line.
 - † `status` lists an open pull request matching no entry, and a new bug and a new
   feature added on main after the start, the bug first.
 - † with origin not on GitHub, `status` prints the `open pull requests unknown` line and
@@ -563,13 +626,43 @@ must fail before the script exists.
   such as `TROPIS_SPRINT_NOW`, documented in the module comment as for tests) shows the
   shipped points, points per hour, parked, stopped, not done, notes and new entries;
   `end` removes the file.
-- † every command but `propose` and `start` without a sprint file exits 1 with the line.
+- † every command but `propose`, `start` and `wait` without a sprint file exits 1 with
+  the line.
 - The documents: `framework/workflow.md` has `## Delivering an entry` before
-  `## The cycle`, naming `PARKED: <why>`, `moves back` and `sprint.mjs brief`;
-  `commands/sprint.md` names every command of the script it tells a session to run
-  (`propose`, `start`, `brief`, `mark`, `note`, `status`, `add`, `drop`, `end`) and
-  `no cloud session`; `scripts/installed-scripts.txt` lists `sprint.mjs`;
-  `templates/package.json` has the `sprint` script.
+  `## The cycle`, naming `sprint.mjs wait`, `PARKED: <why>`, `moves back` and
+  `sprint.mjs brief`; `commands/sprint.md` names every command of the script it tells a
+  session to run (`propose`, `start`, `brief`, `mark`, `note`, `status`, `add`, `drop`,
+  `end`), `in that same turn` and `--way`, and its `--way` table has the rows `session`
+  and `here` and no other;
+  `scripts/installed-scripts.txt` lists `sprint.mjs`; `templates/package.json` has the
+  `sprint` script.
+
+### 8. The hours-long wake check — the reviewer's
+
+FW-055 rests on something nobody has observed: that a Claude Code session waiting on its
+own background command keeps being woken when the command ends, after hours. This is not
+the executor's to run — an executor working as a subagent is not the kind of session a
+team member is. The specifying session, itself a session of the Claude desktop app
+started by another session, as a team member is, runs it during review:
+
+1. Before going idle, start in the background
+   `node .tropis/scripts/sprint.mjs wait <entry>` from the plan's worktree — or, before
+   the script is on `main`, `node scripts/sprint.mjs wait <entry>` — against a probe:
+   a throwaway clone of this repository in `$TMPDIR` whose `origin` is a local bare
+   repository, with an entry blocked by another, and, in the background too, a command
+   that ships the blocker on that bare origin after at least three hours
+   (`sleep 10800 && <commit and push the blocker as shipped>`). Note the time.
+2. End the turn with nothing else pending that would wake the session sooner — no
+   subagent running, no other background command, no message expected — and say so.
+3. When the session is woken, record: the time it was woken, by what (the `wait`
+   command's completion with `can start`), how long it was idle, the tool and its
+   version, and the operating system and architecture.
+4. Record the outcome in the review record's *Checks re-run*, in the catalog comment for
+   the criterion it covers, and as the sentence in the decision's *Consequences*; and
+   replace the spec's *Unchecked* bullet in §11 with what was seen. If the session was
+   not woken, or was woken by something else, say so in those same places: the entry
+   then does not ship until the check has passed, and the review hands back to the
+   parent session with what was seen.
 
 ## Traps
 
@@ -587,8 +680,12 @@ must fail before the script exists.
 - **The fresh-agent probe runs in a scratch project set up from this worktree**, not in
   this repository: here the installed release (`.claude/`) is the last one and does not
   have the change.
+- **The hours-long wake check (*Decision 8*) is the reviewer's.** Do not run it, and do
+  not edit the spec or the angle-bracketed sentence in the decision.
+- **`wait` never ends by itself on a clock.** Its tests spawn it and must kill it in
+  cleanup; a test that awaits it without a kill hangs the suite.
 - **The scope check.** `git diff --stat origin/main...HEAD` must list only the files in
-  *File Structure*.
+  *File Structure*, the spec excepted, which only the reviewer edits.
 
 ## File Structure
 
@@ -607,6 +704,7 @@ must fail before the script exists.
 | `docs/backlog-board/bands.yaml` | the entry's row removed (Task 7) |
 | `docs/backlog-board/index.html` | only if the board's hook rebuilt and staged it |
 | `docs/superpowers/plans/2026-11-02-sprint-plans-and-runs-a-team.md` | the handover report |
+| `docs/superpowers/specs/2026-11-01-sprint-design.md` | §11's *Unchecked* bullet, by the reviewer only (*Decision 8*) |
 
 Nothing else. If a guard demands a change to a file not listed, stop and hand back with
 its output.
@@ -648,6 +746,11 @@ HEAD~1`:
    Expected red: the parked-but-shipped case.
 3. Drop the blocker condition from the walk. Expected red: the blocker case.
 4. Let a bundle come in part. Expected red: the bundle case.
+5. Make `wait` exit 0 while a blocker is still open. Expected red: the `wait` case.
+6. Make `wait` ignore the sprint file's marks. Expected red: the `wait` case, at its
+   parked step.
+7. Put the parked and stopped entries in sprint order with the rest. Expected red: the
+   GitHub-origin `status` case.
 
 Paste the failing test names of each. If one stays green, fix the test, commit, and
 repeat.
@@ -670,13 +773,16 @@ at most 20 (paste it); `status` prints `Sprint: none under way; run propose, the
 and exits 1. Then `node scripts/sprint.mjs start <the first proposed id> --way here`,
 `status` (paste it: the entry's state, the token line, and any other open pull requests),
 and at once `node scripts/sprint.mjs end` (paste it). Then confirm with
-`ls "$(git rev-parse --git-common-dir)/tropis/"` that no `sprint.json` is left.
+`ls "$(git rev-parse --git-common-dir)/tropis/"` that no `sprint.json` is left. Also run
+`node scripts/sprint.mjs wait <an open entry with no blockedBy>`, expected to exit 0 at
+once with its `can start` line.
 
 ### Task 6 — Fresh-agent check
 
-The workflow now tells every session delivering an entry when to park, how an entry
-parked after its claim moves back, and which last line to print, and `/sprint` tells a
-sprint session how to plan and start team members. A fresh agent with only a project set
+The workflow now tells every session delivering an entry to wait for its blockers first,
+when to stop, how an entry parked after its claim moves back, and which last line to
+print, and `/sprint` tells a sprint session to start the whole team at once, on the
+developer's word. A fresh agent with only a project set
 up from this branch must be seen to follow both. Run it with its tool calls visible (in
 Claude Code, `claude -p --output-format stream-json --verbose`, allowed to run shell
 commands and edit files), with the scratch project as its working directory, on this
@@ -690,9 +796,9 @@ machine only.
    a `feature-catalog.yaml` with three entries: `glaze-log` (`building`, refs naming the
    plan `docs/superpowers/plans/glaze-log.md`, which delivers `glaze-log` and whose
    *Requires* says the developer must choose the label printer before any task can
-   start), and `kiln-alarm` and `shelf-map` (both `idea`, `feature`, layer `product`),
-   and a `docs/backlog-board/bands.yaml` banding `kiln-alarm` A (value 4, effort 3) and
-   `shelf-map` B (value 3, effort 2). Commit everything, add the bare repository as
+   start), and `kiln-alarm` and `shelf-map` (both `idea`, `feature`, layer `product`,
+   `shelf-map` with `blockedBy: [kiln-alarm]`), and a `docs/backlog-board/bands.yaml`
+   banding `kiln-alarm` A (value 4, effort 3) and `shelf-map` B (value 3, effort 2). Commit everything, add the bare repository as
    `origin`, push `main`.
 2. Prompt, verbatim apart from the path: *"This is a probe; its output will be
    discarded. In the project at `<scratch project>`, you are the team member for the
@@ -703,14 +809,23 @@ machine only.
    its plan still in `refs`, with a comment directly above it giving the reason; and the
    agent's last line starts `PARKED:`.
 3. Second prompt: *"This is a probe; its output will be discarded. In the project at
-   `<scratch project>`, run /sprint: propose a sprint, and treat the proposal as agreed by
-   me. Start the sprint with team members started in this session, but stop before
+   `<scratch project>`, run /sprint: propose a sprint. I agree the proposal; start it.
+   This session cannot start other sessions, so deliver here, but stop before
    delivering anything; show me each team member's brief and where the sprint stands."*
    (Where the tool does not run slash commands from a prompt, say *"follow
    `.claude/commands/sprint.md`"* instead.) Check, and paste: the calls `sprint.mjs
    propose`, `sprint.mjs start kiln-alarm shelf-map` with `--way here`, `sprint.mjs
-   brief` for each, and `sprint.mjs status`; and no call that starts a cloud session or
-   agent.
+   brief` for each, `sprint.mjs mark … planning` for each, and `sprint.mjs status`; that
+   `shelf-map` was not left out for being blocked; and no call that starts a cloud
+   session or a subagent.
+4. Third prompt, with the sprint from prompt 3 still in place: *"This is a probe; its
+   output will be discarded. In the project at `<scratch project>`, you are the team
+   member the sprint started for `shelf-map`; here is your brief: <what
+   `sprint.mjs brief shelf-map` printed>. Begin. Once you have done what the workflow's
+   first step asks, and it has not ended, report what you ran and stop."* Check, and
+   paste: a call `sprint.mjs wait shelf-map`, run in the background; that it printed
+   `Sprint: shelf-map waits for kiln-alarm to ship.`; and that the agent did not shape
+   `shelf-map` or write a plan. Kill the `wait` process afterwards.
 
 If the agent misses a step, the wording is not clear enough: change it, commit, and run
 the probe again. If it fails twice, stop and hand back with both transcripts' relevant
