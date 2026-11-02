@@ -110,6 +110,12 @@ describe('sharedFiles', () => {
     const b = plan(['src/y.js', 'src/x.js', ...BOOKKEEPING]);
     expect(sharedFiles(a, b)).toEqual(['src/x.js']);
   });
+
+  test('reads every file in a row, not only the first', () => {
+    const a = `${plan(['src/y.js'])}| \`src/z.js\`, \`src/x.js\` | change |\n`;
+    const b = plan(['src/x.js']);
+    expect(sharedFiles(a, b)).toEqual(['src/x.js']);
+  });
 });
 
 describe('Merges after in a plan header', () => {
@@ -200,6 +206,15 @@ describe('--claim', () => {
     });
     expect(run(root, '--claim', P('b')).status).toBe(0);
     expect(readFileSync(join(root, P('b')), 'utf8')).toContain('**Merges after:** z, a');
+  });
+
+  test('reads a claiming plan whose only row lists several files', () => {
+    const root = claimProject({ own: [] });
+    put(root, P('b'), `${plan([], { header: HEADER, delivers: 'b' })}| \`src/w.js\`, \`src/x.js\` | change |\n`);
+    const r = run(root, '--claim', P('b'));
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/Overlaps a .*src\/x\.js/);
+    expect(readFileSync(join(root, P('b')), 'utf8')).toContain('**Merges after:** a');
   });
 
   test('exits 2 on a plan with no File Structure table', () => {
