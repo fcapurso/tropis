@@ -5042,7 +5042,7 @@
     - docs/superpowers/plans/2026-11-01-overlapping-plans-merge-in-order.md
 - id: sprint-plans-and-runs-a-team
   title: The developer plans a sprint with /sprint, and a self-organising team delivers it
-  status: idea
+  status: building
   value: Opening a project, the developer runs /sprint and gets a proposed sprint of
     about 20 story points from the top of the ranking, refines it, and a team of
     sessions delivers it in parallel, each entry through the whole workflow, without
@@ -5050,7 +5050,41 @@
     when team members add entries, bugs first, with the option to slide them in, and gets
     a report at the end. In a tool that cannot start sessions, the sprint runs one entry
     at a time.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - /sprint proposes a sprint of 20 story points, or the number the developer gives,
+      filled from the top of the ranking (band A then B, value over effort inside a band)
+      from ideas and shaped entries. It leaves out shelved, replaced and unscored entries,
+      entries banded C or lower, and entries blocked by one that has neither shipped nor
+      come earlier in the sprint. A bundle comes whole or not at all, and inside the sprint
+      every entry comes after the entries it is after or blocked by.
+    - Once the developer agrees, the sprint (its entries in order, their points, the way
+      team members are started, the start time and the backlog's ids at that moment) is
+      written to a local file git does not track, and a sprint session whose conversation
+      was reset picks the sprint up from that file.
+    - For each entry the sprint session prints a team member's brief, which points at the
+      workflow and asks for one last line, SHIPPED, PARKED or STOPPED with the reason. It
+      starts team members in sprint order as subagents or sessions of its own tool, or
+      works through the entries itself one at a time where the tool has neither. It starts
+      none whose blocker has not shipped, none in the cloud, and nothing billed beyond the
+      plan the developer already pays for.
+    - The workflow tells every session delivering an entry, started by a sprint or by
+      hand, the steps from shaping to merge, when it may park, that an entry parked after
+      its claim moves back from building to shaped with its plan kept and the reason in a
+      comment, and that it ends with one of the three lines. A fresh agent given only a
+      project set up from the release, and an entry it cannot finish, parks it that way.
+    - Asked where the sprint stands, it shows each entry as not started, planning,
+      claiming, building, waiting to merge (naming what it waits for), merging, shipped,
+      parked or stopped with the reason, and dropped, read from the backlog on origin's
+      main branch, the open pull requests and the merge token, so an entry a team member
+      called shipped that main does not show as shipped is not shown as shipped. It also
+      shows open pull requests no sprint entry accounts for, who holds the token, and the
+      points shipped and left.
+    - Entries added to the backlog on main since the sprint started are listed, bugs
+      first. Sliding one in says which entries not yet started would then fall outside the
+      budget, and drops none of them by itself.
+    - At the end a report lists what shipped with its points, points per hour of elapsed
+      time, what was parked and what the developer must decide, what stopped, the
+      decisions team members reported, what was not done, and the new entries.
   type: feature
   layer: product
   blockedBy:
@@ -5060,6 +5094,7 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-02-sprint-plans-and-runs-a-team.md
 # 2026-11-02, shaped. Probes use only tools already installed and signed in, and web
 # documentation. No tool is installed, no account or API key is created or entered, and
 # no paid cloud agent is started; a part that needs one is recorded as unproven with what
