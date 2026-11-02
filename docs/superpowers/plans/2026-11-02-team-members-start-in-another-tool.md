@@ -603,3 +603,54 @@ back. Kill any process left, then delete the scratch folder.
 - **Merge authority: parent review.** The specifying session reviews, re-runs the
   checks, writes the review record, numbers the decision and merges under the merge
   token.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 8 done. Worktree `../tropis-team-cli` (made by the isolate helper). Task 5's fresh-agent check and Task 6's four live runs were done with the signed-in tools only; no key, no `--bare`, no cloud agent; scratch folders deleted and processes killed afterwards.
+
+### Verification results
+
+Platform: git 2.49.0, Node v22.15.0, Claude Code 2.1.300, cursor-agent 2026.10.22-27dcf5f, macOS 26.2 on arm64 (`uname -sm`: Darwin arm64).
+
+- Task 0 baseline: `bash scripts/check-blueprint.sh` last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1: `git grep -nF -e "team-member-cli" -e "sprint.mjs launch" -- scripts guards commands templates` printed nothing before the work. After: hits in `scripts/sprint.mjs`, `scripts/installed-scripts.txt`, `guards/sprint.test.js`, `guards/team-member-cli.test.js`, `commands/sprint.md`, `templates/README.md`. `claude --help` says `--allowedTools <tools...>` is variadic, "Comma or space-separated"; the code passes one comma-joined argument.
+- Task 2 (red): all 22 cases of `guards/team-member-cli.test.js` failed before the code (`Tests: 22 failed, 22 total`), the documents case included.
+- Task 3: both files green except the documents cases (`Tests: 2 failed, 47 passed, 49 total`) until Task 4. Throwaway mutations, run against the working tree and reverted with `git checkout`: removing judge rule 4 turned red "a run ends > STOPPED when it claimed SHIPPED…" and "the seam > judge…"; making `agentEnv` return `env` turned red "launch > starts the tool at once…" and "the seam > agentEnv…".
+- Task 4/8: `bash scripts/check-blueprint.sh` last line `Self-check passed: …`; `npm --prefix .tropis test` `Tests: 154 passed, 154 total`.
+- Task 5 (Claude Code 2.1.300, no `--model`, `--allowedTools Bash`, a fake `cursor-agent` in mode `slow` first on PATH): the agent called the `sprint` skill, then `node .tropis/scripts/sprint.mjs status`, then `node .tropis/scripts/sprint.mjs launch glaze-log --model composer-2.5` (reply: `Sprint: glaze-log started in Cursor's command line (pid …), in …/kiln-yard-team-glaze-log.`), then `node .tropis/scripts/sprint.mjs watch` with `run_in_background: true`, and its report said the developer hears through `watch` and `status`. The fake recorded one start with the brief as prompt. Passed at the first attempt. The probe ran on the developer's machine, whose global instructions do not mention the sprint, so they could not make it pass.
+- Task 6 (live; the model for Claude Code was `haiku`, for Cursor `composer-2.5`):
+  - Claude, `claim.md`: `Sprint: probe-entry ended in Claude Code — STOPPED: it said SHIPPED, but origin/main shows probe-entry as shaped`; result `{"tool":"claude","line":"STOPPED: it said SHIPPED, but origin/main shows probe-entry as shaped","denied":[],"sessionId":"<session-id>","exit":0,…}`.
+  - Claude, `do.md`: `Sprint: probe-entry ended in Claude Code — SHIPPED`; `git show main:feature-catalog.yaml` on origin: `status: shipped`; `denied: []`; result `{"tool":"claude","line":"SHIPPED","denied":[],"sessionId":"<session-id>","exit":0,…}`.
+  - Cursor, `claim.md`: `… ended in Cursor — STOPPED: it said SHIPPED, but origin/main shows probe-entry as shaped`; `.cursor/cli.json` in the worktree held `Shell(git)`, `Shell(gh)`, …
+  - Cursor, `do.md`: `… ended in Cursor — SHIPPED`; origin's main has the commit `probe` and `status: shipped`; result `{"tool":"cursor","line":"SHIPPED","denied":[],"sessionId":"<session-id>","exit":0,…}`.
+  - Two earlier Claude `do.md` attempts ended `STOPPED`/`PARKED` for a reason of the scratch project's own, not the launcher: the agent read the framework's rules there (a gated `main` refuses a direct push; a criterion without a test cannot ship). Both lines were correctly recorded as the agent's. I then gave the scratch project `"ungated"` in `.tropis/project.json` and an entry with no criteria.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: `commands/sprint.md`, `docs/backlog-board/bands.yaml`, `feature-catalog.yaml`, `framework/DECISIONS.md`, `guards/sprint.test.js`, `guards/team-member-cli.test.js`, `scripts/installed-scripts.txt`, `scripts/sprint.mjs`, `scripts/team-member-cli.mjs`, `templates/README.md` (10 files, 1052 insertions, 40 deletions) plus this plan. Every file is in *File Structure*; `docs/backlog-board/index.html` did not change. Worktree: `../tropis-team-cli`.
+
+Worked from no named external source: the code is written against this repository's `sprint.mjs`, `claude --help` and `cursor-agent --help`.
+
+### Judgment calls
+
+- The decision keeps `FW-NNN` for the reviewer to number. Every sentence of it was checked against the build and stands.
+- `launch` renames an existing `<id>.log` to `<id>.log.1` before starting, so a restarted run is not judged through the previous run's events (the first session id and last result would otherwise come from the old log).
+- `run` takes its worktree from the same function `launch` uses, not from `sprint.launched`, which `launch` writes only after the process starts.
+- `launch` re-reads the sprint file just before writing `launched` and the `planning` mark.
+- `claude --allowedTools` gets one comma-joined argument (variadic option).
+- The guards could not be named "case 1…12" as the plan numbers them; the catalog comment maps criteria to the `describe` blocks and cases by name. The `launch` timing assertion was replaced by "the run is alive and has no result when launch returns", because a clock limit failed once on a loaded machine.
+- The documents case collapses whitespace before looking for the exception sentence (it wraps across lines).
+- `isolate-for-plan.sh` was run once from the specifying session's checkout as dispatched.
+
+### What the plan got wrong
+
+- Case 12's exact sentence cannot be found in a wrapped paragraph; whitespace is collapsed instead.
+- "within a second" for `launch` is not stable on a busy machine (the self-check ran at over 200 s for the suite).
+- The live run for `do.md` needs the scratch project to be ungated and to have an entry without acceptance criteria, or the framework's own rules make the agent decline.
+- Cursor's stream reports no `permission_denials`, so `denied` is always empty for Cursor.
+
+### Outstanding
+
+The change has no screen, so there is no developer check. The reviewer numbers `FW-NNN`. The `watch` and `status` suffix lines were exercised with fakes and with the four live runs only; a run lasting hours has not been tried.
