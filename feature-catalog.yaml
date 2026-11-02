@@ -4989,8 +4989,6 @@
       moments.
   type: feature
   layer: product
-  blockedBy:
-    - merge-token-can-live-on-github
   modules:
     - scripts/merge-token.mjs
     - guards/merge-token.test.js
