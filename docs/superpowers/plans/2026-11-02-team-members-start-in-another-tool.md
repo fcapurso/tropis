@@ -701,7 +701,7 @@ the handover are written `<session-id>`; the scratch projects are invented names
 ### Outstanding disposition
 
 - No screen, so no developer check: none owed.
-- The decision number: given at the merge token from the next free number on `main`.
+- The decision number: FW-059, the next free number on `main` at the merge token.
 - Cursor's stream carries no permission denials, so `denied` is always empty for Cursor
   and a refused command shows only through the agent's own `STOPPED` line, which the
   brief tells it to write. Accepted; the brief covers it.

@@ -2,8 +2,8 @@
 // Shared machinery: no part of this file is project-owned.
 /**
  * What a sprint needs to start a team member in Claude Code's or Cursor's command line,
- * and to judge how the run ended (decisions FW-050, FW-053 and the one that follows
- * FW-055). `sprint.mjs` is the only importer; this file imports nothing from it. Plain
+ * and to judge how the run ended (decisions FW-050, FW-053 and FW-059).
+ * `sprint.mjs` is the only importer; this file imports nothing from it. Plain
  * functions and constants, so a third tool is a third key in TOOLS.
  *
  * The exact command lines, the grants and the environment are the contract with the two

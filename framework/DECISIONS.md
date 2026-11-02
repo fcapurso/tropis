@@ -1920,7 +1920,7 @@ tool that cannot keep a command running for hours ends the wait early, and runni
 same command again resumes it. Implements FW-055 for the waits shipped with FW-051 and
 FW-052. Source: the entry `waits-end-when-something-happens`.
 
-## FW-NNN: A team member in the other tool is a detached run that waits, works and is judged by the repository
+## FW-059: A team member in the other tool is a detached run that waits, works and is judged by the repository
 
 **Date:** 2026-11-02 · **Status:** Accepted.
 
