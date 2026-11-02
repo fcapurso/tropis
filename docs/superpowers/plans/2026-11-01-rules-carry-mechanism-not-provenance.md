@@ -726,3 +726,83 @@ them).
   list where to look first.
 - **`origin/main` has moved** to `b89f278` since the base; the branch needs a rebase and a
   re-run of the merge criteria before merging.
+
+## Review record
+
+Reviewed by the specifying session, on the branch rebased onto `origin/main` at
+`b89f278`. Tools: Claude Code 2.1.300, Node v22.15.0, git 2.49.0, macOS 26.2, Darwin
+arm64.
+
+### Checks re-run
+
+- The rebase conflicted in `framework/DECISIONS.md` only: FW-052 landed on `main` at the
+  place FW-053 was appended. Resolved by keeping both, FW-052 first. A second rebase at
+  landing met another plan's FW-053; this decision became FW-054, and the catalog's two
+  new ideas were kept side by side.
+- `git diff --stat origin/main...HEAD`: 22 files, each in *File Structure*;
+  `scripts/check-conformance.sh` and `docs/backlog-board/index.html` untouched, as the
+  handover says.
+- `npm --prefix .tropis test` on the rebased branch: `Test Suites: 13 passed, 13 total`,
+  `Tests: 150 passed, 150 total`.
+- `guards/rule-incidents.test.js` on a `git archive` export of the branch, with
+  `TROPIS_EXPECT_FRAMEWORK=1`: `Tests: 8 passed, 8 total`. Re-broken by renaming one
+  record heading (`## A consumer test that wrote its own field`) in the export, so a
+  pointer dangles and a section goes unpointed: `Tests: 1 failed, 7 passed, 8 total`.
+- `bash scripts/check-blueprint.sh` on the rebased branch (`9f56e4f`, load average about
+  12): `Self-check passed: every guard caught its defect, the clean baseline passed, and
+  the framework repository's own guards passed.`, both `rule-incidents` plants `caught`.
+  Run again on the head carrying this record before the pull request.
+- The handover's diagnosis of exit status 127 for `rule-delivery` in the Task 0 export
+  was checked: the guard spawns hooks at `.tropis/hooks/` (`guards/rule-delivery.test.js`
+  line 33 and others), and `.tropis/` is export-ignored, so in a bare export the hooks
+  are absent. Expected there; the self-check runs the guard in the conformance project.
+- Criterion 1 was checked by reading the whole diff of the five rule files: each
+  constraint still says what it forbids and why. Where a story was the only statement of
+  a mechanism, the executor wrote the mechanism as a sentence (the three shapes of a check
+  that cannot pass, the observation reported only in conversation, the stand-in that says
+  why).
+
+### Found
+
+Public exposure: the diff was read for private material, and the added lines searched for
+home paths, names and hostnames; nothing found. The records keep the rules' existing
+pseudonyms; the old "the developer's Mac" phrase did not move into a record.
+
+- Mechanical, fixed on the branch by the reviewer: `rules/incidents/README.md` named
+  branch commits (`6d65120`) that the rebase replaced, and named the guard by a path a
+  set-up project does not have, while the file ships to every project. It now names the
+  merge and the guard in plain text.
+- The tokenizer examples in `tests.md` (`then`, `do`, `{`, a continued line) moved to the
+  record. They are particular to one matcher; the general mechanism stays. Accepted, as
+  the executor's judgment.
+- The saving: 6% of words, 1% of bytes, recorded in the index. Each pointer costs about
+  70 bytes. Changing the pointer form would save about 2% more and is not worth a second
+  plan; the criterion asked for the saving to be recorded, and it is.
+
+### Outstanding disposition
+
+- Shorter pointer form: dropped. About 2% of the rules' bytes, against a pointer that
+  names a path an agent can open as it stands.
+- Criterion 1 has no automated check: settled by this review's read of the diff; future
+  edits are held by the fourth capture question and the learnings clause.
+- Branch behind `origin/main`: rebased by this review.
+- The decision number: FW-053 was free at review and was taken by another plan before
+  this one landed, so the reviewer renumbered the decision FW-054 at landing.
+- The `rule-delivery` exit 127 in a bare export: explained above, nothing to file.
+
+### Learnings routed
+
+- `--allowedTools` does not keep a probe away from Bash, seen in this plan's probe and in
+  the rules-are-retired-on-evidence probe: captured as the idea `probe-keeps-to-its-tools`
+  in `feature-catalog.yaml`.
+- The plan's untrue claim that rule lines are at most 88 columns, its Task 1 ordering and
+  its Task 4/6 commit ordering: plan-writing slips covered by the planning rule's
+  *Verify every claim about the repository* and *A check states what it prints*; nothing
+  new to route.
+
+### Merged because
+
+Every check re-ran green on the rebased branch, the new guard goes red when a record
+heading and its pointer part, the rewritten rules keep each mechanism, the fresh-agent
+probe found the fourth question doing what it was written for, and the only fixes were
+two mechanical corrections to the incident index, made and declared here.
