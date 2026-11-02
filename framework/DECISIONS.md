@@ -1980,7 +1980,7 @@ session started with (that is what this replaces: the developer's default model,
 whatever it costs).
 
 **Consequences:** A team member started in another tool's command line (FW-059) is
-still passed `--model` only as the developer gives it: neither entry defaults it to
-this pick, and that is left to a later entry. An
-executor's own review subagents are its business and are not covered. The repository's
+still passed `--model` only as the developer gives it: `sprint.mjs launch` does not
+default it to this pick, and that is left to a later entry. An executor's own review
+subagents are its business and are not covered. The repository's
 own `/rule-trial` is not shipped and is left as it is.
