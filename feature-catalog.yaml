@@ -5197,3 +5197,17 @@
   modules: []
   refs:
     - docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md
+- id: waits-end-when-something-happens
+  title: A session waiting for the token or for another plan waits until it happens
+  status: idea
+  value: A team member waiting for the merge token, or for a plan it must merge after,
+    carries on by itself when the token is free or the other plan has shipped or left
+    building, however long that takes, so the developer is not asked to restart it after
+    an hour. It stops only when the token's holder has turned stale, naming the holder.
+    Today both waits stop after 60 minutes.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md

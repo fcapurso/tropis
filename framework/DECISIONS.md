@@ -1641,7 +1641,8 @@ user-level skills and configuration load into its runs with no flag to prevent i
 team member started that way may behave differently from the project's rules alone. Claude
 Code's waiting-for-an-answer case and Cursor's exit code on failure were not observed.
 Cursor's cloud agent API needs a key billed per use, so FW-053 excludes it rather than
-leaving it to be proven.
+leaving it to be proven. FW-055 keeps the command line for starting a team member in the
+other tool; within one tool, team members are sessions started together.
 
 ## FW-051: Plans that share a file merge in the order they were claimed
 
@@ -1659,7 +1660,8 @@ move). Counting the bookkeeping files (every pair would overlap and parallel wor
 run one at a time). Building a branch on another unmerged branch (needing the other's
 code is `blockedBy`).
 
-**Consequences:** Two plans touching one file in unrelated places wait for each other. A
+**Consequences:** FW-055 replaces the 60-minute limit with a wait that ends when the
+other plan ships or leaves `building`. Two plans touching one file in unrelated places wait for each other. A
 session that ignores the check still cannot put a red or out-of-date change on a gated
 `main`; it only rebases more. Source: the sprint design of 2026-11-01, sections 4 and 5.
 
@@ -1684,7 +1686,8 @@ with nobody told). Keeping the rule in a sprint session (a session started by ha
 not follow it). The API alone (its concurrency could not be tested without GitHub, and an
 origin elsewhere would have no lock).
 
-**Consequences:** A waiter whose holder died stops after an hour and says so. A cloud
+**Consequences:** FW-055 replaces the 60-minute limit with a wait that lasts while the
+holder is working and ends when the token turns stale. A waiter whose holder died stops after an hour and says so. A cloud
 session's release is unproven, as FW-049 says. Source: the sprint design of 2026-11-01,
 section 3, and FW-049.
 
@@ -1766,3 +1769,60 @@ accretion resumes).
 **Consequences:** Every session in a rule's area pays only for the mechanism. A rule
 that reads as unexplained after a story leaves it has lost its mechanism with the story,
 and no guard sees that; the read-through at writing and at review is what catches it.
+
+## FW-055: A sprint starts its whole team on the developer's word, and team members wait for events, not for the developer
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** When the developer agrees a sprint and says to start it, the sprint session
+starts every team member in it in that same turn, as ordinary sessions of its tool that
+the developer can open and watch. Nothing is started later, so no start depends on a turn
+the developer typed. A team member whose entry is `blockedBy` another waits in its own
+session, in a background wait that ends when that entry ships, and then carries on; if
+that entry is parked, it stops and says so. Every wait in a team member's life ends on
+something happening, not on a clock: the wait for a plan it merges after ends when that
+plan ships or leaves `building`, and the wait for the merge token lasts while the holder
+is working and ends, with the team member stopping and naming the holder, only when the
+token turns stale. Time only marks a holder or a waiter as stale in the status.
+
+What the developer approves is the agreed sprint: its entries, order and bundles, each
+carried through the whole workflow to its own merge. A team member stops only for a
+judgement only the developer can make, a check by hand, or work outside the sprint, and
+then ends `PARKED: <why>` or `STOPPED: <why>` in its own session. What a team member may
+run is left to the tool's own permission settings; the sprint adds no limit of its own,
+and a permission the tool asks for is answered in that team member's session. The sprint
+session lists stopped team members first in its status, tells the developer through the
+tool's notification where there is one, and the developer answers in the team member's
+own session. Starting a team member in the other tool stays FW-050's command line.
+
+**Evidence:** Running a sprint by hand in the Claude desktop app on 2026-11-01 and
+2026-11-02. A session there may start another session only on a turn the developer
+typed: a turn begun by another session's message, a background notification or a Remote
+Control message is refused the start and can only leave a card for the developer to
+click, and a session that was itself started by a session cannot start sessions. Each time
+a dependency shipped and the sprint session was woken to start the next entry, the entry
+waited for the developer. Messages between sessions, and a session woken by its own
+background command, went through with nobody present. Separately, the waits shipped with
+FW-051 and FW-052 stop after 60 minutes, and a stopped team member also needs the
+developer to start it again. Source: none in particular; the brainstorm of 2026-11-02
+with the developer.
+
+**Rejected:** Starting each team member when its turn comes (refused on every turn the
+developer did not type, which is what made the developer type "continue" between
+entries). Starting team members through the tool's command line in the background, in the
+same tool (works unattended, but they do not appear in the tool's interface, so the
+developer loses sight of them). Subagents of the sprint session (unattended too, but the
+developer cannot open one). A list of exact command grants recorded by the sprint (what
+an agent may run belongs to the tool's settings; the sprint's job is to stop asking, not
+to add limits). Waits with a time limit (each one that runs out is another stop the
+developer must restart).
+
+**Consequences:** The whole team exists from the start, mostly waiting, so the tool's
+list of sessions holds every entry of the sprint at once. An entry the developer slides
+in later is started on that turn, which the developer typed. Whether a session keeps
+waking from its own background wait over hours is not yet observed; the entry
+`sprint-plans-and-runs-a-team` checks it in Claude Code, and how Cursor's sessions do it
+belongs to `team-members-start-in-another-tool`. Changing the shipped waits of FW-051 and
+FW-052 is the entry `waits-end-when-something-happens`. A holder stuck on a permission
+prompt for longer than the stale time turns stale, and its waiters stop; that needs the
+developer anyway.

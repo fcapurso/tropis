@@ -94,8 +94,9 @@ sprint session raises it and offers to slide it in. At the end there is a short 
 ### 2. A team member's life
 
 One team member per entry or bundle, running the whole workflow as today's delivery
-sessions did:
+sessions did. Every team member is started when the sprint starts (§11):
 
+0. If the entry is `blockedBy` another, wait until that entry ships (§5).
 1. Shape the entry; write its plan.
 2. Claim it: land the plan and the move to `building`, through a pull request under the
    merge token. Before landing, run the **overlap check** (§4).
@@ -143,10 +144,10 @@ messages: if two team members try at the same moment, one gets it.
   on the developer's word. *Designer's call:* nothing is working on a branch when it has
   no open pull request and no push within a time the builder sets; a hold by a person is
   never stale.
-- **Waiting for the token has a time limit too** (*designer's call*), as the wait in §5
-  does. When it runs out, the team member stops with `STOPPED: waiting for the token,
-  held by <holder>`, so a dead holder leaves every waiter stopped and reported rather
-  than waiting forever.
+- **Waiting for the token lasts while the holder is working** (FW-055, replacing the
+  60-minute limit of FW-052). When the token turns stale, the waiter stops with
+  `STOPPED: waiting for the token, held by <holder>`, so a dead holder leaves every
+  waiter stopped and reported rather than waiting forever, and a slow one stops nobody.
 - **Every session follows it.** The token rule goes into the workflow's merge sequence,
   not into the sprint session, so a session the developer starts by hand takes the token
   like a team member. The sprint session's status shows such work, as `/next` shows open
@@ -204,7 +205,9 @@ lists every file it touches.
 ### 5. Dependencies
 
 - **`blockedBy`** (on the entry, set when shaping): the work cannot be done without the
-  other entry's code. The sprint session does not start it until the other has shipped.
+  other entry's code. Its team member is started with the rest and waits, in a
+  background wait in its own session, until the other has shipped; if the other is
+  parked, it stops with `PARKED: depends on <id>` (FW-055).
 - **`after`** (on the entry, existing: a designed order, where starting early would
   still work): the sprint proposal and the start order respect it, and nothing more. It
   does not turn into `Merges after`; the overlap check decides that from files.
@@ -214,9 +217,9 @@ lists every file it touches.
 - Before taking the token, a team member checks `origin/main`: has every entry it merges
   after shipped? If not, it waits in the same 30-second loop, without trying for the
   token.
-- *Designer's call:* that wait has a time limit. When it runs out the team member stops
-  with `STOPPED: waiting on <id>`, and the sprint session starts it again once that
-  entry ships. This covers waiting on an entry that was parked.
+- That wait ends when the other plan ships or leaves `building` — parked or dropped —
+  and then the team member merges. It has no time limit (FW-055, replacing the 60-minute
+  limit of FW-051); the status shows what each waiter waits on.
 - *Designer's call:* no branch is built on another unmerged branch. Needing the other's
   code is `blockedBy`.
 
@@ -224,7 +227,7 @@ lists every file it touches.
 
 The developer asks "where are we?" and gets what shipped, what is in flight and at which
 step (planning, building, waiting to merge, merging), what is parked and why, and what is
-left in the sprint. It is built from `main`'s backlog, open pull requests and the token
+left in the sprint, with team members stopped for the developer listed first. It is built from `main`'s backlog, open pull requests and the token
 marker, so it is right whichever tool each team member ran in. *Designer's call:* a team
 member still planning leaves no trace on GitHub; the sprint session reads "planning"
 from its own sprint file, since it started that team member. A session the developer
@@ -257,7 +260,10 @@ through a small seam:
 - **a printed prompt** the developer pastes into a new window, as `/dispatch` does.
 
 The first two are built with `/sprint`. The command-line way is its own entry. The
-sprint plan says which ways this tool has, and the sprint runs with those.
+sprint plan says which ways this tool has, and the sprint runs with those. Within one
+tool, team members are sessions the developer can open: a command line run in the
+background, or a subagent, would run unattended too, but the developer could not see or
+open it (FW-055).
 
 **Answered — second spike (2026-11-02):** Two command lines work today, and both run an
 agent with nobody watching: `claude -p "<prompt>" --output-format json --model <m>
@@ -299,6 +305,32 @@ effort score and adds no arithmetic. Whether the rename reaches field names (`ef
 every project's bands file, which needs a step in `/update`) or only the words people
 read is decided when the piece is shaped; it sets the piece's size.
 
+### 11. Running without the developer
+
+The developer's intent: the team works without them on what they agreed, and nobody types
+"continue" between entries. It stops only for a judgement only the developer can make, a
+check by hand, or work outside the sprint. FW-055 records it.
+
+- **Everyone starts on the developer's word.** When the developer agrees the sprint and
+  says to start, the sprint session starts every team member in that turn. In the Claude
+  desktop app a session may start another only on a turn the developer typed; starting
+  them all then means nothing is started later. An entry the developer slides in is
+  started on the turn they slide it in.
+- **Waits end on events.** A team member waiting on a `blockedBy` entry, a plan it merges
+  after, or the token waits in its own session and carries on when the thing happens
+  (§3, §5). Time only marks something as stale in the status.
+- **Approved means the agreed sprint.** What a team member may run is the tool's
+  permission settings, not the sprint's; a permission prompt is answered in that team
+  member's session.
+- **Stopping.** A team member that needs the developer ends `PARKED: <why>` or
+  `STOPPED: <why>` in its own session, with any check by hand written to the
+  verification log as `pending`. The sprint session lists it first in the status,
+  notifies where the tool can, and the developer answers in that session.
+- **Visibility.** Every team member is a session in the tool's list, which therefore holds
+  the whole sprint from the start.
+- **Unchecked:** whether a session keeps waking from its own background wait over hours,
+  checked by `sprint-plans-and-runs-a-team` in Claude Code.
+
 ## How this sits with what exists
 
 - **Separate specification and execution (FW-004)** holds: the team member specifies
@@ -323,12 +355,14 @@ The feature is one epic: the entries below share this spec. Each lands as its ow
 3. `overlapping-plans-merge-in-order`: the overlap check at claim and `Merges after`
    (§4, §5).
 4. `sprint-plans-and-runs-a-team`: planning, the team, status, new entries,
-   end-of-sprint report, the first two ways of starting team members. Blocked by 2;
-   after 3.
+   end-of-sprint report, the first two ways of starting team members, and starting the
+   whole team at once (§11). Blocked by 2; after 3.
 5. *Spike* `another-tools-agent-can-be-started`: starting another tool's agent from a
    session (§9).
 6. `team-members-start-in-another-tool`. Blocked by 5; after 4.
 7. `backlog-speaks-in-epics-stories-and-points` (§10). After 4; may be left out.
+8. `waits-end-when-something-happens`: the token wait and the merge-after wait end on
+   events, not after 60 minutes (§3, §5, FW-055).
 
 2 and 3 are useful without the rest.
 
