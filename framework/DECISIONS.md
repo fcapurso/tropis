@@ -1827,6 +1827,40 @@ FW-052 is the entry `waits-end-when-something-happens`. A holder stuck on a perm
 prompt for longer than the stale time turns stale, and its waiters stop; that needs the
 developer anyway.
 
+## FW-056: A sprint session plans and reports, and the workflow carries every team member's rule
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `/sprint` proposes about 20 story points from the top of the ranking —
+ideas and shaped entries banded A or B, in the order `/next` suggests them — and keeps
+the agreed sprint in `.git/tropis/sprint.json`, local and shared by every worktree. On
+the developer's word it starts every team member at once, as FW-055 says: a session of
+its own tool per entry or bundle, or, where the tool cannot start sessions, itself, one
+entry at a time. Every team member is given the same brief, pointing at the workflow's
+*Delivering an entry*, whose steps — the wait for a blocker first, which ends only when
+the blocker ships or is dropped, parked or stopped — the reasons to stop, and the last
+lines apply to any session delivering an entry. A team member records its own `PARKED`
+or `STOPPED` in the sprint file, which every worktree of the checkout shares. The
+sprint's status is read from the backlog on `origin`'s main branch, the open pull
+requests and the merge token, lists stopped and parked team members first, and reads
+from the sprint file only what nothing on GitHub shows: planning, parked, stopped.
+
+**Rejected:** Keeping the team member's rules in the sprint command (a session started
+by hand would not follow them). Committing the sprint file (a sprint is the
+developer's working state, not the project's). Reading a team member's `SHIPPED` as
+shipped (FW-050: a reply is a claim; the main branch is the truth). The sprint session
+recording every team member's last line (it is not always woken when one ends; the
+team member writing its own mark needs nobody). A tie-break by rank at merge (the
+spec's non-goal). Starting team members in another tool
+(`team-members-start-in-another-tool`).
+
+**Consequences:** A sprint session whose conversation is reset picks the sprint up from
+the file. A session the developer started by hand shows in the status only as an open
+pull request no sprint entry accounts for. A team member's mark reaches only sessions on
+the same machine, which is where FW-055's team runs. <the wake check's outcome, one
+sentence, written by the reviewer from *Decision 8*.> Source: the sprint design of
+2026-11-01, sections 1, 2, 5 to 9 and 11, and FW-055.
+
 ## FW-057: Inside a tier, picks go least usage first, and dispatch names one the developer's subscriptions include
 
 **Date:** 2026-11-02 · **Status:** Accepted.
