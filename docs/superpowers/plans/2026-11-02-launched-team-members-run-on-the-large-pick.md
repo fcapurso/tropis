@@ -273,6 +273,7 @@ the change and pass after it.
 | `scripts/plan-binding.js` | `pickForTool`, *Decision 2* |
 | `scripts/sprint.mjs` | `launch`, *Decision 3* |
 | `guards/team-member-cli.test.js` | *Tests* |
+| `guards/dispatch.test.js` | the template-header assertion in "reads the picks table /refresh-model-tiers tells a project to start from" becomes the four-column header and separator (added by the reviewer after the executor stopped on it) |
 | `commands/sprint.md` | *Decision 4* |
 | `commands/refresh-model-tiers.md` | *Decision 4* |
 | `framework/model-tiers.md` | *Decision 4* |
