@@ -10,11 +10,12 @@
  * cannot be read, or the plan lists no file.
  *
  * --wait <plan> [--interval <seconds>] [--timeout <minutes>]: before a merge, waits until
- * every entry in the plan's `Merges after` is `shipped` or `dropped` in the catalog on
- * origin's main branch, fetching every time. Defaults 30 seconds and 60 minutes. Exit 0
- * when they have, or when the plan merges after nothing (git is not run); 2 when origin
- * or its catalog cannot be read, or names an id the catalog lacks; 3 at the timeout,
- * printing `STOPPED: waiting on <ids>`.
+ * no entry in the plan's `Merges after` is `building` in the catalog on origin's main
+ * branch (shipped, dropped, or parked back to shaped), fetching every time. Defaults 30
+ * seconds and no limit. Exit 0 when none is, or when the plan merges after nothing (git
+ * is not run); 2 when origin or its catalog cannot be read, or names an id the catalog
+ * lacks; 3 at the --timeout, only when one was given, printing `STOPPED: waiting on
+ * <ids>`.
  *
  * Pure functions are exported for the guard; the command line runs only when this file is
  * run directly.
@@ -78,7 +79,7 @@ const USAGE = 'usage: plan-overlap.mjs --claim <plan> | --wait <plan> [--interva
 function parseArgs(argv) {
   const [mode, plan, ...rest] = argv;
   if (!['--claim', '--wait'].includes(mode) || !plan || plan.startsWith('--')) return null;
-  const opts = { mode: mode.slice(2), plan, intervalS: 30, timeoutMin: 60 };
+  const opts = { mode: mode.slice(2), plan, intervalS: 30, timeoutMin: Infinity };
   if (mode === '--claim') return rest.length ? null : opts;
   for (let i = 0; i < rest.length; i += 2) {
     const n = Number(rest[i + 1]);
@@ -143,7 +144,8 @@ export async function waitForPlans(root, opts, { now = Date.now, sleep: pause = 
     say('Merges after: none — go ahead.');
     return 0;
   }
-  process.stderr.write(`plan-overlap: waiting for ${ids.join(', ')} to ship, asking origin every ${opts.intervalS} s for up to ${opts.timeoutMin} min\n`);
+  const limit = Number.isFinite(opts.timeoutMin) ? ` (at most ${opts.timeoutMin} min)` : '';
+  process.stderr.write(`plan-overlap: waiting until ${ids.join(', ')} is no longer building, asking origin every ${opts.intervalS} s${limit}\n`);
   const deadline = now() + opts.timeoutMin * 60000;
   for (;;) {
     const fetched = git(root, 'fetch', '--quiet', 'origin');
@@ -161,9 +163,10 @@ export async function waitForPlans(root, opts, { now = Date.now, sleep: pause = 
     const byId = new Map((Array.isArray(catalog) ? catalog : []).map((e) => [e.id, e]));
     const missing = ids.find((id) => !byId.has(id));
     if (missing) return fail(`${opts.plan} merges after ${missing}, which the catalog on ${branch} does not have.`);
-    const pending = ids.filter((id) => !['shipped', 'dropped'].includes(byId.get(id).status));
+    const pending = ids.filter((id) => byId.get(id).status === 'building');
     if (!pending.length) {
-      say(`Merges after: ${ids.join(', ')} — shipped on ${branch}; go ahead.`);
+      const seen = ids.map((id) => `${id} ${byId.get(id).status}`).join(', ');
+      say(`Merges after: ${ids.join(', ')} — none building on ${branch} (${seen}); go ahead.`);
       return 0;
     }
     if (now() >= deadline) {
