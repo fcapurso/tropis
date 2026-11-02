@@ -223,6 +223,19 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+team-members-start-in-another-tool:
+  band: A
+  value: 3
+  valueWhy: A sprint can only use the tool it was started in; work cannot go to the
+    developer's other tool.
+  effort: 3
+  effortWhy: One launcher in the sprint script for both tools' command lines, a
+    detached run judged by the repository, and its tests with fake tools.
+  verdict: "The command-line way the sprint design leaves as a seam, now unblocked: the
+    spike proved both tools' command lines and the sprint command has shipped."
+  seen:
+    status: building
+    blockers: []
 team-members-and-reviewers-run-on-a-tier:
   band: B
   value: 3
