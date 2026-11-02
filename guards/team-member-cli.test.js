@@ -365,15 +365,15 @@ describe('launch', () => {
   it('† starts the tool at once, detached, in a worktree of origin/main, with the brief and no key', async () => {
     const world = simple();
     const clone = makeClone(world);
-    const fakes = withFakes(world, { FAKE_MODE: 'slow', FAKE_SLEEP: '8' });
+    const fakes = withFakes(world, { FAKE_MODE: 'slow', FAKE_SLEEP: '30' });
     expect(run(clone, ['start', 'e1', '--way', 'claude']).status).toBe(0);
     const brief = run(clone, ['brief', 'e1'], fakes.env).stdout;
 
-    const began = Date.now();
     const r = launch(clone, ['e1', '--model', 'haiku'], fakes.env);
-    const took = Date.now() - began;
     expect(r.status).toBe(0);
-    expect(took).toBeLessThan(6000);
+    // It returned while the tool is still working: the run is a process of its own.
+    expect(hasResult(clone, 'e1')).toBe(false);
+    expect(() => process.kill(readSprint(clone).launched.e1.pid, 0)).not.toThrow();
     const worktree = worktreeOf(clone, 'e1');
     const sprint = readSprint(clone);
     const out = lines(r);
