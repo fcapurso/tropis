@@ -140,6 +140,12 @@ describe('against a local origin', () => {
     const origin = makeOrigin();
     const a = makeClone(origin, 'a');
     const b = makeClone(origin, 'b');
+    // Without a delay on the server, one session finishes before the other has read,
+    // and the loser never reaches the push. Holding every push for half a second lets
+    // both read "free" and both push, so the refusal of the second is what is tested.
+    const hook = join(origin.bare, 'hooks/pre-receive');
+    writeFileSync(hook, '#!/bin/sh\nsleep 0.5\n');
+    chmodSync(hook, 0o755);
     for (let round = 0; round < 5; round += 1) {
       const [ra, rb] = await Promise.all([
         runAsync(a, ['take', '--holder', 'a', '--interval', '0', '--timeout', '0.02']),
