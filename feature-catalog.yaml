@@ -5203,21 +5203,61 @@
 # From the brainstorm of 2026-11-02 that recorded FW-053. Tiers today place models on
 # fitness alone and leave cost to whoever dispatches (docs/model-picks.md says so), the
 # session a sprint starts per entry has no tier at all, and whether a pick is included
-# depends on the developer's plan: Claude Fable 5.1 is reported included on Max up to
-# about half the weekly allowance and to need usage credits on Pro.
+# depends on the developer's plan. Shaped 2026-11-02 and narrowed to the picks and
+# /dispatch: the vendors' pages read that day say Claude Fable 5.1 is included only on
+# some Claude subscriptions, and that Cursor bills every third-party model at its API
+# price outside the included pool. Team members and reviewers, which need the sprint
+# command first, are team-members-and-reviewers-run-on-a-tier.
 - id: agents-run-on-the-most-efficient-model
-  title: Every agent runs on the model that does its job with the least usage
+  title: /dispatch names the cheapest pick the developer's subscriptions include
+  status: building
+  value: A developer's subscriptions last longer when each executor runs on the model
+    that uses the least of the allowance without losing quality on its plan. Today a
+    tier names several models in no order of cost, and the picks do not say which
+    subscriptions include each one, so a pick can need paid extras. /refresh-model-tiers
+    orders each tier by usage per task and marks which subscriptions include each pick,
+    finds out which subscriptions the developer has, asking when it cannot tell, and
+    keeps that on the machine only; /dispatch then names the one pick to use.
+  acceptanceCriteria:
+    - The picks file /refresh-model-tiers tells a project to start from lists each
+      tier's models least usage per task first, and carries a second table giving each
+      pick's usage per task and, for every supported tool, the subscriptions whose
+      allowance includes it; /dispatch reads both tables from that template.
+    - /refresh-model-tiers reads which subscription each supported tool reports, asks
+      the developer when a tool reports none or a name the picks do not list, and
+      writes the answer to a file under the git directory, which is never committed;
+      the picks file names no developer's subscription.
+    - /dispatch prints, beside the tier's picks, the one to use and the tool to run it
+      in - the first in the tier's order that a recorded subscription includes, then
+      the next tier up - and never a pick no recorded subscription includes.
+    - /dispatch says so, and names no pick to use, when no subscriptions are recorded
+      on the machine, when the picks do not say which subscriptions include each
+      model, and when no pick for the tier or above is included.
+    - A picks file in the earlier shape, with no inclusion table, still gives the
+      tier's picks as before.
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-02-agents-run-on-the-most-efficient-model.md
+# Split from agents-run-on-the-most-efficient-model when it was shaped on 2026-11-02.
+# A team member's brief and start are written by sprint-plans-and-runs-a-team, still
+# building, so this waits for it.
+- id: team-members-and-reviewers-run-on-a-tier
+  title: A sprint's team members and the reviewers Tropis starts run on a tier's included pick
   status: idea
-  value: A developer's plan lasts longer when each agent Tropis starts - an executor, a
-    sprint's team member, a reviewer - runs on the model that uses the least of the
-    allowance without losing quality on that job. Today a plan's tier names several models
-    in no order of cost, a sprint's team member has no tier, and the picks do not say
-    which models the developer's own plans include, so a pick can need paid extras.
-    /refresh-model-tiers would find out which subscriptions the developer has, asking when
-    it cannot tell reliably, and mark each pick as included or not on them.
+  value: Every agent Tropis starts, not only an executor, runs on the model that uses
+    the least of the developer's subscriptions without losing quality on its job. A
+    sprint's team member shapes, plans and reviews, and a fresh reviewer reviews, but
+    neither has a tier, so each runs on whatever model its session started with.
   acceptanceCriteria: []
   type: improvement
   layer: product
+  blockedBy:
+    - sprint-plans-and-runs-a-team
+  after:
+    - agents-run-on-the-most-efficient-model
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
