@@ -9,7 +9,10 @@ or close one as `dropped`.
 conditions — what a person could check, not what the code does. Add the spec path
 to `refs` once one exists.
 
-**To `building`:** add the plan path to `refs`.
+**To `building`:** add the plan path to `refs`. Then run
+`node .tropis/scripts/plan-overlap.mjs --claim <plan>` and land the claim with whatever
+it wrote into the plan's header: `.claude/framework/workflow.md`, *Plans that touch the
+same files*.
 
 **To `shipped`, all of these must hold:**
 

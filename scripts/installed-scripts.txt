@@ -20,3 +20,4 @@ readme-freshness.js
 pipeline.mjs
 rule-claims.js
 main-status.mjs
+plan-overlap.mjs

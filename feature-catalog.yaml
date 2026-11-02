@@ -4962,9 +4962,12 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+# Shipped by docs/superpowers/plans/2026-11-01-overlapping-plans-merge-in-order.md.
+# Criteria 1 to 5 - plan-overlap.test.js (claim, bookkeeping, keeps ids and the empty
+# field, the waiting cases). Criterion 6 - the fresh-agent check in the plan's handover.
 - id: overlapping-plans-merge-in-order
   title: A plan that touches files another plan in flight touches waits to merge after it
-  status: building
+  status: shipped
   value: Two entries built at the same time never land out of the order their files
     need. When a session claims an entry, a script compares its plan's files with every
     plan already being built, and on an overlap the plan records that it merges after the
@@ -4991,7 +4994,10 @@
       both at those moments.
   type: feature
   layer: product
-  modules: []
+  modules:
+    - scripts/plan-overlap.mjs
+    - scripts/plan-binding.js
+    - guards/plan-overlap.test.js
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-01-overlapping-plans-merge-in-order.md

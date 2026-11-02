@@ -33,8 +33,9 @@ belongs with the parent session. It is never a constraint on the executor.
   the date they were last verified — with a warning when they are older than ~45 days,
   because picks change and the tier does not. Each field is read to the end of its
   paragraph, and a field that is there but reads empty stops the dispatch, naming its
-  line. A project with no picks file is told to run `/refresh-model-tiers`; the prompt
-  never invents picks.
+  line. A plan's `Merges after` field is read and refused the same way; the prompt does
+  not carry it, since the executor does not merge. A project with no picks file is told
+  to run `/refresh-model-tiers`; the prompt never invents picks.
 - **The plan and its checkouts:** which plan, and which checkouts it may edit.
 - **Attaching the other checkouts:** when the plan isolates in more than one checkout, a
   step before isolating tells an executor whose session started with only this one — a

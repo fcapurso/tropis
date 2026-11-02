@@ -504,3 +504,139 @@ and whether it did it. Delete the scratch folder afterwards.
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 6 done; Task 7 is this report and the push. No pull request, review record or
+merge.
+
+### Verification results
+
+Tools: git 2.49.0, node v22.15.0, Claude Code 2.1.300, on macOS 26.2, arm64.
+
+- Task 1, red: the self-check failed. It stops at the clean-baseline step (the empty
+  script lacked the shared-machinery line, "drift check"), before it reaches the
+  framework's own guards, so the failing test names came from running the new file
+  alone in a scratch stage: 14 failed, 1 passed, including every dagger case (`--claim`
+  on an overlap, `--claim` with no overlap, `--wait` stops, `--wait` from a second clone).
+- Task 2: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 3, run as working-tree edits in the scratch stage, reverted with `git checkout`
+  (not throwaway commits): skipping the claim write failed `--claim > on an overlap ...`
+  and `--claim > adds to a field the plan already has` (2 failed, 13 passed); removing the
+  fetch failed `--wait > sees a ship pushed from another clone after this one last
+  fetched` (1 failed, 14 passed).
+- Task 4: `git grep -nF "plan-overlap.mjs" -- framework commands templates` printed
+  `commands/feature.md:13`, `framework/workflow.md:249, 264, 352`,
+  `templates/README.md:68, 71`; self-check passed.
+- Task 5: Claude Code 2.1.300, tool calls visible. Prompt 1 (claim `firing-chart`): the
+  agent made its own worktree (the project is gated), ran
+  `node .tropis/scripts/plan-overlap.mjs --claim docs/superpowers/plans/firing-chart.md`,
+  output `Overlaps glaze-log (docs/superpowers/plans/glaze-log.md): src/kiln.js` and
+  `Merges after: glaze-log — written to ...`; `grep -n "Merges after"` printed
+  `9:**Merges after:** glaze-log`. Prompt 2 (merge steps before the rebase, after
+  `glaze-log` was set to shipped and pushed): it ran `--wait` and got
+  `Merges after: glaze-log — shipped on origin/main; go ahead.` Both passed on the first
+  run. The machine's user-level instructions say nothing on overlap or `Merges after`
+  (grepped), so the probe was not helped by them. Scratch folder deleted.
+- Task 6: `npm --prefix .tropis test`: `Tests: 148 passed, 148 total`.
+- Task 7: same `Tests:` line; last self-check line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+
+### Scope
+
+Worktree used: `../tropis-overlap` (branch `plan/overlapping-plans-merge-in-order`).
+`git diff --stat origin/main...HEAD` (before this report): 11 files, 627 insertions, 24
+deletions: commands/feature.md, docs/backlog-board/bands.yaml, feature-catalog.yaml,
+framework/DECISIONS.md, framework/dispatch.md, framework/workflow.md,
+guards/plan-overlap.test.js, scripts/installed-scripts.txt, scripts/plan-binding.js,
+scripts/plan-overlap.mjs, templates/README.md. All are in File Structure; the plan file
+is the twelfth, with this report.
+
+### Judgment calls
+
+- The tests import the two modules as namespaces. The plan said an empty module makes
+  imports resolve to `undefined`; in ES modules a missing named export fails at link time
+  and the whole file fails, so each case would not fail for its own reason.
+- The dispatchable-plan test builds its plan inline; reading this plan file from `docs/`
+  fails in the self-check's export, which has no `docs/`.
+- `origin/main` moved during the work (the merge-token spec commit and FW-049). I rebased
+  onto it, so the decision is numbered FW-050, not FW-049.
+- Task 3 reverts were working-tree edits run through the test file directly, not
+  throwaway commits plus the self-check; same test names, far quicker.
+- `plan-overlap.mjs` is committed executable, like `main-status.mjs`.
+- In the probe the agent put its claim in a worktree of its own and ran `npm ci` there;
+  that is the workflow working as written.
+
+### What the plan got wrong
+
+- The "empty module so imports resolve to undefined" claim (above).
+- The red self-check stops at the clean baseline, so it never lists the new test names;
+  they have to be got by running the file alone.
+- The next free `FW-` number on the base was already taken by main moving on.
+
+### Outstanding
+
+The change has no screen, so there is no developer check. Reviewer: confirm FW-050
+against `main` at merge time; the Task 3 mutations were not run as throwaway commits.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session with git 2.49.0 and node v22.15.0 on macOS 26.2, arm64.
+
+- `bash scripts/check-blueprint.sh` on the branch with the review fix committed:
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 148 passed, 148 total`.
+- `git diff --stat origin/main...HEAD`: the twelve files of *File Structure*, nothing else.
+- The new test file alone, in a scratch copy of `scripts/` and `guards/`: 15 passed. Each
+  of these mutations, applied alone and reverted, turned it red:
+  skipping the claim's write (2 failed: `--claim › on an overlap names the entry and
+  file, writes the field, ignores bookkeeping and itself`, `--claim › adds to a field the
+  plan already has`); removing the fetch from the wait loop (1 failed: `--wait › sees a
+  ship pushed from another clone after this one last fetched`); dropping
+  `feature-catalog.yaml` from `BOOKKEEPING` (2 failed); treating only `shipped` as done
+  (1 failed); removing the `Merges after` header field (12 failed).
+- The handover's two diagnoses were checked: a named import that an ES module does not
+  export fails the whole file at link time, so namespace imports are what let each case
+  fail on its own; and the self-check's export holds no `docs/`, so the dispatchable-plan
+  case must carry its plan inline. Both hold.
+- The fresh-agent check was not re-run; its record (tool, version, platform, both calls
+  and their output) is in the handover and in the body of `ed7c3ad`.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The one email
+address is `test@example.com`, a test identity.
+
+- A sentence added to `framework/dispatch.md` ran past the file's width. Fixed on the
+  branch by the reviewer (rewrapped, wording unchanged): mechanical, and the self-check
+  above ran after it.
+- `main` took FW-050 after the executor rebased. At the rebase for merge the decision
+  was renumbered FW-051, the next free number; the conflict was in the decision record
+  only, resolved by keeping both entries, and that edit changes only the heading.
+
+### Outstanding disposition
+
+- Confirm the FW number at merge: renumbered FW-051 at the rebase for merge, as above.
+- Task 3 mutations not run as throwaway commits: dropped as a concern; the reviewer re-ran
+  them in a scratch copy and they went red on the intended cases.
+- No screen, so no developer check.
+
+### Learnings routed
+
+- The plan's claim that an empty module makes named imports resolve to `undefined` was
+  wrong for ES modules. That is a one-off planning error, already visible in this
+  record; not routed further.
+- The red self-check stops at the clean-baseline step for an empty script (it lacks the
+  shared-machinery line), so a plan that expects test names from a red self-check should
+  say to run the new test file alone. Not routed: it bites only plans that add a new
+  script empty first, and this record names it for the next plan from this spec.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+Every criterion has a test that fails when its behaviour is broken, the fresh-agent check
+saw an agent run both commands at the moments the workflow names, and the self-check and
+the installed checks pass.

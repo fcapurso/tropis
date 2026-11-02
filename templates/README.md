@@ -65,6 +65,13 @@ date when `main` moves, and says why when it did not merge. Run
 `.github/workflows/pipeline.yml`; where it cannot — no `gh`, not signed in, an origin that
 is not on GitHub — it says it could not tell, and why.
 
+When two plans are built at once, `node .tropis/scripts/plan-overlap.mjs --claim <plan>`
+runs as an entry moves to `building`: where the plan shares a file with a plan already
+in `building` it writes `Merges after` into the plan's header, and
+`node .tropis/scripts/plan-overlap.mjs --wait <plan>` before the merge waits until those
+entries have shipped. The catalog, the bands file, the board, the release notes and the
+decision record do not count as shared.
+
 ## Where the framework lives
 
 This project was set up from the framework at `{{BLUEPRINT_URL}}`. General adoption,
