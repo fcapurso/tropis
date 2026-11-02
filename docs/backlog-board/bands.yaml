@@ -223,19 +223,6 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
-team-members-and-reviewers-run-on-a-tier:
-  band: B
-  value: 3
-  valueWhy: A sprint's team members do most of a sprint's work outside the executor, on
-    whatever model their session started with.
-  effort: 2
-  effortWhy: The sprint script's start and add name the Large pick, dispatch gains a mode
-    that names a tier's pick, and three documents say which agent runs on which tier.
-  verdict: "The second half of the efficient-model entry, now that the sprint command
-    exists."
-  seen:
-    status: building
-    blockers: []
 update-check-runs-the-projects-own-checks:
   band: C
   value: 4

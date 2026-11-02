@@ -5331,9 +5331,12 @@
 # Split from agents-run-on-the-most-efficient-model when it was shaped on 2026-11-02.
 # A team member's brief and start are written by sprint-plans-and-runs-a-team, still
 # building, so this waits for it.
+# Criteria to tests: 1 is guards/sprint.test.js cases a and b; 2 is its cases c, d and e;
+# 3 is guards/dispatch.test.js cases f, g and h; 4 is the fresh-agent probe in the plan's
+# handover report and the greps of the documents it names.
 - id: team-members-and-reviewers-run-on-a-tier
   title: A sprint's team members and the reviewers Tropis starts run on a tier's included pick
-  status: building
+  status: shipped
   value: Every agent Tropis starts, not only an executor, runs on the model that uses
     the least of the developer's subscriptions without losing quality on its job. A
     sprint's team member shapes, plans and reviews, and a fresh reviewer reviews, but
@@ -5362,7 +5365,10 @@
     - sprint-plans-and-runs-a-team
   after:
     - agents-run-on-the-most-efficient-model
-  modules: []
+  modules:
+    - scripts/sprint.mjs
+    - scripts/dispatch.mjs
+    - scripts/plan-binding.js
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-team-members-and-reviewers-run-on-a-tier.md
