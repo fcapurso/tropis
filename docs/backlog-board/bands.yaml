@@ -22,6 +22,20 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
+agents-run-on-the-most-efficient-model:
+  band: B
+  value: 4
+  valueWhy: Every plan dispatched runs on the pick that costs the developer least and
+    needs no paid extras, instead of whichever of several the developer happens to choose.
+  effort: 3
+  effortWhy: The picks file gains an order and an inclusion table, dispatch reads them
+    and a local subscriptions file, and the refresh command says how to fill both.
+  verdict: "Shaped from the plan-only decision, FW-053: until the picks say which
+    subscriptions include each model, a dispatched plan can need paid extras without
+    anyone noticing."
+  seen:
+    status: building
+    blockers: []
 command-slots-spike:
   band: A
   value: 5
@@ -237,6 +251,19 @@ sprint-plans-and-runs-a-team:
   seen:
     status: building
     blockers: []
+team-members-and-reviewers-run-on-a-tier:
+  band: B
+  value: 3
+  valueWhy: A sprint's team members do most of a sprint's work outside the executor, on
+    whatever model their session started with.
+  effort: 2
+  effortWhy: A tier for each kind of agent and the sprint's brief naming its pick, once
+    the sprint command and the picks' order exist.
+  verdict: "The second half of the efficient-model entry; it waits for the sprint
+    command, which writes the team member's brief."
+  seen:
+    status: idea
+    blockers: [sprint-plans-and-runs-a-team]
 update-check-runs-the-projects-own-checks:
   band: C
   value: 4
