@@ -5242,15 +5242,34 @@
     - docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md
 - id: waits-end-when-something-happens
   title: A session waiting for the token or for another plan waits until it happens
-  status: idea
+  status: building
   value: A team member waiting for the merge token, or for a plan it must merge after,
     carries on by itself when the token is free or the other plan has shipped or left
     building, however long that takes, so the developer is not asked to restart it after
     an hour. It stops only when the token's holder has turned stale, naming the holder.
     Today both waits stop after 60 minutes.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - merge-token.mjs take, run with no --timeout, keeps waiting while another branch
+      holds the token for as long as that holder is not stale, past 60 minutes, and takes
+      the token as soon as it is free.
+    - When the holder turns stale (held by a branch for 30 minutes with no open pull
+      request and no push for 30 minutes), take stops with exit 3 and one line starting
+      STOPPED that names the holder and gives the command that breaks the token. A hold
+      taken by the developer is never stale, so take waits on it until it is released.
+    - Where origin is not on GitHub, a holder whose branch on origin is absent or has had
+      no push for 30 minutes is stale, in take and in status alike.
+    - plan-overlap.mjs --wait, run with no --timeout, keeps waiting past 60 minutes while
+      any entry the plan merges after is building on origin's main branch, and goes ahead
+      as soon as none is, naming each entry's status, so an entry parked back to shaped
+      lets it go ahead as one that shipped does.
+    - Both commands still take --timeout, and with it stop at that limit with exit 3 and
+      the same STOPPED line as before.
+    - The workflow's sections on the merge token and on plans that touch the same files
+      say both waits have no time limit, what ends each of them, and that a wait is run as
+      a background command that wakes the session when it ends.
   type: improvement
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-02-waits-end-when-something-happens.md
