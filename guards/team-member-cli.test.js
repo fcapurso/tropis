@@ -569,7 +569,7 @@ describe('watch', () => {
 
 describe('the documents', () => {
   it('the command, the operator guide and the install list name the launcher', () => {
-    const command = read('commands/sprint.md');
+    const command = read('commands/sprint.md').replace(/\s+/g, ' ');
     for (const phrase of ['sprint.mjs launch', 'sprint.mjs watch', '--model',
       'The other tool\'s command line is the exception']) {
       expect(command).toContain(phrase);
