@@ -3,7 +3,7 @@
 # capture-at-write.sh — PreToolUse hook for Edit and Write.
 #
 # Fires when a rule, rule addition, decision record, or framework document
-# is being written. Prints the three-question quality check from
+# is being written. Prints the four-question quality check from
 # .claude/commands/capture-learning.md — the only copy. The command
 # remains invocable by hand.
 #

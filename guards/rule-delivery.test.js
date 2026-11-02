@@ -20,7 +20,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   mkdtempSync, rmSync, readdirSync, readFileSync, existsSync,
-  mkdirSync, writeFileSync,
+  mkdirSync, writeFileSync, copyFileSync,
 } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
@@ -876,15 +876,21 @@ describe('rule delivery', () => {
       expect(contextOf(stdout)).toContain(PHASE2);
     });
 
-    it('emits the three-question check for a rule file', () => {
+    it('emits the four-question check for a rule file', () => {
+      // The shipped command, not the fixture: the case fails if its block loses a question.
       const dir = repoWithCaptureCommand();
       tmpDirs.push(dir);
+      copyFileSync(resolve(here, '../commands/capture-learning.md'), resolve(dir, '.claude/commands/capture-learning.md'));
       const { stdout, status } = runWriteHookOn(dir, '.claude/rules/backend.md');
       expect(status).toBe(0);
       const said = contextOf(stdout);
+      expect(said).toContain('Four questions.');
       expect(said).toContain(PHASE2);
       expect(said).toContain('Where is it delivered?');
-      expect(said).not.toContain('must not print');
+      expect(said).toContain('**4. Is this mechanism or provenance?**');
+      expect(said).toContain('docs/rule-incidents/<name>.md');
+      expect(said).not.toContain('## Phase 1');
+      expect(said).not.toContain('## Then');
     });
 
     it('emits for a decision record and a framework document', () => {

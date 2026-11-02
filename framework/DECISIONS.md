@@ -1734,3 +1734,35 @@ Whether a model is included depends on the developer's plan, so the model picks 
 judged without knowing which plans the developer has; the entry
 `agents-run-on-the-most-efficient-model` takes that up. Source: the brainstorm of
 2026-11-02 with the developer.
+
+## FW-054: A rule carries its mechanism, and the incident behind it is one pointer away
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** A shipped rule states each constraint and why it holds. The occasion it
+was learned on (who hit it, when, in which plan, what it cost) lives in an incident
+record that mirrors the rule file, `rules/incidents/<name>.md`, and the rule points at
+the record's section with `` `.tropis/rules/incidents/<name>.md#<slug>` ``. The records
+ship beside the rules, installed at `.tropis/rules/incidents/`, and no agent tool loads
+them. A project's own rule or addition keeps its incidents in
+`docs/rule-incidents/<name>.md`, the same way. The fourth question of the capture check
+in the capture-learning command asks of each sentence whether it is mechanism or
+provenance, and the rule-incidents guard holds pointers and records together.
+
+The split is judged, not mechanical: the test is whether removing a sentence would
+change what an agent does in a case the rule does not literally cover. A clause kept
+inline because its occasion is the only statement of the failure mode is listed in
+`rules/incidents/README.md`, under *Kept inline*, which also records what the split
+bought in bytes and words.
+
+**Rejected:** Moving the incidents into this decision log (a decision records a choice
+and its alternatives, an incident what produced a constraint; mixing them stops the log
+being scannable). Deleting the stories (unrecoverable, and they persuade a person
+reading a rule for the first time). Keeping the records only in this repository, with
+pointers as web addresses (not one pointer away in an installed project, and a moving
+target). A convention for new rules only (leaves every shipped rule as it is, and the
+accretion resumes).
+
+**Consequences:** Every session in a rule's area pays only for the mechanism. A rule
+that reads as unexplained after a story leaves it has lost its mechanism with the story,
+and no guard sees that; the read-through at writing and at review is what catches it.
