@@ -288,8 +288,9 @@ commit names its holder and when it was taken.
 - **Release it once that command has reported**, green or red:
   `node .tropis/scripts/merge-token.mjs release`. Keep it instead for a follow-up pull
   request straight after, such as a move to `shipped`, and release it after the last
-  one; from another branch, pass the name it was taken in with
-  `--holder <branch>`. A release removes the token only for its holder; otherwise it
+  one. A release names the branch by the one you are on, so from any other, `main`
+  after a merge included, pass the name it was taken in:
+  `release --holder <branch>`. A release removes the token only for its holder; otherwise it
   says who holds it and leaves it.
 - **Hand it back before a fix that needs judgement.** When the merge criteria fail
   after the rebase in a way that is not mechanical, release the token first, then fix.
@@ -353,7 +354,8 @@ check: re-run that run once by hand, with `gh run rerun` and the run id from the
 the line gives, say so in your report with that address, and run the wait again. That
 re-run starts a check that never ran, so it hides no failure; if the check is missing
 again, stop and report both runs. Pull `main` once it has reported, and release
-the merge token (*The merge token*).
+the merge token with `--holder <the plan's branch>`, since you are on `main` by now
+(*The merge token*).
 
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's
@@ -403,7 +405,7 @@ merge:
    invalidate a criterion with no textual conflict — new files shift coverage figures and
    can turn another plan's guard red.
 5. Squash-merge, and once `main-status.mjs` has reported,
-   `node .tropis/scripts/merge-token.mjs release`.
+   `node .tropis/scripts/merge-token.mjs release --holder <the plan's branch>`.
 
 **A check that passes on a rerun with nothing changed is a bug.** Record it in the
 backlog with both runs, as any defect. Nothing retries a failed check automatically —
