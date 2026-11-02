@@ -223,6 +223,20 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+sprint-plans-and-runs-a-team:
+  band: A
+  value: 5
+  valueWhy: The way of working that shipped 25 entries in a day becomes one command any
+    tool can run, instead of a long conversation held together by hand.
+  effort: 5
+  effortWhy: A script with planning, status and report commands over the backlog, open
+    pull requests and a local sprint file, its tests, the command, and the workflow
+    section every delivering session follows.
+  verdict: "Piece 4 of the sprint epic: the command the epic exists for. Its blockers,
+    the merge token and the overlap check, have shipped."
+  seen:
+    status: building
+    blockers: []
 update-check-runs-the-projects-own-checks:
   band: C
   value: 4
