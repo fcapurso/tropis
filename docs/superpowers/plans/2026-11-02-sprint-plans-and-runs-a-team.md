@@ -1016,3 +1016,101 @@ of the main checkout.
 - The five commit subjects below the handover are working history; the squash message is
   the reviewer's to write.
 - The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session started by the parent
+sprint-epic session. Tools: Claude Code 2.1.300, git 2.49.0, node v22.15.0, macOS 26.2
+on arm64.
+
+### Checks re-run
+
+- The rebase onto `origin/main` at `3048d0f` stopped on one conflict, in
+  `docs/backlog-board/bands.yaml`. Main had added `team-members-and-reviewers-run-on-a-tier`
+  next to the row this branch removes. I resolved it by keeping that row and removing the
+  sprint row. Nothing else conflicted.
+- `git diff --stat origin/main...HEAD` shows 12 files, every one in *File Structure*.
+  The plan's own file and the spec were edited by the reviewer only, as the table says.
+- `bash scripts/check-blueprint.sh` on the rebased HEAD printed `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.` and exited 0.
+- `npm --prefix .tropis test` printed `Tests: 153 passed, 153 total` (13 suites).
+- `guards/sprint.test.js`, run alone on a `git archive` of HEAD with a module
+  `package.json`, printed `Tests: 27 passed, 27 total`.
+- Mutations, each applied to the export and reverted:
+  - Mark before shipped (Task 3, mutation 2) turned 1 case red: `status › † reads the
+    backlog from origin after fetching, and an entry shipped on main is shipped whatever
+    its mark says`.
+  - No blocker condition (mutation 3) turned 1 case red: `propose › † leaves out an entry
+    blocked by an unshipped one outside the sprint, …`.
+  - `wait` passing over an open blocker (mutation 5) turned 3 cases red, all of them
+    `wait › …`.
+  - Parked and stopped in sprint order (mutation 7) turned 1 case red: `status › † shows
+    each of the eleven states …, stopped and parked entries first`.
+  - Working tree instead of `origin/main` (mutation 1) turned 6 cases red, among them
+    the `propose` and `add` cases.
+- The handover's diagnosis that the source and installed workflows name different
+  `project.json` paths is correct. `framework/workflow.md` names `.tropis/project.json`
+  twice and never `.claude/project.json`. The installed `.claude/framework/workflow.md`
+  names `.claude/project.json` twice. This is a change between releases, not a defect.
+- **The hours-long wake check (Decision 8).**
+  - Probe: a throwaway repository under `$TMPDIR` with a local bare origin and a
+    two-entry catalog, in which `shelf-map` is blocked by `kiln-alarm` (status
+    `building`). The probe used a minimal catalog rather than a clone of this repository,
+    because what is being tested is the session's wake, not the backlog read.
+  - Setup: a detached `caffeinate -i` script, not tracked by the session, shipped
+    `kiln-alarm` on that origin after `sleep 10800`. The session's only background task
+    was `node tools/sprint.mjs wait shelf-map`, at the default 30-second interval.
+  - It started at 2026-11-02T10:43:34Z, and the turn ended with nothing else pending.
+  - The blocker shipped at 13:43:35Z. `wait` printed `Sprint: shelf-map can start —
+    nothing it is blocked by is still open.` and exited 0 at 13:43:52Z.
+  - The session was woken by that command's completion notification, and by nothing
+    else. It had been idle 3 h 0 min.
+  - The power log showed no system sleep in the window. It showed `caffeinate`'s
+    `PreventUserIdleSystemSleep` held for 03:00:00.
+  - Result: the check passed, seen once in this one tool.
+
+### Found
+
+Public exposure: I read the diff for private material — people's names, other projects,
+home paths, hostnames and email addresses. It contains only `seed@example.com` and
+`<name>@example.com` in the tests. Nothing private.
+
+- The operator guide (`templates/README.md`) said `/sprint` starts "one session per
+  entry". FW-056, `commands/sprint.md` and the workflow section all say one per entry or
+  bundle. **I fixed this myself on the branch** (commit `docs(operator): the sprint
+  starts one session per entry or bundle`). It is a one-line, mechanical wording change
+  to match the decision.
+- The walk that repeats until a pass adds nothing (a judgment call in the handover) is
+  right. The plan's single pass could not satisfy the plan's own blocker test. The
+  mutation that removes the blocker condition shows that the test exercises it.
+- The executor's fresh-agent check satisfies the workflow's requirement for the change to
+  `framework/workflow.md`. It was Claude Code 2.1.300, `claude-sonnet-5-5`, with
+  `ANTHROPIC_API_KEY` unset, run with the calls visible. Each of its three prompts
+  touched the new clauses: parking after a claim, `/sprint --way here`, and the
+  background `wait`. Each reached the intended outcome on its first run.
+
+### Outstanding disposition
+
+- The hours-long wake check is done above. It is recorded in FW-056's *Consequences*,
+  the catalog comment for criterion 5, and the spec's §11.
+- The rebase onto the moved `origin/main` is done above.
+- The squash message is written at merge.
+- There is no developer check: the change has no screen.
+- Wake in tools other than Claude Code: dropped here. `team-members-start-in-another-tool`
+  already carries another tool's team members, and its own check belongs there.
+
+### Learnings routed
+
+- Plan Task 2 demanded a passing self-check before Task 4 wrote the documents that the
+  same test file checks. That is an instance of an existing rule: in
+  `rules/planning.md`, "a check the finished work cannot pass" at that step. It needs no
+  new rule, so nothing was routed.
+- The wake check's result went to FW-056 and the spec, which is where FW-055's
+  assumption lives. Nothing else generalises.
+
+### Merged because
+
+Every criterion has a check that was re-run here and seen to fail when broken. The
+one wording defect was fixed and is declared above. The one assumption nobody had
+observed — a session waking from its own wait after hours — was seen to hold.

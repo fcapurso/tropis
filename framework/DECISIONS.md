@@ -1857,8 +1857,10 @@ spec's non-goal). Starting team members in another tool
 **Consequences:** A sprint session whose conversation is reset picks the sprint up from
 the file. A session the developer started by hand shows in the status only as an open
 pull request no sprint entry accounts for. A team member's mark reaches only sessions on
-the same machine, which is where FW-055's team runs. <the wake check's outcome, one
-sentence, written by the reviewer from *Decision 8*.> Source: the sprint design of
+the same machine, which is where FW-055's team runs. A Claude desktop app session waiting
+three hours on its own `sprint.mjs wait`, with nothing else pending, was woken by that
+command ending 17 seconds after the blocker shipped (Claude Code 2.1.300, macOS 26.2,
+arm64, 2026-11-02); this was seen once, in that one tool. Source: the sprint design of
 2026-11-01, sections 1, 2, 5 to 9 and 11, and FW-055.
 
 ## FW-057: Inside a tier, picks go least usage first, and dispatch names one the developer's subscriptions include

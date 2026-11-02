@@ -5046,8 +5046,9 @@
 # under the git common dir, read and marked from a second worktree). Criterion 3 - the
 # document cases for /sprint and the fresh-agent check, prompt 2 in the plan's handover.
 # Criterion 4 - the document case for the workflow and the fresh-agent check, prompt 1.
-# Criterion 5 - the wait cases, and the fresh-agent check, prompt 3; the hours-long wake
-# is the reviewer's check (Decision 8) and is not yet seen. Criterion 6 - the status cases
+# Criterion 5 - the wait cases, and the fresh-agent check, prompt 3; and the reviewer's
+# hours-long wake check (Decision 8): a desktop app session idle three hours was woken by
+# its own wait ending, 17 seconds after the blocker shipped (the plan's review record). Criterion 6 - the status cases
 # (local origin, the eleven states on a faked GitHub origin, no needs-you line, the
 # unaccounted-for pull request, unknown pull requests). Criterion 7 - the new-entries
 # status case and the add case. Criterion 8 - the report and end cases.
