@@ -20,9 +20,9 @@ not the rule.
 addition (`.claude/rule-additions/<name>.md`) keeps its incidents in
 `docs/rule-incidents/<name>.md`, in the same format, with pointers naming that path.
 
-The guard `guards/rule-incidents.test.js` keeps the pointers, the record sections and
-the quotes below in step, and checks that a set-up project delivers no record to a
-session.
+In the framework's own repository, the guard rule-incidents.test.js keeps the pointers,
+the record sections and the quotes below in step, and checks that a set-up project
+delivers no record to a session.
 
 ## Kept inline
 
@@ -35,9 +35,9 @@ statement of the failure mode.
 
 ## What the split bought
 
-Measured on 2026-11-02 with `wc -c -w` (BSD wc, macOS 26.2, arm64). Before: `d236f34`,
-the commit the split started from. After: `6d65120`, the last commit to change a rule
-file; no later commit before the handover changes one.
+Measured on 2026-11-02 with `wc -c -w` (BSD wc, macOS 26.2, arm64). Before: `d236f34`
+on `main`, the commit the split started from. After: the rule files as the split left
+them, in the commit that brought this folder to `main`.
 
 | Rule file | Bytes before | Bytes after | Words before | Words after |
 |---|---|---|---|---|
