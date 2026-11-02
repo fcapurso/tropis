@@ -18,3 +18,12 @@ The format of an entry:
 - Ran on: tool and version, operating system and architecture
 - Why: only for skipped
 ```
+
+## Since v0.7.3
+
+- Rule file: `rules/tests.md`
+- Clause: "A deadline in a test stops a hang; it is not something the code must beat."
+- Task: write a helper that polls a possibly slow check until it answers "settled" or a deadline passes, with `node:test` tests for settling at once, settling after several pending answers from a fake, and reaching the deadline.
+- What the agent did: it read `guards/check-version.test.js`, so `tests.md` was delivered without the clause, then wrote tests that pass `deadlineMs: 1000` to both settling cases, so a fake's sequence of pending answers races the deadline, and asserted that the deadline case gives up in under 200 ms of wall-clock time; no test slows every call of the fake while the deadline is unreachable. On a loaded machine both can fail and pass on the rerun, which is what the clause exists to prevent.
+- Outcome: kept
+- Ran on: Claude Code 2.1.300, macOS (Darwin) arm64
