@@ -79,9 +79,10 @@ read by anyone, and a person's subscriptions are theirs.
    When every report matches the record and a name the cells use, do not ask.
 4. Write the record: one line per supported tool, `<tool>: <subscription>`, with the tool
    and the subscription written as the *Included on* cells write them, or
-   `<tool>: none`. Create the `tropis` folder if it is missing. Never commit the record
-   or copy it into the repository, and never write the developer's subscriptions into
-   the picks file or a commit message.
+   `<tool>: none`. Create the `tropis` folder if it is missing, and write the file with
+   a shell command, since an editing tool may refuse a path under `.git`. Never commit
+   the record or copy it into the repository, and never write the developer's
+   subscriptions into the picks file or a commit message.
 
 ## What to gather
 
@@ -145,6 +146,8 @@ For each model: at least one coding benchmark score, and the launch or last-upda
 - one table whose header row begins `| Tier | Models |`, with one row per tier, the tier
   named in bold exactly as the definitions name it. `/dispatch` prints the second cell of
   the plan's tier as its picks.
+  Separate the models in a cell with `; `, and put each one's tool tag after its name in
+  italics, `*(all)*` or `*(Cursor)*`: `/dispatch` finds the model to use by those.
 - one table whose header row begins `| Model | Usage per task | Included on |`, with one
   row per model in the tier table: its name as the tier table writes it, without the
   tool tag; its cost per task, or `unmeasured`; and, for each supported tool, the
