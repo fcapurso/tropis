@@ -579,3 +579,63 @@ is the twelfth, with this report.
 
 The change has no screen, so there is no developer check. Reviewer: confirm FW-050
 against `main` at merge time; the Task 3 mutations were not run as throwaway commits.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session with git 2.49.0 and node v22.15.0 on macOS 26.2, arm64.
+
+- `bash scripts/check-blueprint.sh` on the branch with the review fix committed:
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 148 passed, 148 total`.
+- `git diff --stat origin/main...HEAD`: the twelve files of *File Structure*, nothing else.
+- The new test file alone, in a scratch copy of `scripts/` and `guards/`: 15 passed. Each
+  of these mutations, applied alone and reverted, turned it red:
+  skipping the claim's write (2 failed: `--claim › on an overlap names the entry and
+  file, writes the field, ignores bookkeeping and itself`, `--claim › adds to a field the
+  plan already has`); removing the fetch from the wait loop (1 failed: `--wait › sees a
+  ship pushed from another clone after this one last fetched`); dropping
+  `feature-catalog.yaml` from `BOOKKEEPING` (2 failed); treating only `shipped` as done
+  (1 failed); removing the `Merges after` header field (12 failed).
+- The handover's two diagnoses were checked: a named import that an ES module does not
+  export fails the whole file at link time, so namespace imports are what let each case
+  fail on its own; and the self-check's export holds no `docs/`, so the dispatchable-plan
+  case must carry its plan inline. Both hold.
+- The fresh-agent check was not re-run; its record (tool, version, platform, both calls
+  and their output) is in the handover and in the body of `ed7c3ad`.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The one email
+address is `test@example.com`, a test identity.
+
+- A sentence added to `framework/dispatch.md` ran past the file's width. Fixed on the
+  branch by the reviewer (rewrapped, wording unchanged): mechanical, and the self-check
+  above ran after it.
+- `main` took FW-050 after the executor rebased. The decision is renumbered to the next
+  free number when the branch is rebased for merge; that edit changes only the heading.
+
+### Outstanding disposition
+
+- Confirm the FW number at merge: done at the rebase for merge, as above.
+- Task 3 mutations not run as throwaway commits: dropped as a concern; the reviewer re-ran
+  them in a scratch copy and they went red on the intended cases.
+- No screen, so no developer check.
+
+### Learnings routed
+
+- The plan's claim that an empty module makes named imports resolve to `undefined` was
+  wrong for ES modules. That is a one-off planning error, already visible in this
+  record; not routed further.
+- The red self-check stops at the clean-baseline step for an empty script (it lacks the
+  shared-machinery line), so a plan that expects test names from a red self-check should
+  say to run the new test file alone. Not routed: it bites only plans that add a new
+  script empty first, and this record names it for the next plan from this spec.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+Every criterion has a test that fails when its behaviour is broken, the fresh-agent check
+saw an agent run both commands at the moments the workflow names, and the self-check and
+the installed checks pass.
