@@ -4946,7 +4946,7 @@
     - docs/superpowers/plans/2026-11-01-merge-token-can-live-on-github.md
 - id: merges-take-turns-under-one-token
   title: Pull requests open and merge one at a time, under a token any session can take
-  status: idea
+  status: building
   value: Sessions working in parallel stop forcing each other to rebase and re-run their
     checks every time one of them lands on a main branch that requires branches up to
     date. A session takes the token when its branch is reviewed, rebases once, merges,
@@ -4954,7 +4954,27 @@
     during a release; a token left on a dead branch is shown and can be broken. The rule
     is in the workflow, so every session follows it, and nothing about main's safety
     depends on it.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Taking the token when it is free creates it on origin, naming the holder and the
+      time it was taken. While it is held, another session's take waits, asking every 30
+      seconds, and gets it once the holder releases. Of two sessions taking it at the
+      same moment, exactly one holds it.
+    - A take that fails for any reason other than the token already existing reads the
+      token before deciding, so a session that did get it knows it holds it.
+    - Releasing removes the token only for the session that holds it. A release by
+      anyone else leaves the holder's token as it was and says who holds it.
+    - Waiting for the token has a time limit. When it runs out the session stops and
+      reports STOPPED, waiting for the token, held by the holder it names.
+    - The developer takes the token in their own name with one command, a hold, and
+      gives it back with another; /release holds it while a release runs. Every other
+      session waits meanwhile, and a hold is never shown as stale.
+    - /next shows who holds the token and for how long. A token held by a branch with no
+      open pull request and no push for 30 minutes is shown as stale, with the command
+      that breaks it, to be run only on the developer's word.
+    - The workflow tells every session, in a sprint or not, to take the token before
+      opening any pull request and release it once main has reported, and a fresh agent
+      given only a project set up from the release takes it and releases it at those
+      moments.
   type: feature
   layer: product
   blockedBy:
@@ -4962,6 +4982,7 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-01-merges-take-turns-under-one-token.md
 # Shipped by docs/superpowers/plans/2026-11-01-overlapping-plans-merge-in-order.md.
 # Criteria 1 to 5 - plan-overlap.test.js (claim, bookkeeping, keeps ids and the empty
 # field, the waiting cases). Criterion 6 - the fresh-agent check in the plan's handover.
