@@ -613,12 +613,13 @@ address is `test@example.com`, a test identity.
 - A sentence added to `framework/dispatch.md` ran past the file's width. Fixed on the
   branch by the reviewer (rewrapped, wording unchanged): mechanical, and the self-check
   above ran after it.
-- `main` took FW-050 after the executor rebased. The decision is renumbered to the next
-  free number when the branch is rebased for merge; that edit changes only the heading.
+- `main` took FW-050 after the executor rebased. At the rebase for merge the decision
+  was renumbered FW-051, the next free number; the conflict was in the decision record
+  only, resolved by keeping both entries, and that edit changes only the heading.
 
 ### Outstanding disposition
 
-- Confirm the FW number at merge: done at the rebase for merge, as above.
+- Confirm the FW number at merge: renumbered FW-051 at the rebase for merge, as above.
 - Task 3 mutations not run as throwaway commits: dropped as a concern; the reviewer re-ran
   them in a scratch copy and they went red on the intended cases.
 - No screen, so no developer check.
