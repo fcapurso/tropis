@@ -5361,8 +5361,6 @@
       on and why.
   type: improvement
   layer: product
-  blockedBy:
-    - sprint-plans-and-runs-a-team
   after:
     - agents-run-on-the-most-efficient-model
   modules:
