@@ -85,8 +85,8 @@ the top of the ranking, you agree the entries and their order, and when you say 
 start it starts the whole team at once, one session per entry or bundle, each of which delivers
 its entry through the workflow, waits by itself for what it depends on, and merges its
 own work under the merge token. Each team member starts on the model the sprint names:
-the Large tier's first pick that your subscriptions include. Ask it where the sprint stands at any time; team
-members that need you come first. `node .tropis/scripts/sprint.mjs status` prints the
+the Large tier's first pick that your subscriptions include. Ask it where the sprint
+stands at any time; team members that need you come first. `node .tropis/scripts/sprint.mjs status` prints the
 same from the shell; the agreed sprint lives in a file under `.git/`, never committed.
 Team members can also start in the other tool's command line:
 `node .tropis/scripts/sprint.mjs launch <id> --tool cursor` (or `claude`).

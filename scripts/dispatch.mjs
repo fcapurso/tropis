@@ -136,7 +136,6 @@ if (existsSync(resolve(root, '.cursor/rules'))) {
 const protocol = parseExecutionProtocol(markdown);
 const lastVerified = picksText === null ? null : parseLastVerified(picksText);
 
-
 // Each worktree's setup comes from its own checkout — this one, or the sibling folder the
 // row names — the way the isolation helper finds them.
 function setupFor(row) {

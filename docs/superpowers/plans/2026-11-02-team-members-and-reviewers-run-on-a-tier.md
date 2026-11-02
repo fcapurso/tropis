@@ -568,3 +568,70 @@ deletions: `commands/sprint.md`, `docs/backlog-board/bands.yaml`,
 ### Outstanding
 
 Nothing for the executor. The reviewer renumbers FW-059 if another plan takes it first.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session started by the parent
+delivery session, with Claude Code 2.1.300, git 2.49.0 and Node v22.15.0 on macOS 26.2,
+arm64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD` (base `e124d09`): 14 files, every one in *File
+  Structure*.
+- `guards/dispatch.test.js` and `guards/sprint.test.js`, each run alone on a
+  `git archive` of HEAD staged as the self-check stages it: `Tests: 40 passed, 40 total`
+  and `Tests: 34 passed, 34 total`.
+- Re-broken on that staged copy, one at a time, and restored:
+  - `'Medium'` in place of `TEAM_TIER` in `teamModelLine`: 1 failed, `the team member's
+    model › † a: start for a session sprint names the first included Large pick, as
+    dispatch does`.
+  - `if (false)` in place of the `isTier` check in `dispatch.mjs`: 1 failed,
+    `dispatch names the pick to use › h: --tier refuses a name that is not a tier, and a
+    missing one`.
+  - `start` pushing the line for every way: 2 failed, `start, and the sprint file › †
+    defaults to one entry at a time and records the default way` and `the team member's
+    model › † e: a sprint whose team members start here names no model`.
+  The handover reported mutations 2 and 3 "by elimination"; these runs name the cases.
+- The handover's diagnosis that the catalog check refuses a shipped entry that keeps
+  `blockedBy` was taken as reported: `npm --prefix .tropis test` is re-run, with the
+  self-check, after the rebase onto `team-members-start-in-another-tool` at merge time.
+- The fresh-agent check was not re-run. Its record names the calls and answers of both
+  prompts (`dispatch.mjs --tier Large` run, `Alder 3` named), the tool, version, model
+  and platform, and `ANTHROPIC_API_KEY` unset. That is what the workflow asks for.
+
+### Found
+
+Public exposure: the diff was read for private material. It holds only invented models
+(`Alder 3`, `Birch 2`) and invented subscriptions in tests and the probe record; no home
+path, hostname, address or anyone's real subscription.
+
+- **Fixed on the branch by the reviewer, mechanical:** the catalog comment above the entry
+  still said its blocker was building; the operator guide's new sentence ran past the
+  file's width; `dispatch.mjs` kept a doubled blank line where the two reads moved out.
+- The executor's removal of `blockedBy` from the shipped entry is right: its blocker has
+  shipped, and the catalog check refuses the field on a shipped entry. The plan's Task 6
+  should have said so.
+- The probe ran on the tool's default model, not on the pick it named, because the pick
+  was an invented name. That tests what the change says (that an agent finds and names
+  the pick), not whether a real pick holds. Nothing is lost by it.
+
+### Outstanding disposition
+
+- FW-059 keeps its number unless another plan lands one first; renumbered at merge if so.
+- No screen, so no developer check.
+- This plan merges after `team-members-start-in-another-tool`, which changes the sprint
+  script, its guard, `/sprint` and the operator guide. The rebase onto it is resolved and
+  its resolution reviewed at merge time, then the merge criteria re-run.
+
+### Learnings routed
+
+- A plan moving an entry to shipped must also drop its `blockedBy`. That is already what
+  the catalog check enforces, and the executor found it on the first run; not routed
+  further.
+- Nothing else generalises: the change is the delivery of FW-059, recorded there.
+
+### Merged because
+
+Every criterion is covered by a guard case seen to fail when broken, or by the recorded
+fresh-agent check, and the three defects found were wording and layout, fixed above.
