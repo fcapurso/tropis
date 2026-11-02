@@ -5307,12 +5307,29 @@
 # building, so this waits for it.
 - id: team-members-and-reviewers-run-on-a-tier
   title: A sprint's team members and the reviewers Tropis starts run on a tier's included pick
-  status: idea
+  status: building
   value: Every agent Tropis starts, not only an executor, runs on the model that uses
     the least of the developer's subscriptions without losing quality on its job. A
     sprint's team member shapes, plans and reviews, and a fresh reviewer reviews, but
     neither has a tier, so each runs on whatever model its session started with.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - sprint.mjs start, for a sprint whose team members start as sessions, prints one
+      line naming the model and tool to start every team member on, the same pick
+      /dispatch names for a Large plan from the same picks and recorded subscriptions;
+      sprint.mjs add, under such a sprint, prints the same line for the entry it adds.
+    - When the project has no picks file, its picks say nothing about which subscriptions
+      include each model, no subscriptions are recorded on the machine, or no Large pick is
+      included, that line names no model, says why, and says to start team members on the
+      tool's default model. It never names a pick no recorded subscription includes. A
+      sprint whose entries are delivered here prints no such line.
+    - node .tropis/scripts/dispatch.mjs --tier <tier> prints the line naming the pick
+      /dispatch would name for a plan of that tier, and for a tier that does not exist
+      exits 1 naming the five tiers.
+    - The /sprint command tells the sprint session to start each team member on the model
+      that line names. The workflow's fresh-agent check and the planning rule's fresh
+      reviewer tell whoever starts that agent to run it on the model dispatch.mjs --tier
+      Large names, and the model-tiers document says which tier each of these agents runs
+      on and why.
   type: improvement
   layer: product
   blockedBy:
@@ -5322,6 +5339,7 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-02-team-members-and-reviewers-run-on-a-tier.md
 # Seen twice in fresh-agent checks of 2026-11-01, in Claude Code 2.1.300 on macOS 26.2
 # arm64: a probe run with --allowedTools naming only Read, Grep, Glob (and Edit, Write)
 # still ran Bash. In the rules-are-retired-on-evidence probe it read through cat; in the
