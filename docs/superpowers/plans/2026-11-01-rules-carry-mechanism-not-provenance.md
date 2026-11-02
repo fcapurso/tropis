@@ -441,3 +441,368 @@ the worktree path used, and under *Judgment calls* every clause you were unsure 
 which side you put it on. Commit and push the branch
 (`git push -u origin plan/rules-carry-mechanism-not-provenance`) and stop. Do not open a
 pull request, write a review record or merge.
+
+## Handover report
+
+Executed on 2026-11-02 by Claude Code 2.1.300 (model claude-opus-5-5) on macOS 26.2,
+arm64 (`uname -sm`: Darwin arm64), with git 2.49.0 and Node v22.15.0. Started from
+`d236f34`, which is also the merge base with `origin/main`; `origin/main` has since moved
+to `b89f278`, so the branch needs a rebase before merge.
+
+### Task completion
+
+- **Task 0** — done. Worktree set up by the isolate helper; `npm --prefix .tropis ci`
+  ran; `git status --porcelain` printed nothing; the baseline self-check's last line was
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.` Baseline `wc -c -w rules/*.md` is in the
+  index's *What the split bought*.
+- **Task 1** — done, with one change of order (see *What the plan got wrong*, 2): the
+  setup's copy of `rules/incidents/*.md` (Decision 3) landed in Task 1, before the second
+  run of the snippet.
+- **Task 2** — done, one commit per rule file in the order given. After each, the Task 0
+  snippet passed (8 of 8). **The self-check was run after the last rule file, not after
+  each**: other sessions were loading the machine (load average 15.36 at 08:36) and the
+  per-file snippet already covered this plan's guard; the self-check after `planning.md`
+  passed, and every later run passed.
+- **Task 3** — done. The setup change itself was made in Task 1; the re-break and the two
+  plants were done here.
+- **Task 4** — done. Committed as `7bdf284` after Task 6 (see *What the plan got wrong*,
+  3).
+- **Task 5** — done. `docs/backlog-board/index.html` is ignored in this repository
+  (`git status --ignored` shows it as `!!`), so the hook's rebuild left nothing to commit.
+- **Task 6** — done, two runs; the second passes.
+- **Task 7** — this report; branch pushed.
+
+### Verification results
+
+**Task 1, guard on the repository with no index** (Task 0 snippet, at `3141f50`):
+
+```
+FAIL guards/rule-incidents.test.js
+  ● rule incident records › every pointer leads to a section, every section is pointed at, and every kept-inline quote is in its rule
+    - Array []
+    + Array [
+    +   "rules/incidents/README.md is missing; it is the index of the records and of the clauses kept inline",
+    + ]
+Tests:       1 failed, 7 passed, 8 total
+```
+
+At `f9398e7` (index added, setup not yet copying it) check 5 failed with
+`rules/incidents/README.md is not installed at .tropis/rules/incidents/README.md;
+scripts/set-up-project.sh must copy it there`; at `beffe24` the snippet printed
+`Tests: 8 passed, 8 total`, and did so again after each of `514bb0e`, `ee0ebf8`,
+`13dcaa3`, `8f141d8` and `6d65120`.
+
+**Task 3, re-break of check 5** — a throwaway commit making the setup copy the records
+into `.claude/rules/incidents/` instead; the snippet failed
+`rule incident records › ships the records under .tropis/rules/incidents/ and delivers
+none of them to a session` with, among others:
+
+```
++   "rules/incidents/planning.md is not installed at .tropis/rules/incidents/planning.md; scripts/set-up-project.sh must copy it there",
++   ".claude/rules/incidents is delivered to sessions and is named for incidents; records go only in .tropis/rules/incidents/",
++   ".claude/rules/incidents/learnings.md is delivered to sessions and is named for incidents; records go only in .tropis/rules/incidents/",
+```
+
+The commit was dropped (`git reset --hard HEAD~1`, back to `6d65120`).
+
+**Task 3, plants** (`bash scripts/check-blueprint.sh` at `7e5f89b`):
+
+```
+  caught      rule-incidents: rules/incidents/planning.md planted
+  caught      rule-incidents: rules/tests.md planted
+Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.
+```
+
+The second plant deletes the line carrying
+`.tropis/rules/incidents/tests.md#two-polling-cases-that-lost-to-a-busy-machine`, leaving
+that record section unpointed.
+
+**Task 4, re-break of the capture question** — a throwaway commit removing question 4
+from the capture-check block; `bash scripts/check-blueprint.sh` ended `Self-check FAILED:
+conformance or the clean baseline (above).` with `FAILED clean baseline — a guard fails on
+a project with nothing wrong`, and the clean-baseline log named one failing test:
+`rule delivery › capture-at-write surfaces Phase 2 when a rule is written › emits the
+four-question check for a rule file`. Dropped.
+
+**Task 5, full checks** (at `7787bde`, the same tree as `7bdf284`, whose amend changed
+only the message):
+
+```
+$ bash scripts/check-blueprint.sh
+  caught      rule-incidents: rules/incidents/planning.md planted
+  caught      rule-incidents: rules/tests.md planted
+Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.
+$ npm --prefix .tropis test
+Test Suites: 13 passed, 13 total
+Tests:       150 passed, 150 total
+```
+
+Load average at the time: 7.64 9.46 10.73. No Trap 4 or Trap 5 failure occurred in any
+run.
+
+**Acceptance criteria**
+
+| # | Criterion | Covered by |
+|---|---|---|
+| 1 | Each constraint says what it forbids and why, without retelling its occasion, except where the occasion is the mechanism | Task 2's read-through of each rule file, and the parent review; no guard can judge it |
+| 2 | Every constraint whose incident moved carries a pointer, and the incident sits in a mirrored record | Guard checks 1 (a pointer names its own rule's record) and 3 (a record has a rule of its name) |
+| 3 | Every pointer reaches a section and every section is pointed at; a break fails the suite | Guard checks 1 and 2, the small-tree cases, and both self-check plants, each `caught` |
+| 4 | No record is delivered, in Claude Code or Cursor, and none of their text is in a generated rule | Guard check 5 (runs the setup; nothing under `.claude/rules/` or `.cursor/rules/` is a record, is named for incidents, or carries a record line over 40 characters) and its re-break |
+| 5 | Someone editing a rule is asked whether it is mechanism or provenance, and where provenance goes | Question 4 in `commands/capture-learning.md`; the `rule-delivery` case `emits the four-question check for a rule file`, which reads the shipped command and failed when the question was removed; and the probe, where the hook's reply carried the question |
+| 6 | Clauses kept inline because the incident is the mechanism are named, the tests.md date clause among them | `## Kept inline` in `rules/incidents/README.md`, and guard check 4, which fails when a quoted phrase leaves its rule |
+| 7 | What the split bought is recorded, before and after | `## What the split bought` in `rules/incidents/README.md` |
+
+**Task 6, the fresh-agent check** — Claude Code 2.1.300, `claude -p --output-format
+stream-json --verbose --include-hook-events --allowedTools "Read,Grep,Glob,Edit,Write"`,
+model claude-opus-5-5, macOS 26.2 on arm64, in a scratch clone set up as the plan says
+(`$TMPDIR/...`, deleted afterwards). The developer's user-level instructions say nothing
+about rule incidents or the capture check, so the run was local.
+
+- **Run 1 — inconclusive on the hook.** `--allowedTools` did not keep Bash out: the agent
+  wrote both files with a shell heredoc (`CALL Bash {"command":"mkdir -p
+  .claude/rule-additions docs/rule-incidents && cat > .claude/rule-additions/tests.md
+  <<'EOF' ...`), so the Edit/Write hook never fired. Its files met the content criteria.
+- **Run 2 — passes**, with `--disallowedTools "Bash"` added. The calls, in order:
+  `Read .claude/rules/learnings.md`, `Glob .claude/rule-additions/**`,
+  `Glob .tropis/rules/incidents/**`, `Read .claude/commands/capture-learning.md`,
+  `Read .tropis/rules/incidents/README.md`, `Read .tropis/rules/incidents/tests.md`,
+  `Read .claude/rules/tests.md`, a Glob and a Grep, then
+  `Write docs/rule-incidents/tests.md` (hook reply empty, exit 0: not a watched path),
+  then `Write .claude/rule-additions/tests.md`, whose `PreToolUse:Write` reply began
+  `## Phase 2 — Assess operational reach\n\nFour questions.` and contained
+  `**4. Is this mechanism or provenance?** Ask of each sentence about to go into the
+  rule: *would removing it change what an agent does in a case the rule does not
+  literally cover?*`.
+  The addition stated the mechanism (the test and the code each read the clock, a fixed
+  24 hours against a calendar day, an hour apart on a daylight-saving day, so fix the
+  clock and build both from it) with no date, project name or morning, and ended with
+  `(Incident: `docs/rule-incidents/tests.md#the-nightly-run-that-went-red-on-the-night-the-clocks-changed`)`.
+  The record opened `# Incidents behind .claude/rule-additions/tests.md` and held the
+  story, date, project and the three people's morning under
+  `## The nightly run that went red on the night the clocks changed`, whose slug is the
+  pointer's.
+
+### Scope
+
+Worktree used: `../tropis-rules-carry-mechanism` (sibling of the primary checkout), on
+`plan/rules-carry-mechanism-not-provenance`. `git diff --stat origin/main...HEAD` before
+this report:
+
+```
+ commands/capture-learning.md       |  17 ++-
+ docs/backlog-board/bands.yaml      |  12 --
+ feature-catalog.yaml               |  10 +-
+ framework/DECISIONS.md             |  32 +++++
+ framework/doc-architecture.md      |   1 +
+ guards/rule-delivery.test.js       |  12 +-
+ guards/rule-incidents.test.js      | 274 +++++++++++++++++++++++++++++++++++++
+ rules/catalogs.md                  |  31 ++---
+ rules/harness-scripts.md           |  48 +++----
+ rules/incidents/README.md          |  55 ++++++++
+ rules/incidents/catalogs.md        |  31 +++++
+ rules/incidents/harness-scripts.md |  32 +++++
+ rules/incidents/learnings.md       |  20 +++
+ rules/incidents/planning.md        | 115 ++++++++++++++++
+ rules/incidents/tests.md           |  23 ++++
+ rules/learnings.md                 |  37 +++--
+ rules/planning.md                  | 142 +++++++++----------
+ rules/tests.md                     |  21 +--
+ scripts/capture-at-write.sh        |   2 +-
+ scripts/check-blueprint.sh         |   4 +-
+ scripts/set-up-project.sh          |   5 +-
+ 21 files changed, 755 insertions(+), 169 deletions(-)
+```
+
+Every file is in *File Structure*, and this plan file is added by this report.
+`scripts/check-conformance.sh` was not changed: the self-check passed without the
+conformance project carrying the records, so Decision 3's condition did not arise.
+`docs/backlog-board/index.html` is not in the diff (ignored; Task 5).
+
+### Judgment calls
+
+**Sources.** The guard was written against this repository's own names, modelled on
+`guards/contributing-page.test.js` (its `isBlueprintTree` and skip shape) and
+`guards/set-up-project.test.js` (running the setup into a temporary repository). No
+outside source.
+
+**Guard shape.** Check 5 requires every `rules/incidents/*.md`, the index included, to be
+installed: Decision 3 copies the whole folder, and the index is what explains the pointer
+form to a reader in a project. A kept-inline bullet is parsed as the first backticked
+`rules/<name>.md` and the first double-quoted phrase on a line starting `- `, and must be
+at least six words. `##` headings inside code fences are ignored. Pointers containing
+`<` or `>` are placeholders, not pointers (the learnings clause names the form with
+them).
+
+**Which side each unsure clause went on.**
+
+- `tests.md`, the date-formatting clause — kept inline, as the plan decided; it is the
+  index's only kept-inline bullet.
+- `tests.md`, the consumer test that wrote its own field — the mechanism (a consumer's
+  test that supplies the field itself passes against a path that never worked) stays as
+  a sentence; "Caught in review, not by the suite" moved.
+- `tests.md`, the tokenizer story — moved; its examples (`then`, `do`, `{`, a continued
+  line) are particular to one shell matcher, and the rule keeps the general shape: a
+  replacement can fall silent on shapes the old check caught by accident.
+- `harness-scripts.md`, the hook reply table — kept with its version header (an author
+  chooses a reply from it); only "Measured on 2026-10-09 in the project this framework
+  came from" moved. The instruction to re-run the probe script when a tool changes stays.
+- `harness-scripts.md`, the heredoc that ran one hook four times — the command shape (a
+  heredoc followed by another command) stays as mechanism; the counts, version, date and
+  the loop that ran once moved. "Which other command shapes that tool cannot parse is
+  not settled" stays.
+- `harness-scripts.md`, the shell's quiet failures — all mechanism, untouched.
+- `catalogs.md`, the plan that promoted an entry and called it unshipped — one mechanism
+  sentence added (an observation reported only in conversation is never recorded, and
+  later records go on calling it outstanding); the story moved.
+- `catalogs.md`, the five-day backlog count — moved, pointed from the second "would not
+  be lost" bullet, whose two examples it illustrates.
+- `learnings.md`, the silent hook "which once took the entire rule layer to zero" — the
+  clause moved; the rule keeps "a hook that emits nothing looks exactly like one that
+  works, so only running it shows which it is".
+- `learnings.md`, Decision 5's new clause — placed in *A rule that was skipped needs
+  evidence, not a second copy*, as a bold paragraph after the reworded "attach the
+  incident" paragraph, since that section is where an agent writing a rule meets the
+  question of stories.
+- `planning.md`, "Five answers, all of which have been got wrong here" — trimmed to "Five
+  answers:"; the claim lands in the first of the five record sections ("Each of the five
+  answers in the File Structure section has been got wrong here"), and each of the five
+  has its own story section.
+- `planning.md`, "Six sections, each earned by something that went wrong here" — moved to
+  one section, *What earned the handover sections*, which also holds the Verification
+  results story; both lines point at it.
+- `planning.md`, the first-adopter-harness checks — the three shapes of an unpassable
+  check stay as mechanism ("The plan's own text or tools can defeat a check: …"); the
+  plan's name, date and "each was caught only by the agent running it" moved.
+- `planning.md`, the shim left for a deleted component — kept that leaving a stand-in that
+  says why is the right choice of the two, since it tells an executor what to do in that
+  bind.
+- `planning.md`, the two hook diagnoses — both stories moved; "The symptom is usually real
+  and the cause invented" stays in bold as the mechanism.
+- `planning.md`, the grep counts — "measured on macOS" stays (it says where the behaviour
+  is known); the counts 4 and 6 moved.
+- `planning.md`, *Why this exists* — keeps the mechanism sentence (a committed step
+  happens; an uncommitted one does not); the ten pull requests and the
+  `<paste the run URL>` story moved.
+- `planning.md`, "it was the only step with nowhere to put them" — kept, as the reason the
+  *Learnings routed* section exists; only "one such learning went into a commit message"
+  moved.
+- FW-053's date is 2026-11-02, the day it was written.
+
+### What the plan got wrong
+
+1. **"Rule text stays at most 88 columns a line, as it is now"** is untrue: at `d236f34`
+   the five rule files have 84 lines over 88 characters (catalogs 8, harness-scripts 4,
+   learnings 9, planning 57, tests 6, measured with JavaScript string length). Every line
+   this plan wrote is at most 88, except the document map row Decision 7 gives verbatim
+   (95); untouched lines were not rewrapped.
+2. **Task 1's second run cannot pass as ordered.** Check 5 (Decision 6) wants the
+   records installed, the index is one of `rules/incidents/*.md`, and only Decision 3's
+   setup change (Task 3) installs it. The setup change was committed in Task 1
+   (`beffe24`) before the second run.
+3. **Task 6 cannot probe uncommitted files.** The probe's scratch clone is made with
+   `git clone`, which carries only committed content, but Task 4 says not to commit its
+   files until the probe's result can go in the body. They were committed with a
+   provisional message, probed, and the message was amended before anything was pushed.
+4. **The Task 0 snippet cannot run `guards/rule-delivery.test.js`**: in that export 78 of
+   its 157 tests fail with exit status 127 from the hooks it spawns, so the Task 4
+   re-break was run through `bash scripts/check-blueprint.sh`, where the guard runs in
+   the conformance project. The cause of the 127 was not investigated.
+5. **Task 6's tool restriction does not keep Bash out.** "Read, Grep, Glob, Edit and
+   Write allowed" through `--allowedTools` left Bash usable in this install, and the
+   agent wrote through a heredoc, which the Edit/Write hook never sees. `--disallowedTools
+   "Bash"` was needed for the hook to be exercised.
+
+### Outstanding
+
+- **The split saved 6% of words and 1% of bytes.** Each pointer, as Decision 2 shapes it,
+  costs about 70 bytes, so `rules/tests.md` and `rules/harness-scripts.md` are now
+  slightly larger in bytes than before, and `rules/learnings.md` grew by the clause it
+  gained. If the saving in bytes matters, a shorter pointer form (for instance the slug
+  alone, the record being implied by the rule's own name) is a design question for the
+  developer, not something this plan could change.
+- **Criterion 1 has no automated check.** Whether each rewritten constraint still says
+  why it holds is for the parent review's read of the diff; the judgment calls above
+  list where to look first.
+- **`origin/main` has moved** to `b89f278` since the base; the branch needs a rebase and a
+  re-run of the merge criteria before merging.
+
+## Review record
+
+Reviewed by the specifying session, on the branch rebased onto `origin/main` at
+`b89f278`. Tools: Claude Code 2.1.300, Node v22.15.0, git 2.49.0, macOS 26.2, Darwin
+arm64.
+
+### Checks re-run
+
+- The rebase conflicted in `framework/DECISIONS.md` only: FW-052 landed on `main` at the
+  place FW-053 was appended. Resolved by keeping both, FW-052 first. A second rebase at
+  landing met another plan's FW-053; this decision became FW-054, and the catalog's two
+  new ideas were kept side by side.
+- `git diff --stat origin/main...HEAD`: 22 files, each in *File Structure*;
+  `scripts/check-conformance.sh` and `docs/backlog-board/index.html` untouched, as the
+  handover says.
+- `npm --prefix .tropis test` on the rebased branch: `Test Suites: 13 passed, 13 total`,
+  `Tests: 150 passed, 150 total`.
+- `guards/rule-incidents.test.js` on a `git archive` export of the branch, with
+  `TROPIS_EXPECT_FRAMEWORK=1`: `Tests: 8 passed, 8 total`. Re-broken by renaming one
+  record heading (`## A consumer test that wrote its own field`) in the export, so a
+  pointer dangles and a section goes unpointed: `Tests: 1 failed, 7 passed, 8 total`.
+- `bash scripts/check-blueprint.sh` on the rebased branch (`9f56e4f`, load average about
+  12): `Self-check passed: every guard caught its defect, the clean baseline passed, and
+  the framework repository's own guards passed.`, both `rule-incidents` plants `caught`.
+  Run again on the head carrying this record before the pull request.
+- The handover's diagnosis of exit status 127 for `rule-delivery` in the Task 0 export
+  was checked: the guard spawns hooks at `.tropis/hooks/` (`guards/rule-delivery.test.js`
+  line 33 and others), and `.tropis/` is export-ignored, so in a bare export the hooks
+  are absent. Expected there; the self-check runs the guard in the conformance project.
+- Criterion 1 was checked by reading the whole diff of the five rule files: each
+  constraint still says what it forbids and why. Where a story was the only statement of
+  a mechanism, the executor wrote the mechanism as a sentence (the three shapes of a check
+  that cannot pass, the observation reported only in conversation, the stand-in that says
+  why).
+
+### Found
+
+Public exposure: the diff was read for private material, and the added lines searched for
+home paths, names and hostnames; nothing found. The records keep the rules' existing
+pseudonyms; the old "the developer's Mac" phrase did not move into a record.
+
+- Mechanical, fixed on the branch by the reviewer: `rules/incidents/README.md` named
+  branch commits (`6d65120`) that the rebase replaced, and named the guard by a path a
+  set-up project does not have, while the file ships to every project. It now names the
+  merge and the guard in plain text.
+- The tokenizer examples in `tests.md` (`then`, `do`, `{`, a continued line) moved to the
+  record. They are particular to one matcher; the general mechanism stays. Accepted, as
+  the executor's judgment.
+- The saving: 6% of words, 1% of bytes, recorded in the index. Each pointer costs about
+  70 bytes. Changing the pointer form would save about 2% more and is not worth a second
+  plan; the criterion asked for the saving to be recorded, and it is.
+
+### Outstanding disposition
+
+- Shorter pointer form: dropped. About 2% of the rules' bytes, against a pointer that
+  names a path an agent can open as it stands.
+- Criterion 1 has no automated check: settled by this review's read of the diff; future
+  edits are held by the fourth capture question and the learnings clause.
+- Branch behind `origin/main`: rebased by this review.
+- The decision number: FW-053 was free at review and was taken by another plan before
+  this one landed, so the reviewer renumbered the decision FW-054 at landing.
+- The `rule-delivery` exit 127 in a bare export: explained above, nothing to file.
+
+### Learnings routed
+
+- `--allowedTools` does not keep a probe away from Bash, seen in this plan's probe and in
+  the rules-are-retired-on-evidence probe: captured as the idea `probe-keeps-to-its-tools`
+  in `feature-catalog.yaml`.
+- The plan's untrue claim that rule lines are at most 88 columns, its Task 1 ordering and
+  its Task 4/6 commit ordering: plan-writing slips covered by the planning rule's
+  *Verify every claim about the repository* and *A check states what it prints*; nothing
+  new to route.
+
+### Merged because
+
+Every check re-ran green on the rebased branch, the new guard goes red when a record
+heading and its pointer part, the rewritten rules keep each mechanism, the fresh-agent
+probe found the fourth question doing what it was written for, and the only fixes were
+two mechanical corrections to the incident index, made and declared here.

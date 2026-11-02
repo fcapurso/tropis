@@ -11,9 +11,10 @@ someone is writing a test.
   on each side passes while the pair is broken. Add one test that runs the real
   sequence.
 
-  Both sides can have tests and both can pass: the consumer's test supplied the
-  field itself rather than letting the caller write it, so it passed against a
-  path that never worked. Caught in review, not by the suite.
+  Both sides can have tests and both can pass: a consumer's test that supplies the
+  field itself, rather than letting the real producer write it, passes against a
+  path that never worked. (Incident:
+  `.tropis/rules/incidents/tests.md#a-consumer-test-that-wrote-its-own-field`)
 
 - **A path-existence guard must answer about the tree under test.** A helper that
   checks one checkout and falls back to another will report a hit from a directory
@@ -57,14 +58,14 @@ someone is writing a test.
   Before deleting a broad check — a substring match, a catch-all — run the cases it caught
   against its replacement, and add any the replacement misses to its tests. A replacement
   written to its own table of cases passes that table and can still fall silent on shapes
-  the old check caught by accident: in one project a tokenizer that replaced a substring
-  match missed a command after `then`, `do` or `{`, and one continued from the line
-  before, so a hook went quiet on real commits until review probed beyond the table.
+  the old check caught by accident, and nothing reports the silence until someone probes
+  beyond the table. (Incident:
+  `.tropis/rules/incidents/tests.md#a-tokenizer-that-went-quiet-on-real-commits`)
 - **A deadline in a test stops a hang; it is not something the code must beat.** Where a
   test runs something that polls a fake until the fake's last answer ends it, give that
   run a deadline it cannot reach on any machine, and pass a short one only in a test of
   the deadline itself. A deadline the fake's sequence must beat makes the answer depend
-  on how busy the machine is: in this framework two cases that polled a stub three times
-  under a three-second deadline exited "still waiting" during busy runs and passed on the
-  rerun with nothing changed. Slow every call of the fake in one test, so a deadline
-  tightened later is caught.
+  on how busy the machine is: the test fails on a loaded machine and passes on the rerun
+  with nothing changed. Slow every call of the fake in one test, so a deadline tightened
+  later is caught. (Incident:
+  `.tropis/rules/incidents/tests.md#two-polling-cases-that-lost-to-a-busy-machine`)

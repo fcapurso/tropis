@@ -31,6 +31,7 @@ now believes it cannot.
 | Timeless conventions | Rule files, which the agent tool loads without being asked |
 | What the code currently is | Generated and guarded, never hand-written |
 | Why a choice was made | A decision record, written when the choice is made |
+| What produced a rule | Its incident record, one pointer away from the rule, never delivered |
 | What the product does | A catalog with a lifecycle; only shipped entries guarded |
 | What is planned | The same catalog, at a non-shipped status, read on the backlog board |
 

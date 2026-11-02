@@ -199,18 +199,6 @@ rule-is-measured-with-and-without:
   seen:
     status: idea
     blockers: []
-rules-carry-mechanism-not-provenance:
-  band: B
-  value: 3
-  valueWhy: Cuts the context every session pays for incident stories it does not need.
-  effort: 5
-  effortWhy: Migrates every rule file, with a record per file and two guards.
-  verdict: "Banded on its own value, as though the retirement trial had run: a
-    real saving on every session, and a large migration. It comes after
-    rules-are-retired-on-evidence, which the board marks."
-  seen:
-    status: shaped
-    blockers: []
 rules-return-after-compaction:
   band: B
   value: 4

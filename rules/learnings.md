@@ -33,11 +33,8 @@ is indistinguishable from recorded until somebody asks.
 
 Before writing a lesson into a commit body, ask where the next person will be standing
 when they need it, and write it there first. The commit can then state it in one line
-and point at the durable place.
-
-Got wrong three times in one day in the project this came from — a file-list lesson, an
-environment note, and the evidence for a framework boundary — and each time the developer
-had to ask before it moved.
+and point at the durable place. (Incident:
+`.tropis/rules/incidents/learnings.md#three-lessons-left-in-commit-bodies-in-one-day`)
 
 **A rule file alone cannot deliver this rule at the moment it matters, and hooks cover
 the gap.** Rules arrive as files the agent tool loads; none of them is in front of an
@@ -57,13 +54,14 @@ condition narrows it to one command shape. Two moments are wired that way:
 
 Both Bash hooks, and the write hook, are asserted in `rule-delivery.test.js` by running
 the script, not by reading it — a hook that emits nothing looks exactly like one that
-works, and that is the shape of the defect which once took the entire rule layer to zero.
+works, so only running it shows which it is. (Incident:
+`.tropis/rules/incidents/learnings.md#a-silent-hook-that-took-the-rule-layer-to-zero`)
 
 **Writing a rule, a rule addition, a decision record, or a framework document** is a
 third moment, and it is not a Bash command. `capture-at-write.sh` fires on Edit and
 Write of `.claude/rules/`, `.claude/rule-additions/`, `DECISIONS.md`, and
 `.claude/framework/`, and prints the
-three-question check from `.claude/commands/capture-learning.md`. That file is the
+four-question check from `.claude/commands/capture-learning.md`. That file is the
 only copy of the questions; the hook extracts them. `/capture-learning` still works
 by hand.
 
@@ -78,22 +76,31 @@ document exists to prevent, arriving disguised as the fix for it.
 
 A rule that is correct, complete and evidence-free is the one that gets skipped. It reads
 as boilerplate because nothing in it shows what it cost. Attach the incident to the rule
-that already exists — what happened, and what it cost — and leave only the action at the
-other moment.
+that already exists — what happened, and what it cost — in that rule's incident record,
+with a pointer from the rule, and leave only the action at the other moment.
+
+**A rule clause carries its mechanism; its incident lives in the record its pointer
+names.** The mechanism — what the constraint forbids and why that holds — stays in the
+rule, which every session in its area is handed. The occasion — who hit it, when, in
+which plan, what it cost — goes under a heading in the rule's record, which no tool
+loads: `.tropis/rules/incidents/<name>.md` beside a shipped rule,
+`docs/rule-incidents/<name>.md` for a project's own rule or addition. The rule points at
+it in backticks, after `Incident:`, as `` `<record path>#<heading slug>` ``. An occasion
+stays inline only when it is itself the only statement of the failure mode. The fourth
+question of the capture check decides which is which.
 
 This applies to rules that have actually been broken. A rule nobody has ignored yet does
-not need a story attached, and a rule file padded with hypotheticals is one nobody finishes
-reading.
+not need an incident record, and a rule file padded with hypotheticals is one nobody
+finishes reading.
 
 ## A rule that describes a defect names the defective code
 
 When a rule states a convention the code does not yet follow everywhere, name the code
 that does not, and pair the naming with an assertion that goes red once it is fixed. An
 agent drafting new code copies the nearest example, so the codebase competes with the
-rule and wins unless the rule names the exception. Verified by a fresh-agent check in
-the project this came from, on a rule requiring an in-flight state for every backend
-call. The naming is a temporary clause, and the next section says where its assertion
-goes.
+rule and wins unless the rule names the exception. The naming is a temporary clause,
+and the next section says where its assertion goes. (Incident:
+`.tropis/rules/incidents/learnings.md#a-fresh-agent-check-on-an-in-flight-state-rule`)
 
 ## A rule that says the code is a certain way is asserted
 
