@@ -254,10 +254,24 @@ through a small seam:
 The first two are built with `/sprint`. The command-line way is its own entry. The
 sprint plan says which ways this tool has, and the sprint runs with those.
 
-**Open — second spike:** what each tool's command line and Cursor's cloud agent API
-take and return when started from another session — flags, how the final line and the
-handover report are read back, how approvals behave with nobody watching — checked
-against each tool's own documentation and a trial run, not secondary sources.
+**Answered — second spike (2026-11-02):** Two command lines work today, and both run an
+agent with nobody watching: `claude -p "<prompt>" --output-format json --model <m>
+--setting-sources project --permission-mode acceptEdits --allowedTools "Bash(git *)"
+--max-turns <n>` and `cursor-agent -p "<prompt>" --output-format json --model <m> --trust`
+with `permissions.allow` rules in the project's `.cursor/cli.json` (for example
+`Shell(git)`). Each takes the working directory from where it is started, prints one JSON
+object with the agent's whole reply in `result` and an id in `session_id`, and exits 0
+whether or not the work was done. So the last line is read from the end of `result`, but
+the result is believed only once the repository agrees: a branch on the remote holding the
+handover report. A Cursor run that was refused every shell command still ended `SHIPPED`.
+Both resume a run with `--resume <session_id>`. With nothing granted, Claude Code denies
+what needs approval, tells the agent so, goes on, and lists the denials in
+`permission_denials`; Cursor refuses every shell command and still edits files. Neither
+waited for an answer. Granting everything (`--dangerously-skip-permissions`, `--force`) was
+not needed and is not recommended. Cursor's cloud agent API (`POST /v1/agents`, then the
+run's `status`, `result` and `git.branches`) is documented but needs a key and a paid
+cloud agent, so it is unproven, as is starting a cloud agent from the command line. The
+choice is recorded as FW-050. Evidence: section "Second spike — evidence" below.
 
 ### 10. Epics, user stories, story points
 
@@ -310,13 +324,113 @@ Names of the ref and of the token command; where the local sprint file lives; th
 limit before the token; how stale a token must be before it is shown; the words of
 `/sprint`'s proposal and reports.
 
+## Second spike — evidence
+
+Read and run on 2026-11-02. Command lines: Claude Code 2.1.300 and Cursor's `cursor-agent`
+2026.10.22-27dcf5f, on macOS 26.2, arm64, git 2.49. Documentation addresses are given in
+full under Sources. The runs were started from inside a Claude Code session (so with
+variables whose names start `CLAUDE_CODE_` set, among them one marking the session as a
+child session), with no terminal on input, in a throwaway repository with a local bare
+remote; no network remote and no cloud agent was touched. The task each run was given
+asked for a branch, a file `HANDOVER.md` with a `## Handover report` heading, a commit, a
+push, and a last line `SHIPPED`. Models: `haiku` alias (resolved to the cheapest Claude
+model) for Claude Code; `gpt-5.3-codex-low` for Cursor, the cheapest the account's
+`--list-models` offered that is not a "fast" variant. Each run used a five-minute limit; none
+came near it (11 to 59 seconds).
+
+### What each command line takes
+
+| | Claude Code `claude -p` | Cursor `cursor-agent -p` |
+|---|---|---|
+| Prompt | argument, or stdin; `-p` is print mode (headless page; `--help`) | argument; `-p` "for scripts or non-interactive use" (`--help`; cli/headless) |
+| Working directory | where it is started; `--add-dir` adds more (`--help`) | where it is started; `--workspace <path>` (`--help`; cli/reference/parameters) |
+| Model | `--model <alias or full name>` (`--help`) | `--model <id>`; `--list-models` lists them (`--help`) |
+| Output | `--output-format text, json, stream-json`; stream-json also wants `--verbose` (headless page) | `--output-format text, json, stream-json` (`--help`; cli/reference/output-format) |
+| Limits | `--max-turns`, `--max-budget-usd` (print mode only; cli-reference) | none found in `--help` or the documentation read |
+| Permissions | `--permission-mode`, `--allowedTools`, `--disallowedTools`, `--dangerously-skip-permissions`, `--permission-prompts none` (v2.1.259 and later) (cli-reference, headless) | `--force` / `--yolo`, `--sandbox`, `--trust`, and `permissions.allow` / `deny` rules in `~/.cursor/cli-config.json` or `<project>/.cursor/cli.json` (`--help`; cli/reference/permissions) |
+| Limiting which settings load | `--setting-sources user,project,local` (`--help`; cli-reference); `--bare` skips them all but then needs an API key, not the signed-in login (headless) | no flag found; the run loaded the signed-in user's own skills (see runs) |
+| Resume | `--resume <session_id>`, `--continue`, `--fork-session`, `--session-id <uuid>` (headless; cli-reference) | `--resume [chatId]`, `--continue`; `create-chat` makes an empty chat and prints its id (`--help`; cli/overview) |
+| Isolation help | none of its own | `--worktree [name]` runs in a git worktree it makes under its own folder (`--help`) |
+
+### What each returns
+
+| | Claude Code | Cursor |
+|---|---|---|
+| Exit code | 0 on success, non-zero when the run fails; a failure inside the run, such as no sign-in, is printed as the result on stdout (headless); 143 on SIGTERM | non-zero on failure with an error on stderr; the documentation gives no numbers (cli/reference/output-format) |
+| `json` shape (field names, from the runs) | `type`, `subtype`, `is_error`, `result`, `session_id`, `num_turns`, `terminal_reason`, `stop_reason`, `permission_denials`, `total_cost_usd`, `usage`, `modelUsage`, `duration_ms`, `uuid` and timing fields | `type`, `subtype`, `is_error`, `result`, `session_id`, `request_id`, `duration_ms`, `duration_api_ms`, `usage` |
+| Last line | end of `result` | end of `result` |
+| Resume id | `session_id` | `session_id` |
+| Documentation says | "The last line of the stream is a `result` message" for stream-json (headless) | stream-json events: `system`, `user`, `assistant`, `tool_call`, `result`; a failed run "may end without a terminal `result` event" (output-format) |
+
+### Trial runs
+
+Commands are shown with the prompt as `<task>` and paths relative to the probe repository.
+
+| # | Command | Result |
+|---|---|---|
+| C1 | `claude -p <task> --output-format json --model haiku --setting-sources project --permission-mode acceptEdits --allowedTools "Bash(git *)" --max-turns 12` | exit 0 after 11 s; `is_error` false, `subtype` success, `terminal_reason` completed, `num_turns` 3, `permission_denials` empty; `result` ended `SHIPPED`. Read back from the remote: `git log --oneline probe/claude` listed the agent's commit above the first commit, and `git show probe/claude:HANDOVER.md` printed `## Handover report` and one line. |
+| C4 | `claude -p "Which file did you write? End with the line DONE." --resume <session-id> --output-format json --model haiku --setting-sources project --max-turns 3` | exit 0; same `session_id`; the answer named `HANDOVER.md` and ended `DONE`. |
+| C3 | as C1, with no `--permission-mode` and no `--allowedTools` (settings: project only) | exit 0 after 16 s, not waiting. `permission_denials` listed three calls (a `git checkout -b` command, a file write, and the same command again), the agent said "Nothing was shipped" and did not print `SHIPPED`. No branch reached the remote. |
+| U1 | `cursor-agent -p <task> --output-format json --model gpt-5.3-codex-low --force --trust` | exit 0 after 42 s; `result` ended `SHIPPED`; the remote held `probe/cursor` with the commit and a correct `HANDOVER.md`. |
+| U4 | `cursor-agent -p "Which file did you write? End with the line DONE." --resume <session-id> --output-format json --model gpt-5.3-codex-low --trust` | exit 0; same `session_id`; answered `HANDOVER.md` and `DONE`. |
+| U3 | as U1 without `--force` | exit 0 after 26 s, not waiting. The agent wrote `HANDOVER.md` but every shell command, even `pwd`, was refused; it said so and **still ended its reply with `SHIPPED`**. The remote had no branch. |
+| U5 | as U3, with `.cursor/cli.json` in the project allowing `Shell(git)` and `Write(HANDOVER.md)` | exit 0 after 59 s; commit and push succeeded; the remote held `probe/cursor` with a one-file commit. The allow rules were enough: `--force` was not needed. |
+
+Settings that loaded: for Claude Code, project settings only (`--setting-sources project`)
+on C1, C3 and C4; its other user-level instructions were not shown to be excluded by that
+flag. For Cursor there is no equivalent flag, and the agent announced it was using one of the
+signed-in user's own skills, so U3's and U5's result may reflect the user's own
+configuration. The probe repository had no rule files.
+
+### Cursor's cloud agent API (documentation only, nothing run)
+
+From cursor.com/docs/cloud-agent/api/endpoints (v1, public beta), read on 2026-11-02, first
+100,000 of about 136,000 characters; the rest was not read.
+
+- **Base and authentication:** `https://api.cursor.com`; an API key as the basic-auth user
+  with an empty password, or bearer.
+- **Start:** `POST /v1/agents` with `prompt.text` (required), `repos[]` of `url`,
+  `startingRef` (branch or full SHA) and `prUrl`, `workOnCurrentBranch` (false puts commits
+  on a new `cursor/...` branch), `autoCreatePR`, `model`, `mode` (`agent` or `plan`), `env`.
+  It returns the `agent` and its first `run` with status `CREATING`.
+- **Read:** `GET /v1/agents/{id}` (status `ACTIVE`, `IDLE`, `ARCHIVED`, and `latestRunId`);
+  `GET /v1/agents/{id}/runs/{runId}` for the run's `status` (`CREATING`, `RUNNING`,
+  `WAITING_FOR_BACKGROUND_WORK`, `FINISHED`, `ERROR`, `CANCELLED`, `EXPIRED`), `result` (the
+  final reply) and `git.branches[]` with `branch` and `prUrl`; a stream of events at
+  `.../stream`.
+- **Follow-up:** `POST /v1/agents/{id}/runs` with `prompt` (409 `agent_busy` while a run is
+  active), or with `delivery: "steer"` to steer the active run.
+- **Cancel and delete:** `POST .../cancel` on a run; `DELETE /v1/agents/{id}`.
+- **Unproven, and what proving it would take:** all of it. It needs an API key from a Cursor
+  account's dashboard and a repository the cloud agent can reach on GitHub, and it runs a paid
+  cloud agent. The calls to try are `POST /v1/agents` against a throwaway repository, then
+  `GET` on the run until terminal. Also unproven: that a cloud agent's `result` ends with
+  the final line, and whether approvals apply there at all (the pages read do not say).
+  Cursor's command line is documented to send a conversation to a cloud agent when a
+  message starts with `&` (cli/overview, cli/using); the pages say nothing about doing this
+  in print mode, and nothing was run.
+
+### Not proven by any run
+
+Claude Code waiting for an answer (it never waited; the documented waiting case is with
+an Agent SDK host or `--permission-prompt-tool`); `--permission-prompts none`; Claude
+Code started in a plain terminal rather than inside another session; Cursor's exit code on
+a failed run; a started agent running this repository's workflow rather than the probe
+task; the Claude Code documentation page on the SDK message types, which was read only in
+part, so the field names above come from the runs.
+
 ## Sources
 
 Worked from the way of working described above, as run in this repository on 2026-11-01,
 and from this repository's own workflow, dispatch, backlog and decision records. No
-external project's design was used. Cursor's capabilities were read from its changelog
-and from third-party integration docs on 2026-11-01, not verified against its own
-documentation; the second spike does that.
+external project's design was used. Cursor's capabilities were first read from its changelog and from third-party
+integration docs on 2026-11-01; the second spike checked them against Cursor's own
+documentation and trial runs on 2026-11-02. Addresses read on that date:
+code.claude.com/docs/en/headless, /cli-reference, /permission-modes and
+/agent-sdk/typescript; cursor.com/docs/cli/headless, /cli/overview, /cli/using,
+/cli/reference/parameters, /cli/reference/output-format, /cli/reference/permissions and
+/cloud-agent/api/endpoints; and the installed tools' `--help`. The text of the evidence
+section is the spike's own wording.
 
 ## Evidence from the first spike
 
