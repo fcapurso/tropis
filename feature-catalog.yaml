@@ -5040,9 +5040,21 @@
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-01-overlapping-plans-merge-in-order.md
+# Shipped by docs/superpowers/plans/2026-11-02-sprint-plans-and-runs-a-team.md.
+# Criterion 1 - sprint.test.js (the propose cases: rank order and budget, blockers, after,
+# bundles) and the plan's live read of this backlog. Criterion 2 - the start case (the file
+# under the git common dir, read and marked from a second worktree). Criterion 3 - the
+# document cases for /sprint and the fresh-agent check, prompt 2 in the plan's handover.
+# Criterion 4 - the document case for the workflow and the fresh-agent check, prompt 1.
+# Criterion 5 - the wait cases, and the fresh-agent check, prompt 3; and the reviewer's
+# hours-long wake check (Decision 8): a desktop app session idle three hours was woken by
+# its own wait ending, 17 seconds after the blocker shipped (the plan's review record). Criterion 6 - the status cases
+# (local origin, the eleven states on a faked GitHub origin, no needs-you line, the
+# unaccounted-for pull request, unknown pull requests). Criterion 7 - the new-entries
+# status case and the add case. Criterion 8 - the report and end cases.
 - id: sprint-plans-and-runs-a-team
   title: The developer plans a sprint with /sprint, and a self-organising team delivers it
-  status: building
+  status: shipped
   value: Opening a project, the developer runs /sprint and gets a proposed sprint of
     about 20 story points from the top of the ranking, refines it, and a team of
     sessions delivers it in parallel, each entry through the whole workflow, without
@@ -5095,11 +5107,12 @@
       decisions team members reported, what was not done, and the new entries.
   type: feature
   layer: product
-  blockedBy:
-    - merges-take-turns-under-one-token
   after:
     - overlapping-plans-merge-in-order
-  modules: []
+  modules:
+    - scripts/sprint.mjs
+    - commands/sprint.md
+    - guards/sprint.test.js
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-sprint-plans-and-runs-a-team.md

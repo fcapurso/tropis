@@ -424,6 +424,48 @@ Implements: <catalog id, if applicable>
 Plan: <plan document path>
 ```
 
+## Delivering an entry
+
+A session that takes one backlog entry to shipped — a team member a sprint started, or a
+session the developer started by hand — runs the whole of this document, in this order:
+
+0. If the entry is `blockedBy` one that has not shipped, run
+   `node .tropis/scripts/sprint.mjs wait <id>` as a background command and do nothing
+   else until it ends. It ends when everything the entry is blocked by has shipped, and
+   has no time limit. If it prints `PARKED: depends on <id>`, end with that line.
+1. Shape the entry (`/feature`) and write its plan.
+2. Claim it: run the overlap check on the plan (*Plans that touch the same files*), then
+   land the plan, the shaping and the move to `building` through one pull request, under
+   the merge token.
+3. Dispatch an executor on the model the plan's tier calls for — a subagent or session
+   where the tool can start one, otherwise yourself — and review its branch.
+4. Merge as *Merging* says: wait for what the plan merges after, take the token, rebase,
+   re-run the merge criteria, open the pull request and wait for the main branch. Keep
+   the token for a follow-up pull request, then release it.
+5. End with exactly one line: `SHIPPED`, `PARKED: <why>` or `STOPPED: <why>`. `STOPPED`
+   is for a wait that ran out, a usage limit, or an error you could not get past; the
+   lines the overlap and token waits print are `STOPPED` lines. In a sprint, record a
+   `PARKED` or `STOPPED` line first with
+   `node .tropis/scripts/sprint.mjs mark <id> parked <why>` (or `stopped <why>`), so the
+   sprint's status and the team members waiting on this entry see it.
+
+**Stop only for one of three things:** a judgement only the developer can make, a check
+only a person can perform by hand (written to the verification log as `pending` through
+`/manual-check` first), or work outside what was agreed. Anything else you decide, and
+report the decision. What you may run is the tool's own permission settings; a prompt
+for a permission is answered in your session. A parked entry goes back on the board as
+needing a decision. **An entry parked after its claim moves back** from `building` to
+`shaped`, its plan kept in `refs` and the reason in a comment directly above the entry,
+landed under the token like any backlog edit; it then leaves the overlap check, which
+counts only entries in `building`. An entry parked before its claim changes nothing in
+the backlog.
+
+**A sprint starts these sessions; the rules are here so that any session follows them.**
+`/sprint` plans the sprint with the developer, starts one session per entry or bundle,
+all at once, with the brief `node .tropis/scripts/sprint.mjs brief <id>` prints, and
+shows where each stands. It never merges, reviews or orders merges: the token and the
+overlap check do that.
+
 ## The cycle
 
 1. **Understand.** State the problem and, if one exists, the catalog entry it relates to.

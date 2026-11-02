@@ -868,3 +868,249 @@ running `node .tropis/scripts/sprint.mjs end` in it if a sprint file is left.
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+Source worked from: none outside this repository. `scripts/sprint.mjs` follows the
+shape of `merge-token.mjs` and `main-status.mjs` (module comment, root resolution, the
+`ranDirectly` block, the `originOnGitHub` call); the test harness follows
+`merge-token.test.js` and `plan-overlap.test.js`. Everything else is written against
+this repository's own names.
+
+### Task completion
+
+- Task 0 done. Task 1 done: `guards/sprint.test.js` and an empty `scripts/sprint.mjs`
+  committed first; run alone, all 27 cases in the file failed (27 failed, 27 total),
+  before the script existed. No earlier test failed.
+- Task 2 done (script plus `inRankOrder`). Task 3 done, all seven mutations went red and
+  were reset. Task 4 done. Task 5 done. Task 6 done, each prompt passed on its first
+  run, no wording changed. Task 7 done. Task 8 done up to the push.
+- Task 3 red names (each run with `-t` for the one case, test file otherwise whole):
+  1. working-tree read: `status › † reads the backlog from origin after fetching, and an entry shipped on main is shipped whatever its mark says`
+  2. mark before shipped: the same case
+  3. no blocker condition: `propose › † leaves out an entry blocked by an unshipped one outside the sprint, and puts one blocked by a lower-ranked sprint entry after it`
+  4. bundle in part: `propose › † brings a bundle whole, at its first member's place, or not at all`
+  5. wait exits 0 with a blocker open: `wait › † keeps waiting without a time limit and carries on within a few intervals of the blocker shipping on origin`
+  6. wait ignores marks: `wait › † stops with PARKED once the blocker is marked parked in the sprint file`
+  7. parked and stopped in sprint order: `status › † shows each of the eleven states for an origin on GitHub, stopped and parked entries first`
+- Handover (3 and 4): none, the change has no screen.
+
+### Verification results
+
+Tools: git 2.49.0, node v22.15.0, gh 2.103.2, npm, Claude Code 2.1.300, macOS 26.2 on
+arm64 (`uname -sm`: Darwin arm64).
+
+- `bash scripts/check-blueprint.sh` at the last code commit, from the worktree:
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+  (exit 0). After Task 2 alone it failed with exactly three red cases, all in
+  `the documents` (workflow section, command file, installed list and package script),
+  which is expected before Task 4; after Task 4 it passed.
+- `npm --prefix .tropis test`: `Tests:       151 passed, 151 total` (13 suites).
+- New test file, run alone through a staged copy of the worktree with the template's Jest
+  config (`node --experimental-vm-modules jest --config jest.config.js sprint.test.js`):
+  27 cases, all passing after Task 2 apart from the three document cases, and after
+  Task 4 all 27 pass (the file takes about 90 seconds; the `wait` cases dominate).
+- Task 4 grep, `git grep -nF "sprint.mjs" -- framework commands templates scripts/installed-scripts.txt`:
+  hits in `commands/sprint.md` (11 lines), `framework/workflow.md` (3),
+  `scripts/installed-scripts.txt`, `templates/README.md`, `templates/package.json`.
+- Task 5, live, from the worktree (origin is this repository; `origin/main` at `0711048`
+  when run, which moved after the plan was written): `propose` listed 7 entries, 17 of 20
+  points, command-slots-spike first, `next in line` project-chooses-its-repository-host
+  (5 pts), exit 0; `status` before a start printed `Sprint: none under way; run propose,
+  then start.` and exited 1; `start command-slots-spike --way here` printed
+  `Sprint: started with 1 entries, 4 of 20 points; team members start as here.`;
+  `status` then printed the started line, `Merge token: free.` and
+  `  command-slots-spike — not started`, with no other-pull-requests line (`gh pr list`
+  returned none); `end` printed the report and `Sprint: ended; the sprint file is
+  removed.`; the `tropis/` folder under the git common dir was empty afterwards (no
+  `sprint.json`); `wait rules-return-after-compaction` printed `Sprint:
+  rules-return-after-compaction can start — nothing it is blocked by is still open.`,
+  exit 0. To run the checked-in copy from `scripts/` I linked
+  `.tropis/node_modules` as `scripts/node_modules` for the run and removed it after; it
+  was never staged.
+- Task 6, Claude Code 2.1.300, model `claude-sonnet-5-5`, `env -u ANTHROPIC_API_KEY`,
+  `--output-format stream-json --verbose`, `--allowedTools Bash,Edit,Write,Read,Glob,Grep`,
+  macOS 26.2 arm64, scratch project set up from this branch with a local bare origin:
+  1. Asked to deliver the claimed `glaze-log` whose plan needs the developer to choose
+     a printer: it started no task, ran `sprint.mjs mark glaze-log parked ...` (exit 1,
+     no sprint under way, as the workflow allows only "where there is one"), moved the
+     entry to `shaped` with the plan in `refs` and a comment above it, pushed that to
+     origin's main (`git show main:feature-catalog.yaml` read `status: shaped`, comment
+     `# Parked: the plan requires the developer to choose the label printer before any
+     task can start.` directly above), and its last line started `PARKED:`.
+  2. Asked to run /sprint, agree and start, delivering here: the Skill call `sprint`,
+     then `status`, `propose` (5 of 20, kiln-alarm then shelf-map, so the blocked
+     one was not left out), then one call running `start kiln-alarm shelf-map --points 5
+     --way here`, `brief` and `mark ... planning` for each, and `status`; no session,
+     subagent or cloud call.
+  3. Given `shelf-map`'s brief: ran `sprint.mjs wait shelf-map` with
+     `run_in_background: true`; its output file read
+     `Sprint: shelf-map waits for kiln-alarm to ship.`; it shaped nothing and wrote no
+     plan. The `claude -p` process stays alive while a background command runs, so I
+     killed the `wait` process afterwards (the output file ended `[killed]`).
+  The scratch folder was removed after `sprint.mjs end` there.
+- Scope: `git diff --stat origin/main...HEAD` before this handover:
+  11 files changed, 1561 insertions(+), 20 deletions(-): `commands/sprint.md`,
+  `docs/backlog-board/bands.yaml`, `feature-catalog.yaml`, `framework/DECISIONS.md`,
+  `framework/workflow.md`, `guards/sprint.test.js`, `scripts/installed-scripts.txt`,
+  `scripts/next-work.js`, `scripts/sprint.mjs`, `templates/README.md`,
+  `templates/package.json`. (`origin/main` had moved to `3048d0f` by the end; the
+  branch is based on `12d4a50` and is not rebased.)
+
+### Scope
+
+Every file above is in *File Structure*. `docs/backlog-board/index.html` was not staged
+(ignored by git). The spec was not edited. Worktree used: `../tropis-sprint`, a sibling
+of the main checkout.
+
+### Judgment calls
+
+- `proposeSprint` walks the candidates repeatedly until a pass adds nothing. The plan
+  said "walk, add or skip, go on", which would never put an entry after a lower-ranked
+  blocker that joins later, yet its test asks for exactly that. An entry added in a
+  later pass comes after the entries added earlier, so it can stand after a lower-ranked
+  one (the test expects `free, y2, x3, x2`).
+- `next in line` names the first unblocked candidate left out, and for a bundle gives the
+  whole bundle's points.
+- `add` over the budget never names the entry just added, and when no entry not started
+  can leave it prints `Sprint: over the budget by <k> points — no entry not started yet
+  could leave to make room.`.
+- A fetch-failure or no-`origin/main` note is printed once, first, by every command
+  except `brief`, where it goes to stderr so the brief printed on stdout stays whole.
+- `start` also refuses an id listed twice (`Sprint: <id> is listed twice.`), `mark`
+  refuses an unknown state, `note` and `mark` need an entry already in the sprint, and a
+  missing `feature-catalog.yaml` is a one-line error.
+- The sprint file is written to a sibling file and renamed, so a reader never sees half
+  of it. Two team members marking at the same instant could still lose one mark; not
+  guarded, kept simple.
+- `main()` and `readBacklog()`, `proposeSprint()`, `statusOf()` are exported so the pure
+  parts can be imported; the tests mostly run the installed copy as a session would.
+- `status` prints `Sprint: open pull requests unknown — <reason>.` as its last-but-one
+  line (where the pull requests would be), not first.
+- Wait's first read happens before any sleep, so it exits at once when nothing blocks.
+- The catalog entry read `building` as the plan expected.
+
+### What the plan got wrong
+
+- Task 2 says the self-check must pass after the script. It cannot: the plan's own
+  document cases (workflow section, command, installed list, package script) are in the
+  same test file and stay red until Task 4. Only those three cases were red.
+- The walk as worded cannot produce the blocker-below case it tests (see Judgment calls).
+- Task 6 step 1 says `.tropis/project.json` holds `"ungated"`; the installed workflow
+  text at `.claude/framework/workflow.md` in the scratch project says the same, but this
+  repository's installed copy names `.claude/project.json`. The source reads `.tropis/`.
+  I used `.tropis/project.json`, which the agent honoured ("the project is ungated").
+- The plan expects `status` to show open pull requests by `gh pr list`; the live run
+  against this repository showed none open at the time, so the line was not exercised
+  live (the faked-GitHub cases cover it).
+- Task 5's `start` writes the real sprint file of this checkout; I ended it at once as
+  instructed, but note another session on the same checkout would have seen it briefly.
+
+### Outstanding
+
+- The hours-long wake check (Decision 8), the replacement of the angle-bracketed
+  sentence in FW-056, and the spec's §11 bullet are the reviewer's, as the plan says.
+  The catalog comment says criterion 5's wake is not yet seen; the reviewer updates it.
+- `origin/main` moved after the plan was written (`3048d0f`); the branch needs a rebase
+  and a re-run of the merge criteria before the pull request.
+- The five commit subjects below the handover are working history; the squash message is
+  the reviewer's to write.
+- The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session started by the parent
+sprint-epic session. Tools: Claude Code 2.1.300, git 2.49.0, node v22.15.0, macOS 26.2
+on arm64.
+
+### Checks re-run
+
+- The rebase onto `origin/main` at `3048d0f` stopped on one conflict, in
+  `docs/backlog-board/bands.yaml`. Main had added `team-members-and-reviewers-run-on-a-tier`
+  next to the row this branch removes. I resolved it by keeping that row and removing the
+  sprint row. Nothing else conflicted.
+- `git diff --stat origin/main...HEAD` shows 12 files, every one in *File Structure*.
+  The plan's own file and the spec were edited by the reviewer only, as the table says.
+- `bash scripts/check-blueprint.sh` on the rebased HEAD printed `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.` and exited 0.
+- `npm --prefix .tropis test` printed `Tests: 153 passed, 153 total` (13 suites).
+- `guards/sprint.test.js`, run alone on a `git archive` of HEAD with a module
+  `package.json`, printed `Tests: 27 passed, 27 total`.
+- Mutations, each applied to the export and reverted:
+  - Mark before shipped (Task 3, mutation 2) turned 1 case red: `status › † reads the
+    backlog from origin after fetching, and an entry shipped on main is shipped whatever
+    its mark says`.
+  - No blocker condition (mutation 3) turned 1 case red: `propose › † leaves out an entry
+    blocked by an unshipped one outside the sprint, …`.
+  - `wait` passing over an open blocker (mutation 5) turned 3 cases red, all of them
+    `wait › …`.
+  - Parked and stopped in sprint order (mutation 7) turned 1 case red: `status › † shows
+    each of the eleven states …, stopped and parked entries first`.
+  - Working tree instead of `origin/main` (mutation 1) turned 6 cases red, among them
+    the `propose` and `add` cases.
+- The handover's diagnosis that the source and installed workflows name different
+  `project.json` paths is correct. `framework/workflow.md` names `.tropis/project.json`
+  twice and never `.claude/project.json`. The installed `.claude/framework/workflow.md`
+  names `.claude/project.json` twice. This is a change between releases, not a defect.
+- **The hours-long wake check (Decision 8).**
+  - Probe: a throwaway repository under `$TMPDIR` with a local bare origin and a
+    two-entry catalog, in which `shelf-map` is blocked by `kiln-alarm` (status
+    `building`). The probe used a minimal catalog rather than a clone of this repository,
+    because what is being tested is the session's wake, not the backlog read.
+  - Setup: a detached `caffeinate -i` script, not tracked by the session, shipped
+    `kiln-alarm` on that origin after `sleep 10800`. The session's only background task
+    was `node tools/sprint.mjs wait shelf-map`, at the default 30-second interval.
+  - It started at 2026-11-02T10:43:34Z, and the turn ended with nothing else pending.
+  - The blocker shipped at 13:43:35Z. `wait` printed `Sprint: shelf-map can start —
+    nothing it is blocked by is still open.` and exited 0 at 13:43:52Z.
+  - The session was woken by that command's completion notification, and by nothing
+    else. It had been idle 3 h 0 min.
+  - The power log showed no system sleep in the window. It showed `caffeinate`'s
+    `PreventUserIdleSystemSleep` held for 03:00:00.
+  - Result: the check passed, seen once in this one tool.
+
+### Found
+
+Public exposure: I read the diff for private material — people's names, other projects,
+home paths, hostnames and email addresses. It contains only `seed@example.com` and
+`<name>@example.com` in the tests. Nothing private.
+
+- The operator guide (`templates/README.md`) said `/sprint` starts "one session per
+  entry". FW-056, `commands/sprint.md` and the workflow section all say one per entry or
+  bundle. **I fixed this myself on the branch** (commit `docs(operator): the sprint
+  starts one session per entry or bundle`). It is a one-line, mechanical wording change
+  to match the decision.
+- The walk that repeats until a pass adds nothing (a judgment call in the handover) is
+  right. The plan's single pass could not satisfy the plan's own blocker test. The
+  mutation that removes the blocker condition shows that the test exercises it.
+- The executor's fresh-agent check satisfies the workflow's requirement for the change to
+  `framework/workflow.md`. It was Claude Code 2.1.300, `claude-sonnet-5-5`, with
+  `ANTHROPIC_API_KEY` unset, run with the calls visible. Each of its three prompts
+  touched the new clauses: parking after a claim, `/sprint --way here`, and the
+  background `wait`. Each reached the intended outcome on its first run.
+
+### Outstanding disposition
+
+- The hours-long wake check is done above. It is recorded in FW-056's *Consequences*,
+  the catalog comment for criterion 5, and the spec's §11.
+- The rebase onto the moved `origin/main` is done above.
+- The squash message is written at merge.
+- There is no developer check: the change has no screen.
+- Wake in tools other than Claude Code: dropped here. `team-members-start-in-another-tool`
+  already carries another tool's team members, and its own check belongs there.
+
+### Learnings routed
+
+- Plan Task 2 demanded a passing self-check before Task 4 wrote the documents that the
+  same test file checks. That is an instance of an existing rule: in
+  `rules/planning.md`, "a check the finished work cannot pass" at that step. It needs no
+  new rule, so nothing was routed.
+- The wake check's result went to FW-056 and the spec, which is where FW-055's
+  assumption lives. Nothing else generalises.
+
+### Merged because
+
+Every criterion has a check that was re-run here and seen to fail when broken. The
+one wording defect was fixed and is declared above. The one assumption nobody had
+observed — a session waking from its own wait after hours — was seen to hold.

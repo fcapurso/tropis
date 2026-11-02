@@ -80,6 +80,14 @@ session wait — while you run something by hand, say — run
 does this itself. `node .tropis/scripts/merge-token.mjs` alone says who holds the token
 and for how long, as the second line of `/next` does.
 
+`/sprint` plans a sprint with you and runs it: it proposes about 20 story points from
+the top of the ranking, you agree the entries and their order, and when you say to
+start it starts the whole team at once, one session per entry or bundle, each of which delivers
+its entry through the workflow, waits by itself for what it depends on, and merges its
+own work under the merge token. Ask it where the sprint stands at any time; team
+members that need you come first. `node .tropis/scripts/sprint.mjs status` prints the
+same from the shell; the agreed sprint lives in a file under `.git/`, never committed.
+
 ## Where the framework lives
 
 This project was set up from the framework at `{{BLUEPRINT_URL}}`. General adoption,
@@ -215,5 +223,5 @@ copy `.github/workflows/tropis-pipeline.yml` to
 `.github/workflows/pipeline.yml` at that copy. Tropis keeps installing its own
 file, and an update tells you when that file changed.
 
-Commands you will type here: `/idea`, `/feature`, `/next`, `/refresh-board`, `/refresh-readme`, `/dispatch`,
-`/capture-learning`, `/refresh-model-tiers`.
+Commands you will type here: `/idea`, `/feature`, `/next`, `/refresh-board`,
+`/refresh-readme`, `/dispatch`, `/sprint`, `/capture-learning`, `/refresh-model-tiers`.

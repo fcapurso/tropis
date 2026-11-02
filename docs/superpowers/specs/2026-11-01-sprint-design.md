@@ -328,8 +328,11 @@ check by hand, or work outside the sprint. FW-055 records it.
   notifies where the tool can, and the developer answers in that session.
 - **Visibility.** Every team member is a session in the tool's list, which therefore holds
   the whole sprint from the start.
-- **Unchecked:** whether a session keeps waking from its own background wait over hours,
-  checked by `sprint-plans-and-runs-a-team` in Claude Code.
+- **Seen once:** a session keeps waking from its own background wait over hours. On
+  2026-11-02 a Claude desktop app session, itself started by another session, waited
+  three hours on `sprint.mjs wait` with nothing else pending and was woken by that
+  command ending, 17 seconds after its blocker shipped (Claude Code 2.1.300, macOS 26.2,
+  arm64). One run on one tool; other tools are unchecked.
 
 ## How this sits with what exists
 
