@@ -32,3 +32,18 @@ vendor. Models move between tiers as the field changes; these definitions do not
 The practical question: can the model hold a plan of the length this project actually
 writes — 300 to 1500 lines, in both projects this came from — and follow it without
 drifting?
+
+### Agents that run no plan
+
+`/dispatch` chooses an executor's model from its plan's tier. Two kinds of agent
+Tropis starts run no plan, and run on the **Large** tier, because each does open-ended
+judgement with no mechanical check:
+
+| Agent | Its work | Where its model is named |
+|---|---|---|
+| A sprint's team member | shapes an entry, writes its plan, reviews the executor's branch | the last line of `sprint.mjs start` and `sprint.mjs add` |
+| A fresh reviewer: a fresh-agent check's probe, or the reviewer of work its author built | judges, with only the repository, whether the work says and does what it should | `node .tropis/scripts/dispatch.mjs --tier Large` |
+
+Each runs on the first Large pick that a subscription the developer holds includes,
+the pick `/dispatch` names for a Large plan; where none is named, on the tool's
+default model (FW-053).

@@ -591,6 +591,15 @@ which version a result came from. A result that holds only on some versions is a
 finding about the framework — change it so it no longer depends on what varies — not
 a reason to require a version.
 
+**Run the probe on the Large tier's included pick.** A probe judges, with only the
+repository, whether a change reaches the agent it was written for, which is the Large
+tier's kind of work (`.claude/framework/model-tiers.md`).
+`node .tropis/scripts/dispatch.mjs --tier Large` names the model: the first Large pick
+that a subscription the developer holds includes, as `/dispatch` would choose for a
+Large plan. Pass it as the probe's model, such as `claude -p --model <model>`; where it
+names none, run the probe on the tool's default model and say why in the record. Record
+the model with the tool and its version.
+
 **Judge the check by what the agent did, not by what it says it did.** A run that prints
 only the agent's final reply hides the commands it ran and what answered them, so a check
 whose pass depends on a hook cannot tell a hook that refused a command from an agent that

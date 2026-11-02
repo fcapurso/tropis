@@ -34,7 +34,10 @@ later — a later turn may not be one the developer typed, and some tools refuse
 a session on such a turn. An entry blocked by another starts too: its team member waits
 by itself until that entry ships. Pass each team member the brief
 `node .tropis/scripts/sprint.mjs brief <id>` prints, as it stands, and run
-`node .tropis/scripts/sprint.mjs mark <id> planning` for it.
+`node .tropis/scripts/sprint.mjs mark <id> planning` for it. Start each team member on
+the model the last line of `start` names: the first pick of the Large tier that a
+subscription the developer holds includes, since a team member shapes, plans and
+reviews. Where that line names none, start it on the tool's default model.
 
 | `--way` | How | Where |
 |---|---|---|
@@ -81,7 +84,8 @@ and offer to slide each into the sprint. On the developer's word,
 `node .tropis/scripts/sprint.mjs add <id>` adds one and says which entries not yet
 started would then fall outside the budget; drop those with
 `node .tropis/scripts/sprint.mjs drop <id>` only on the developer's word. Start the new
-entry's team member in that same turn, as in step 2.
+entry's team member in that same turn, as in step 2. Start it on the model the last line
+of `add` names.
 
 ## 5. End
 
