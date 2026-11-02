@@ -5447,6 +5447,13 @@
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-waits-end-when-something-happens.md
+# Shipped by docs/superpowers/plans/2026-11-02-overlap-check-reads-every-file-in-a-row.md.
+# Criterion 1: guards/plan-overlap.test.js, sharedFiles "reads every file in a row" and
+# --claim "reads a claiming plan whose only row lists several files".
+# Criterion 2: the existing one-file-per-row cases in guards/plan-overlap.test.js and
+# guards/plan-dispatchable.test.js stay green.
+# Criterion 3: guards/plan-dispatchable.test.js, "reads every file in a row, so a rule
+# source second in the row still asks for its projection".
 # Found 2026-11-02 claiming backlog-speaks-in-epics-stories-and-points: its first draft
 # listed several files per File Structure row, and plan-overlap.mjs --claim reported no
 # overlap with two plans in building that shared five of them. One file per row showed
@@ -5454,7 +5461,7 @@
 # span of each row only.
 - id: overlap-check-reads-every-file-in-a-row
   title: The overlap check sees every file a plan's table row lists
-  status: building
+  status: shipped
   value: Two plans that share a file are told to merge in order even when one of them
     lists several files in one row of its File Structure table. Today the check reads
     only the first file of each row, so it can report no overlap, set no Merges after,
@@ -5468,7 +5475,8 @@
       every file in a row too.
   type: bug
   layer: framework
-  modules: []
+  modules:
+    - scripts/plan-binding.js
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-overlap-check-reads-every-file-in-a-row.md

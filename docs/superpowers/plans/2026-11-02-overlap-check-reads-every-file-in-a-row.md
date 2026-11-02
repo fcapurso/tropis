@@ -231,3 +231,148 @@ rewrote is not kept (the claim's `Merges after` is already there).
 3. `git push -u origin plan/overlap-check-reads-every-file-in-a-row`. **Do not open a
    pull request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+### Task completion
+
+- **Task 0, setup.** Dependencies installed under the installed release folder; the tree
+  was clean; the baseline self-check passed on the base commit `4aaee2e`.
+- **Task 1, the tests, red.** Committed as `3bf6b0b`. Three test cases fail, as the plan
+  expects, and every other case passes (see Verification). The plan counts four failing
+  cases; see *What the plan got wrong*.
+- **Task 2, the fix.** Committed as `5a498a8`. Both guard files pass, the self-check passes,
+  and the claim command prints the expected overlap.
+- **Task 3, the backlog and the board.** Committed as `d729dbd`. The catalog entry is
+  `shipped` with its comment; the board row is removed. The installed-release tests pass.
+- **Task 4, verification and handover.** Done. This section is committed on the branch.
+  No pull request, review record, auto-merge or merge.
+
+### Verification results
+
+Tools: git 2.49.0; node v22.15.0; jest 30.5.2 (from the self-check's `.self-check/`);
+macOS (Darwin kernel 25.2.0) on arm64.
+
+- Baseline self-check on `4aaee2e`: last line `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Red run on `3bf6b0b`, each file alone on a `git archive` of `HEAD` (below):
+  - `guards/plan-overlap.test.js`: `Tests: 2 failed, 17 passed, 19 total`. Failing:
+    `sharedFiles › reads every file in a row, not only the first` and
+    `--claim › reads a claiming plan whose only row lists several files`.
+  - `guards/plan-dispatchable.test.js`: `Tests: 1 failed, 7 passed, 8 total`. Failing:
+    `what a plan must list beside a rule source › reads every file in a row, so a rule
+    source second in the row still asks for its projection`.
+- Green run on `5a498a8`: `guards/plan-overlap.test.js` `Tests: 19 passed, 19 total`;
+  `guards/plan-dispatchable.test.js` `Tests: 8 passed, 8 total`.
+- Single-guard command, as the self-check's `run_guard` runs it: `git archive HEAD` into a
+  temporary folder; `templates/framework-jest.config.js` copied there as `jest.config.js`;
+  `node_modules` in that folder symlinked to `.self-check/node_modules`; then, in that
+  folder, `FRAMEWORK_ROOT=<that folder> node --experimental-vm-modules
+  .self-check/node_modules/.bin/jest --config <that folder>/jest.config.js
+  guards/<name>.test.js`. The wrapper script lives outside the repository.
+  `TROPIS_EXPECT_FRAMEWORK` was not set: neither guard calls `isBlueprintTree`.
+- Claim, on the fixed tree, with the plan's `node_modules` symlink (removed after; the plan
+  file was then restored with `git checkout`):
+  ```
+  Overlaps backlog-speaks-in-epics-stories-and-points (docs/superpowers/plans/2026-11-02-backlog-speaks-in-epics-stories-and-points.md): guards/plan-dispatchable.test.js, guards/plan-overlap.test.js, scripts/plan-binding.js
+  Overlaps team-members-and-reviewers-run-on-a-tier (docs/superpowers/plans/2026-11-02-team-members-and-reviewers-run-on-a-tier.md): scripts/plan-binding.js
+  Merges after: backlog-speaks-in-epics-stories-and-points, team-members-and-reviewers-run-on-a-tier — already in docs/superpowers/plans/2026-11-02-overlap-check-reads-every-file-in-a-row.md.
+  ```
+  The header already carried that `Merges after` line, so the claim wrote nothing new.
+- Self-check after the fix, on `5a498a8`: last line `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test` on `d729dbd`: `Tests: 157 passed, 157 total`
+  (`Test Suites: 13 passed, 13 total`).
+- Self-check on `d729dbd`, which holds everything except this section: last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.` The only commit after it is this handover,
+  a change to this plan file alone.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this section was added):
+
+```
+ docs/backlog-board/bands.yaml    | 12 ------------
+ feature-catalog.yaml             | 12 ++++++++++--
+ guards/plan-dispatchable.test.js |  6 ++++++
+ guards/plan-overlap.test.js      | 15 +++++++++++++++
+ scripts/plan-binding.js          | 11 +++++++----
+ 5 files changed, 38 insertions(+), 18 deletions(-)
+```
+
+Every file is in *File Structure*. `docs/backlog-board/index.html` was not touched: the board's
+hook did not rebuild or stage it.
+
+### Judgment calls
+
+- The catalog's `Shipped by` comment sits above the item's existing comment block, as the
+  plan asks. That older block still says the reader takes "the first backticked span of
+  each row only"; it is kept as the record of how the defect was found.
+- The dispatch-check case is one `test` with two assertions (one row with the rule source
+  second, one row with both files), not two cases.
+- `modules` is a one-item list, `scripts/plan-binding.js`, and `refs` is unchanged.
+- The status went to `shipped`; the item read `building`, so no note was needed.
+- Source worked from: none outside this repository. The change is written from
+  `scripts/plan-binding.js` and the existing cases in the two guard files.
+
+### What the plan got wrong
+
+- It says four `†` cases fail on red. It lists three tests: two in `plan-overlap.test.js`
+  and one in `plan-dispatchable.test.js`, whose single `it` covers both rows. All three
+  failed on red, as the plan expects, and pass after the fix.
+
+### Outstanding
+
+- The change has no screen, so there is no developer check.
+- The release-note line is the developer's at `/release`.
+- The branch overlaps two plans in `building`: `backlog-speaks-in-epics-stories-and-points`
+  (the same three files, the reason for the bug) and `team-members-and-reviewers-run-on-a-tier`
+  (`scripts/plan-binding.js`). The parent reviewer rebases before merge, as the header
+  already says.
+- The worktree `../tropis-overlap-row` is left in place, as the plan asks.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Rebased onto `0f8ae55` (the backlog-words plan, which this one merges after). One
+  conflict, in `docs/backlog-board/bands.yaml`: both sides removed their own row;
+  resolved by keeping neither. Bookkeeping, no review needed.
+- Scope: `git diff --stat origin/main...HEAD` lists 6 files, all in *File Structure*.
+- `plan-overlap`, `plan-dispatchable` and `dispatch` run together on a `git archive` of
+  `HEAD`, as the self-check's `run_guard` does: `Tests: 67 passed, 67 total`.
+- Mutation: `scripts/plan-binding.js` put back as it is on `main` (first span only), as a
+  throwaway commit: `plan-overlap` and `plan-dispatchable` printed `Tests: 3 failed, 24
+  passed` — the three new cases. Reset afterwards.
+- The full self-check and the installed checks ran again before the pull request (its
+  description gives the result).
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The handover's correction is right: *Tests* item 3 is one `it` with two assertions, so
+  three cases are red before the fix, not four.
+- Nothing else.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`.
+- The rebase: done above.
+
+### Learnings routed
+
+- Nothing generalises beyond the fix: this repository is the upstream, and the plan
+  rule's File Structure guidance needs no change now that a row may hold several files.
+
+### Merged because
+
+The overlap check and the projection check now read every file a row names, three cases
+pin it and go red with the old reading, and plans written one file per row read as
+before.
