@@ -159,6 +159,8 @@ plant readme-usable framework/workflow.md
 plant contributing-page CONTRIBUTING.md
 plant contributing-page CONTRIBUTING.md "A pull request from a fork runs the pipeline once the maintainer approves the run."
 plant dependency-overrides templates/package.json '"test-exclude": "^8.0.0"'
+plant rule-incidents rules/incidents/planning.md
+plant rule-incidents rules/tests.md '.tropis/rules/incidents/tests.md#two-polling-cases-that-lost-to-a-busy-machine'
 
 # plant_add <kind> <text>: append a line to a file under an export-ignored path of the
 # full copy and expect private-material to fail. The text is assembled by the caller so
