@@ -304,3 +304,16 @@ version-check-tells-a-red-baseline:
   seen:
     status: idea
     blockers: []
+waits-end-when-something-happens:
+  band: A
+  value: 4
+  valueWhy: Every team member that waits longer than an hour for the token or for an
+    overlapping plan stops today, and only the developer can restart it.
+  effort: 2
+  effortWhy: Two waits in two scripts lose their default limit, the token wait learns to
+    stop on a stale holder, their guards and two workflow sections.
+  verdict: "Do with the sprint: FW-055 decided it, and without it an unattended team
+    stops after an hour of waiting."
+  seen:
+    status: building
+    blockers: []
