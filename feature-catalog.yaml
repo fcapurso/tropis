@@ -5307,9 +5307,19 @@
   modules: []
   refs:
     - docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md
+# Shipped by docs/superpowers/plans/2026-11-02-waits-end-when-something-happens.md.
+# Criterion 1 - merge-token.test.js, takes the token after two hours of waiting on a
+# holder that keeps pushing. Criterion 2 - merge-token.test.js, stops naming a holder with
+# no branch (local origin), stops naming a holder GitHub shows stale, does not call a
+# holder with an open pull request stale, keeps waiting on a hold however old. Criterion
+# 3 - merge-token.test.js, stops naming a holder with no branch, and shows that holder as
+# stale in the status line. Criterion 4 - plan-overlap.test.js, goes ahead when the entry
+# was parked back to shaped, and keeps waiting past an hour while the entry is building.
+# Criterion 5 - the existing --timeout cases in both guards. Criterion 6 - the
+# fresh-agent check in the plan's handover.
 - id: waits-end-when-something-happens
   title: A session waiting for the token or for another plan waits until it happens
-  status: building
+  status: shipped
   value: A team member waiting for the merge token, or for a plan it must merge after,
     carries on by itself when the token is free or the other plan has shipped or left
     building, however long that takes, so the developer is not asked to restart it after
@@ -5336,7 +5346,11 @@
       a background command that wakes the session when it ends.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/merge-token.mjs
+    - scripts/plan-overlap.mjs
+    - guards/merge-token.test.js
+    - guards/plan-overlap.test.js
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-waits-end-when-something-happens.md
