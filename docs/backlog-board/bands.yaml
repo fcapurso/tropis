@@ -316,3 +316,16 @@ version-check-tells-a-red-baseline:
   seen:
     status: idea
     blockers: []
+backlog-speaks-in-epics-stories-and-points:
+  band: B
+  value: 2
+  valueWhy: A developer planning a sprint reads epics, backlog items and effort points
+    instead of the framework's own words.
+  effort: 4
+  effortWhy: About a thousand word-by-word judgements across 86 files of prose, printed
+    text and tests, plus a guard that keeps the old words out.
+  verdict: "The sprint epic's last piece, asked for by the developer. Words only - no
+    file or field is renamed, so no project needs an update step."
+  seen:
+    status: building
+    blockers: []

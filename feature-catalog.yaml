@@ -5214,13 +5214,27 @@
     - docs/superpowers/plans/2026-11-02-team-members-start-in-another-tool.md
 # The last piece of the epic, and it may be left out: nothing else depends on it.
 - id: backlog-speaks-in-epics-stories-and-points
-  title: The backlog calls arcs epics, entries user stories, and effort story points
-  status: idea
+  title: The backlog speaks of epics, backlog items and effort points
+  status: building
   value: The backlog speaks the language of a sprint, so a developer planning one reads
-    epics, user stories and story points rather than the framework's own words. Renames
-    the words across the rules, the catalog template, the board, the backlog report and
-    the commands, for every project that takes the release; adds no arithmetic.
-  acceptanceCriteria: []
+    the backlog, backlog items, epics and effort points rather than the catalog,
+    entries, arcs and effort. Renames the words across the rules, the commands, the
+    framework documents, the templates, the board, the backlog report and the sprint's
+    reports, for every project that takes the release. Files, fields, item types and
+    statuses keep their names, so no project needs an update step; adds no arithmetic.
+    The developer narrowed the spec on 2026-11-02 - no user stories, no story points.
+  acceptanceCriteria:
+    - The backlog board says epic, backlog item and effort points where it said arc,
+      entry and effort, and shows no arc, catalog or story points in its visible text.
+    - The backlog report (/next) and the sprint's proposal, status and report say epic,
+      backlog item and effort points.
+    - The commands, rules, framework documents and templates a project receives call the
+      list the backlog, its items backlog items, arcs epics and the effort score effort
+      points, and a check refuses arc, catalog or story points coming back into them.
+    - A project takes the release with no update step - feature-catalog.yaml, bands.yaml
+      and the type, effort and effortWhy fields keep their names, and a fresh agent asked
+      to add and band a backlog item writes them under those names.
+    - Item types keep their names - feature, improvement, bug, spike and chore.
   type: improvement
   layer: product
   after:
@@ -5228,6 +5242,7 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
+    - docs/superpowers/plans/2026-11-02-backlog-speaks-in-epics-stories-and-points.md
 # Seen executing docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md:
 # the self-check on 879cc07, at a load average near 47 from parallel sessions, failed six
 # capture-at-write cases in guards/rule-delivery.test.js with "Unexpected end of JSON
