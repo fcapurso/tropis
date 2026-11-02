@@ -673,3 +673,89 @@ All on git 2.49.0, node v22.15.0, macOS 26.2, arm64 (`uname -sm`: Darwin arm64).
   not rebase.
 - **`templates/catalog.yaml` still has `title: Example entry`** in the example item (data,
   not a comment, so outside the plan); the reviewer may want "Example backlog item".
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists 42 files after the rebase onto
+  `717d685`; a loop over `git diff --name-only` found every one in *File Structure*.
+- Before the rebase, on `b084c77`: `npm --prefix .tropis test` printed `Tests: 156
+  passed, 156 total`; `bash scripts/check-blueprint.sh` printed `caught      backlog-words:
+  commands/next.md planted` and `Self-check passed: …`.
+- Mutations, each a throwaway commit run on a `git archive` of `HEAD` as the self-check's
+  `run_guard` does, then reset: `Arcs under way` put back in `scripts/next.mjs` turned 4
+  cases of `next-report` red; `story points` put back in `commands/sprint.md` turned 1
+  case of `backlog-words` red; `Arcs in progress` put back in
+  `templates/backlog-board.html` turned 1 case of `backlog-board` red; `story points` put
+  back in `scripts/sprint.mjs` turned 11 cases of `sprint` red.
+- After the rebase: `backlog-words`, `next-report`, `backlog-board`, `sprint`,
+  `team-member-cli` and `dispatch` run together printed `Tests: 175 passed, 175 total`.
+  The full self-check and the installed checks ran again before the pull request (its
+  description gives the result).
+- The board and the backlog report built from this branch in a scratch copy (the
+  branch's scripts and template under `.tropis/`, this repository's backlog):
+  `grep -c "Epics in progress"` on the page printed `1`; `next.mjs` printed `Epics under
+  way` and `2 backlog item(s) shelved`.
+- The handover's diagnosis that Task 3's commands cannot run from the worktree root is
+  right: `build-backlog-board.mjs` resolves the project as two folders above itself, so
+  it must sit under `.tropis/scripts/`; the scratch copy above needed exactly that.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- **The rebase.** `main` gained `team-members-start-in-another-tool` and
+  `team-members-and-reviewers-run-on-a-tier` after this plan was claimed. I squashed the
+  branch's fifteen commits into one and rebased once. Conflicts in `commands/sprint.md`,
+  `scripts/sprint.mjs`, `guards/sprint.test.js`, `templates/README.md`,
+  `framework/DECISIONS.md` and `docs/backlog-board/bands.yaml` were resolved by keeping
+  `main`'s text and applying *Decision 1* to it. The decision is now **FW-061** (`main`
+  took FW-059 and FW-060), and the spec's §10 paragraph says FW-061.
+- **Old words in the text those two plans added**, outside the conflicts, fixed by me:
+  `commands/sprint.md` (`launch` paragraph, two "entry") and `framework/model-tiers.md`
+  (the team-member row, "shapes an entry").
+- **Left in place:** the prompt `scripts/sprint.mjs` gives a launched team member says
+  "Everything this entry is blocked by"; `guards/team-member-cli.test.js` asserts it word
+  for word, and that test file is not in this plan's table. It is read by an agent, not
+  shown to the developer; dropped (below).
+- **Fixed by me, mechanical** (commit `docs: three wording fixes from review`, folded into
+  the squash): the board's legend said "the backlog item text" (now "the backlog item's
+  own text"); the workflow's rebase rule said "keeping both sides' backlog items" for
+  files that hold more than backlog items (now "both sides' additions"); the title of the
+  sprint test that names the workflow heading.
+- **Fixed by me, mechanical:** the executor had wrapped two inline commands across a line
+  break inside backticks in `commands/sprint.md`; they are whole again.
+- The handover's correction to the guard's `catalog` pattern (a sentence-ending full stop
+  must not exempt the word) is right: the plan's own case `Add it to the catalog.` needs
+  it, and the guard refuses that case.
+
+### Outstanding disposition
+
+- The developer check of the board: not asked for. The change alters words on the page,
+  not what it shows or how; each new label is asserted by `backlog-board` and was seen in
+  a page built from this branch.
+- `title: Example entry` in `templates/catalog.yaml`: dropped — it is the example's data,
+  which a project replaces, not the framework's words.
+- The rebase and the renumbering: done above.
+- "Everything this entry is blocked by" in the launched team member's prompt: dropped —
+  agent-facing text, a one-word inconsistency that does not mislead.
+
+### Learnings routed
+
+- A plan's File Structure table must list one file per row for the overlap check to see
+  them: found claiming this plan, captured and planned as
+  `overlap-check-reads-every-file-in-a-row`, which makes the check read every file.
+- Squashing a long branch before rebasing it onto a moved `main` turned fifteen
+  conflict rounds into one. Not routed: it is ordinary git practice, and the branch lands
+  as a squash anyway.
+
+### Merged because
+
+Every criterion has a check that was re-run and seen to fail when broken, the rebase's
+conflicts were resolved by applying the plan's own rule to `main`'s text, and the
+defects found were wording, fixed and declared above.
