@@ -171,7 +171,7 @@ describe('dispatch command', () => {
     const command = readFileSync(join(blueprint, 'commands/refresh-model-tiers.md'), 'utf8');
     const template = command.split('Start a new file like this')[1].split('```')[1];
     expect(template).toContain('| Tier | Models |\n|---|---|\n');
-    expect(template).toContain('| Model | Usage per task | Included on |\n|---|---|---|\n');
+    expect(template).toContain('| Model | Usage per task | Included on | Command-line name |\n|---|---|---|---|\n');
     expect(binding.inclusionTable(template).size).toBe(1);
     for (const tier of ['Large', 'Medium–large', 'Medium', 'Small–medium', 'Small']) {
       expect(picksForTier(template, tier)).not.toBe('');

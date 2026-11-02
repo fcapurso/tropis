@@ -48,9 +48,11 @@ plans and reviews. Where that line names none, start it on the tool's default mo
 
 For `claude` or `cursor`, start each team member with
 `node .tropis/scripts/sprint.mjs launch <id>` in place of a session and its brief,
-adding `--model <model>` with a model the developer's plan includes in that tool
-(`docs/model-picks.md`), and `--tool <tool>` to start one backlog item in a tool other
-than the sprint's way. Each run starts at once, waits by itself for what its backlog item
+and `--tool <tool>` to start one backlog item in a tool other than the sprint's way.
+`launch` starts each team member on the Large tier's first pick that the developer's
+subscription in that tool includes, by the name that tool's command line takes, or says
+why it starts on the tool's default model; pass `--model <model>` only to choose
+another. Each run starts at once, waits by itself for what its backlog item
 is blocked by, and works with nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
 command where this tool runs them; each time it ends, tell the developer the line it
 printed unless it is `SHIPPED`, and run it again until it says none is running.

@@ -101,7 +101,8 @@ include. Ask it where the sprint stands at any time; team members that need you 
 first. `node .tropis/scripts/sprint.mjs status` prints the same from the shell; the
 agreed sprint lives in a file under `.git/`, never committed.
 Team members can also start in the other tool's command line:
-`node .tropis/scripts/sprint.mjs launch <id> --tool cursor` (or `claude`).
+`node .tropis/scripts/sprint.mjs launch <id> --tool cursor` (or `claude`). They start on
+the Large tier's pick in that tool when the model picks give its command-line name.
 
 ## Where the framework lives
 

@@ -465,6 +465,74 @@ export function pickToUse(picksText, tier, subscriptionsText) {
   return '**Use:** none — no pick for this tier or above is included in your subscriptions, and a model that costs extra is not used (FW-053).';
 }
 
+/**
+ * The command-line names the picks file's inclusion table gives in its `Command-line
+ * name` column (`<tool>: <name>; <tool>: <name>`, `none` where a tool lacks the model).
+ * @param {string} picksText
+ * @returns {Map<string, Map<string, string>>} model → lower-cased tool → name
+ */
+function commandLineNames(picksText) {
+  const all = picksText.split('\n');
+  const start = all.findIndex((l) => l.startsWith(INCLUSION_HEADER));
+  const names = new Map();
+  if (start === -1) return names;
+  for (const line of all.slice(start + 1)) {
+    if (!line.startsWith('|')) break;
+    if (/^\|\s*-{3}/.test(line)) continue;
+    const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+    if (cells.length < 4) continue;
+    const tools = new Map();
+    for (const part of cells[3].replace(/\([^)]*\)/g, '').split(';')) {
+      const m = part.match(/^([^:]+):\s*(.*)$/);
+      if (m) tools.set(m[1].trim().toLowerCase(), m[2].trim());
+    }
+    names.set(cells[0], tools);
+  }
+  return names;
+}
+
+/**
+ * The model a tool's command line should start a run of this tier on: the first pick of
+ * the tier, then each tier above it, that the recorded subscription *in that tool*
+ * includes and that has a command-line name for that tool. `model` is that name, or null
+ * with `reason` saying why none could be named.
+ * @param {string|null} picksText the picks file, or null when there is none
+ * @param {string} tier
+ * @param {string|null} subscriptionsText the local record, or null when there is none
+ * @param {string} toolName as the Included on cells write it, such as "Claude Code"
+ * @returns {{model: string|null, pick: string|null, reason: string|null}}
+ */
+export function pickForTool(picksText, tier, subscriptionsText, toolName) {
+  const fail = (reason, pick = null) => ({ model: null, pick, reason });
+  const refresh = ' Run /refresh-model-tiers.';
+  if (picksText === null) return fail(`this project has no model picks.${refresh}`);
+  const included = inclusionTable(picksText);
+  if (included === null) return fail(`the picks do not say which subscriptions include each model.${refresh}`);
+  const key = toolName.toLowerCase();
+  const mine = subscriptionsText === null ? undefined : parseSubscriptions(subscriptionsText).get(key);
+  if (mine === undefined) {
+    return fail(`which ${toolName} subscription you have is not recorded on this machine.${refresh}`);
+  }
+  const from = TIER_ORDER.findIndex((t) => normalizeTier(t) === normalizeTier(tier || ''));
+  for (let i = Math.max(from, 0); i < TIER_ORDER.length; i++) {
+    const models = picksForTier(picksText, TIER_ORDER[i])
+      .split(';')
+      .map((part) => part.trim())
+      .filter((part) => part !== '' && !/^(or\s+)?any pick from a higher tier\.?$/i.test(part))
+      .map((part) => part.replace(/\s*\*\([^)]*\)\*\s*$/, ''));
+    for (const model of models) {
+      const entry = included.get(model)?.get(key);
+      if (!entry || ![...mine].some((sub) => entry.subscriptions.has(sub))) continue;
+      const name = commandLineNames(picksText).get(model)?.get(key);
+      if (!name || name.toLowerCase() === 'none') {
+        return fail(`the picks do not give ${toolName}'s name for ${model}.${refresh}`, model);
+      }
+      return { model: name, pick: model, reason: null };
+    }
+  }
+  return fail(`no ${tier} pick or above is included in your ${toolName} subscription, and a model that costs extra is not used (FW-053).`);
+}
+
 /** A checkout's own worktree setup, read by the dispatch command. */
 export const WORKTREE_SETUP = '.tropis/worktree-setup.txt';
 // A checkout on a release before this one keeps its setup here.

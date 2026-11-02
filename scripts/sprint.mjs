@@ -58,7 +58,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
-import { mergesAfterIds, pickToUse, NO_PICKS_USE } from './plan-binding.js';
+import { mergesAfterIds, pickToUse, pickForTool, NO_PICKS_USE } from './plan-binding.js';
 import { bandOf, inRankOrder, isClosed } from './next-work.js';
 import { originOnGitHub } from './main-status.mjs';
 import { tokenStatus } from './merge-token.mjs';
@@ -174,6 +174,19 @@ function teamModelLine(root, env) {
     : NO_PICKS_USE;
   const none = use.startsWith('**Use:** not chosen') || use.startsWith('**Use:** none');
   return `Sprint: team members run on the ${TEAM_TIER} tier. ${use}${none ? " Start them on the tool's default model." : ''}`;
+}
+
+// The Large pick in `toolName`, by the name that tool's command line takes, from the
+// project's picks and the subscriptions record. See `pickForTool`.
+function teamModelFor(root, env, toolName) {
+  const picksPath = resolve(root, 'docs/model-picks.md');
+  const subsPath = resolve(dirname(sprintPath(root, env)), 'subscriptions.txt');
+  return pickForTool(
+    existsSync(picksPath) ? readFileSync(picksPath, 'utf8') : null,
+    TEAM_TIER,
+    existsSync(subsPath) ? readFileSync(subsPath, 'utf8') : null,
+    toolName,
+  );
 }
 
 function readSprint(root, env) {
@@ -350,6 +363,9 @@ function launch(ctx, opts) {
   if (version.error || version.status !== 0) {
     throw new Refusal(`Sprint: ${command} is not installed, so ${name} cannot start a team member.`);
   }
+  // Without --model the run starts on the Large tier's pick in this tool, when one can be named.
+  const found = opts.model ? null : teamModelFor(ctx.root, ctx.env, name);
+  const model = opts.model ?? found.model ?? undefined;
   const before = sprint.launched?.[id];
   if (before && isAlive(before.pid) && !readResult(ctx.root, ctx.env, id)) {
     throw new Refusal(`Sprint: ${id}'s team member is still running (pid ${before.pid}).`);
@@ -384,7 +400,7 @@ function launch(ctx, opts) {
 
   const fd = openSync(log, 'a');
   const args = [fileURLToPath(import.meta.url), 'run', id, '--tool', tool,
-    ...(opts.model ? ['--model', opts.model] : []),
+    ...(model ? ['--model', model] : []),
     ...(opts.intervalGiven ? ['--interval', String(opts.intervalMs / 1000)] : [])];
   const child = spawn(process.execPath, args, {
     cwd: ctx.root, env: ctx.env, detached: true, stdio: ['ignore', fd, fd],
@@ -398,7 +414,7 @@ function launch(ctx, opts) {
   latest.launched = {
     ...(latest.launched ?? {}),
     [id]: {
-      tool, ...(opts.model ? { model: opts.model } : {}), worktree, pid: child.pid,
+      tool, ...(model ? { model } : {}), worktree, pid: child.pid,
       started: isoSeconds(ctx.now()), log,
     },
   };
@@ -407,6 +423,9 @@ function launch(ctx, opts) {
   return [
     `Sprint: ${id} started in ${name}'s command line (pid ${child.pid}), in ${worktree}.`,
     `Sprint: its log is ${log}; status names the command that opens its session.`,
+    ...(found === null ? [] : [found.model
+      ? `Sprint: ${id} runs on ${found.pick} (${found.model}), the ${TEAM_TIER} tier's first pick your ${name} subscription includes.`
+      : `Sprint: ${id} starts on ${name}'s default model — ${found.reason}`]),
   ];
 }
 

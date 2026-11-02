@@ -1979,9 +1979,8 @@ in each script and document, and that is the seam). Leaving the model to whateve
 session started with (that is what this replaces: the developer's default model,
 whatever it costs).
 
-**Consequences:** A team member started in another tool's command line (FW-059) is
-still passed `--model` only as the developer gives it: `sprint.mjs launch` does not
-default it to this pick, and that is left to a later entry. An executor's own review
+**Consequences:** A team member started in another tool's command line (FW-059) runs
+on this pick in its own tool (FW-062). An executor's own review
 subagents are its business and are not covered. The repository's
 own `/rule-trial` is not shipped and is left as it is.
 
@@ -2004,3 +2003,22 @@ every project for words nobody reads while planning).
 **Consequences:** Decisions before this one, incident records, specs and plans keep the
 words of their day. A project's own text is its own. Narrows §10 of the sprint design.
 Source: the backlog item `backlog-speaks-in-epics-stories-and-points`.
+
+## FW-062: A launched team member runs on the Large pick its own tool's subscription includes
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** `sprint.mjs launch` without `--model` starts the team member on the first
+Large pick that the developer's recorded subscription in that tool includes, passed by
+the name that tool's command line takes, which the picks file's inclusion table gives
+in a fourth column, `Command-line name`. Where no pick can be named it says why and
+starts the tool on its default model. `--model` still overrides.
+
+**Rejected:** The pick `/dispatch` names whatever its tool (it may be in the other
+tool). Deriving the command-line name from the display name (Cursor's ids follow no
+one rule). Asking the tool at launch (Claude Code has no list command).
+
+**Consequences:** A picks file written before this has no fourth column; `/dispatch`
+reads it as before, and `launch` says the names are missing until
+`/refresh-model-tiers` runs. Completes FW-060 for FW-059's team members. Source: the
+backlog item `launched-team-members-run-on-the-large-pick`.
