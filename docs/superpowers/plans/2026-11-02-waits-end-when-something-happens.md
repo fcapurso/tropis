@@ -618,3 +618,64 @@ Every file is in File Structure; `docs/backlog-board/index.html` did not change.
 - The FW number may need renumbering at merge if `main` moved.
 - A tool that cannot keep a background command alive for hours ends a wait early (stated in
   FW-056); not observed here.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, with git 2.49.0, node v22.15.0 and the self-check's own
+Jest, on macOS 26.2, arm64, against the branch's committed `HEAD`.
+
+- Scope: `git diff --stat origin/main...HEAD` lists the eight files of *File Structure*
+  and this plan, nothing else.
+- The two changed guard files alone, staged from `HEAD` as the self-check stages them:
+  `Tests: 48 passed, 48 total`.
+- Re-breaking, each as a throwaway commit then dropped:
+  - `take` never asking about staleness: red on *stops, naming a holder with no branch
+    and no push for half an hour* and *stops naming a holder GitHub shows stale*
+    (`2 failed, 46 passed`).
+  - The merges-after wait going ahead only on `shipped`/`dropped`: red on *goes ahead
+    when the entry was parked back to shaped* (`1 failed, 47 passed`).
+  - `take`'s default limit put back to an hour: red on *takes the token after two hours
+    of waiting on a holder that keeps pushing* and *keeps waiting on a hold, however old*
+    (`2 failed, 46 passed`).
+- `bash scripts/check-blueprint.sh` on `3329615`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` `npm --prefix .tropis test`: `Tests: 152 passed, 152 total`.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. Test identities
+are `example.com` addresses, and holder names are invented.
+
+- FW-052's edited *Consequences* sentence ran past the file's width. Fixed on the branch
+  by the reviewer (rewrapped, same words): mechanical, and the checks above ran after it.
+- The `plan-overlap.mjs` command line's default (no limit) is shown only by the Task 1
+  grep, not by a test: case 8 passes `timeoutMin: Infinity` itself, as the handover says.
+  The token wait's default is tested through `take`'s own default. Accepted: the
+  command-line default is one literal, and the grep shows it.
+- The handover's three corrections to the plan (case 8 cannot be red, case 4 is red
+  before the change, the `in the background` grep) are right; checked against the cases
+  and the workflow text.
+
+### Outstanding disposition
+
+- No screen, so no developer check: none owed.
+- The decision number: renumbered at merge if `main` has moved (done at the token, if
+  needed; the commit landing it says so).
+- A tool that cannot keep a background command alive for hours ends a wait early: stated
+  in the new decision's *Consequences*, and observing it in Claude Code is already the
+  job of `sprint-plans-and-runs-a-team` (FW-055). No new entry.
+
+### Learnings routed
+
+- The plan's case 8 could not go red because the default it guarded lives in the command
+  line's argument parsing, which the case did not reach. A one-off planning error, named
+  here for the next plan that adds a seam beside a default; not routed further.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+Both waits now end on events and both stop conditions are guarded by cases shown to go
+red, the fresh-agent check found the workflow's new wording does what it says, and the
+only defect found was a line width, fixed on the branch.
