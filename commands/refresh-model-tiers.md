@@ -152,9 +152,14 @@ For each model: at least one coding benchmark score, and the launch or last-upda
   italics, `*(all)*` or `*(Cursor)*`: `/dispatch` finds the model to use by those.
 - one table whose header row begins `| Model | Usage per task | Included on |`, with one
   row per model in the tier table: its name as the tier table writes it, without the
-  tool tag; its cost per task, or `unmeasured`; and, for each supported tool, the
+  tool tag; its cost per task, or `unmeasured`; for each supported tool, the
   subscriptions that include it, written `<tool>: <subscription>, <subscription>`, tools
-  separated by `; `, and `<tool>: none` where none does.
+  separated by `; `, and `<tool>: none` where none does; and a fourth column,
+  `Command-line name`: for each supported tool, the name its command line takes for the
+  model, written `<tool>: <name>`, tools separated by `; `, and `<tool>: none` where it
+  does not offer the model. Find each name from the tool itself, never guess it:
+  Cursor's `cursor-agent --list-models`, Claude Code's documented model names.
+  `sprint.mjs launch` starts a team member by that name.
 
 Start a new file like this, then add the notes and sources below the table:
 
@@ -177,9 +182,9 @@ include; the second table gives each pick's usage and the subscriptions that inc
 | **Small–medium** | …; or any pick from a higher tier |
 | **Small** | …; or any pick from a higher tier |
 
-| Model | Usage per task | Included on |
-|---|---|---|
-| … | $… per task (board, version, effort) | Claude Code: …; Cursor: … |
+| Model | Usage per task | Included on | Command-line name |
+|---|---|---|---|
+| … | $… per task (board, version, effort) | Claude Code: …; Cursor: … | Claude Code: …; Cursor: … |
 ```
 
 Everything else in the file — caveats, benchmark figures, positioning notes — is for
