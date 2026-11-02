@@ -52,8 +52,11 @@ mkdir -p "$PROJECT"/.claude/rules "$PROJECT"/.claude/framework "$PROJECT"/.claud
 
 # Shipped rule texts live in .tropis/; their areas are the project's own data in
 # .claude/rule-areas.json; generate-rules.mjs writes the files agents read, and the
-# installed record is written after it.
+# installed record is written after it. The incident records behind the rules ship beside
+# them, in a subfolder nothing that writes or loads a rule reads.
 cp "$BP"/rules/*.md "$PROJECT/.tropis/rules/"
+mkdir -p "$PROJECT/.tropis/rules/incidents"
+cp "$BP"/rules/incidents/*.md "$PROJECT/.tropis/rules/incidents/"
 cp "$BP"/templates/rule-areas.json "$PROJECT/.claude/rule-areas.json"
 cp "$BP"/framework/*.md "$PROJECT/.claude/framework/"
 cp "$BP"/commands/*.md "$PROJECT/.claude/commands/"
