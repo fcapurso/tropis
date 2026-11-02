@@ -430,7 +430,7 @@ By the specifying session, Claude Code 2.1.300 with git 2.49.0 and Node v22.15.0
 - Run U3 again: `cursor-agent -p <task> --output-format json --model gpt-5.3-codex-low
   --trust` exited 0, `subtype` success, `HANDOVER.md` was written but not committed, the
   remote had only `master`, and the reply's last line was `SHIPPED`. Matches the evidence,
-  and is the finding FW-049's "believe the repository" rests on.
+  and is the finding FW-050's "believe the repository" rests on.
 - `bash scripts/check-blueprint.sh` and `npm --prefix .tropis test` after the rebase at
   merge time: see *Merged because*.
 
@@ -440,7 +440,7 @@ Public exposure: the diff was read for private material — names, other project
 paths, hostnames, session ids, email addresses. Session ids are written `<session-id>`,
 paths are relative; nothing found.
 
-- Fixed on the branch, mechanical: FW-049's *Evidence* named the spec section with a
+- Fixed on the branch, mechanical: FW-050's *Evidence* named the spec section with a
   hyphen ("Second spike - evidence") where the heading has a dash.
 - The answer runs to about twenty lines, over the plan's "about fifteen"; kept, since
   each line carries a command or a finding piece 6 needs.
@@ -452,11 +452,11 @@ paths are relative; nothing found.
 
 - Cursor's cloud agent API, the `&` handoff in print mode, Claude Code waiting for an
   answer, `--permission-prompts none`, Cursor's exit code on failure, and a run from a
-  plain terminal: carried by `team-members-start-in-another-tool`, which FW-049 tells to
+  plain terminal: carried by `team-members-start-in-another-tool`, which FW-050 tells to
   use the command lines only and not the cloud API until it is proven; no entry of their
   own, since nothing is decided until that piece needs one of them.
 - Cursor loading the signed-in user's own skills with no flag to prevent it: recorded in
-  FW-049's *Consequences*, for the same entry to design around.
+  FW-050's *Consequences*, for the same entry to design around.
 - Parts of two documentation pages read only in part: dropped; the claims taken from them
   are on the parts read, and the runs carry the rest.
 - No screen, so no developer check.
@@ -464,7 +464,7 @@ paths are relative; nothing found.
 ### Learnings routed
 
 The one lesson that generalises — a headless agent's own last line is not evidence that
-its work happened, and the repository is — is written into FW-049, where piece 6 will
+its work happened, and the repository is — is written into FW-050, where piece 6 will
 read it. A second, found at the claim: `guards/catalog-drift.test.js` dates "today" in
 UTC, so a plan named by the local date fails CI between local and UTC midnight; reported
 to the parent session, not routed further here, since renaming the plan is the whole
@@ -474,3 +474,9 @@ fix and the guard is right to use one clock.
 
 Every acceptance criterion is answered from the tools' own documentation and runs, the
 two runs the decision rests on reproduced, and the merge criteria passed after the rebase.
+
+At merge time: the rebase onto `origin/main` conflicted with the merge-token spike, which
+had taken FW-049 and added its own evidence section after `## Sources`. Both sides were
+kept: this plan's decision became FW-050 (the spec's answer, the catalog comment and this
+record were renumbered), and the Sources paragraph took this branch's wording above the
+first spike's evidence section, which is left as that spike wrote it.

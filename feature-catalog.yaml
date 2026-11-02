@@ -5021,7 +5021,7 @@
 # it would take. Answer and evidence go in the spec's section 9, where the question sits.
 # Shipped by docs/superpowers/plans/2026-11-01-another-tools-agent-can-be-started.md.
 # Criteria 1 to 4 and 6 - the spec's section 9 answer and its Second spike evidence
-# section, re-read in the plan's review record. Criterion 5 - the decision FW-049.
+# section, re-read in the plan's review record. Criterion 5 - the decision FW-050.
 - id: another-tools-agent-can-be-started
   title: Find out how a session starts another tool's agent and reads back what it did
   status: shipped
