@@ -41,14 +41,25 @@ with anything but `true`, none of this happens.
 
     npm --prefix .tropis run next
 
-`/next` is a report. It does not start the next command. The board, `docs/backlog-board/index.html`, is the backlog as one page to open in a browser. It rebuilds itself at each commit, merge, checkout and rebase, through git hooks that `npm --prefix .tropis install` writes, and is never committed; `npm --prefix .tropis run board` rebuilds it at once, such as after an edit not yet committed. Where the install found a hook of your own, or `core.hooksPath` set, it wrote nothing there and printed the line to add. `/refresh-board` walks through banding and refreshing it; `/next` shows product work and framework work as two streams, each with its next step: dispatching the plan that is waiting, or writing one. With bands written it suggests by band, and by value over effort inside one, lists the ideas banded A or B to shape, and says when an arc under way lost its turn. It names `/flush-upstream` when the upstream queue holds three entries, or has one waiting and was last flushed more than 14 days ago. Before merging a change to
+`/next` is a report. It does not start the next command. The board,
+`docs/backlog-board/index.html`, is the backlog as one page to open in a browser. It
+rebuilds itself at each commit, merge, checkout and rebase, through git hooks that `npm
+--prefix .tropis install` writes, and is never committed; `npm --prefix .tropis run board`
+rebuilds it at once, such as after an edit not yet committed. Where the install found a
+hook of your own, or `core.hooksPath` set, it wrote nothing there and printed the line to
+add. `/refresh-board` walks through banding and refreshing it; `/next` shows product work
+and framework work as two streams, each with its next step: dispatching the plan that is
+waiting, or writing one. With bands written it suggests by band, and by value over effort
+points inside one, lists the ideas banded A or B to shape, and says when an epic under way
+lost its turn. It names `/flush-upstream` when the upstream queue holds three entries, or
+has one waiting and was last flushed more than 14 days ago. Before merging a change to
 `.claude/` or `.tropis/`, run the framework's checks:
 
     npm --prefix .tropis test
 
 They check the backlog's fields and invariants; the rule areas and the generated rules;
 the installed files; the entry file; the references in the instruction pages; dated
-documents; plans, review records and delivered entries; rule claims and temporary
+documents; plans, review records and delivered backlog items; rule claims and temporary
 clauses; and the upstream queue after a flush. A release that adds a check can turn this
 project's checks red on something that was always wrong; the check's message names it.
 
@@ -66,10 +77,10 @@ date when `main` moves, and says why when it did not merge. Run
 is not on GitHub — it says it could not tell, and why.
 
 When two plans are built at once, `node .tropis/scripts/plan-overlap.mjs --claim <plan>`
-runs as an entry moves to `building`: where the plan shares a file with a plan already
-in `building` it writes `Merges after` into the plan's header, and
-`node .tropis/scripts/plan-overlap.mjs --wait <plan>` before the merge waits until those
-entries have shipped. The catalog, the bands file, the board, the release notes and the
+runs as a backlog item moves to `building`: where the plan shares a file with a plan
+already in `building` it writes `Merges after` into the plan's header, and `node
+.tropis/scripts/plan-overlap.mjs --wait <plan>` before the merge waits until those backlog
+items have shipped. The backlog, the bands file, the board, the release notes and the
 decision record do not count as shared.
 
 Pull requests open one at a time, under a merge token on `origin`:
@@ -80,15 +91,15 @@ session wait — while you run something by hand, say — run
 does this itself. `node .tropis/scripts/merge-token.mjs` alone says who holds the token
 and for how long, as the second line of `/next` does.
 
-`/sprint` plans a sprint with you and runs it: it proposes about 20 story points from
-the top of the ranking, you agree the entries and their order, and when you say to
-start it starts the whole team at once, one session per entry or bundle, each of which delivers
-its entry through the workflow, waits by itself for what it depends on, and merges its
-own work under the merge token. Each team member started as a session starts on the
-model the sprint names: the Large tier's first pick that your subscriptions include.
-Ask it where the sprint stands at any time; team members that need you come first.
-`node .tropis/scripts/sprint.mjs status` prints the same from the shell; the agreed
-sprint lives in a file under `.git/`, never committed.
+`/sprint` plans a sprint with you and runs it: it proposes about 20 effort points from
+the top of the ranking, you agree the backlog items and their order, and when you say to
+start it starts the whole team at once, one session per backlog item or bundle, each of
+which delivers its backlog item through the workflow, waits by itself for what it depends
+on, and merges its own work under the merge token. Each team member started as a session
+starts on the model the sprint names: the Large tier's first pick that your subscriptions
+include. Ask it where the sprint stands at any time; team members that need you come
+first. `node .tropis/scripts/sprint.mjs status` prints the same from the shell; the
+agreed sprint lives in a file under `.git/`, never committed.
 Team members can also start in the other tool's command line:
 `node .tropis/scripts/sprint.mjs launch <id> --tool cursor` (or `claude`).
 

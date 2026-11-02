@@ -1,16 +1,16 @@
 ---
-description: Shape a new project through conversation; write the brief and the feature catalog
+description: Shape a new project through conversation; write the brief and the backlog
 ---
 
 You are running the project shaping conversation. Your job is to understand the problem
-deeply enough to write a project brief and an initial feature catalog — not to build
+deeply enough to write a project brief and an initial backlog — not to build
 anything yet.
 
 Work from the **project root**. Work through the stages below in
 order. Do not skip a stage. Do not proceed until the current one is complete.
 
 Do not write a Markdown backlog, phases, or epics. Do not write docs/BACKLOG.md. Do
-not suggest `/epic-start`. The catalog is the backlog.
+not suggest `/epic-start`. The backlog is `feature-catalog.yaml`.
 
 **Verification principle:** when you check a file's existence or read current state, do
 it directly — never infer from session context.
@@ -112,22 +112,22 @@ Do not write the file yet.
 
 ---
 
-## Stage 4 — Feature catalog
+## Stage 4 — The backlog
 
-The confirmed brief is the input. Decompose it into initial entries in
+The confirmed brief is the input. Decompose it into initial backlog items in
 `feature-catalog.yaml`. The document **root is a YAML sequence** (a list of
-entries), matching `templates/catalog.yaml` — not a mapping with an `entries:`
+backlog items), matching `templates/catalog.yaml` — not a mapping with an `entries:`
 key. Follow the field schema already documented in that file
-(copied by the setup from the blueprint catalog template).
+(copied by the setup from the blueprint backlog template).
 
-**Status.** Every entry this command writes is `idea` or `shaped`. Never `building` or
-`shipped`.
+**Status.** Every backlog item this command writes is `idea` or `shaped`. Never `building`
+or `shipped`.
 
 - `shaped` when you can write observable acceptance criteria with confidence.
 - `idea` when the outcome is clear but the criteria are not yet. An `idea` may have an
-  empty `acceptanceCriteria` array; a `shaped` entry may not.
+  empty `acceptanceCriteria` array; a `shaped` backlog item may not.
 
-**Shape of each entry.**
+**Shape of each backlog item.**
 
 - `id` — stable kebab-case, the outcome not the mechanism. Assigned now and never
   changed.
@@ -146,18 +146,18 @@ key. Follow the field schema already documented in that file
   empty list.
 
 Replace the seed placeholder (`example-stable-id`) if it is still present. Keep any
-real entries already captured (for example via `/idea`) and add or reshape from this
+real backlog items already captured (for example via `/idea`) and add or reshape from this
 conversation — do not wipe work that is already there.
 
-Show the complete catalog draft (the entries, not a dump of the comment header).
-Explain the decomposition: why you split where you did, and which entries are `idea`
-versus `shaped`. Then ask, in prose, whether the catalog looks right — write both
+Show the complete backlog draft (the backlog items, not a dump of the comment header).
+Explain the decomposition: why you split where you did, and which backlog items are `idea`
+versus `shaped`. Then ask, in prose, whether the backlog looks right — write both
 files, or change it.
 
 **STOP — wait for the answer.**
 
-If they want a change: apply it, show the updated entries, and ask again. Repeat until
-they confirm.
+If they want a change: apply it, show the updated backlog items, and ask again. Repeat
+until they confirm.
 
 ---
 
@@ -167,10 +167,10 @@ After both drafts are confirmed:
 
 1. Write `docs/project-brief.md`.
 2. Write `feature-catalog.yaml` (schema comments at the top of the file stay; replace
-   the placeholder entry; keep any pre-existing real entries).
+   the placeholder backlog item; keep any pre-existing real backlog items).
 
 Report what was written. Then tell the developer:
 
 > "The project is shaped. The brief is in `docs/project-brief.md` and the work is in
-> `feature-catalog.yaml`. Use `/idea` to capture more, `/feature` to promote an entry,
-> or `/next` to see what is ready."
+> `feature-catalog.yaml`. Use `/idea` to capture more, `/feature` to promote a backlog
+> item, or `/next` to see what is ready."

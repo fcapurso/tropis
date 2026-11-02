@@ -27,7 +27,7 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
 
    If the line is missing, in this order:
    1. Ask whether this project has flushed before, or is already named in the framework's
-      records (a pseudonym in its decisions, catalog or release notes, such as the one the
+      records (a pseudonym in its decisions, backlog or release notes, such as the one the
       framework uses for its first adopter). If so, propose that name.
    2. Otherwise propose the name `bash .tropis/scripts/submit-upstream.sh suggest-name`
       prints.
@@ -76,7 +76,7 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
      backticked path in shipped text as a file every set-up project must contain, and
      the submission's self-check fails.
    - **Flush, a capability:** shape the entry with the operator — id, title, type,
-     value, acceptance criteria, `layer: product` — in the framework's catalog format. If
+     value, acceptance criteria, `layer: product` — in the framework's backlog format. If
      it cannot be shaped now, it is held, and marked "waiting to be shaped".
    - **Before moving to the next entry, for either kind of flush:** show the operator the
      text as it will be sent — the entry with anything of the project's own taken out: its
@@ -84,7 +84,7 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
      need — and get their approval of that text. The plan's `## Decisions` records the
      approved text for each flushed entry.
    - **A reworded entry:** when the operator rewords an entry in the queue itself, say that
-     any project file naming that entry by its wording — a comment, a plan, a catalog
+     any project file naming that entry by its wording — a comment, a plan, a backlog
      reference — must be changed to match in the same commit, or it no longer points at
      anything.
    - **Hold:** ask what it waits for.
@@ -100,7 +100,7 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
      plan quotes it.
    - `## Global Constraints` — submit only the entries decided *flush*; one pull request
      per entry; never merge one; never push to the framework's `main`.
-   - `## Traps` — at least: sibling pull requests that each add a catalog entry will
+   - `## Traps` — at least: sibling pull requests that each add a backlog item will
      conflict at the end of the file, and that is the maintainer's to resolve.
    - `## Decisions` — every entry with its answer, its reason, and the agreed wording or
      entry.

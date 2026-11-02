@@ -1984,3 +1984,23 @@ still passed `--model` only as the developer gives it: `sprint.mjs launch` does 
 default it to this pick, and that is left to a later entry. An executor's own review
 subagents are its business and are not covered. The repository's
 own `/rule-trial` is not shipped and is left as it is.
+
+## FW-061: The backlog's words change; its files and fields keep their names
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** Everything people and agents read says the backlog, backlog item, epic
+and effort points, where it said the catalog, entry, arc and effort. The file
+`feature-catalog.yaml`, the `effort` and `effortWhy` fields, the item types (feature,
+improvement, bug, spike, chore), the statuses and code identifiers keep their names,
+so a project takes the release with no update step. The guard `backlog-words` refuses
+the old words in the framework's prose.
+
+**Rejected:** "User story" for a backlog item (an item keeps its type: a bug or a spike
+is not a story). "Story points" (the effort score is not a story point estimate; the
+developer's call). Renaming fields or the file to `backlog.yaml` (an update step in
+every project for words nobody reads while planning).
+
+**Consequences:** Decisions before this one, incident records, specs and plans keep the
+words of their day. A project's own text is its own. Narrows §10 of the sprint design.
+Source: the backlog item `backlog-speaks-in-epics-stories-and-points`.

@@ -1,22 +1,22 @@
 ---
-description: Capture a new idea in the feature catalog without refining it
+description: Capture a new idea in the backlog without refining it
 ---
 
-Add an entry to `feature-catalog.yaml` with `status: idea` for what the developer just
-described.
+Add a backlog item to `feature-catalog.yaml` with `status: idea` for what the developer
+just described.
 
 When the finding is your own rather than the developer's, first check it against the
-catalog rule's *What does not become an entry*. If it falls under it, say so in one line
-with the reason, write nothing, and stop.
+backlog rule's *What does not become a backlog item*. If it falls under it, say so in one
+line with the reason, write nothing, and stop.
 
 1. Choose a stable kebab-case `id` that describes the outcome, not the mechanism, and
    a short `title` that says the same thing in plain words. The id never changes,
-   including when the entry ships; the title may.
+   including when the backlog item ships; the title may.
 2. Write `value` functionally: what someone can do, and why it matters. Not which
    modules change. If you cannot state the user-facing value, ask — an idea whose
    value cannot be stated is not ready to capture.
 3. Write `acceptanceCriteria` only if the developer stated them. An `idea` may have
-   an empty array; a `shaped` entry may not.
+   an empty array; a `shaped` backlog item may not.
 4. Set `type` and `layer` — both required. Ask the developer rather than guess when
    the kind is not obvious from what they said.
    - `type`: `feature` (something a user can newly do), `bug` (something that does not
@@ -30,11 +30,11 @@ with the reason, write nothing, and stop.
    and both are required even when empty: write `modules: []` and `refs: []`, never
    leave them out.
 6. The file is YAML. Quote nothing that does not need it, let long prose fold across
-   lines, and put any reasoning about the entry in a `#` comment above the key it
+   lines, and put any reasoning about the backlog item in a `#` comment above the key it
    explains — comments are part of the record here.
-<!-- project-owned: begin — how this project checks and commits a new entry. -->
-7. Run the project's checks (`npm --prefix .tropis test`) and commit the catalog. If the
-   checks fail on the new entry, fix the entry, not the check.
+<!-- project-owned: begin — how this project checks and commits a new backlog item. -->
+7. Run the project's checks (`npm --prefix .tropis test`) and commit the backlog. If the
+   checks fail on the new backlog item, fix the backlog item, not the check.
 <!-- project-owned: end -->
 
 Do not refine, plan, or estimate. Capture and stop.

@@ -5,12 +5,12 @@
 
 ## What it is
 - **Job:** one paragraph a newcomer can read in ten seconds: what this is and what problem it solves.
-- **Facts from:** the project brief (Problem, Solution), the catalog's shipped entries.
+- **Facts from:** the project brief (Problem, Solution), the shipped backlog items.
 - **Length:** one paragraph.
 
 ## What it does for you
 - **Job:** the outcomes someone gets, as outcomes, not a list of files.
-- **Facts from:** the shipped catalog entries of layer product, type feature or improvement.
+- **Facts from:** the shipped backlog items of layer product, type feature or improvement.
 - **Length:** a short list.
 
 ## Who it is for
@@ -40,7 +40,7 @@
 
 ## Where it stands
 - **Job:** what works today and the known limits, honestly. A requirement goes under What it needs; a limit here is something not supported yet.
-- **Facts from:** the catalog (shipped, building, shelved), the release notes.
+- **Facts from:** the backlog (shipped, building, shelved), the release notes.
 - **Length:** a short list.
 
 ## Where to go next

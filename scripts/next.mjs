@@ -118,7 +118,7 @@ function printNextStep(layer) {
   } else if (step) {
     console.log(`Next step: ${step.id} — ${action(step)}`);
   } else {
-    console.log('Next step: none — no ready entry continues an arc under way.');
+    console.log('Next step: none — no ready backlog item continues an epic under way.');
   }
 }
 
@@ -140,7 +140,7 @@ function printStream(layer, title) {
   printNextStep(layer);
 
   console.log('');
-  console.log('Building (catalog status)');
+  console.log('Building (backlog status)');
   if (flying.length === 0) {
     console.log('  (none)');
   } else {
@@ -194,11 +194,11 @@ if (freshness) {
 
 const retiredLayerEntries = catalog.filter((e) => e.layer === 'blueprint' && e.status !== 'shipped');
 if (retiredLayerEntries.length > 0) {
-  const noun = retiredLayerEntries.length === 1 ? 'entry' : 'entries';
+  const noun = retiredLayerEntries.length === 1 ? 'backlog item' : 'backlog items';
   const verb = retiredLayerEntries.length === 1 ? 'uses' : 'use';
   console.log('');
   console.log(
-    `${retiredLayerEntries.length} ${noun} ${verb} the retired layer "blueprint" — the catalog rule (Layers) says what to do with them.`,
+    `${retiredLayerEntries.length} ${noun} ${verb} the retired layer "blueprint" — the backlog rule (Layers) says what to do with them.`,
   );
 }
 
@@ -236,7 +236,7 @@ const underWay = arcs(catalog).filter((arc) => arc.state === 'under way');
 const lost = lostTurns(catalog, bands, scores);
 if (underWay.length > 0) {
   console.log('');
-  console.log('Arcs under way');
+  console.log('Epics under way');
   for (const arc of underWay) {
     console.log(`  ${arc.ref} — ${arc.shipped} of ${arc.counted} shipped`);
     for (const entry of arc.entries) {
@@ -253,5 +253,5 @@ if (underWay.length > 0) {
 console.log('');
 console.log(`${ideas} idea(s) not yet shaped.`);
 if (shelved > 0) {
-  console.log(`${shelved} entry/entries shelved — recorded, deliberately not scheduled.`);
+  console.log(`${shelved} backlog item(s) shelved — recorded, deliberately not scheduled.`);
 }

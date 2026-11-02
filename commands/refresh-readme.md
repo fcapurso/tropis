@@ -69,14 +69,14 @@ a heading, either three lines — **Job**, **Facts from**, **Length** — or a l
 `Fixed text:` followed by the text to copy word for word, up to the next `## `.
 
 Read `README.md` (a missing page is a page with no sections). Read the facts each
-section names: the project brief, the catalog, the decision record, the operator
+section names: the project brief, the backlog, the decision record, the operator
 guide, the commands and scripts, the release notes, and whatever else that line
 points at. Where a named source does not exist, say so when you judge that section,
 and do not invent the facts.
 
-The shipped entries since the refresh point are the difference between
+The shipped backlog items since the refresh point are the difference between
 `git show <refreshedAt>:feature-catalog.yaml` and the current `feature-catalog.yaml`:
-entries that are `status: shipped` now and were not shipped at that commit. With
+backlog items that are `status: shipped` now and were not shipped at that commit. With
 `refreshedAt` empty, skip that comparison. If `<refreshedAt>` is not a commit this
 repository has, or feature-catalog.yaml cannot be read at it or now, there is no refresh
 point: say so, and treat every section as a candidate.

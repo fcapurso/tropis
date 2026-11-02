@@ -182,7 +182,7 @@ ${extra}  refs:
       + arcEntry('b-shelved', 'b-design', 'shaped', '  shelved: true\n'),
     );
     expect(stderr).toBe('');
-    expect(stdout).not.toContain('Arcs under way');
+    expect(stdout).not.toContain('Epics under way');
   });
 
   it('prints arc progress after the work, not before it', () => {
@@ -203,7 +203,7 @@ ${extra}  refs:
       // directory; the report must not depend on where it was started.
       expect(run(fw).stdout).toBe(stdout);
       expect(stderr).toBe('');
-      const arc = stdout.indexOf('Arcs under way');
+      const arc = stdout.indexOf('Epics under way');
       expect(arc).toBeGreaterThan(-1);
       expect(arc).toBeGreaterThan(stdout.indexOf('Ready to start'));
       expect(arc).toBeGreaterThan(stdout.indexOf('Blocked'));
@@ -231,7 +231,7 @@ ${extra}  refs:
 
       expect(stderr).toBe('');
       expect(stdout).toContain(
-        '1 entry uses the retired layer "blueprint" — the catalog rule (Layers) says what to do with them.',
+        '1 backlog item uses the retired layer "blueprint" — the backlog rule (Layers) says what to do with them.',
       );
       expect(stdout).toContain('  - [feature] product-step: Product step');
       expect(stdout).not.toContain('retired-step');
@@ -295,7 +295,7 @@ Merge token: could not tell — no remote named origin.
 
 Next step: ready-step — write its plan (docs/specs/arc-design.md)
 
-Building (catalog status)
+Building (backlog status)
   (none)
 
 Ready to start
@@ -308,7 +308,7 @@ Blocked
 == Framework work ==
   (none)
 
-Arcs under way
+Epics under way
   docs/specs/arc-design.md — 1 of 2 shipped
     ✓ shipped-step
       ready-step
@@ -610,7 +610,7 @@ ${blockedBy ? `  blockedBy:\n    - ${blockedBy}\n` : ''}  refs: ${spec ? `\n    
   const streamOf = (stdout, title) => {
     const from = stdout.indexOf(`== ${title} ==`);
     const rest = stdout.slice(from + 1);
-    const next = rest.search(/\n== |\nArcs under way|\n\d+ idea\(s\)/);
+    const next = rest.search(/\n== |\nEpics under way|\n\d+ idea\(s\)/);
     return stdout.slice(from, next === -1 ? undefined : from + 1 + next);
   };
 
@@ -651,7 +651,7 @@ ${blockedBy ? `  blockedBy:\n    - ${blockedBy}\n` : ''}  refs: ${spec ? `\n    
   it('prints arc progress after both streams', () => {
     const { stdout } = stageReport(TWO_ARCS);
     expect(stdout.indexOf('== Framework work ==')).toBeGreaterThan(-1);
-    expect(stdout.indexOf('Arcs under way')).toBeGreaterThan(stdout.indexOf('== Framework work =='));
+    expect(stdout.indexOf('Epics under way')).toBeGreaterThan(stdout.indexOf('== Framework work =='));
   });
 
   const IDEAS = entryOf('idea-a', 'product', 'idea') + entryOf('idea-b', 'product', 'idea')

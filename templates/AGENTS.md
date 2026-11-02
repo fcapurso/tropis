@@ -76,7 +76,7 @@ Do not read these at session start. Read the one that matches the work:
 | `DECISIONS.md` | **Before proposing an architectural approach.** Records what was already decided and rejected. |
 | `.claude/framework/DECISIONS.md` | The same, for the framework itself. Before changing how it works. |
 | `.claude/framework/doc-architecture.md` | Before adding a document, or describing current state in prose. |
-| `docs/<generated feature document>` | What ships today and what is planned. Generated — edit the catalog. |
+| `docs/<generated feature document>` | What ships today and what is planned. Generated — edit the backlog. |
 | `docs/playbooks/test-strategy.md` | Before writing tests. |
 
 Area rules under `.claude/rules/` reach you without asking, when you first touch a file
@@ -115,7 +115,7 @@ a module docstring that re-describes the filename is noise.
      - A directory listing or repository tree. `ls` produces it, more accurately.
      - An architecture summary. It goes in the architecture document, loaded on
        demand, where it can carry diagrams and be updated by the closeout step.
-     - A feature inventory. It is generated from the catalog and guarded.
+     - A feature inventory. It is generated from the backlog and guarded.
      - Test strategy detail. It goes in a playbook the rules point at.
      - Area coding rules. They go in `.claude/rules/`, where the agent tool
        loads them as rules — put them here and they become part of the entry

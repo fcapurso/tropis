@@ -70,7 +70,7 @@ also"*, it is two plans.
 
 A plan may mix application and framework changes freely, provided it passes that test.
 In practice mixed plans pass it when the framework half exists *to serve* the
-application half — a catalog and the commands that operate on it; a set of rules and the
+application half — a backlog and the commands that operate on it; a set of rules and the
 script that projects them.
 
 Two things follow:

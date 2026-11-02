@@ -108,7 +108,7 @@ Such a rule gets an assertion in `.tropis/guards/rule-claims.test.js`, inside it
 project-owned block, or a line on the untestable list there saying why it cannot have one.
 A clause that exists only because the code is still wrong is a temporary clause: it ends
 with the marker `Temporary — until <id>. Asserted by rule-claims › <name>.`, where `<id>`
-is the catalog entry for the fix and `<name>` a test name with no full stop. Its assertion
+is the backlog item for the fix and `<name>` a test name with no full stop. Its assertion
 is a call to `temporary` from `.tropis/scripts/rule-claims.js` with that name, inside the
 block, whose function expects the defect to still be there; it goes red once the fix
 lands, and says which paragraph to delete.
