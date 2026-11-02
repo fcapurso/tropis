@@ -747,3 +747,63 @@ own `picksForTier`, `dispatch.mjs` and `guards/dispatch.test.js`.
   the command tell the developer to approve the write. I made no design change.
 - No screen, so there is no developer check. This repository's own `docs/model-picks.md`
   is refreshed by running the command after the release.
+
+## Review round 1 — instruction from the reviewing session
+
+**Finding.** Criterion 2 failed in the fresh-agent check: the probe could not write
+`.git/tropis/subscriptions.txt`. The reviewer re-ran the cause on its own, Claude Code
+2.1.300 with `claude-haiku-5-5`, macOS 26.2, arm64, in a scratch repository, with
+`claude -p --permission-mode acceptEdits`: the Write tool refuses any path under `.git`
+as "a sensitive file", **even with `--allowedTools "Write(.git/tropis/**)"`**, and a
+compound shell command writing there waits for approval. So a file tool can never be
+allowed to write the record ahead of time, and a shell redirect needs a person to say
+yes each time. The sprint plan writes its file under the same folder through a
+framework script, which is what this round does.
+
+**What to change.** Model tier and merge authority are unchanged. Files: only those
+already in *File Structure*.
+
+1. `scripts/dispatch.mjs` gains a second mode, before it reads a plan: when its first
+   argument is `--subscriptions`, every later argument must be of the form
+   `<tool>: <subscription>` (a non-empty name, a colon, a non-empty value; the value may
+   be `none`). If any is not, or there is none, print
+   `usage: node .tropis/scripts/dispatch.mjs --subscriptions "<tool>: <subscription>" ...`
+   to stderr, write nothing and exit 1. Otherwise create `tropis/` in the directory
+   `git rev-parse --git-common-dir` prints (resolved against the project root), write
+   `subscriptions.txt` there as the line `# Written by /refresh-model-tiers. Never committed.`
+   followed by one argument per line, trimmed, replacing any earlier record, print
+   `Subscriptions recorded for <n> tools, on this machine only.` and exit 0. If git
+   cannot give the directory, print `Cannot record subscriptions: this is not a git checkout.`
+   to stderr and exit 1. Update the usage line the script prints with no arguments to
+   mention both modes.
+2. `commands/refresh-model-tiers.md`, step 4 of *Which subscriptions the developer has*:
+   replace the sentence ``Create the `tropis` folder if it is missing, and write the file
+   with a shell command, since an editing tool may refuse a path under `.git`.`` with
+   ``Write it with `node .tropis/scripts/dispatch.mjs --subscriptions "<tool>:
+   <subscription>" ...`, one argument per supported tool, never with a file tool or a
+   shell redirect: Claude Code treats every path under `.git` as sensitive and asks each
+   time, even where a rule allows it.`` Keep the rest of the step. Rewrap to the file's
+   width.
+3. `guards/dispatch.test.js`, two cases: † *records the subscriptions it is given, and
+   dispatch then uses them* — in a test project with `PICKS`, run the script with
+   `--subscriptions 'Cursor: Premium' 'Claude Code: none'`; exit 0, stdout
+   `Subscriptions recorded for 2 tools, on this machine only.`, the file starts with the
+   comment line, and a dispatch of the plan then prints the Dogwood 1 line of case 1; †
+   *refuses a malformed subscription and writes nothing* — `--subscriptions 'Cursor'`
+   exits 1 and leaves no `.git/tropis/subscriptions.txt`.
+4. Run the new cases red first (commit the tests, run the file alone), then green; then a
+   throwaway commit that drops the format check, showing the second case red; reset it.
+5. Re-run the Task 6 probe once more as Task 6 describes, with two changes: copy every
+   file of this worktree's `scripts/` into the scratch project's `.tropis/scripts/`, add
+   `.tropis/package.json` reading `{"type":"module"}`, and commit them; and pass
+   `--allowedTools "Bash(node .tropis/scripts/dispatch.mjs --subscriptions *)"` beside the
+   options the first runs used, which stands in for the developer allowing that command.
+   Check, and paste: the call to `dispatch.mjs --subscriptions`, and the record's content
+   reading `Claude Code: Max` and `Cursor: Plus` after the comment line. If it fails,
+   stop and hand back with the call and its reply.
+6. `bash scripts/check-blueprint.sh` (last line), `npm --prefix .tropis test` (`Tests:`
+   line), the diff stat. Append `### Round 1 result` under this section with the
+   commands and their output, the tool, version, model, operating system and
+   architecture of the probe, and one sentence on what the probe was asked and whether
+   it did it. Put the probe record in the body of the commit that adds it too. Commit,
+   push. Open no pull request.
