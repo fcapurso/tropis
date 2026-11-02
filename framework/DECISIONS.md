@@ -1597,7 +1597,8 @@ has here. The release is a push, so it needs git over https, and a cloud session
 able to do it. The merge-token entry must handle a take that fails for any reason other
 than 422 by reading the marker before it decides. Markers left by a crashed holder stay
 until someone breaks them, as the stale-token rule says. Whether a cloud session can take
-and release, and whether the merge queue is offered, are unanswered.
+and release, and whether the merge queue is offered, are unanswered. A cloud session is
+not excluded on cost: FW-053 allows any agent billed to the developer's plan.
 
 ## FW-050: A sprint session starts a team member in another tool with that tool's command line, and believes the repository over the reply
 
@@ -1639,6 +1640,8 @@ tool, and a printed prompt each need no command line and remain the fallbacks.
 user-level skills and configuration load into its runs with no flag to prevent it, so a
 team member started that way may behave differently from the project's rules alone. Claude
 Code's waiting-for-an-answer case and Cursor's exit code on failure were not observed.
+Cursor's cloud agent API needs a key billed per use, so FW-053 excludes it rather than
+leaving it to be proven.
 
 ## FW-051: Plans that share a file merge in the order they were claimed
 
@@ -1684,3 +1687,50 @@ origin elsewhere would have no lock).
 **Consequences:** A waiter whose holder died stops after an hour and says so. A cloud
 session's release is unproven, as FW-049 says. Source: the sprint design of 2026-11-01,
 section 3, and FW-049.
+
+## FW-053: Every agent Tropis starts is paid for by a plan the developer already has
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** The *plan-only* limitation. An agent Tropis starts, or tells someone to
+start, runs signed in to a subscription the developer already pays for, and nothing it
+does adds a charge on top. It binds all of Tropis, not only the sprint: `/dispatch`, a
+sprint's team members, and any later command that starts an agent. Allowed, wherever it
+runs: a session in the developer's tool, a subagent, another tool's command line, and a
+cloud session, each signed in to the developer's plan. Excluded: an API key billed per
+call (none is passed, `--bare` is not used because it needs one, `ANTHROPIC_API_KEY` is
+removed from what a started agent inherits, and Cursor's cloud agent API is not used); and
+a model that costs extra on the developer's plan. When a plan's allowance runs out, the
+work stops and says so rather than spending more. Keeping overflow billing switched off
+(usage credits on a Claude plan, on-demand usage in Cursor) is the developer's: Tropis
+cannot read an account's settings and says so rather than claiming to check. The
+limitation is named so that a later setting can lift it by that name; no setting exists.
+
+**Evidence:** The vendors' pages, read on 2026-11-02. Anthropic's article on the Agent SDK
+with a Claude plan says that, signed in with a plan, the SDK and `claude -p` draw from the
+subscription's limits; a change announced for 2026-06-15 that would have moved them to a
+separate credit was paused. Claude Code's cloud-sessions page says they are on Pro, Max,
+Ultra and Team, count toward the plan's limits, and carry no separate charge for the VM.
+Anthropic's Pro and Max article says continuing past a limit takes usage credits, billed
+at API rates, and that a set `ANTHROPIC_API_KEY` makes Claude Code bill the API instead
+of the plan. Cursor's models-and-pricing page says the included pool is shared by the
+editor, the command line and cloud agents; its cloud-agent page says cloud agents use the
+plan's usage at the model's rate, need Premium or higher, and ask for a spend limit on
+first use, past which use is billed on demand. No page reached says how the cloud agent
+API bills. Third-party pages quoting Anthropic say Claude Fable 5.1 is included on Max up
+to about half the weekly allowance and needs usage credits on Pro; the official article
+was not reached. Source: none in particular; the pages above.
+
+**Rejected:** Excluding cloud agents as such (the cost is in per-call keys and overflow
+billing, not in where an agent runs; a Claude cloud session bills to the plan). Checking
+the account's overflow setting (no page offers a way to read it). Building the setting now
+(nobody needs it yet; the name is the seam).
+
+**Consequences:** FW-050's Cursor cloud agent API is excluded for as long as this holds,
+rather than waiting on a key. A cloud session is allowed on cost; whether it can take and
+release the merge token is still FW-049's open probe. Removing `ANTHROPIC_API_KEY` from a
+started agent's environment is built with the entry `team-members-start-in-another-tool`.
+Whether a model is included depends on the developer's plan, so the model picks cannot be
+judged without knowing which plans the developer has; the entry
+`agents-run-on-the-most-efficient-model` takes that up. Source: the brainstorm of
+2026-11-02 with the developer.

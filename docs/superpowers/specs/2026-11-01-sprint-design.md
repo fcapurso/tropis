@@ -70,6 +70,9 @@ sprint session raises it and offers to slide it in. At the end there is a short 
 - A rule that lives only in the sprint session, so a session the developer starts by
   hand does not follow it.
 - A team member waiting forever with nobody told.
+- A charge the developer did not expect. Every team member runs signed in to a plan the
+  developer already pays for, never on a key billed per use, and stops when the plan's
+  allowance runs out (FW-053, the *plan-only* limitation; it binds all of Tropis).
 
 ## How it works
 
@@ -165,6 +168,8 @@ messages: if two team members try at the same moment, one gets it.
   when someone else holds the marker; the API's delete takes no such condition. The ref
   started no pipeline run. A cloud session's git proxy is documented to refuse deletions
   and anything but branches, so whether a cloud session can use the push form is open.
+  A cloud session billed to the developer's plan is allowed on cost (FW-053); whether it
+  can take and release the token is what that probe settles.
   So the token is a ref outside `refs/heads/` and `refs/tags/`, taken with the API's
   create and released with the conditional delete; FW-049 records it, and the evidence is
   at the end of this document.
@@ -272,6 +277,15 @@ not needed and is not recommended. Cursor's cloud agent API (`POST /v1/agents`, 
 run's `status`, `result` and `git.branches`) is documented but needs a key and a paid
 cloud agent, so it is unproven, as is starting a cloud agent from the command line. The
 choice is recorded as FW-050. Evidence: section "Second spike — evidence" below.
+
+**Every way is paid for by the developer's plan (FW-053).** Whichever way starts a team
+member, it runs signed in to a subscription the developer already has: a cloud session
+billed to the plan is allowed, Cursor's cloud agent API is not, because it needs a key
+billed per use. A team member started by command line gets no API key: no `--bare`, and
+`ANTHROPIC_API_KEY` removed from its environment, which the entry
+`team-members-start-in-another-tool` builds. Its `--model` should be the cheapest that can
+do the job; which one that is, for the team member as for its executor, is the entry
+`agents-run-on-the-most-efficient-model`.
 
 ### 10. Epics, user stories, story points
 
@@ -408,7 +422,8 @@ From cursor.com/docs/cloud-agent/api/endpoints (v1, public beta), read on 2026-1
   the final line, and whether approvals apply there at all (the pages read do not say).
   Cursor's command line is documented to send a conversation to a cloud agent when a
   message starts with `&` (cli/overview, cli/using); the pages say nothing about doing this
-  in print mode, and nothing was run.
+  in print mode, and nothing was run. Since FW-053 the API is not used at all: it needs a
+  key billed per use.
 
 ### Not proven by any run
 
