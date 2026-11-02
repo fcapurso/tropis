@@ -62,7 +62,7 @@ if [ -f "$project_root/feature-catalog.yaml" ]; then
   if node -e "require.resolve('yaml', { paths: [process.argv[1]] })" "$framework_dir" >/dev/null 2>&1; then
     ok yaml "resolvable — reads feature-catalog.yaml"
   else
-    gone yaml "run: npm --prefix .tropis install"
+    gone yaml "run: npm --prefix .tropis ci"
   fi
 else
   warn backlog "no feature-catalog.yaml — the backlog is optional, skipping its parser"

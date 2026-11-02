@@ -221,6 +221,15 @@ function compareByBand(bands, scores, underWay) {
 }
 
 /**
+ * Entries in the order /next suggests them: band, then value over effort, then an
+ * arc already under way first. The sprint proposal uses it for ideas as well as
+ * shaped entries.
+ */
+export function inRankOrder(entries, catalog, bands = null, scores = null) {
+  return [...entries].sort(compareByBand(bands, scores, underWayIds(catalog)));
+}
+
+/**
  * Ready entries in the order the report lists them. With no bands — null, or a
  * file that parsed to no rows — that is the order `ready()` already gave. Scores are
  * optional; without them the order inside a band is arc under way, then `ready()` order.

@@ -33,8 +33,13 @@ belongs with the parent session. It is never a constraint on the executor.
   the date they were last verified — with a warning when they are older than ~45 days,
   because picks change and the tier does not. Each field is read to the end of its
   paragraph, and a field that is there but reads empty stops the dispatch, naming its
-  line. A project with no picks file is told to run `/refresh-model-tiers`; the prompt
-  never invents picks.
+  line. A plan's `Merges after` field is read and refused the same way; the prompt does
+  not carry it, since the executor does not merge. A project with no picks file is told
+  to run `/refresh-model-tiers`; the prompt never invents picks. Beneath the picks, the
+  pick to use: the first in the tier's order, then the next tier up, that a subscription
+  recorded on this machine includes, with the tool to run it in. Where no subscription is
+  recorded, the picks do not say which subscriptions include each model, or none is
+  included, the line says so and names no pick.
 - **The plan and its checkouts:** which plan, and which checkouts it may edit.
 - **Attaching the other checkouts:** when the plan isolates in more than one checkout, a
   step before isolating tells an executor whose session started with only this one — a
@@ -46,9 +51,10 @@ belongs with the parent session. It is never a constraint on the executor.
   remote's main branch. The raw commands are listed beneath it, labelled as not to be
   run by hand — from one checkout they would all land in that one.
   Then what each worktree needs before its suite can run: the commands in that
-  checkout's `.claude/worktree-setup.txt`, in order, or `npm --prefix .tropis ci` where
+  checkout's `.tropis/worktree-setup.txt`, in order, or `npm --prefix .tropis ci` where
   the checkout has no such file. The file is the project's — one command per line, `#`
-  for a comment — and an update never touches it. It replaces the framework's install
+  for a comment — and an update moves one from `.claude/`, where releases
+  before this one kept it, and otherwise never touches it. It replaces the framework's install
   rather than adding to it, so list that install in it too when the checkout needs it.
 - **Verification in every checkout,** when the plan edits more than one.
 - **An instruction to read the whole plan first.**
@@ -72,7 +78,8 @@ If the picks are stale or missing the prompt says so.
 
 ## Rules
 
-- **A dispatched plan states which catalog entries it completes** (`## Delivers`), or `None.`
+- **A dispatched plan states which backlog items it completes** (`## Delivers`), or
+  `None.`
 - **Name the traps on the plan,** under its **Traps** heading. A deliberately-failing
   intermediate step, a guard that must be observed failing, a step needing the developer
   — say so, or the agent will "fix" it.

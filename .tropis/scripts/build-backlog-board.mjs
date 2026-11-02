@@ -40,7 +40,7 @@ if (flags.has('--stamp') && !existsSync(bandsPath)) {
 }
 if (flags.has('--stamp')) {
   writeFileSync(bandsPath, stampBands(readFileSync(bandsPath, 'utf8'), catalog));
-  console.log('Stamped every band in bands.yaml with its entry as the catalog stands.');
+  console.log('Stamped every band in bands.yaml with its backlog item as the backlog stands.');
 }
 
 const bands = existsSync(bandsPath) ? (YAML.parse(readFileSync(bandsPath, 'utf8')) ?? {}) : {};
@@ -145,8 +145,19 @@ const escapeHtml = (s) => s
   .replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;')
   .replaceAll('"', '&quot;');
+// The project's display name, from its own settings; the folder's name when the file
+// is absent, unreadable, or names nothing.
+function projectName() {
+  try {
+    const { name } = JSON.parse(readFileSync(resolve(root, '.tropis/project.json'), 'utf8'));
+    if (typeof name === 'string' && name.trim() !== '') return name.trim();
+  } catch {
+    // fall through
+  }
+  return basename(root);
+}
 const html = readFileSync(templatePath, 'utf8')
-  .replaceAll('__TITLE__', `${basename(root)} backlog`)
+  .replaceAll('__TITLE__', escapeHtml(`${projectName()} backlog`))
   .replace('__ENTRIES__', JSON.stringify(entries))
   .replace('__ANNO__', JSON.stringify(anno))
   .replace('__ARCS__', JSON.stringify(arcData))
@@ -166,17 +177,17 @@ console.log(out);
 if (freshness) console.log(freshness);
 console.log('Open it in a browser.');
 if (unbanded.length) {
-  console.log(`\n${unbanded.length} active entr${unbanded.length === 1 ? 'y has' : 'ies have'} no band — the board shows them as D until bands.yaml says otherwise:`);
+  console.log(`\n${unbanded.length} active backlog item${unbanded.length === 1 ? ' has' : 's have'} no band — the board shows them as D until bands.yaml says otherwise:`);
   for (const id of unbanded) console.log(`  - ${id}`);
 }
 if (stale.length) {
-  console.log(`\n${stale.length} band${stale.length === 1 ? '' : 's'} in bands.yaml for entries that have shipped, been dropped, been replaced, been shelved or gone — delete them:`);
+  console.log(`\n${stale.length} band${stale.length === 1 ? '' : 's'} in bands.yaml for backlog items that have shipped, been dropped, been replaced, been shelved or gone — delete them:`);
   for (const id of stale) console.log(`  - ${id}`);
 }
 if (moved.length) {
   console.log(reevaluate
-    ? `\n${moved.length} band${moved.length === 1 ? '' : 's'} to re-evaluate (--reevaluate lists every band whose entry is open). Rewrite or confirm each verdict, then run with --stamp:`
-    : `\n${moved.length} band${moved.length === 1 ? '' : 's'} whose entry has moved since it was judged — re-evaluate, then run with --stamp:`);
+    ? `\n${moved.length} band${moved.length === 1 ? '' : 's'} to re-evaluate (--reevaluate lists every band whose backlog item is open). Rewrite or confirm each verdict, then run with --stamp:`
+    : `\n${moved.length} band${moved.length === 1 ? '' : 's'} whose backlog item has moved since it was judged — re-evaluate, then run with --stamp:`);
   for (const m of moved) console.log(`  - ${m.id} — ${m.reason}`);
 }
 if (notAToD.length) {
@@ -184,10 +195,10 @@ if (notAToD.length) {
   for (const r of notAToD) console.log(`  - ${r.id} — ${r.letter}`);
 }
 if (unscored.length) {
-  console.log(`\n${unscored.length} band${unscored.length === 1 ? '' : 's'} with no value or effort score (1 to 5) — score them:`);
+  console.log(`\n${unscored.length} band${unscored.length === 1 ? '' : 's'} with no value or effort points (1 to 5) — score them:`);
   for (const id of unscored) console.log(`  - ${id}`);
 }
 for (const [name, ids] of lonely) {
-  console.log(`\nbundle ${name} has one entry — remove the field:`);
+  console.log(`\nbundle ${name} has one backlog item — remove the field:`);
   console.log(`  - ${ids[0]}`);
 }

@@ -8,6 +8,7 @@
     "next": "node ./scripts/next.mjs",
     "board": "node ./scripts/build-backlog-board.mjs",
     "dispatch": "node ./scripts/dispatch.mjs",
+    "sprint": "node ./scripts/sprint.mjs",
     "rules": "node ./scripts/generate-rules.mjs",
     "prepare": "node ./scripts/install-board-hooks.mjs"
   },

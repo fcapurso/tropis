@@ -222,11 +222,11 @@ describe('shipped pipeline workflows', () => {
       writeFileSync(join(dir, '.github/workflows/ci.yml'), 'name: own\n');
       writeFileSync(join(dir, '.github/workflows/tropis-pipeline.yml'), 'name: pipeline\n');
       writeFileSync(join(dir, '.github/workflows/tropis-framework-checks.yml'), 'name: checks\n');
-      writeFileSync(join(dir, '.github/workflows/tropis-candidate.yml'), 'name: candidate\n');
+      writeFileSync(join(dir, '.github/workflows/tropis-staging.yml'), 'name: staging\n');
       expect(shippedFiles(dir)).toEqual([
-        '.github/workflows/tropis-candidate.yml',
         '.github/workflows/tropis-framework-checks.yml',
         '.github/workflows/tropis-pipeline.yml',
+        '.github/workflows/tropis-staging.yml',
         '.tropis/a.js',
       ]);
     } finally {
@@ -298,6 +298,8 @@ describe('record-installed.mjs', () => {
       copyFileSync(script, join(bin, 'record-installed.mjs'));
       writeFileSync(join(dir, '.claude/commands/release.md'), `${marker('begin -->')}\nfill\n${marker('end -->')}\n`);
       writeFileSync(join(dir, '.tropis/README.md'), 'operator guide\n');
+      writeFileSync(join(dir, '.tropis/project.json'), '{"name":"x"}\n');
+      writeFileSync(join(dir, '.tropis/worktree-setup.txt'), 'npm ci\n');
 
       const r = spawnSync('node', [join(bin, 'record-installed.mjs'), 'v1.2.3'], { encoding: 'utf8' });
       expect(r.status).toBe(0);
@@ -308,6 +310,8 @@ describe('record-installed.mjs', () => {
       expect(written).toBe(`${JSON.stringify(recordOf(dir, 'v1.2.3'), null, 2)}\n`);
       expect(written.endsWith('\n')).toBe(true);
       expect(Object.keys(JSON.parse(written).files)).not.toContain('.tropis/README.md');
+      expect(Object.keys(JSON.parse(written).files)).not.toContain('.tropis/project.json');
+      expect(Object.keys(JSON.parse(written).files)).not.toContain('.tropis/worktree-setup.txt');
       expect(recordProblems(dir)).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });

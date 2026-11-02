@@ -72,6 +72,12 @@ describe('what a plan must list beside a rule source', () => {
   const table = (...paths) => `## File Structure\n\n| File | Change |\n|---|---|\n${paths.map((p) => `| \`${p}\` | x |`).join('\n')}\n`;
   const missing = (md, shipped) => missingProjections(md, shipped).map((m) => m.projection);
 
+  it('reads every file in a row, so a rule source second in the row still asks for its projection', () => {
+    const row = (...paths) => `## File Structure\n\n| File | Change |\n|---|---|\n| ${paths.map((p) => `\`${p}\``).join(', ')} | x |\n`;
+    expect(missing(row('docs/x.md', '.claude/rules/tests.md'))).toEqual(['.cursor/rules/tests.mdc']);
+    expect(missing(row('.claude/rules/tests.md', '.cursor/rules/tests.mdc'))).toEqual([]);
+  });
+
   it("asks for a project's own rule's Cursor file", () => {
     expect(missing(table('.claude/rules/app.md'))).toEqual(['.cursor/rules/app.mdc']);
     expect(missing(table('.claude/rules/app.md', '.cursor/rules/app.mdc'))).toEqual([]);

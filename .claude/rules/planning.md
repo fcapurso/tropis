@@ -21,7 +21,7 @@ the executing agent and not at merge. There is no splitting a squash.
 also"*, it is two plans.
 
 Mixing application and framework changes in one plan is fine when it passes that test,
-which it does when the framework half exists *to serve* the application half — a catalog
+which it does when the framework half exists *to serve* the application half — a backlog
 and the commands operating on it, a rule set and the script projecting it. It fails when
 two unrelated changes ride together and the squash message can only describe one.
 
@@ -38,21 +38,20 @@ specifying session what something means, the plan was underwritten.
   — a file exists, a function has three callers, a guard reads committed content only —
   the author checks against the repository and carries with what it was checked against.
   A plan that asserts something untrue sends the agent into a contradiction it was told
-  not to resolve. This has cost a review round more than once. A claim about what the
-  work will produce cannot be verified before the work exists. Write it as a check, and
-  say what the executor does when the check fails: fix the work and run it again, or
-  stop and hand back.
+  not to resolve. A claim about what the work will produce cannot be verified before the
+  work exists. Write it as a check, and say what the executor does when the check fails:
+  fix the work and run it again, or stop and hand back. (Incident:
+  `.tropis/rules/incidents/planning.md#untrue-claims-that-cost-review-rounds`)
 - **A check states what it prints when it passes and what it prints when it fails, and
   the two differ.** Before writing the passing output, ask what the check prints against
   the repository as it is, before the work: for a check of the result, that is the
   failing output, and it must not look like the passing one. A check the finished work
   cannot pass, or one that cannot fail, tells the executor nothing, and working out which
-  it is costs the executor, or the review when the executor does not notice. Three checks
-  written for one plan, the first-adopter-harness plan of 2026-08-12 on the blueprint's
-  technology scope, could not pass, and each was caught only by the agent running it: a
-  search for a phrase the plan itself wrapped across two lines, a listing the backlog
-  command withholds until something has shipped, and a count of zero for a string that
-  the replacement text the plan authorised contains.
+  it is costs the executor, or the review when the executor does not notice. The plan's
+  own text or tools can defeat a check: a search for a phrase the plan itself wraps
+  across two lines, a listing a command withholds until something has shipped, a count
+  of zero for a string the plan's own replacement text contains. (Incident:
+  `.tropis/rules/incidents/planning.md#three-checks-that-could-not-pass`)
 - **A verification step must test every claim, not a sample.** An incomplete check that
   passes manufactures confidence.
 - **A red check of an uncommitted change needs a commit when the check reads committed
@@ -62,7 +61,7 @@ specifying session what something means, the plan was underwritten.
   check that reads the working tree.
 - **State claims about the code as invariants that survive the plan's own commit.** A
   plan is verified before dispatch and executed after its commit has added the plan
-  file, a catalog entry and regenerated documentation, so "exactly one grep hit" is
+  file, a backlog item and regenerated documentation, so "exactly one grep hit" is
   already false when the executor runs it, while "nothing imports it" still holds.
   A count the author measured by doing the work on a copy is the same trap: the
   executor's work differs in some detail and the figure stops matching. An expected output
@@ -75,12 +74,12 @@ specifying session what something means, the plan was underwritten.
   one of two shapes while writing the plan, never both. **Describe it for an executor**:
   state what the result must satisfy as checks, and give the judgment it needs a higher
   model tier. Or **build it yourself and send it to a fresh reviewer**: an agent with
-  only the repository reviews it as a reviewing session reviews a plan's work and writes
+  only the repository, run on the model `node .tropis/scripts/dispatch.mjs --tier Large`
+  names, reviews it as a reviewing session reviews a plan's work and writes
   the review record, and the plan, or the pull request where there is no plan, says this
   shape was chosen and why. The sign that the choice is due is an expected output you can
-  fill in only by making the change. One plan was written by doing the whole change on a
-  throwaway copy to measure exact figures for its checks, and then dispatched to an
-  executor who did it again.
+  fill in only by making the change. (Incident:
+  `.tropis/rules/incidents/planning.md#a-plan-written-by-doing-the-work`)
 - **A table mapping acceptance criteria to tests is a claim too.** A test named beside a
   criterion reads as coverage and hides the gap a blank cell would show. Check that the
   named test runs the sequence the criterion describes, not a unit test of one side of
@@ -121,9 +120,9 @@ specifying session what something means, the plan was underwritten.
   action *is* the deliverable: an executor that proceeds without it has skipped the only
   thing that was being asked for.
 
-## A plan states which entries it completes
+## A plan states which backlog items it completes
 
-Every plan carries `## Delivers`: the catalog ids that become `shipped` when it merges,
+Every plan carries `## Delivers`: the backlog ids that become `shipped` when it merges,
 or `None.` Completes, not touches — a plan that only advances work another plan will
 finish lists nothing. The heading exists so delivery can be checked: a merged plan
 whose Delivers ids stay unpromoted must fail the build.
@@ -209,9 +208,9 @@ pinning a version.
 ## Verification covers every checkout the plan edits
 
 A plan with two execute-here rows needs verification commands for **both**. Naming a checkout
-throughout the tasks is not the same as covering it: two plans listed commands only for the
-first while their own tasks edited the second, so that suite was run by nobody until review
-found it red.
+throughout the tasks is not the same as covering it: a checkout whose suite no
+verification command names has its suite run by nobody, until review finds it red.
+(Incident: `.tropis/rules/incidents/planning.md#two-plans-that-verified-one-checkout`)
 
 Write the per-checkout commands into the verification task. Where a checkout has no runner
 of its own, say which checkout's runner is pointed at it, and how.
@@ -223,21 +222,23 @@ an incomplete table does not merely omit work — it **forbids** work the plan d
 elsewhere, and an executor told not to resolve contradictions will stall or improvise.
 
 **The question to ask about every file the plan touches is: what is on the other side of
-this?** Five answers, all of which have been got wrong here:
+this?** Five answers:
 
-- **Something else claims a path you are deleting.** A catalog entry naming a module, a
-  guard fixture, a hook test case, a generated document. One plan ordered a component
-  deleted while forbidding catalog edits; a guard requires shipped module paths to exist,
-  so the executor left a documented re-export shim rather than break one instruction to
-  obey the other. It was right to.
+- **Something else claims a path you are deleting.** A backlog item naming a module, a
+  guard fixture, a hook test case, a generated document. Leave what claims it out of the
+  table, and the executor must break the guard that checks the claim or leave a stand-in
+  at the old path; a stand-in that says why is the right choice of the two. (Incident:
+  `.tropis/rules/incidents/planning.md#a-shim-left-for-a-deleted-component`)
 - **Something else writes or reads a shape you are changing.** Widen a schema and every
-  producer of that shape goes stale — commands, generators, fixtures, other callers. One
-  plan made two catalog fields required and did not list the three commands that create
-  catalog entries; the first use of `/idea` after it merged would have produced an entry
-  that failed the build. **A schema nothing knows how to satisfy is worse than no schema.**
-- **The kind of change owes a closeout.** Another plan changed a module boundary and left
-  `docs/architecture.md` out of the table, so its executor correctly left the document
-  stale and reported it.
+  producer of that shape goes stale — commands, generators, fixtures, other callers. A
+  producer left out of the table goes on writing the old shape, and its first use after
+  the merge fails the build. **A schema nothing knows how to satisfy is worse than no
+  schema.** (Incident:
+  `.tropis/rules/incidents/planning.md#two-required-fields-and-three-commands`)
+- **The kind of change owes a closeout.** A module boundary changed owes
+  `docs/architecture.md`; left out of the table, the document stays stale, because an
+  executor kept to the table cannot update it. (Incident:
+  `.tropis/rules/incidents/planning.md#an-architecture-document-left-stale`)
 - **A rule's source and the files written from it are one edit.** `npm --prefix
   .tropis run rules` writes `.cursor/rules/<area>.mdc` from a project's own
   `.claude/rules/<area>.md`; from a shipped text in `.tropis/rules/<area>.md` it writes
@@ -251,17 +252,17 @@ this?** Five answers, all of which have been got wrong here:
   `rules-generated.test.js` fails while they are out of date, so a plan changing a source
   must list **everything written from it**. Listing only the source forbids the
   regeneration the guard then demands, leaving the executor to break the suite or break
-  the table. One plan did exactly that; the executor regenerated the projection and
-  reported the table as wrong, which was the right call. `/dispatch` now refuses such a
-  plan, and the plan checker fails it while it waits to run — but the table is yours to
-  get right first.
+  the table; an executor caught there regenerates and reports the table as wrong.
+  `/dispatch` refuses such a plan, and the plan checker fails it while it waits to run —
+  but the table is yours to get right first. (Incident:
+  `.tropis/rules/incidents/planning.md#a-plan-that-forbade-its-own-regeneration`)
 - **An import you add is a shape you changed.** The bullet above reads as being about data
   — a schema, a record, a file format — so a plan that makes one module start importing
   another does not think to look. Every test that partially fakes the newly imported module
-  goes stale at once, and those tests are almost never in the plan's table. One import
-  invalidated twelve test files, none of them listed, forcing the executor to choose
-  between an incomplete table and the work the plan demanded. It chose correctly and said
-  so, and the review had to verify all twelve by hand.
+  goes stale at once, and those tests are almost never in the plan's table, so the
+  executor must choose between an incomplete table and the work the plan demands, and
+  the review must check each unlisted file by hand. (Incident:
+  `.tropis/rules/incidents/planning.md#one-import-and-twelve-test-files`)
 
 **Before finalising the table:**
 
@@ -284,10 +285,10 @@ this?** Five answers, all of which have been got wrong here:
 
 **An empty search is not evidence of absence until the same search is shown to find a
 planted hit.** On some platforms (measured on macOS) `git grep -E` does not implement
-`\b` and returns nothing rather than an error: `git grep -nE "\bcomplete\.md"` found
-nothing in one project where `-P` found 4 and `-F` found 6. Use `-P` or `-F`, or an
-explicit `(^|[^x])` guard, and plant a hit before trusting an empty result — in a plan,
-a review or a rename check.
+`\b` and returns nothing rather than an error, where `-P` and `-F` find the hits. Use
+`-P` or `-F`, or an explicit `(^|[^x])` guard, and plant a hit before trusting an empty
+result — in a plan, a review or a rename check. (Incident:
+`.tropis/rules/incidents/planning.md#an-empty-grep-on-macos`)
 
 All of these belong in the table, or the plan is asking for something it also forbids.
 
@@ -305,7 +306,8 @@ The plan must instruct its executor to append `## Handover report` to the plan f
 commit it — **written to the branch, not printed in chat**, so the reviewer reads it from
 the work rather than having it relayed.
 
-Six sections, each earned by something that went wrong here:
+Six sections. (Incident:
+`.tropis/rules/incidents/planning.md#what-earned-the-handover-sections`)
 
 - **Task completion** — every task done, or skipped with its reason.
 - **Verification results** — for each check the plan required, the command **and its
@@ -313,8 +315,9 @@ Six sections, each earned by something that went wrong here:
   **operating system and architecture**, such as git 2.49 on macOS 26.2, arm64. Never the
   computer's name or model (*A measurement names its tool, version and platform*). Not
   "verified": the number, the failing test name, the byte count. A claim without its
-  evidence cannot be reviewed. One plan reported all retained rules verified against a
-  check that ran as written, passed, and was incomplete — two false rules shipped.
+  evidence cannot be reviewed: a check that ran as written and passed can still have
+  been incomplete, and only its output shows it. (Incident:
+  `.tropis/rules/incidents/planning.md#what-earned-the-handover-sections`)
 - **Scope** — the diff stat, confirmation every file is in the File Structure table, and
   the worktree path actually used in each checkout, so a reviewer can see whether
   isolation happened at all.
@@ -329,12 +332,9 @@ to tick `- [ ]` checkboxes as it goes. Where the execution tooling tracks progre
 own task list rather than by editing the plan file, no tick is ever written back — so a
 merged plan with unticked boxes is the normal outcome, not a skipped step. Check which is
 true of your tooling before reading anything into it, and do not add a check that demands
-ticks unless you have confirmed something writes them.
-
-> This paragraph exists because a framework review inferred abandonment from a count of
-> ticks on the main branch, called the instruction "decoration", and recommended deleting
-> it. The instruction was fine; the inference was measuring state the mechanism never
-> produced.
+ticks unless you have confirmed something writes them. A count of unticked boxes then
+measures state the mechanism never produces, and says nothing about whether a plan was
+abandoned. (Incident: `.tropis/rules/incidents/planning.md#ticks-read-as-abandonment`)
 
 ## Who reviews, and who decides
 
@@ -368,8 +368,9 @@ who writes the record as part of merging.** Say so in the plan when granting sel
 This is not ceremony for its own sake. `.tropis/guards/review-record.test.js` requires a record for any
 plan whose handover report is on `main`, so a self-merge without one leaves the main
 branch red — and not on the executor's own suite, which was green because its handover was
-still on a branch. It surfaces on the next branch to rebase. That happened once, and the
-sibling branch that caught it could as easily have merged first and buried it.
+still on a branch. It surfaces on the next branch to rebase, or is buried when that
+branch merges first. (Incident:
+`.tropis/rules/incidents/planning.md#a-self-merge-with-no-review-record`)
 
 Five sections:
 
@@ -385,14 +386,9 @@ Five sections:
   authoritative because the numbers around it were right, and is the part most likely to
   be wrong — because it was written by the one party with no way to check it.
 
-  A handover here reported that another tool loads this repository's hooks and fail-closes
-  on their reply, and that this blocked its commits. Every figure in that report was
-  re-run and every figure was correct. The diagnosis was not checked, and it was false in
-  both halves: that tool reads a different configuration file, of which this repository
-  has none, and its documentation states hook failure is fail-**open**. A bug was filed
-  against work merged an hour earlier on the strength of it. **The symptom was real and
-  the cause was invented** — which is the usual shape, and why the fix is to check the
-  cause rather than to doubt the executor.
+  **The symptom is usually real and the cause invented**, which is why the fix is to
+  check the cause rather than to doubt the executor. (Incident:
+  `.tropis/rules/incidents/planning.md#a-diagnosis-false-in-both-halves`)
 
   The cost of checking is a grep. Ask what the diagnosis predicts should be true of the
   repository, and look.
@@ -400,15 +396,8 @@ Five sections:
   **Where the diagnosis is about how an external tool behaves, check it against observed
   behaviour — not against that tool's documentation.** A vendor document describes the
   configuration it intends; it is silent about what the product does with someone else's.
-  An executor's direct observation of a named error message outranks it.
-
-  This one has been got wrong in both directions on the same defect, hours apart. An
-  executor reported that another tool was executing this repository's hooks and refusing
-  its commands. That was checked against the tool's documentation — which describes hooks
-  living in a file this repository does not have, and failure as fail-open — and declared
-  false, with a bug filed against the correction. A later dispatch captured the refusal
-  verbatim and it **named this repository's script by path**. The executor had been right,
-  and the check that overturned it cited this very rule while reading the wrong source.
+  An executor's direct observation of a named error message outranks it. (Incident:
+  `.tropis/rules/incidents/planning.md#a-tool-diagnosis-got-wrong-both-ways`)
 - **Found** — what the review turned up that the handover did not, including nothing.
 
   **A cause goes here only once it is verified. An unexplained symptom goes in
@@ -418,36 +407,34 @@ Five sections:
   were right, and correcting it costs a second branch for something that should have
   landed once.
 
-  One review recorded a vendor field as unstable, routed it as a learning, and wrote it
-  into user-facing documentation. It was the fourth of four hypotheses and it was wrong.
   So while a reported symptom is unexplained, either hold the merge, or merge and record
   it as unexplained with who is looking. Do not write a cause you have not tested, and do
   not route it as a learning — a learning is the most durable thing a review produces and
-  the most expensive to retract.
+  the most expensive to retract. (Incident:
+  `.tropis/rules/incidents/planning.md#the-fourth-of-four-hypotheses`)
 
-  **In a public project** — one whose `.claude/project.json` says `"public": true` —
+  **In a public project** — one whose `.tropis/project.json` says `"public": true` —
   *Found* opens with a line `Public exposure:` saying the diff was read for private
   material (people's names, customers, other projects' names or internals, home paths,
   hostnames) and what was found, or `nothing`. A guard knows only the names it was
   given; the reviewer is the one reader who sees every line before it lands on `main`.
 
 - **Outstanding disposition** — every item in the handover's Outstanding section, each
-  with either a catalog id or a reason for dropping it — the catalog rule's *What does
-  not become an entry* says when dropping is right. An item with neither is not
+  with either a backlog id or a reason for dropping it — the backlog rule's *What does
+  not become a backlog item* says when dropping is right. An item with neither is not
   dispositioned. Two further things belong here: a criterion only the developer can
   observe, named with whoever must observe it, and any symptom reported after the handover
   was written that the review could not explain. This is the only section that carries an
   obligation forward.
 - **Learnings routed** — for each finding that generalises beyond this plan, where it was
-  written: a rule, an ADR, the blueprint queue, a catalog entry. Or an explicit statement
+  written: a rule, an ADR, the blueprint queue, a backlog item. Or an explicit statement
   that it was not, and why. **Review is the step most likely to find defects in the
-  framework itself, and it was the only step with nowhere to put them** — one such
-  learning went into a commit message, which is saved and never read. If nothing
-  generalises, say so.
+  framework itself, and it was the only step with nowhere to put them** — a learning
+  left in a commit message is saved and never read. If nothing generalises, say so.
+  (Incident: `.tropis/rules/incidents/planning.md#a-learning-left-in-a-commit-message`)
 - **Merged because** — one sentence on why this was fit to merge, or what was fixed first.
 
-**Why this exists.** Review was required by three documents and produced no artifact
-anywhere: ten merged pull requests carried no review, and one plan merged with its
-verification record still reading `<paste the run URL>`. Every step of this framework
-whose output is committed happens reliably; every step whose output is not, does not.
-<!-- generated by .tropis/scripts/generate-rules.mjs · sha256:2f0742eb7c1b689500ba574d9c45de0b81984e41795d8e136ed0ba8286a325db -->
+**Why this exists.** Every step of this framework whose output is committed happens
+reliably; every step whose output is not, does not. (Incident:
+`.tropis/rules/incidents/planning.md#ten-pull-requests-with-no-review`)
+<!-- generated by .tropis/scripts/generate-rules.mjs · sha256:af759d93ed97ea449926c7f9b3620a49ad5e5da0a634677897fd0ceee79a5e5d -->

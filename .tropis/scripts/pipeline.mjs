@@ -9,7 +9,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -169,15 +169,45 @@ function classify(root, proseOnly) {
   return stages;
 }
 
+function readProse(root) {
+  const prosePath = join(root, 'pipeline', 'prose.txt');
+  return existsSync(prosePath) ? readFileSync(prosePath, 'utf8') : null;
+}
+
+const CODE_STAGES = STAGES.filter((stage) => stage !== 'framework' && stage !== 'deploy');
+
 /**
- * Six stage values for the diff `base...head` in `root`. `reason` is the one
- * stderr line when the result is a full run because the base is missing, all
- * zeros, unresolved, or the diff is empty.
- * @param {string} root
- * @param {{ base?: string, head?: string }} [options]
- * @returns {{ stages?: Record<string, string>, reason?: string | null, error?: string }}
+ * Narrows a plan that would run code stages when the tree about to be tested
+ * differs from `passed` only in prose and framework files. The diff is
+ * two-dot (tree against tree), not from the merge base, so a change the passed
+ * commit had and `head` dropped still counts. It only ever turns stages into
+ * skips; `deploy` keeps its value. Returns the plan unchanged, with a note on
+ * why, when the code differs or `passed` does not resolve.
  */
-export function planStages(root, { base, head = 'HEAD' } = {}) {
+function applyPassed(root, outcome, { passed, head }) {
+  if (!CODE_STAGES.some((stage) => outcome.stages[stage] === 'run')) return outcome;
+  const short = passed.slice(0, 7);
+  const resolved = git(root, ['rev-parse', '--verify', '--quiet', `${passed}^{commit}`]);
+  if (resolved.status !== 0) {
+    return { ...outcome, note: `plan: ${passed} does not resolve, so this is planned from the whole diff` };
+  }
+  const diff = git(root, ['diff', '--name-only', '--no-renames', passed, head]);
+  if (diff.status !== 0) return { error: (diff.stderr || 'plan: git diff failed').trim() };
+  const paths = diff.stdout.split('\n').filter((line) => line !== '');
+  if (paths.length > 0 && !isProseAndFramework(paths, readProse(root))) {
+    return { ...outcome, note: `plan: code changed since ${short} passed, so this is planned from the whole diff` };
+  }
+  const stages = { ...outcome.stages };
+  for (const stage of CODE_STAGES) stages[stage] = 'skipped';
+  return {
+    ...outcome,
+    stages,
+    passed: resolved.stdout.trim(),
+    note: `plan: the code passed at ${short}, so the stages are skipped`,
+  };
+}
+
+function planFromDiff(root, { base, head }) {
   if (base === undefined) return { stages: classify(root, false), reason: FULL_RUN.missingBase };
   if (/^0+$/.test(base)) return { stages: classify(root, false), reason: FULL_RUN.zeroBase };
   const resolved = git(root, ['rev-parse', '--verify', '--quiet', `${base}^{commit}`]);
@@ -188,9 +218,24 @@ export function planStages(root, { base, head = 'HEAD' } = {}) {
   if (diff.status !== 0) return { error: (diff.stderr || 'plan: git diff failed').trim() };
   const paths = diff.stdout.split('\n').filter((line) => line !== '');
   if (paths.length === 0) return { stages: classify(root, false), reason: FULL_RUN.emptyDiff };
-  const prosePath = join(root, 'pipeline', 'prose.txt');
-  const proseText = existsSync(prosePath) ? readFileSync(prosePath, 'utf8') : null;
-  return { stages: classify(root, isProseAndFramework(paths, proseText)), reason: null };
+  return { stages: classify(root, isProseAndFramework(paths, readProse(root))), reason: null };
+}
+
+/**
+ * Six stage values for the diff `base...head` in `root`. `reason` is the one
+ * stderr line when the result is a full run because the base is missing, all
+ * zeros, unresolved, or the diff is empty. With `passed` (a commit whose code
+ * already passed) the code stages are skipped when only prose and framework
+ * files differ from it; `passed` in the result is then its full hash, and
+ * `note` says what was decided either way.
+ * @param {string} root
+ * @param {{ base?: string, head?: string, passed?: string }} [options]
+ * @returns {{ stages?: Record<string, string>, reason?: string | null, passed?: string, note?: string, error?: string }}
+ */
+export function planStages(root, { base, head = 'HEAD', passed } = {}) {
+  const outcome = planFromDiff(root, { base, head });
+  if (outcome.error || passed === undefined) return outcome;
+  return applyPassed(root, outcome, { passed, head });
 }
 
 /**
@@ -211,7 +256,8 @@ function stagesThatDidNotPass(plan, results) {
 
 /**
  * `run`, `held`, `empty` or `skipped`. Held wins over everything. On a pull
- * request, prose and framework alone stays skipped; a filled branch slot
+ * request, a plan carrying `passed` (the same code already passed, and the
+ * branch's environment holds it) skips, as does prose and framework alone; a filled branch slot
  * runs; otherwise the pull request skips. `branch` defaults to `empty`, so
  * a caller that does not know about the slot decides as before. A push
  * ignores the slot and uses the deploy's own planned value.
@@ -226,6 +272,7 @@ function stagesThatDidNotPass(plan, results) {
 export function gateDecision({ plan, results, event, branch = 'empty' }) {
   if (stagesThatDidNotPass(plan, results).length > 0) return 'held';
   if (event === 'pull_request') {
+    if (plan.passed) return 'skipped';
     if (plan.deploy === 'skipped') return 'skipped';
     if (branch === 'filled') return 'run';
     return 'skipped';
@@ -235,6 +282,9 @@ export function gateDecision({ plan, results, event, branch = 'empty' }) {
 
 function plannedCell(stage, plan, results) {
   const planned = plan[stage];
+  if (planned === 'skipped' && plan.passed) {
+    return `skipped — the same code passed at \`${plan.passed.slice(0, 7)}\``;
+  }
   if (planned === 'skipped') return 'skipped — only prose and framework files changed';
   if (planned === 'empty') return `empty — no pipeline/${stage}.sh`;
   const result = results[stage];
@@ -250,6 +300,9 @@ function deployCell(plan, results, event, branch = 'empty') {
     return `held — ${stagesThatDidNotPass(plan, results).join(', ')} did not pass`;
   }
   if (event === 'pull_request') {
+    if (plan.passed) {
+      return `skipped — the same code passed at \`${plan.passed.slice(0, 7)}\`, and the environment has it`;
+    }
     if (plan.deploy === 'skipped') return 'skipped — only prose and framework files changed';
     if (branch === 'filled') return "will run — to the branch's environment";
     return 'skipped — no pipeline/branch/';
@@ -284,7 +337,7 @@ function parsePlanArgs(argv) {
   const opts = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg !== '--base' && arg !== '--head') return { error: `plan: unknown argument ${arg}` };
+    if (arg !== '--base' && arg !== '--head' && arg !== '--passed') return { error: `plan: unknown argument ${arg}` };
     const value = argv[i + 1];
     if (value === undefined) return { error: `plan: ${arg} needs a revision` };
     opts[arg.slice(2)] = value;
@@ -317,34 +370,59 @@ function originBranches(root) {
 }
 
 const BRANCH_ACTIONS = ['create', 'deploy', 'remove'];
-const CANDIDATE_SCRIPTS = ['reset.sh', 'deploy.sh'];
+const STAGING_SCRIPTS = ['reset.sh', 'deploy.sh'];
 
-/**
- * `filled` when `pipeline/candidate/` has reset and deploy. `empty` when
- * it has neither. One without the other is an error naming the missing
- * script, the same shape as `branchSlot`.
- * @param {string} root
- * @returns {{ slot?: 'filled' | 'empty', error?: string }}
- */
-export function candidateSlot(root) {
-  const missing = CANDIDATE_SCRIPTS
-    .filter((name) => !existsSync(join(root, 'pipeline', 'candidate', name)));
-  if (missing.length === CANDIDATE_SCRIPTS.length) return { slot: 'empty' };
-  if (missing.length === 0) return { slot: 'filled' };
-  return { error: `candidate: pipeline/candidate/ is missing ${missing.join(', ')}` };
+/** Every file under dir, as paths relative to it, in sorted order. */
+function filesUnder(dir, prefix = '') {
+  const found = [];
+  for (const entry of readdirSync(join(dir, prefix), { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) found.push(...filesUnder(dir, rel));
+    else if (entry.isFile()) found.push(rel);
+  }
+  return found.sort();
 }
 
 /**
- * The summary every rehearse writes. `byHand` null means the deploy did not
- * finish, so lines it may have written are left out.
+ * `filled` when `pipeline/staging/` has reset and deploy. `empty` when it has
+ * neither. One without the other is an error naming the missing script, the
+ * same shape as `branchSlot`. A project still on the layout this replaced is
+ * refused rather than read as empty: the old folder, or a script reading the
+ * old variable, would otherwise deploy nothing and say nothing.
+ * @param {string} root
+ * @returns {{ slot?: 'filled' | 'empty', error?: string }}
+ */
+export function stagingSlot(root) {
+  if (existsSync(join(root, 'pipeline', 'candidate'))) {
+    return {
+      error: 'staging: pipeline/candidate/ is the old name of pipeline/staging/ — run git mv pipeline/candidate pipeline/staging',
+    };
+  }
+  const dir = join(root, 'pipeline', 'staging');
+  if (existsSync(dir)) {
+    const stale = filesUnder(dir)
+      .find((rel) => readFileSync(join(dir, rel), 'utf8').includes('TROPIS_CANDIDATE'));
+    if (stale) {
+      return { error: `staging: pipeline/staging/${stale} reads TROPIS_CANDIDATE, now TROPIS_STAGING_COMMIT` };
+    }
+  }
+  const missing = STAGING_SCRIPTS.filter((name) => !existsSync(join(dir, name)));
+  if (missing.length === STAGING_SCRIPTS.length) return { slot: 'empty' };
+  if (missing.length === 0) return { slot: 'filled' };
+  return { error: `staging: pipeline/staging/ is missing ${missing.join(', ')}` };
+}
+
+/**
+ * The summary every deploy to staging writes. `byHand` null means the deploy
+ * did not finish, so lines it may have written are left out.
  * @param {{ hash: string, reset: string, deploy: string, byHand: string[] | null }} outcome
  * @returns {string}
  */
-export function candidateSummary({ hash, reset, deploy, byHand }) {
+export function stagingSummary({ hash, reset, deploy, byHand }) {
   const lines = [
-    '### Release candidate',
+    '### Deploy to staging',
     '',
-    `- Candidate: \`${hash}\``,
+    `- Commit: \`${hash}\``,
     `- Reset: ${reset}`,
     `- Deploy: ${deploy}`,
   ];
@@ -358,9 +436,13 @@ export function candidateSummary({ hash, reset, deploy, byHand }) {
   return lines.join('\n');
 }
 
-function writeCandidateSummary(summary, text) {
+/**
+ * The summary goes to stdout always, where /release reads it from the run's log,
+ * and to the summary file too when one is given.
+ */
+function writeStagingSummary(summary, text) {
   if (summary) appendFileSync(summary, text);
-  else process.stderr.write(text);
+  process.stdout.write(text);
 }
 
 function headHash(root) {
@@ -402,14 +484,14 @@ function extractTag(root, tag, dir) {
 }
 
 /** Runs reset.sh against the tag's files. The directory is removed either way. */
-function rehearseReset(root, env, tag) {
-  const dir = mkdtempSync(join(tmpdir(), 'tropis-candidate-'));
+function stagingReset(root, env, tag) {
+  const dir = mkdtempSync(join(tmpdir(), 'tropis-staging-'));
   try {
     if (!extractTag(root, tag, dir)) {
-      process.stderr.write('candidate: could not read the production tag\n');
+      process.stderr.write('staging: could not read the production tag\n');
       return { status: 1, failed: 'extract' };
     }
-    const status = runScript(root, join(root, 'pipeline', 'candidate', 'reset.sh'), {
+    const status = runScript(root, join(root, 'pipeline', 'staging', 'reset.sh'), {
       ...env,
       TROPIS_PRODUCTION_TAG: tag,
       TROPIS_PRODUCTION_DIR: dir,
@@ -421,12 +503,12 @@ function rehearseReset(root, env, tag) {
 }
 
 /** Runs deploy.sh. By-hand lines count only when it exits 0. */
-function rehearseDeploy(root, env) {
+function stagingDeployScript(root, env) {
   const dir = mkdtempSync(join(tmpdir(), 'tropis-by-hand-'));
   const byHandPath = join(dir, 'by-hand.txt');
   writeFileSync(byHandPath, '');
   try {
-    const status = runScript(root, join(root, 'pipeline', 'candidate', 'deploy.sh'), {
+    const status = runScript(root, join(root, 'pipeline', 'staging', 'deploy.sh'), {
       ...env,
       TROPIS_BY_HAND: byHandPath,
     });
@@ -437,41 +519,41 @@ function rehearseDeploy(root, env) {
   }
 }
 
-function rehearse(root, summary) {
+function deployToStaging(root, summary) {
   const hash = headHash(root);
   if (!hash) {
-    process.stderr.write('candidate: the checkout has no commit\n');
+    process.stderr.write('staging: the checkout has no commit\n');
     return 1;
   }
-  const slot = candidateSlot(root);
+  const slot = stagingSlot(root);
   if (slot.error) {
     process.stderr.write(`${slot.error}\n`);
     return 1;
   }
   if (slot.slot === 'empty') {
-    process.stdout.write('candidate: empty — no pipeline/candidate/, so no candidate was rehearsed\n');
-    writeCandidateSummary(summary, candidateSummary({
+    process.stdout.write('staging: empty — no pipeline/staging/, so nothing was deployed to staging\n');
+    writeStagingSummary(summary, stagingSummary({
       hash,
-      reset: 'not run — no pipeline/candidate/',
-      deploy: 'not run — no pipeline/candidate/',
+      reset: 'not run — no pipeline/staging/',
+      deploy: 'not run — no pipeline/staging/',
       byHand: null,
     }));
     return 0;
   }
   const env = stageEnv();
   if (!env) return 1;
-  env.TROPIS_CANDIDATE = hash;
+  env.TROPIS_STAGING_COMMIT = hash;
   const tag = highestReleaseTag(root);
   if (tag === null) {
-    process.stderr.write('candidate: could not list tags\n');
+    process.stderr.write('staging: could not list tags\n');
     return 1;
   }
   let reset = 'not needed — no release yet';
   if (tag !== '') {
-    const resetRun = rehearseReset(root, env, tag);
+    const resetRun = stagingReset(root, env, tag);
     if (resetRun.failed) return resetRun.status;
     if (resetRun.status !== 0) {
-      writeCandidateSummary(summary, candidateSummary({
+      writeStagingSummary(summary, stagingSummary({
         hash,
         reset: `failed — reset.sh exited ${resetRun.status}`,
         deploy: 'not run — reset.sh failed',
@@ -481,8 +563,8 @@ function rehearse(root, summary) {
     }
     reset = `to \`${tag}\``;
   }
-  const deployRun = rehearseDeploy(root, env);
-  writeCandidateSummary(summary, candidateSummary({
+  const deployRun = stagingDeployScript(root, env);
+  writeStagingSummary(summary, stagingSummary({
     hash,
     reset,
     deploy: deployRun.status === 0 ? 'deployed' : `failed — deploy.sh exited ${deployRun.status}`,
@@ -491,7 +573,7 @@ function rehearse(root, summary) {
   return deployRun.status;
 }
 
-function parseRehearseArgs(argv) {
+function parseStagingDeployArgs(argv) {
   let summary;
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] !== '--summary') return null;
@@ -502,29 +584,29 @@ function parseRehearseArgs(argv) {
   return { summary };
 }
 
-function candidateUsage() {
-  process.stderr.write('candidate: use slot or rehearse\n');
+function stagingUsage() {
+  process.stderr.write('staging: use slot or deploy\n');
   return 2;
 }
 
-/** `slot` reports the slot. `rehearse` resets, deploys, and writes the summary. */
-function candidateCommand(root, sub, rest) {
+/** `slot` reports the slot. `deploy` resets, deploys, and writes the summary. */
+function stagingCommand(root, sub, rest) {
   if (sub === 'slot') {
-    if (rest.length !== 0) return candidateUsage();
-    const slot = candidateSlot(root);
+    if (rest.length !== 0) return stagingUsage();
+    const slot = stagingSlot(root);
     if (slot.error) {
       process.stderr.write(`${slot.error}\n`);
       return 1;
     }
-    process.stdout.write(`candidate=${slot.slot}\n`);
+    process.stdout.write(`staging=${slot.slot}\n`);
     return 0;
   }
-  if (sub === 'rehearse') {
-    const parsed = parseRehearseArgs(rest);
-    if (!parsed) return candidateUsage();
-    return rehearse(root, parsed.summary);
+  if (sub === 'deploy') {
+    const parsed = parseStagingDeployArgs(rest);
+    if (!parsed) return stagingUsage();
+    return deployToStaging(root, parsed.summary);
   }
-  return candidateUsage();
+  return stagingUsage();
 }
 
 /**
@@ -837,14 +919,14 @@ const HOST_OUTSIDE_ACTIONS =
 
 /**
  * Why the project's main branch is not gated, from `ungated` in
- * `.claude/project.json`. A missing, unreadable or non-object file, or no key,
+ * `.tropis/project.json`. A missing, unreadable or non-object file, or no key,
  * is no reason. A key that is not a string with words in it is an error.
  * @returns {{ reason: string | null } | { error: string }}
  */
 export function ungatedReason(root) {
   let doc;
   try {
-    doc = JSON.parse(readFileSync(join(root, '.claude', 'project.json'), 'utf8'));
+    doc = JSON.parse(readFileSync(join(root, '.tropis', 'project.json'), 'utf8'));
   } catch {
     return { reason: null };
   }
@@ -852,7 +934,7 @@ export function ungatedReason(root) {
     return { reason: null };
   }
   if (typeof doc.ungated !== 'string' || doc.ungated.trim() === '') {
-    return { error: 'host: "ungated" in .claude/project.json must say why the main branch is not gated, in words.' };
+    return { error: 'host: "ungated" in .tropis/project.json must say why the main branch is not gated, in words.' };
   }
   return { reason: doc.ungated.trim() };
 }
@@ -925,7 +1007,7 @@ function notGatedText(repo, branch, gaps) {
     'If your plan allows it (a public repository, or a private one on GitHub Pro, Team or Enterprise), apply the ruleset Tropis ships:',
     `  gh api repos/${repo}/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
     'and turn on Settings → General → Pull Requests → Allow auto-merge.',
-    'Otherwise record why in .claude/project.json, as "ungated": "<the reason>".',
+    'Otherwise record why in .tropis/project.json, as "ungated": "<the reason>".',
     '',
   ].join('\n');
 }
@@ -933,7 +1015,7 @@ function notGatedText(repo, branch, gaps) {
 /**
  * Whether the default branch is gated by GitHub, or the project has said why
  * not. Fails until the branch requires a pull request and a check and GitHub
- * does not say auto-merge is off, or `.claude/project.json` records `ungated`.
+ * does not say auto-merge is off, or `.tropis/project.json` records `ungated`.
  */
 function hostCommand(root, { summary }) {
   const recorded = ungatedReason(root);
@@ -942,9 +1024,9 @@ function hostCommand(root, { summary }) {
     return 1;
   }
   if (recorded.reason !== null) {
-    process.stdout.write(`host: the main branch is not gated — ${recorded.reason} (.claude/project.json)\n`);
+    process.stdout.write(`host: the main branch is not gated — ${recorded.reason} (.tropis/project.json)\n`);
     if (summary) {
-      appendFileSync(summary, `**The main branch is not gated.** ${recorded.reason} — recorded in .claude/project.json.\n`);
+      appendFileSync(summary, `**The main branch is not gated.** ${recorded.reason} — recorded in .tropis/project.json.\n`);
     }
     return 0;
   }
@@ -969,11 +1051,212 @@ function hostCommand(root, { summary }) {
   return 1;
 }
 
+const FULL_HASH = /^[0-9a-f]{40}$/;
+const PROMOTE_USAGE = 'promote: use check <commit> [--staged <commit>] [--allow <path>]...';
+
+function parsePromoteArgs(argv) {
+  if (argv[0] !== 'check' || argv[1] === undefined || argv[1].startsWith('--')) return null;
+  const parsed = { commit: argv[1], staged: undefined, allow: [] };
+  for (let i = 2; i < argv.length; i += 2) {
+    const value = argv[i + 1];
+    if (value === undefined) return null;
+    if (argv[i] === '--staged') parsed.staged = value;
+    else if (argv[i] === '--allow') parsed.allow.push(value);
+    else return null;
+  }
+  return parsed;
+}
+
+function isCommit(root, hash) {
+  return git(root, ['cat-file', '-e', `${hash}^{commit}`]).status === 0;
+}
+
+/** True when `ancestor` is `descendant` or one of its ancestors; null when git fails. */
+function contains(root, descendant, ancestor) {
+  const result = git(root, ['merge-base', '--is-ancestor', ancestor, descendant]);
+  if (result.status === 0) return true;
+  if (result.status === 1) return false;
+  return null;
+}
+
+/**
+ * The refusal the promote pipeline runs before it tags, so it is the same in
+ * every project: `commit` must be on the main branch (an ancestor of `HEAD`,
+ * which is a checkout of it), and where the project deploys to staging, must
+ * contain the staged commit and differ from it only in the allowed files.
+ * Returns the line to print and the exit status.
+ * @param {string} root
+ * @param {{ commit: string, staged?: string, allow: string[] }} args
+ * @returns {{ status: number, line: string }}
+ */
+export function promoteCheck(root, { commit, staged, allow }) {
+  const refuse = (line) => ({ status: 1, line: `promote: ${line}` });
+  for (const hash of [commit, staged]) {
+    if (hash !== undefined && !FULL_HASH.test(hash)) return refuse(`"${hash}" is not a full commit hash`);
+  }
+  for (const hash of [commit, staged]) {
+    if (hash !== undefined && !isCommit(root, hash)) return refuse(`${hash} is not a commit here`);
+  }
+  const onMain = contains(root, 'HEAD', commit);
+  if (onMain === null) return refuse('could not compare with HEAD');
+  if (!onMain) return refuse(`${commit} is not on the main branch — tag only a commit main holds`);
+  if (staged === undefined) {
+    const slot = stagingSlot(root);
+    if (slot.error) return { status: 1, line: slot.error };
+    if (slot.slot === 'filled') {
+      return refuse('this project deploys to staging — give --staged <the commit staging was checked on>');
+    }
+    return { status: 0, line: `promote: ${commit} may be tagged` };
+  }
+  const holdsStaged = contains(root, commit, staged);
+  if (holdsStaged === null) return refuse('could not compare the commit with the staged commit');
+  if (!holdsStaged) return refuse(`${commit} does not contain the staged commit ${staged}`);
+  const diff = git(root, ['diff', '--name-only', '--no-renames', staged, commit]);
+  if (diff.status !== 0) return refuse('could not list what changed since staging');
+  const changed = diff.stdout.split('\n').filter((path) => path !== '' && !allow.includes(path));
+  if (changed.length > 0) {
+    return refuse(`${changed.join(', ')} changed since staging was checked — deploy ${commit} to staging first`);
+  }
+  return { status: 0, line: `promote: ${commit} may be tagged` };
+}
+
+function promoteCommand(root, args) {
+  const parsed = parsePromoteArgs(args);
+  if (!parsed) {
+    process.stderr.write(`${PROMOTE_USAGE}\n`);
+    return 2;
+  }
+  const outcome = promoteCheck(root, parsed);
+  if (outcome.status === 0) process.stdout.write(`${outcome.line}\n`);
+  else process.stderr.write(`${outcome.line}\n`);
+  return outcome.status;
+}
+
+/**
+ * Whether a run's jobs show a green gate: a job named `gate`, or ending in
+ * `/ gate` (a called workflow's jobs are named `<caller job> / <job>`), that
+ * concluded `success`. The run's own conclusion is not used: a closed pull
+ * request's run is `success` with every stage skipped.
+ * @param {{ name?: string, conclusion?: string }[]} jobs
+ * @returns {boolean}
+ */
+export function gateIsGreen(jobs) {
+  return jobs.some((job) => (job.name === 'gate' || String(job.name).endsWith('/ gate'))
+    && job.conclusion === 'success');
+}
+
+/** Runs whose head commit came from `repository` (owner/name). */
+export function runsFromRepository(runs, repository) {
+  return runs.filter((run) => run.head_repository?.full_name === repository);
+}
+
+/**
+ * The first run, newest first, with a green gate. `jobsOf(run)` returns
+ * `{ jobs }` or `{ error }`; an error ends the search.
+ * @returns {{ run?: object, error?: string }}
+ */
+export function firstGreenRun(runs, jobsOf) {
+  for (const run of runs) {
+    const answer = jobsOf(run);
+    if (answer.error) return { error: answer.error };
+    if (gateIsGreen(answer.jobs)) return { run };
+  }
+  return {};
+}
+
+const PASSED_USAGE = 'passed: use --branch <ref> --repository <owner/name>, or --merged <commit>';
+
+function parsePassedArgs(argv) {
+  const opts = {};
+  for (let i = 0; i < argv.length; i += 2) {
+    const arg = argv[i];
+    const value = argv[i + 1];
+    if (!['--branch', '--repository', '--merged', '--summary'].includes(arg)
+      || value === undefined || value === '') return { error: PASSED_USAGE };
+    opts[arg.slice(2)] = value;
+  }
+  const byBranch = opts.branch !== undefined && opts.repository !== undefined && opts.merged === undefined;
+  const byMerge = opts.merged !== undefined && opts.branch === undefined && opts.repository === undefined;
+  if (!byBranch && !byMerge) return { error: PASSED_USAGE };
+  return { opts };
+}
+
+/**
+ * Asks GitHub for a commit whose code passed this workflow, for a pull
+ * request branch or for the commit a pull request merged as. Never throws:
+ * `{ commit }` or `{ line }` only, and `line` always says what was found or
+ * why nothing was.
+ */
+function findPassed(opts, env) {
+  const nothing = (why) => ({ line: `passed: ${why}` });
+  const failed = (error) => nothing(`${error}; nothing is skipped`);
+  const repo = env.GITHUB_REPOSITORY;
+  if (env.GITHUB_ACTIONS !== 'true') return nothing('not in GitHub Actions, so nothing is skipped');
+  if (!repo) return nothing('GITHUB_REPOSITORY is not set; nothing is skipped');
+  if (!env.GITHUB_RUN_ID) return nothing('GITHUB_RUN_ID is not set; nothing is skipped');
+  const own = askGitHub(['api', `repos/${repo}/actions/runs/${env.GITHUB_RUN_ID}`]);
+  if (own.error) return failed(own.error);
+  const workflow = own.value?.workflow_id;
+  if (workflow === undefined) return failed('this run has no workflow_id');
+  const listRuns = (query) => {
+    const answer = askGitHub(['api', `repos/${repo}/actions/workflows/${workflow}/runs?event=pull_request&${query}&per_page=10`]);
+    if (answer.error) return answer;
+    if (!Array.isArray(answer.value?.workflow_runs)) return { error: 'the list of runs had an unexpected shape' };
+    return { runs: answer.value.workflow_runs };
+  };
+  const jobsOf = (run) => {
+    const answer = askGitHub(['api', `repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`]);
+    if (answer.error) return answer;
+    if (!Array.isArray(answer.value?.jobs)) return { error: 'the list of jobs had an unexpected shape' };
+    return { jobs: answer.value.jobs };
+  };
+  const short = (hash) => String(hash).slice(0, 7);
+
+  if (opts.merged === undefined) {
+    const listed = listRuns(`branch=${encodeURIComponent(opts.branch)}`);
+    if (listed.error) return failed(listed.error);
+    const found = firstGreenRun(runsFromRepository(listed.runs, opts.repository), jobsOf);
+    if (found.error) return failed(found.error);
+    if (!found.run) return nothing('no green run of this pull request, so it is planned from the whole diff');
+    return { commit: found.run.head_sha, line: `passed: run ${found.run.id} passed at ${short(found.run.head_sha)}` };
+  }
+
+  const pulls = askGitHub(['api', `repos/${repo}/commits/${opts.merged}/pulls`]);
+  if (pulls.error) return failed(pulls.error);
+  if (!Array.isArray(pulls.value)) return failed('the list of pull requests had an unexpected shape');
+  const pull = pulls.value.find((candidate) => candidate.merge_commit_sha === opts.merged);
+  if (!pull) return nothing(`${short(opts.merged)} was not merged from a pull request, so every stage runs`);
+  const head = pull.head?.sha;
+  if (!head) return failed('the pull request has no head commit');
+  const listed = listRuns(`head_sha=${encodeURIComponent(head)}`);
+  if (listed.error) return failed(listed.error);
+  const found = firstGreenRun(listed.runs, jobsOf);
+  if (found.error) return failed(found.error);
+  if (!found.run) return nothing(`pull request #${pull.number} has no green run at ${short(head)}, so every stage runs`);
+  return { commit: head, line: `passed: pull request #${pull.number} passed at ${short(head)}` };
+}
+
+function passedCommand(argv) {
+  const parsed = parsePassedArgs(argv);
+  if (parsed.error) {
+    process.stderr.write(`${parsed.error}\n`);
+    return 2;
+  }
+  const result = findPassed(parsed.opts, process.env);
+  process.stderr.write(`${result.line}\n`);
+  if (parsed.opts.summary) appendFileSync(parsed.opts.summary, `${result.line}\n\n`);
+  if (result.commit) process.stdout.write(`${result.commit}\n`);
+  return 0;
+}
+
 /** Commands for a host that has no wiring file, each with when to run it. */
 function commandList() {
   const lines = [
-    '# Always. Prints whether each stage runs, is empty, or is skipped.',
+    '# Always. Prints whether each stage runs, is empty, or is skipped. --passed "$PASSED" when the next command printed a commit.',
     'node .tropis/scripts/pipeline.mjs plan --base "$BASE" --head "$HEAD"',
+    '# On a push to a pull request, or to the main branch. Prints a commit whose code passed, or nothing.',
+    'node .tropis/scripts/pipeline.mjs passed --branch "$HEAD_REF" --repository "$HEAD_REPO" --summary "$SUMMARY"',
+    'node .tropis/scripts/pipeline.mjs passed --merged "$COMMIT" --summary "$SUMMARY"',
     '# Always, before the framework stage.',
     'npm --prefix .tropis ci',
     '# Always. Framework checks run even when the rest of the plan is skipped.',
@@ -996,9 +1279,11 @@ function commandList() {
     'node .tropis/scripts/pipeline.mjs branch deploy "$BRANCH"',
     '# When a pull request closes and the plan says branch=filled.',
     'node .tropis/scripts/pipeline.mjs branch remove "$BRANCH"',
-    '# Release candidate. Started by hand for one commit on the main branch, never on a push.',
+    '# Deploy to staging. Started by hand for one commit on the main branch, never on a push.',
     '# Every stage first, as on a push with nothing skipped; then:',
-    'node .tropis/scripts/pipeline.mjs candidate rehearse',
+    'node .tropis/scripts/pipeline.mjs staging deploy',
+    '# Promote to production: the project\'s own pipeline runs this before it tags <commit>.',
+    'node .tropis/scripts/pipeline.mjs promote check "$COMMIT" --staged "$STAGED" --allow <notes file> --allow <each version file>',
   );
   return `${lines.join('\n')}\n`;
 }
@@ -1010,7 +1295,9 @@ function writePlan(outcome) {
     return;
   }
   if (outcome.reason) process.stderr.write(`${outcome.reason}\n`);
+  if (outcome.note) process.stderr.write(`${outcome.note}\n`);
   const lines = STAGES.map((stage) => `${stage}=${outcome.stages[stage]}`);
+  if (outcome.passed) lines.push(`passed=${outcome.passed}`);
   if (outcome.branch) lines.push(`branch=${outcome.branch}`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
@@ -1113,15 +1400,25 @@ if (ranDirectly) {
         process.exitCode = hostCommand(root, parsed);
       }
     }
+  } else if (command === 'passed') {
+    process.exitCode = passedCommand(args);
   } else if (command === 'commands') {
     process.stdout.write(commandList());
-  } else if (command === 'candidate') {
+  } else if (command === 'staging') {
     const root = projectRoot();
     if (!root) {
       process.stderr.write('pipeline: not a git repository\n');
       process.exitCode = 1;
     } else {
-      process.exitCode = candidateCommand(root, args[0], args.slice(1));
+      process.exitCode = stagingCommand(root, args[0], args.slice(1));
+    }
+  } else if (command === 'promote') {
+    const root = projectRoot();
+    if (!root) {
+      process.stderr.write('pipeline: not a git repository\n');
+      process.exitCode = 1;
+    } else {
+      process.exitCode = promoteCommand(root, args);
     }
   } else {
     process.stderr.write('pipeline: unknown command\n');

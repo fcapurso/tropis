@@ -16,21 +16,25 @@ into `AGENTS.md` afterwards; the setup refuses, changing nothing, and lists what
 
 ## Stage 1 — Name the project
 
-Ask for: the project path, a display name, and the blueprint URL (remote or
-local path the operator names). Confirm before creating anything. The package
-name is derived from the project's folder name.
+Ask for: the project path, a display name, and the blueprint URL (remote or local
+path the operator names). Confirm before creating anything. Take the display name
+exactly as given — capitals, spaces and symbols included. Setup stores it in
+`.tropis/project.json`, and the framework takes the project's name from there
+wherever it writes one.
 
 ## Stage 2 — Set the framework up
 
 ```bash
-bash "$BP"/scripts/set-up-project.sh <project-root>
+bash "$BP"/scripts/set-up-project.sh <project-root> "<display name>"
 ```
 
 Refuse to continue if that exits non-zero. It writes `.claude/`, `.cursor/rules/`,
 `.tropis/`, the entry file and the backlog into the project, and appends to its
-`.gitignore` and `.gitattributes`. It does not commit. Prune what the project does
-not need, delete the `_comment` key from `.claude/settings.json`, and confirm the
-file parses.
+`.gitignore` and `.gitattributes`. It does not commit. With the display name it also
+writes `.tropis/project.json`, a file of the project's own that an update never
+replaces, names the package after the name, and puts the name at the head of
+`.tropis/README.md`. Prune what the project does not need, delete the `_comment` key
+from `.claude/settings.json`, and confirm the file parses.
 
 ## Stage 3 — Shape
 
@@ -47,10 +51,12 @@ Ask which level the project wants: Tropis writes the README from its skeleton
 ## Stage 3b — The pipeline
 
 Ask where the repository is hosted, and whether it is or will be public. On yes, write
-`.claude/project.json` holding `{ "public": true }`. From then on the agent is told at
+`.tropis/project.json` holding `{ "public": true }`, keeping any key already there (setup
+may have written the name). From then on the agent is told at
 every `git commit` and `git push` to read what is going out for private material, a
 review record says the diff was read, and `/release` lists anything private in the window
-before drafting. On no, write nothing: a project with no such file is not public.
+before drafting. On no, write nothing: a project whose `.tropis/project.json` holds no `"public": true` is
+not public.
 
 **GitHub.** Offer to write `.github/workflows/pipeline.yml` from
 `.tropis/templates/pipeline-caller.yml`, and to create `pipeline/` holding a
@@ -67,7 +73,7 @@ and say to turn on *Allow auto-merge* and *Automatically delete head branches* u
 Settings → General → Pull Requests. The developer runs it; never run it yourself. A
 private repository on GitHub's free plan cannot have rulesets. If the developer will not
 or cannot apply it, or the host is not GitHub, ask why, and write their reason into
-`.claude/project.json` as `"ungated": "<reason>"`, keeping any key already there. Until
+`.tropis/project.json` as `"ungated": "<reason>"`, keeping any key already there. Until
 one of the two is done, the pipeline's `host` job fails on every run, by design.
 
 **Any other host.** Show the output of `node .tropis/scripts/pipeline.mjs commands`
@@ -75,16 +81,16 @@ and say that those are the commands to put in that host's CI.
 
 ## Stage 4 — Fill the operator guide
 
-In `.tropis/README.md`, replace `{{PROJECT_NAME}}` and `{{BLUEPRINT_URL}}`
-from Stage 1 answers.
+In `.tropis/README.md`, replace `{{BLUEPRINT_URL}}` from the Stage 1 answers.
+Setup has already written the display name at its head.
 
 ## Stage 5 — Draft the entry point
 
-Fill `AGENTS.md` from the brief's identity. Leave `CLAUDE.md` as it
-is: the single line `@AGENTS.md`, which Claude Code follows to `AGENTS.md`. **Ask for
-gotchas; do not accept silence.** For a greenfield project, leave an
-explicit “expected to grow” note rather than inventing three fake
-gotchas.
+Fill `AGENTS.md` from the brief's identity, and title it with the name in
+`.tropis/project.json`. Leave `CLAUDE.md` as it is: the single line `@AGENTS.md`,
+which Claude Code follows to `AGENTS.md`. **Ask for gotchas; do not accept
+silence.** For a greenfield project, leave an explicit “expected to grow” note
+rather than inventing three fake gotchas.
 
 ## Stage 6 — Draft the first rules
 
@@ -101,7 +107,7 @@ the shipped text in the one rule each tool loads, and win where they contradict.
 ## Stage 7 — Install and verify
 
 ```bash
-npm --prefix .tropis install
+npm --prefix .tropis ci
 npm --prefix .tropis test
 bash .tropis/scripts/check-prerequisites.sh
 ```

@@ -121,23 +121,25 @@ when the framework half exists to serve the application half. Full rule:
   branch, as *Merge and clean up* does.
 - **Where the main branch is gated, nothing goes directly to `main`.** It is gated when
   its host refuses a merge whose checks have not passed — on GitHub, the ruleset Tropis
-  ships — and an agent treats it as gated unless `.claude/project.json` records
+  ships — and an agent treats it as gated unless `.tropis/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
-  worktree of its own (above), push it, open the pull request, run
-  `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  worktree of its own (above), take the merge token, push it, open the pull request,
+  run `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  Release the token once that command has reported (*The merge token*).
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
   requires one up to date with `main`, so a pull request that falls behind sits
   unmerged with nobody told. The command brings it up to date and keeps waiting, and
   stops, naming the pull request, when it conflicts, a check fails, or auto-merge is
-  off. Dispatch's move of an entry to `building` is such a change: the
+  off. Dispatch's move of a backlog item to `building` is such a change: the
   dispatching session lands it through its pull request and waits until it has merged
-  before the executor starts.
+  before the executor starts. Before that pull request opens, the overlap check runs on
+  the plan (*Plans that touch the same files*).
 - **Where it is not gated, what may go directly to `main` is what cannot change how an
   agent behaves**: the
-  backlog, generated documentation, plan and spec files, the release notes `/release`
-  commits, the README `/refresh-readme` commits, and prose under `docs/`.
+  backlog, generated documentation, plan and spec files, the release notes and version
+  `/release` commits, the README `/refresh-readme` commits, and prose under `docs/`.
   **Anything under `.claude/rules/`, `.claude/rule-additions/` or `.claude/framework/`
   needs a branch, and so does anything under `.claude/commands/`**: a command changes
   how every later session behaves. A command edit needs a commit body but no fresh-agent
@@ -155,7 +157,7 @@ when the framework half exists to serve the application half. Full rule:
   and the same change as its own pull request started none in 201.
 - **Say whether anything enforces this.** Tropis's pipeline asks the host on every run,
   and its `host` job fails until the main branch requires a pull request and a passing
-  check and auto-merge is not turned off, or `.claude/project.json` records `"ungated"` with the
+  check and auto-merge is not turned off, or `.tropis/project.json` records `"ungated"` with the
   reason, which every run then repeats in its summary. Where the project records a
   reason, also write in its own `AGENTS.md` that nothing refuses a push to `main` or a
   red merge, with the date it was checked: a reader who assumes a gate exists will trust
@@ -163,13 +165,12 @@ when the framework half exists to serve the application half. Full rule:
   `framework-commit-check.sh` speaks at any commit on `main` where no reason is
   recorded, and otherwise only when the commit carries something that belonged on a
   branch.
-- **A release pipeline is a third writer to `main`.** Where the project includes the
-  optional release section, its pipeline sets the version and promotes the notes on
-  `main` itself. That is not a breach of the list above; name the files it commits in
-  the project's own `AGENTS.md`, so a reader of the list does not take them for one.
-  Where the main branch is gated it cannot be: nothing bypasses the gate, so a project
-  whose release pipeline pushes to `main` records why it is ungated until its release
-  only tags what `main` holds.
+- **A promote pipeline never writes to the main branch.** Where the project includes
+  the optional release section, the version and the promoted notes reach `main` through
+  `/release`'s own pull request, and the promote pipeline only tags a commit `main`
+  already holds, so a gated project needs no bypass to release. A project whose own
+  release pipeline still pushes to `main` records why it is ungated until it follows
+  that section.
 - **A commit touching `.claude/rules/`, `.claude/rule-additions/` or
   `.claude/framework/` states what its fresh-agent check found, in the body.** One or
   two sentences: what the agent was asked to do, whether it found what the change
@@ -240,6 +241,91 @@ Every file must appear in the plan's file list. Anything else means the base was
 **This is the cheapest check in the workflow and it catches the most expensive mistake** —
 one glance at a file count is enough.
 
+## Plans that touch the same files
+
+Two backlog items can be built at the same time. Each plan lists every file it touches, so
+whether two of them overlap is judged from their plans, never guessed from the backlog
+items.
+
+- **At claim, before the move to `building` lands**, run
+  `node .tropis/scripts/plan-overlap.mjs --claim <plan>`. It compares the plan's File
+  Structure table with the plan of every backlog item already in `building` and, where
+  they share a file, names the backlog item and the files and writes `**Merges after:**
+  <id>` into the plan's header. Land the claim with that line. Build either way: whoever
+  claimed second waits at merge. Claims land one at a time, so every earlier claim is
+  already on `main` when the check runs.
+- **It compares files, not lines.** Two plans touching one file in unrelated places
+  still wait for each other; the one rebase settles it. It ignores the files every plan
+  touches — the backlog, the bands file, the generated board, the release notes and the
+  decision record — or every pair of plans would overlap. A conflict in one of those on
+  rebase is resolved mechanically, keeping both sides' additions and rebuilding the
+  board, and needs no review. A conflict in any other file needs its resolution reviewed.
+- **A session may add to `Merges after`, never remove from it**, also when it finds a
+  dependency while planning. Needing the other backlog item's code is not this: that is
+  `blockedBy`, and no branch is built on another unmerged branch.
+- **Before merging**, run `node .tropis/scripts/plan-overlap.mjs --wait <plan>` as a
+  background command that wakes you when it ends. It asks `origin` every 30 seconds
+  until no backlog item the plan merges after is `building` there — shipped, dropped, or
+  parked back to `shaped` — and goes ahead at once when the plan has no `Merges after`. It
+  has no time limit: a backlog item still building after hours is still being worked on,
+  and its session ends the wait by landing or parking it. `--timeout <minutes>` sets a
+  limit, after which it exits 3 and prints `STOPPED: waiting on <id>`: report that line
+  and stop.
+
+## The merge token
+
+A gated main branch that requires branches to be up to date lets one pull request
+merge at a time, and each merge puts every other open pull request behind, to update
+and run its checks again. So sessions working at the same time take turns, under one
+token on `origin` that any session can take: the ref `refs/tropis/merge-token`, whose
+commit names its holder and when it was taken.
+
+- **Every pull request opens under the token** — a plan's, a claim's, a backlog
+  edit's, a release's — whoever opens it: a session started by hand as much as one a
+  sprint started. Once the plan's wait has gone ahead (*Plans that touch the same
+  files*), run `node .tropis/scripts/merge-token.mjs take`. It takes the token in the
+  current branch's name, or waits, asking every 30 seconds, while someone else holds
+  it. Then rebase once on `origin/main`, re-run the merge criteria, push, open the pull
+  request, set it to merge itself, and run `main-status.mjs --pull-request <N>`
+  (*Merge and clean up*).
+- **Release it once that command has reported**, green or red:
+  `node .tropis/scripts/merge-token.mjs release`. Keep it instead for a follow-up pull
+  request straight after, such as a move to `shipped`, and release it after the last
+  one. Without `--holder`, a release acts for the branch you are on, so from any
+  other branch, `main` after a merge included, name the branch it was taken in:
+  `release --holder <branch>`. A release removes the token only for its holder;
+  otherwise it says who holds it and leaves it.
+- **Hand it back before a fix that needs judgement.** When the merge criteria fail
+  after the rebase in a way that is not mechanical, release the token first, then fix.
+  A clean rebase needs no new review; a conflict needs its resolution reviewed, except
+  in the files every plan touches (*Plans that touch the same files*).
+- **The wait ends when something happens, not after a time.** Run `take` as a
+  background command that wakes you when it ends. It waits as long as the holder is
+  working, however long that is, and takes the token once it is free. When the token
+  turns stale (below), it exits 3 and prints `STOPPED: waiting for the token, held by
+  <holder>, which is stale`, the reason and the command that breaks it: report that line
+  and stop, because breaking a token is the developer's call. A hold never turns stale,
+  so a session waits for the developer to release it. `--timeout <minutes>` sets a
+  limit, after which `take` exits 3 and prints `STOPPED: waiting for the token, held by
+  <holder>`.
+- **A hold is the developer's.** `node .tropis/scripts/merge-token.mjs take --hold`
+  takes the token in their own name, git's `user.name`, for example while a release
+  runs, and `release --hold` gives it back. An agent runs these only on the
+  developer's word, as `/release` does. Every other session waits meanwhile.
+- **A stale token is broken only on the developer's word.** `/next` says who holds the
+  token and for how long. A token held by a branch with no open pull request and no
+  push for 30 minutes is shown as stale, with the command that breaks it,
+  `node .tropis/scripts/merge-token.mjs break --holder <holder>`. A hold is never stale.
+  Where `origin` is not on GitHub, pull requests cannot be asked, so a token held by a
+  branch for 30 minutes is stale when that branch is absent on `origin` or has had no
+  push for 30 minutes.
+- **Nothing about the main branch's safety depends on it.** A session that ignores the
+  token, a project on an older release, or a person merging on GitHub still cannot put
+  a red or out-of-date change on a gated main branch; the cost is the extra update and
+  re-run the token avoids. No check refuses a pull request opened without it. Where
+  `take` cannot reach the token at all, it exits 2 saying why: report the line, and go
+  on without it.
+
 ## Merge and clean up — in this order
 
 The order matters. `gh pr merge --delete-branch` deletes the local branch first, and if
@@ -279,7 +365,9 @@ its required check** leaves nothing on the branch to fix, and nothing will start
 check: re-run that run once by hand, with `gh run rerun` and the run id from the address
 the line gives, say so in your report with that address, and run the wait again. That
 re-run starts a check that never ran, so it hides no failure; if the check is missing
-again, stop and report both runs. Pull `main` once it has reported.
+again, stop and report both runs. Pull `main` once it has reported, and release
+the merge token with `--holder <the plan's branch>`, since you are on `main` by now
+(*The merge token*).
 
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's
@@ -315,17 +403,21 @@ Every plan lands as **one squash-merge commit**; per-task commits are working hi
 exception.** Its maintainer takes in contributions from projects' flushes a group at a
 time. A group is many things, so its pull request keeps one commit per contribution,
 each with its contributor as author, and lands by rebase rather than squash: history
-shows each contribution, and each can be reverted alone. A plan for one catalog entry
+shows each contribution, and each can be reverted alone. A plan for one backlog item
 still lands as one squash-merge.
 
 Parallel branches share a base, so `main` moves under them as siblings land. Before each
 merge:
 
-1. `git fetch origin && git rebase origin/main`
-2. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
+1. `node .tropis/scripts/plan-overlap.mjs --wait <plan>`, in the background — *Plans
+   that touch the same files*.
+2. `node .tropis/scripts/merge-token.mjs take`, in the background — *The merge token*.
+3. `git fetch origin && git rebase origin/main`
+4. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
    invalidate a criterion with no textual conflict — new files shift coverage figures and
    can turn another plan's guard red.
-3. Squash-merge.
+5. Squash-merge, and once `main-status.mjs` has reported,
+   `node .tropis/scripts/merge-token.mjs release --holder <the plan's branch>`.
 
 **A check that passes on a rerun with nothing changed is a bug.** Record it in the
 backlog with both runs, as any defect. Nothing retries a failed check automatically —
@@ -340,13 +432,55 @@ The message states the **net functional gain**, not the files touched:
 <What someone can now do, or what failure is now prevented. Intent, not
 inventory.>
 
-Implements: <catalog id, if applicable>
+Implements: <backlog id, if applicable>
 Plan: <plan document path>
 ```
 
+## Delivering a backlog item
+
+A session that takes one backlog item to shipped — a team member a sprint started, or a
+session the developer started by hand — runs the whole of this document, in this order:
+
+0. If the backlog item is `blockedBy` one that has not shipped, run
+   `node .tropis/scripts/sprint.mjs wait <id>` as a background command and do nothing
+   else until it ends. It ends when everything the backlog item is blocked by has shipped,
+   and has no time limit. If it prints `PARKED: depends on <id>`, end with that line.
+1. Shape the backlog item (`/feature`) and write its plan.
+2. Claim it: run the overlap check on the plan (*Plans that touch the same files*), then
+   land the plan, the shaping and the move to `building` through one pull request, under
+   the merge token.
+3. Dispatch an executor on the model the plan's tier calls for — a subagent or session
+   where the tool can start one, otherwise yourself — and review its branch.
+4. Merge as *Merging* says: wait for what the plan merges after, take the token, rebase,
+   re-run the merge criteria, open the pull request and wait for the main branch. Keep
+   the token for a follow-up pull request, then release it.
+5. End with exactly one line: `SHIPPED`, `PARKED: <why>` or `STOPPED: <why>`. `STOPPED`
+   is for a wait that ran out, a usage limit, or an error you could not get past; the
+   lines the overlap and token waits print are `STOPPED` lines. In a sprint, record a
+   `PARKED` or `STOPPED` line first with
+   `node .tropis/scripts/sprint.mjs mark <id> parked <why>` (or `stopped <why>`), so the
+   sprint's status and the team members waiting on this backlog item see it.
+
+**Stop only for one of three things:** a judgement only the developer can make, a check
+only a person can perform by hand (written to the verification log as `pending` through
+`/manual-check` first), or work outside what was agreed. Anything else you decide, and
+report the decision. What you may run is the tool's own permission settings; a prompt
+for a permission is answered in your session. A parked backlog item goes back on the board
+as needing a decision. **A backlog item parked after its claim moves back** from
+`building` to `shaped`, its plan kept in `refs` and the reason in a comment directly above
+the backlog item, landed under the token like any backlog edit; it then leaves the overlap
+check, which counts only backlog items in `building`. A backlog item parked before its
+claim changes nothing in the backlog.
+
+**A sprint starts these sessions; the rules are here so that any session follows them.**
+`/sprint` plans the sprint with the developer, starts one session per backlog item or
+bundle, all at once, with the brief `node .tropis/scripts/sprint.mjs brief <id>` prints,
+and shows where each stands. It never merges, reviews or orders merges: the token and the
+overlap check do that.
+
 ## The cycle
 
-1. **Understand.** State the problem and, if one exists, the catalog entry it relates to.
+1. **Understand.** State the problem and, if one exists, the backlog item it relates to.
 2. **Propose.** Approach, files affected, trade-offs. Verify any assumption about
    external API or platform behaviour against the documentation or a probe — **training
    data is not ground truth** about a specific system's current behaviour. Two probes
@@ -381,14 +515,15 @@ Before the work is considered done, update the durable artifact the change affec
 
 | If the change… | Update |
 |---|---|
-| adds or alters user-visible behaviour | the feature catalog; the backlog board rebuilds itself from it |
+| adds or alters user-visible behaviour | the backlog; the backlog board rebuilds itself from it |
 | chose between real alternatives | `DECISIONS.md` |
 | revealed a constraint an agent would otherwise trip over | `.claude/rules/<area>.md`, with a `paths:` header naming its area; or, to add to a shipped rule, `.claude/rule-additions/<name>.md` — plain text, no header, named after the shipped rule. Its area stays in `.claude/rule-areas.json`. Then run `npm --prefix .tropis run rules`. The additions follow the shipped text in the one rule each tool loads, and win where they contradict. Never edit the shipped text in `.tropis/rules/` or a generated file. A project's additions to a framework document go in its own `AGENTS.md` |
 | changed module boundaries or data flow | the architecture document, diagrams included |
 | alters what someone developing the project is told about working with the framework (the framework commands it names, how to set up a working copy) | the project's operator guide, `.tropis/README.md` (and any guard that asserts those claims) |
 | alters what the product's users are told to do or how they start | nothing in the plan: the product's README is refreshed as a whole page by `/refresh-readme`, on its own or from `/release`. A plan does not patch it, except to correct a command, file or link the README names that the plan removed or renamed — correcting the reference and adding nothing |
 | fixed a defect in a file the blueprint also ships — path resolution, payload parsing, control flow, anything that would be wrong in any project | the blueprint upstream queue (**not** project-specific content: a namespaced marker directory, a comment naming a local backlog id — those are customisation and travel nowhere) |
-| taught **or built** something portable to any project — a lesson, or a command, guard or script a set-up project would want | the upstream queue. One inbox for both: the flush decides whether a line travels as an edit or as a shaped backlog entry, each in its own pull request to the framework — not the author, at write time |
+| taught **or built** something portable to any project — a lesson, or a command, guard or script a set-up project would want | the upstream queue. One inbox for both: the flush decides whether a line travels as an edit or as a shaped backlog item, each in its own pull request to the framework — not the author, at write time |
+| alters how a contribution reaches the framework — the upstream queue, the flush, its pull requests and the branches they come from, how the maintainer takes them in, CI for them | `CONTRIBUTING.md`, in the same plan. Only the framework's own repository has it |
 | changed `.claude/framework/` or `.claude/rules/` | run a fresh-agent check (below) before closing, on a branch, and record what it found in the commit body — see **Branching** |
 
 **This step is the one most worth keeping.** Its absence is the single most common cause
@@ -441,11 +576,11 @@ changes and declared checked on the strength of a run whose task deleted a file;
 clause was never exercised, and the wording made that sound like coverage when it was a
 spot-check of the paragraph next door.
 
-**Give the check an invented subject, not a real backlog entry.** The task has to be real
+**Give the check an invented subject, not a real backlog item.** The task has to be real
 enough that the agent touches files — rules delivered by path never reach an agent that
 only discusses an approach, and the check then proves nothing. But the *subject* should
-be hypothetical. A check once exercised its clause by building the next blocked entry in
-the catalog, and produced working code for a feature awaiting a spike: no plan, no
+be hypothetical. A check once exercised its clause by building the next blocked backlog
+item in the backlog, and produced working code for a feature awaiting a spike: no plan, no
 review, and output that looks exactly like real work. **Say in the prompt that the output
 is a probe and will be discarded.**
 
@@ -456,6 +591,15 @@ will do. The record is provenance: if a later version behaves differently, it sh
 which version a result came from. A result that holds only on some versions is a
 finding about the framework — change it so it no longer depends on what varies — not
 a reason to require a version.
+
+**Run the probe on the Large tier's included pick.** A probe judges, with only the
+repository, whether a change reaches the agent it was written for, which is the Large
+tier's kind of work (`.claude/framework/model-tiers.md`).
+`node .tropis/scripts/dispatch.mjs --tier Large` names the model: the first Large pick
+that a subscription the developer holds includes, as `/dispatch` would choose for a
+Large plan. Pass it as the probe's model, such as `claude -p --model <model>`; where it
+names none, run the probe on the tool's default model and say why in the record. Record
+the model with the tool and its version.
 
 **Judge the check by what the agent did, not by what it says it did.** A run that prints
 only the agent's final reply hides the commands it ran and what answered them, so a check
@@ -474,11 +618,11 @@ change says; if they do, run the probe where they do not load, such as a cloud s
 and say so in the record. Found absorbing a flush, where a probe of a provenance rule
 started locally reported seeing its owner's own copy of that rule.
 
-**End the check with a proposal.** Whatever it finds becomes a backlog entry, a rule, or a
+**End the check with a proposal.** Whatever it finds becomes a backlog item, a rule, or a
 shaped plan — put to the developer as a recommendation, not left in the conversation that
-ran it — or is dropped with a one-line reason, when the catalog rule's *What does not
-become an entry* says it should be. Declining is then a decision someone made, rather
-than a thing that quietly did not happen.
+ran it — or is dropped with a one-line reason, when the backlog rule's *What does not
+become a backlog item* says it should be. Declining is then a decision someone made,
+rather than a thing that quietly did not happen.
 
 This is not ceremony. Run once against the instruction layer, it found a defect the
 authoring session had missed.
@@ -535,53 +679,57 @@ pure functions, types, constants — where automated checks suffice.
 **Include if the project ships versioned releases.** Three things transfer from the project
 that had this; the rest is release-tool specific.
 
-- **`/release` drafts; the developer starts each step.** The command checks `main` is
-  clean and pushed, where Tropis keeps the README brings it up to date with
+- **`/release` drafts and guides; the developer starts each step.** The command checks
+  `main` is clean and pushed, where Tropis keeps the README brings it up to date with
   `/refresh-readme` (pushing the refreshed page, when there is one, as its own commit),
-  proposes the bump, drafts the notes from the backlog for the people who use the
-  product, commits the notes, and prints the trigger for the next step. An agent never
-  runs a trigger. A release is three steps:
-  1. **The release candidate**, for one commit on the main branch that already carries
-     the notes. It runs every stage on that commit; puts the pre-production environment
-     back on the version production runs; deploys the candidate there; and says whether
-     anything must be upgraded by hand. It sets no version and makes no tag. Tropis
-     ships this step: the project fills `pipeline/candidate/`, and
-     `.github/workflows/tropis-candidate.yml` runs it.
-  2. **The check**, by the developer on the pre-production environment, drafted and
-     recorded through `/manual-check`. `/release`, run again, prints the release trigger
-     only once that entry says `pass`.
-  3. **The release**, given the candidate's commit. It is the project's own pipeline,
-     and must: run the full suite as a gate; on top of the candidate, make one commit
-     that sets the version, promotes `## [Unreleased]` in the notes file and writes
-     `Checked on the release candidate: yes`, and changes no other file; tag that
-     commit; merge it into the main branch; push the branch and the tag together; deploy
-     the tag to production; publish the notes without the `Checked on the release
-     candidate` line; and roll back on failure, as below. Nothing merged after the
-     candidate reaches production through it.
+  proposes the bump and works out the version, drafts the notes from the backlog for
+  the people who use the product, commits them, and then carries the developer through
+  the release's two steps, printing each trigger. An agent never runs a trigger. In
+  order:
+  1. **Step 1, deploy to staging**, for one commit on the main branch that already
+     carries the notes. It runs every stage on that commit; puts staging back on the
+     version production runs; deploys the commit there; and says whether anything must
+     be upgraded by hand. It sets no version and makes no tag. Tropis ships this step:
+     the project fills `pipeline/staging/`, and `.github/workflows/tropis-staging.yml`
+     runs it. `/release` finds the run, waits for it, and reads its summary.
+  2. **The check**, by the developer on staging, drafted and recorded by `/release` as
+     `/manual-check` does, in the same sitting. The commit it passes on is the staged
+     commit.
+  3. **The promotion pull request**, opened by `/release` once the check passes. It sets
+     the version in each file that carries it, promotes `## [Unreleased]` in the notes
+     file, and writes `Checked on staging: yes`, and it changes no other file. It
+     reaches the main branch like any other change, through the gate where there is
+     one.
+  4. **Step 2, promote to production**, given the commit that pull request put on the
+     main branch and the staged commit. It is the project's own pipeline, and must: run
+     `node .tropis/scripts/pipeline.mjs promote check <commit> --staged <staged> --allow <notes file> --allow <each version file>`
+     (without `--staged` where the project does not deploy to staging) and stop on a
+     refusal; run the full suite as a gate; tag `<commit>`; push only the tag; deploy
+     the tag to production; publish the notes without the `Checked on staging` line;
+     and roll back on failure, as below. It never commits and never pushes a branch.
 
-  **Where the project leaves `pipeline/candidate/` empty, there is no candidate and no
-  check.** `/release` records that no candidate was rehearsed, and the release runs on
-  the main branch as it stands.
-- **The tag sits one commit above the candidate, and its code is the candidate's.** The
-  version and the promoted notes belong in the tagged commit, and the candidate cannot
-  carry them: they are set only once it has passed. So the release refuses a commit
-  that changes anything besides the notes file and the files carrying the version.
-  Merging it into the main branch is a fast-forward when nothing landed since the
-  candidate, and a merge otherwise; a conflict stops the release before anything is
-  pushed.
+  **Where the project leaves `pipeline/staging/` empty, there is no step 1 and no
+  check.** `/release` commits the version with the notes, ending them
+  `Checked on staging: no — this project does not deploy to staging`, and the promote
+  pipeline tags that commit.
+- **The tag sits on a commit the main branch holds, and its code is the staged
+  commit's.** The version and the promoted notes belong in the tagged commit, and the
+  staged commit cannot carry them: they are set only once the check has passed. So the
+  promotion pull request changes only the notes and the version files, and
+  `promote check` refuses a commit that changes anything else since the staged one.
+  Production gets what staging was checked on; anything merged in the meantime needs a
+  new deploy to staging, and waits for the next release otherwise.
 - **Only a tag of the form `vX.Y.Z` is a release.** A tag such as `v1.5.0-rc.1` may mark
-  anything else, and the framework ignores it: the candidate puts the pre-production
-  environment back on the highest `vX.Y.Z` tag, and `/release` counts the changes since
-  the last one. Without this, a test tag sorts above the release it precedes and above
-  the one before it, and the pre-production environment is reset to a version production
-  never ran, with nothing to say so.
-- **The candidate is an upgrade rehearsal.** Because the pre-production environment is
-  first put back on production's version, each candidate deploy is the upgrade
-  production will receive, onto data an older version wrote.
+  anything else, and the framework ignores it: a deploy to staging puts staging back on
+  the highest `vX.Y.Z` tag, and `/release` counts the changes since the last one.
+  Without this, a test tag sorts above the release it precedes and above the one before
+  it, and staging is reset to a version production never ran, with nothing to say so.
+- **Each deploy to staging is the upgrade production will receive.** Because staging is
+  first put back on production's version, the deploy upgrades it onto data an older
+  version wrote, as promotion will upgrade production.
 - **Production deploy is a manual step, never a CI job.** Merging to the main branch may
-  deploy to a development environment. The pre-production environment belongs to the
-  release candidate, and production is started by a person after the check on the
-  candidate.
+  deploy to a development environment. Staging belongs to step 1, and production is
+  started by a person after the check on staging.
 - **A job that writes irreversible remote state mid-run needs rollback, not idempotency.**
   Compensating actions on failure (`if: failure()`) keep each run self-contained. Trying
   instead to detect "is this already done?" on a re-run is unreliable, because the
