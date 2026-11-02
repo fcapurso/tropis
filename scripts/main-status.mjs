@@ -15,7 +15,8 @@
  * require has no check run (nothing will start it). Where it cannot ask — origin not on
  * GitHub, no gh, gh failing — it prints that it could not tell and why, and exits 0.
  *
- * The backlog report and the isolation helper import mainStatus; the workflow's merge
+ * The backlog report and the isolation helper import mainStatus, and merge-token.mjs
+ * imports originOnGitHub; the workflow's merge
  * sequence runs --wait, and the workflow's gated merge, /release and the commit hook name
  * --pull-request. gh is never run unless origin is on GitHub, so a repository
  * without such a remote — every test's — never reaches the network. The default branch
@@ -43,7 +44,7 @@ const verdict = (run) => (RED.has(run.conclusion)
 const newestFirst = (runs) => [...runs].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 
 /** {} when origin is a GitHub repository, else { error }. Runs git only. */
-function originOnGitHub(root, env) {
+export function originOnGitHub(root, env) {
   const r = spawnSync('git', ['remote', 'get-url', 'origin'], { cwd: root, env, encoding: 'utf8' });
   if (r.status !== 0) return { error: 'no remote named origin' };
   const url = r.stdout.trim().replace(/\/$/, '').replace(/\.git$/, '');

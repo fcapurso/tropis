@@ -124,8 +124,9 @@ when the framework half exists to serve the application half. Full rule:
   ships — and an agent treats it as gated unless `.tropis/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
-  worktree of its own (above), push it, open the pull request, run
-  `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  worktree of its own (above), take the merge token, push it, open the pull request,
+  run `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  Release the token once that command has reported (*The merge token*).
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
   requires one up to date with `main`, so a pull request that falls behind sits
@@ -268,6 +269,51 @@ whether two of them overlap is judged from their plans, never guessed from the e
   resumes with the same command once that entry ships, which also covers waiting on an
   entry that was parked.
 
+## The merge token
+
+A gated main branch that requires branches to be up to date lets one pull request
+merge at a time, and each merge puts every other open pull request behind, to update
+and run its checks again. So sessions working at the same time take turns, under one
+token on `origin` that any session can take: the ref `refs/tropis/merge-token`, whose
+commit names its holder and when it was taken.
+
+- **Every pull request opens under the token** — a plan's, a claim's, a backlog
+  edit's, a release's — whoever opens it: a session started by hand as much as one a
+  sprint started. Once the plan's wait has gone ahead (*Plans that touch the same
+  files*), run `node .tropis/scripts/merge-token.mjs take`. It takes the token in the
+  current branch's name, or waits, asking every 30 seconds, while someone else holds
+  it. Then rebase once on `origin/main`, re-run the merge criteria, push, open the pull
+  request, set it to merge itself, and run `main-status.mjs --pull-request <N>`
+  (*Merge and clean up*).
+- **Release it once that command has reported**, green or red:
+  `node .tropis/scripts/merge-token.mjs release`. Keep it instead for a follow-up pull
+  request straight after, such as a move to `shipped`, and release it after the last
+  one. Without `--holder`, a release acts for the branch you are on, so from any
+  other branch, `main` after a merge included, name the branch it was taken in:
+  `release --holder <branch>`. A release removes the token only for its holder;
+  otherwise it says who holds it and leaves it.
+- **Hand it back before a fix that needs judgement.** When the merge criteria fail
+  after the rebase in a way that is not mechanical, release the token first, then fix.
+  A clean rebase needs no new review; a conflict needs its resolution reviewed, except
+  in the files every plan touches (*Plans that touch the same files*).
+- **The wait has a time limit.** After 60 minutes `take` exits 3 and prints
+  `STOPPED: waiting for the token, held by <holder>`: report that line and stop. A
+  holder that died leaves every waiter stopped and reported, not waiting forever.
+- **A hold is the developer's.** `node .tropis/scripts/merge-token.mjs take --hold`
+  takes the token in their own name, git's `user.name`, for example while a release
+  runs, and `release --hold` gives it back. An agent runs these only on the
+  developer's word, as `/release` does. Every other session waits meanwhile.
+- **A stale token is broken only on the developer's word.** `/next` says who holds the
+  token and for how long. A token held by a branch with no open pull request and no
+  push for 30 minutes is shown as stale, with the command that breaks it,
+  `node .tropis/scripts/merge-token.mjs break --holder <holder>`. A hold is never stale.
+- **Nothing about the main branch's safety depends on it.** A session that ignores the
+  token, a project on an older release, or a person merging on GitHub still cannot put
+  a red or out-of-date change on a gated main branch; the cost is the extra update and
+  re-run the token avoids. No check refuses a pull request opened without it. Where
+  `take` cannot reach the token at all, it exits 2 saying why: report the line, and go
+  on without it.
+
 ## Merge and clean up — in this order
 
 The order matters. `gh pr merge --delete-branch` deletes the local branch first, and if
@@ -307,7 +353,9 @@ its required check** leaves nothing on the branch to fix, and nothing will start
 check: re-run that run once by hand, with `gh run rerun` and the run id from the address
 the line gives, say so in your report with that address, and run the wait again. That
 re-run starts a check that never ran, so it hides no failure; if the check is missing
-again, stop and report both runs. Pull `main` once it has reported.
+again, stop and report both runs. Pull `main` once it has reported, and release
+the merge token with `--holder <the plan's branch>`, since you are on `main` by now
+(*The merge token*).
 
 **Where the host marks no check as required, its auto-merge merges at once.** It does
 not wait for checks that are still running, so a merge waits until the pull request's
@@ -351,11 +399,13 @@ merge:
 
 1. `node .tropis/scripts/plan-overlap.mjs --wait <plan>` — *Plans that touch the same
    files*.
-2. `git fetch origin && git rebase origin/main`
-3. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
+2. `node .tropis/scripts/merge-token.mjs take` — *The merge token*.
+3. `git fetch origin && git rebase origin/main`
+4. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
    invalidate a criterion with no textual conflict — new files shift coverage figures and
    can turn another plan's guard red.
-4. Squash-merge.
+5. Squash-merge, and once `main-status.mjs` has reported,
+   `node .tropis/scripts/merge-token.mjs release --holder <the plan's branch>`.
 
 **A check that passes on a rerun with nothing changed is a bug.** Record it in the
 backlog with both runs, as any defect. Nothing retries a failed check automatically —

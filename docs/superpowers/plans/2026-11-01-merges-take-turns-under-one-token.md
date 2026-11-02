@@ -709,3 +709,164 @@ whether it did it. Delete the scratch folder afterwards.
    **Do not open a pull request**, write a review record, set auto-merge or merge: `main`
    is gated and the dispatching session reviews, opens the pull request and merges. Leave
    the worktree in place; the reviewer removes it.
+
+## Handover report
+
+Platform for every measurement: git 2.49.0, node v22.15.0, gh 2.103.2 (2026-10-23) on Darwin arm64 (macOS); Claude Code 2.1.300 for the fresh-agent check, model sonnet.
+
+### Task completion
+
+- Task 0: done. Worktree `../tropis-merge-turns`; `npm --prefix .tropis ci`; clean tree; self-check passed before any change.
+- Task 1: done. Replies matched Decision 2 (below).
+- Task 2: done. 25 cases in `guards/merge-token.test.js` against an empty module; all failed, each for its own reason (names below).
+- Task 3: done, with one ordering note: the self-check at that step failed on exactly the three "documents" cases, which read text Task 5 writes. It passed after Task 5.
+- Task 4: done; mutation 1 as written stayed green, so the test and the mutation were changed (below).
+- Task 5: done. `git grep -nF merge-token.mjs -- framework commands templates` printed `commands/release.md` (2), `framework/workflow.md` (the new section and the Merging list), `templates/README.md` (3).
+- Task 6: done. Every probe ref deleted; `git ls-remote origin 'refs/tropis/*'` printed nothing.
+- Task 7: done; the second prompt failed once, the wording was fixed, and it passed on the second run.
+- Task 8: done; one extra edit (below).
+- Task 9: done up to the push; no pull request opened.
+
+### Verification results
+
+Task 1 replies (gh 2.103.2): a read of an absent ref prints the JSON body `{"message":"Not Found",...,"status":"404"}` on stdout and `gh: Not Found (HTTP 404)` on stderr, exit 1. The second create prints `{"message":"Reference already exists",...,"status":"422"}` on stdout and `gh: Reference already exists (HTTP 422)` on stderr, exit 1. A push with `--force-with-lease=<ref>:<sha>` of a sha this clone never fetched, deleting the ref, printed `[deleted]`, exit 0. A branch read of a missing branch: `Branch not found`, `HTTP 404`. `main` returned `.commit.commit.committer.date`. No `plan/*` branch existed on origin, so the slash-name read was not exercised live. Both statuses are in stderr and in stdout, so the classification works on either.
+
+Task 2, failing before the script (all 25 failed): the three `markerMessage`/`parseMarker` cases, the six `isStale` cases, all eight local-origin cases, all five faked-GitHub cases, and the three document cases.
+
+Task 3/5/9 self-check, final run: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+
+Task 4 (each a throwaway commit, reset afterwards):
+1. As written (plain push, drop `--force-with-lease=<ref>:`): stayed green, only the three document cases failed. Reason: a push that creates a ref sends the old value (absent) and the server refuses the second create ("already exists"), so a plain push of a different commit is also a lock. A forced push (`+<sha>:<ref>`) also stayed green for the same reason, because the lost race is refused by the server. The simultaneous case could not tell a lock from none, since the second session read the marker after the first had pushed and never reached its push. Fix: the simultaneous case installs a `pre-receive` hook on the bare origin that sleeps half a second, so both sessions read "free" and both push. Mutation 1 became: treat a refused push as taken. Red: `lets exactly one of two simultaneous takes through, five rounds running`.
+2. Release skips the holder comparison: red `breaks the token for whoever is named, and only that holder`, `releases only for its holder`, `releases through the API when the push cannot, but only its own marker`.
+3. A non-422 create failure exits at once: red `reads the marker before deciding when the create fails for another reason`.
+4. A held token exits 0 without waiting: red `gets the token when the holder releases while it waits`, `lets exactly one of two simultaneous takes through, five rounds running`, `waits and stops, naming the holder, when the create says the reference exists`.
+
+Task 6 live check on GitHub (output with the random suffix elided): status `Merge token: free.`; `take --holder probe-a` `taken by probe-a.`; status `held by probe-a for 0 min.`; `take --holder probe-b --interval 1 --timeout 0.05` exit 3 `STOPPED: waiting for the token, held by probe-a`; `release --holder probe-b` exit 1 `held by probe-a, not probe-b; left as it is.`; `release --holder probe-a` `released by probe-a.` (by push, no "through the API"). Two simultaneous takes, three rounds: c won, d won, c won; the other exited 3 naming the winner every time. `take` then `break --holder probe-e`: `broken — it was held by probe-e.` Final `git ls-remote origin 'refs/tropis/*'`: nothing. No run on a `refs/tropis/` ref in the last ten runs.
+
+Task 7 fresh-agent check: Claude Code 2.1.300, model sonnet, macOS arm64, `claude -p --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools Bash`, in a scratch project set up from this branch. The user-level instructions of the machine that ran it say nothing about a merge token.
+- Prompt 1 (merge steps up to the rebase): the agent made a worktree, ran `plan-overlap.mjs --wait` (`Merges after: none — go ahead.`), then `node .tropis/scripts/merge-token.mjs take` -> `Merge token: taken by plan/glaze-log.`; the bare origin's `git log -1 --format=%B refs/tropis/merge-token` named `holder: plan/glaze-log`, `kind: branch`. Done.
+- Prompt 2 (finish after the merge), first run: it ran `merge-token.mjs release` from `main` -> `held by plan/glaze-log, not main; left as it is.`, and stopped. The workflow did not say a release after the merge must name the branch. I changed the three places (the section's release bullet, the Merge-and-clean-up sentence, Merging item 5) to say `--holder <the plan's branch>`, and ran it again; this time (after making the scratch origin's `main` contain the branch, as a merge would) it ran `release --holder plan/glaze-log` -> `released by plan/glaze-log.` and `show-ref refs/tropis/merge-token` printed nothing (exit 1).
+- Prompt 3 (the developer asks to keep every session from merging): `node .tropis/scripts/merge-token.mjs take --hold` -> `taken by Kiln Probe.`; marker `holder: Kiln Probe`, `kind: hold`.
+The scratch folder was deleted.
+
+`npm --prefix .tropis test` (twice, last after the final catalog edit): `Tests: 149 passed, 149 total`.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this report):
+```
+ commands/next.md              |   4 +
+ commands/release.md           |  13 ++
+ docs/backlog-board/bands.yaml |  14 --
+ feature-catalog.yaml          |  16 +-
+ framework/DECISIONS.md        |  25 +++
+ framework/workflow.md         |  60 +++++-
+ guards/merge-token.test.js    | 426 +++
+ guards/next-report.test.js    |   8 +-
+ scripts/installed-scripts.txt |   1 +
+ scripts/main-status.mjs       |   5 +-
+ scripts/merge-token.mjs       | 409 +++
+ scripts/next.mjs              |   3 +
+ templates/README.md           |   8 +
+```
+Every file is in File Structure; this plan file is the fourteenth. Worktree used: `../tropis-merge-turns`, the only checkout touched. `merge-token.mjs` is committed with the executable bit, like `main-status.mjs`.
+
+Named source: none. I worked from this repository's `main-status.mjs`, `plan-overlap.mjs`, their tests, and the plan's description of FW-049; no outside code.
+
+### Judgment calls
+
+- Marker commit for a hold without `--holder`: `git config user.name` (so the global config's name is used when the repository sets none).
+- A take that cannot find the marker's tree, or whose holder is unusable, exits 2 at once. Read errors count to three; create errors count to three separately, so a create that always fails does not loop forever while reads succeed.
+- After a release push is refused with `stale info`, the second read reports free or held-by-another as `release` does; if the same holder holds a different commit it says the token changed and exits 2.
+- A held marker whose message has no `holder:` line reads as held by `(unknown)`.
+- `tokenStatus` takes an optional `ref` so the status command honours `--ref`.
+- The faked-GitHub tests use a node-script `gh` stub (one JSON state file), not a bash one.
+- Added one edit the plan did not list: removed `blockedBy` from the shipped entry in `feature-catalog.yaml`, because `catalog-entries.test.js` refuses it on a shipped entry (the same file, in File Structure).
+- Changed the plan's verbatim workflow text in three places (Task 7, above).
+
+### What the plan got wrong
+
+- Task 4 step 1: a plain push is not "not a lock" for creating a ref with a new commit. Git sends the absent old value and the server refuses the second create, so a plain or forced push both stay green; the plan's note about `Everything up-to-date` only applies to pushing the same sha. The test needed a server-side delay to race at all.
+- Task 3's self-check cannot pass before Task 5, because the document cases read Task 5's text.
+- The workflow text did not say how a session on `main` releases after the merge; found by the fresh-agent check.
+- `catalog-entries.test.js` refuses `blockedBy` on a shipped entry; the plan said to leave only `refs` alone and did not list it.
+- Task 1 step 4 asked for a live branch with a slash in its name; origin had none, so that read was not exercised against GitHub (the script encodes each path segment).
+
+### Outstanding
+
+- Nothing blocks review. The change has no screen, so there is no developer check.
+- A cloud session's release by push is still unproven, as FW-049 says; the API fallback is tested only against the stub.
+- The decision is numbered FW-052; renumber if `main` has taken it by merge time.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session with git 2.49.0, node v22.15.0 and Jest from the
+self-check's install, on macOS 26.2, arm64.
+
+- `bash scripts/check-blueprint.sh` on `32cea47`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` Run again after the review fix below, with the same last line.
+- `npm --prefix .tropis test`: `Tests: 149 passed, 149 total`.
+- `git diff --stat origin/main...HEAD`: the fourteen files of *File Structure*, nothing
+  else; base `2fe5011`, the claim's merge.
+- `guards/merge-token.test.js` alone, in a scratch export of `HEAD`: 25 passed. Each of
+  these mutations, applied alone and reverted, turned it red: `release` skipping the
+  holder comparison (3 failed); the token's age always read as 0 minutes (1 failed, the
+  stale case). Dropping the lease from the release push (a plain delete) stayed green:
+  see *Found*.
+- The handover's diagnosis of mutation 1 was checked against how git's receive-pack
+  works: a push sends the old value the client was advertised, and the server refuses
+  the update when the ref no longer has it, forced or not. So a lost race is refused for
+  any push form against a git server, and the test needed the `pre-receive` delay to make
+  both sessions push at all. It holds; the design keeps the lease form, as FW-049 says.
+- The live check on GitHub (Task 6) and the fresh-agent check (Task 7) were not re-run;
+  their records (tool, version, platform, every command and its output) are in the
+  handover. `git ls-remote origin 'refs/tropis/*'` printed nothing at review.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The email
+addresses are `example.com` test identities, and the holder names are invented.
+
+- One line of the new *The merge token* section ran past the file's width, and its
+  sentence on releasing from another branch read "A release names the branch by the one
+  you are on". Fixed on the branch by the reviewer: reworded to "Without `--holder`, a
+  release acts for the branch you are on" and rewrapped, with the same meaning, and a
+  line in the Branching bullet rewrapped. Mechanical; the self-check above ran after it.
+- No test exercises the lease on the release push. It guards one race: the token broken
+  and taken by someone else between a release's read and its push. That cannot be
+  staged without an injection point, and the spike showed on GitHub that the lease
+  refuses a stale holder (FW-049). Accepted as it is.
+- The executor removed `blockedBy` from the shipped entry, which `catalog-entries`
+  requires; the plan should have said so. Correct call.
+
+### Outstanding disposition
+
+- FW-052: still the next free number on `main` at review; checked again at the rebase for
+  merge.
+- A cloud session's release by push: unproven, as FW-049 already records, with the probe
+  to settle it in the sprint design's evidence section. No new entry: the sprint entry
+  that would start team members in the cloud owns it when it is shaped.
+- The slash-named branch read for the stale judgement was not exercised live, because
+  `origin` had no such branch: dropped, since the script encodes each segment and the
+  stub case covers the reply it reads.
+- No screen, so no developer check.
+
+### Learnings routed
+
+- The workflow text the plan gave verbatim did not say how a session on `main` releases
+  after the merge; the fresh-agent check found it and the executor fixed the wording.
+  That is the check working as designed; not routed further.
+- A plain push is a lock against a git server for creating a ref, contrary to the plan's
+  reading of the spike (which saw only the same commit pushed again report success). This
+  record names it for the next plan from this spec; FW-049's choice of the API is
+  unchanged by it.
+- What this built is the upstream already; nothing is queued.
+
+### Merged because
+
+Every criterion has a test or a recorded live or fresh-agent check, the guard's cases go
+red when the behaviour they name is broken, the live check left no ref behind, and the
+self-check and the installed checks pass.

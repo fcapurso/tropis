@@ -18,7 +18,8 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
 // What the report imports, copied beside it into .tropis/scripts/ in every staged project.
-const REPORT_FILES = ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js', 'main-status.mjs'];
+const REPORT_FILES = ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js', 'main-status.mjs',
+  'merge-token.mjs'];
 
 const HEADER_ONLY_BANDS = `# Bands and verdicts, with no rows yet.
 # A header-only file is not a set of bands.
@@ -288,6 +289,7 @@ Last flushed: 2026-10-01
   // whose bands file is only a header, must print this byte for byte. The first line is
   // the main branch's status, which cannot be asked for in a staged project with no origin.
   const EXPECTED_WITHOUT_BANDS = `Main branch: could not tell — no remote named origin.
+Merge token: could not tell — no remote named origin.
 
 == Product work ==
 
@@ -869,6 +871,7 @@ ${blockedBy ? `  blockedBy:\n    - ${blockedBy}\n` : ''}  refs: ${spec ? `\n    
       writeFileSync(join(dir, 'bin/gh'), `#!/usr/bin/env bash
 case "$1 $2" in
   "api repos/{owner}/{repo}") echo '{"default_branch":"main"}' ;;
+  "api repos/{owner}/{repo}/git/ref/tropis/merge-token") echo '{"message":"Not Found","status":"404"}' >&2; echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
   "run list") echo '[{"status":"completed","conclusion":"failure","headSha":"bad0000aaaa","url":"https://github.com/acme/example/actions/runs/1","createdAt":"2026-10-31T11:00:00Z","displayTitle":"break it"}]' ;;
   *) echo "stub gh: unexpected call: $*" >&2; exit 99 ;;
 esac
@@ -880,8 +883,9 @@ esac
         encoding: 'utf8',
       });
       expect(stderr).toBe('');
-      expect(stdout.split('\n').slice(0, 5)).toEqual([
+      expect(stdout.split('\n').slice(0, 6)).toEqual([
         'Main branch: red — the pipeline failed on bad0000 (break it). Run: https://github.com/acme/example/actions/runs/1',
+        'Merge token: free.',
         '',
         '== Product work ==',
         '',

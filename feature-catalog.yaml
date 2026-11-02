@@ -4948,9 +4948,17 @@
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-01-merge-token-can-live-on-github.md
+# Shipped by docs/superpowers/plans/2026-11-01-merges-take-turns-under-one-token.md.
+# Criterion 1 - merge-token.test.js (takes and shows it held, the simultaneous takes five
+# rounds running against a local origin, the waiting take) and the plan's live check on
+# GitHub. Criterion 2 - the read-before-deciding case against a faked GitHub origin.
+# Criterion 3 - the release-only-for-its-holder cases. Criterion 4 - the STOPPED cases.
+# Criterion 5 - the hold case, the document case for /release, and the fresh-agent check.
+# Criterion 6 - the stale cases and the next-report line. Criterion 7 - the document cases
+# and the fresh-agent check in the plan's handover.
 - id: merges-take-turns-under-one-token
   title: Pull requests open and merge one at a time, under a token any session can take
-  status: building
+  status: shipped
   value: Sessions working in parallel stop forcing each other to rebase and re-run their
     checks every time one of them lands on a main branch that requires branches up to
     date. A session takes the token when its branch is reviewed, rebases once, merges,
@@ -4981,9 +4989,9 @@
       moments.
   type: feature
   layer: product
-  blockedBy:
-    - merge-token-can-live-on-github
-  modules: []
+  modules:
+    - scripts/merge-token.mjs
+    - guards/merge-token.test.js
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-01-merges-take-turns-under-one-token.md

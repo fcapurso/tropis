@@ -11,6 +11,10 @@ failed, or that it could not tell and why. Report that line first, as it stands.
 main branch comes before anything in the backlog: say so before suggesting any entry,
 and that repairing it, through a pull request, is the next piece of work.
 
+Its second line says who holds the merge token and for how long, or that it is free
+(`.claude/framework/workflow.md`, *The merge token*). Report it as it stands. A token
+it marks stale is broken only on the developer's word, with the command the line names.
+
 Then — because the backlog cannot know these — also check:
 
 ```bash

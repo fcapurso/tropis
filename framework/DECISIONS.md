@@ -1659,3 +1659,28 @@ code is `blockedBy`).
 **Consequences:** Two plans touching one file in unrelated places wait for each other. A
 session that ignores the check still cannot put a red or out-of-date change on a gated
 `main`; it only rebases more. Source: the sprint design of 2026-11-01, sections 4 and 5.
+
+## FW-052: Pull requests take turns under one merge token, and nothing depends on it
+
+**Date:** 2026-11-02 · **Status:** Accepted.
+
+**Decision:** Every pull request opens under the token, whoever opens it. The ref is
+`refs/tropis/merge-token`. The holder is the branch, or git's `user.name` for a
+developer's hold. Where `origin` is on GitHub the take goes through the API (FW-049);
+elsewhere it is the lock form of a push. A release is by the holder only, by a push
+naming the commit, falling back on GitHub to the API's delete after reading the marker.
+A failed take reads the marker before deciding. A take waits 30 seconds between tries
+and stops after 60 minutes naming the holder. A token held by a branch with no open pull
+request and no push for 30 minutes is shown as stale and broken only on the developer's
+word; a hold is never stale. `/release` holds it from its first pull request to its last.
+
+**Rejected:** A pipeline check that refuses a pull request opened without the token (the
+main branch's safety would then depend on it, and a person merging on GitHub would be
+refused). Breaking a stale token automatically (a slow holder would lose it mid-merge,
+with nobody told). Keeping the rule in a sprint session (a session started by hand would
+not follow it). The API alone (its concurrency could not be tested without GitHub, and an
+origin elsewhere would have no lock).
+
+**Consequences:** A waiter whose holder died stops after an hour and says so. A cloud
+session's release is unproven, as FW-049 says. Source: the sprint design of 2026-11-01,
+section 3, and FW-049.
