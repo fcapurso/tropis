@@ -81,8 +81,13 @@ describe('a fresh clone', () => {
 
     expect(existsSync(join(hooks, '__pycache__'))).toBe(false);
     const payload = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'git checkout -b x' } });
+    // A machine that sets either variable would stop Python writing the cache and let the
+    // case pass without testing the hook.
+    const env = { ...process.env };
+    delete env.PYTHONDONTWRITEBYTECODE;
+    delete env.PYTHONPYCACHEPREFIX;
     const r = spawnSync('bash', [join(hooks, 'branch-in-worktree.sh')], {
-      input: payload, cwd: repo, encoding: 'utf8',
+      input: payload, cwd: repo, encoding: 'utf8', env,
     });
     expect(r.error).toBeUndefined();
     expect(r.status).toBe(2); // reached the module load: the branch was refused
