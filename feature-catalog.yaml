@@ -4937,19 +4937,29 @@
 # developer back to step 1 after a merge, with notes drafted before that merge.
 - id: release-notes-cover-a-restaged-commit
   title: When a release goes back to staging for a newer commit, its notes cover what merged since
-  status: idea
+  status: building
   value: The people reading a release's notes learn about every change it ships. Today,
     when /release finds that something merged after staging was checked, or the check
     failed and a fix merged, it sends the developer back to deploy the head of the main
     branch to staging, but the notes were drafted for the earlier commit and nothing
     offers to redraft them, so the release can ship a change its notes never mention.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Every place /release sends the developer back to deploy a newer commit to staging
+      first lists the commits merged since the notes were drafted, with the backlog
+      items they implement.
+    - When one of them changes something for the notes' readers, /release redrafts the
+      notes to cover it, works the bump out again, has the developer confirm, and lands
+      the redraft before printing the staging trigger for the commit that carries it.
+    - When none of them does, /release says so, naming them, and keeps the notes.
+    - A fresh agent running /release after a failed check and a merged fix proposes the
+      redraft before the staging trigger, recorded with its tool and version.
   type: bug
   layer: product
   modules:
     - commands/release.md
   refs:
     - docs/superpowers/plans/2026-11-01-release-flow.md
+    - docs/superpowers/plans/2026-11-03-release-notes-cover-a-restaged-commit.md
 # 2026-11-01, the sprint epic, agreed with the developer: the way of working run in this
 # repository that day (a queue agreed with the developer, one delivery session per entry,
 # a merge token, parallel starts on dependencies) made a feature every project has. The
