@@ -321,3 +321,55 @@ text at v0.2.0 as the baseline; it does, so no adjustment was needed.
 - The one-off baseline failure above (sprint ref lock race) is not diagnosed; two later
   full self-checks were green.
 - The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, Linux x86_64.
+
+### Checks re-run
+
+- `guards/take-version.test.js` alone, staged from `git archive HEAD` with the
+  self-check's jest: `Tests: 57 passed, 57 total`.
+- The same guard with `scripts/take-version.mjs` put back as it was at `2981561` (the fix
+  reverted, tests kept): `Tests: 2 failed, 55 passed, 57 total` — the two † cases go red.
+- `guards/check-version.test.js` alone: `Tests: 11 passed, 11 total`.
+- Scope: `git diff --stat 2981561...HEAD` lists the eight files in *File Structure*
+  (`docs/backlog-board/index.html` untouched).
+- The full self-check was not re-run by the reviewer; the executor's run on the handover
+  commit passed, and the pipeline re-runs it on the pull request.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The code matches the plan: the dropped rule texts are read before the loop, an own
+  rule is written only when the project edited the text or has an additions file and
+  had an area for it, and the additions file and the kept text are removed. Nothing else
+  found.
+
+### Outstanding disposition
+
+- The executor's one failed clean baseline at Task 0 (`a run ends › † SHIPPED when the
+  repository agrees…`, `cannot lock ref 'refs/remotes/origin/tropis/sprint'`) happened
+  while the executor had a second jest process running in the same session; it passed in
+  both later full runs. Unexplained, and not made a backlog item: a run with two jest
+  processes at once is not a clean run, and the shelved `self-check-clean-baseline-flake`
+  says a recurrence on a clean run is what reopens it.
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- No new rule. The overlap check, run on four plans claimed in one change, counted the
+  other three as already building and wrote circular `Merges after` lines, and read a
+  parenthetical after the field as ids; the specifying session corrected them by hand
+  before the claim landed. One occurrence, from claiming a bundle in one change; noted
+  here rather than routed.
+
+### Merged because
+
+An update whose release drops a rule the project edited or added to completes and keeps
+the project's text as its own rule, the two cases that pin it go red without the fix,
+and both guards pass.
