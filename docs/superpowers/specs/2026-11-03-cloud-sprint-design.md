@@ -1,6 +1,6 @@
 # A sprint runs from a cloud session — design
 
-**Date:** 2026-11-03 · **Status:** evidence gathered; the design waits on the probe below
+**Date:** 2026-11-03 · **Status:** the probe is answered (*The answer*, FW-063); the pieces after it are to plan
 
 ## Why
 
@@ -61,20 +61,40 @@ Can a cloud session write to GitHub at all, by some route Tropis can use? Three 
 If none works, a sprint cannot merge from the cloud, and the rest of this epic is not
 worth building. If one does, the pieces below follow from it.
 
+## The answer
+
+The probe ran on 2026-11-03, with Claude Code 2.1.317 in a Claude Code cloud session,
+Linux x86_64, against this repository, on a probe ref and a throwaway pull request that
+was closed unmerged.
+
+| Route | Result |
+|---|---|
+| The token as a ref under `refs/tropis/`, by git push | Refused: every push outside `refs/heads/` answers HTTP 403 |
+| The token through the API (`merge-token.mjs take`) | Refused, HTTP 403 |
+| The token as a branch, by git push with a lease | Works: taken with an empty lease, a second take refused (`stale info`), released by replacing its commit with one saying `holder: none`; deleting it refused |
+| A pull request through the session's own GitHub tools | Works: open, auto-merge as a squash on and off, branch update, close. The auto-merge tool takes no subject or body |
+| Waiting by subscribing to the pull request | Works: the session was woken on auto-merge being turned off and on each check suite completing |
+| A setting that allows `gh` writes | None the session could see; its own instructions name the GitHub tools as the route for writes |
+
+The developer chose, as FW-063 records: the token becomes a branch for every session,
+local and cloud, and a squash takes its message from the pull request's title and
+description, set in this repository's settings on 2026-11-03 and by Tropis's setup for
+every project.
+
 ## The pieces, in order
 
-1. The probe above.
-2. A cloud team member takes the token and merges its pull request by the route the
-   probe found, and the workflow says so for a session where `gh` cannot write.
-3. The sprint's record lives on GitHub, beside the merge token, so a resumed sprint
-   session finds it.
-4. A wait that may outlast the container is kept by a scheduled check that wakes the
-   session, rather than one long background command.
+1. The probe above. Done.
+2. The token becomes a branch for every session, and a cloud team member takes it and
+   merges its pull request through its own GitHub tools, with the workflow saying so for
+   a session where `gh` cannot write (FW-063).
+3. The sprint's record lives on GitHub, on a branch as the token does, so a resumed
+   sprint session finds it.
+4. A wait that may outlast the container is kept by a subscription or a scheduled check
+   that wakes the session, rather than one long background command.
 5. A cloud session can be told which subscriptions the developer holds without anything
    personal being committed, for instance through a variable the cloud environment sets.
 6. A fresh clone says to run `npm --prefix .tropis ci` when the installed packages are
-   missing, rather than failing on an import.
-7. Python's cache under `.tropis/hooks/` is ignored.
+   missing, rather than failing on an import. Shipped 2026-11-03.
+7. Python's cache under `.tropis/hooks/` is not written. Shipped 2026-11-03.
 8. The workflow says what a cloud session does with the branch it is assigned.
 
-Pieces 6 and 7 are worth doing whatever the probe finds: they hit any fresh clone.

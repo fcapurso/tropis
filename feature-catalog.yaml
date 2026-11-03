@@ -5602,9 +5602,12 @@
 # the merge token nor open or merge a pull request. The evidence and the pieces in order
 # are the spec in refs. The probe comes first; the pieces it blocks are not worth
 # building unless it finds a route. Acceptance criteria are written when each is shaped.
+# Shipped 2026-11-03 by the probe in a Claude Code cloud session; the answer is in the
+# spec's section The answer, and the route the developer chose is FW-063. A spike, so
+# no modules.
 - id: cloud-session-can-write-to-github
   title: Find out how a cloud session can take the merge token and merge a pull request
-  status: idea
+  status: shipped
   value: Before anything is built to run a sprint from the cloud, we know whether a cloud
     session can take and release the merge token, open a pull request, set it to merge
     and wake when it has, by a route Tropis can use - a git push of the token's ref, the

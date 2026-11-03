@@ -51,18 +51,6 @@ capture-at-write-tests-pass-under-load:
   seen:
     status: idea
     blockers: []
-cloud-session-can-write-to-github:
-  band: A
-  value: 4
-  valueWhy: Decides whether a sprint can run from a phone at all, and every other piece
-    of the epic waits on it.
-  effort: 2
-  effortWhy: Three routes to try from one cloud session, each a few commands.
-  verdict: "Do first: it blocks the rest of the cloud-sprint epic, and its answer may be
-    that none of it is worth building."
-  seen:
-    status: idea
-    blockers: []
 cloud-session-knows-the-subscriptions:
   band: B
   value: 2
@@ -73,7 +61,7 @@ cloud-session-knows-the-subscriptions:
   verdict: "Small; do it with the merge piece once the probe has found a route."
   seen:
     status: idea
-    blockers: [cloud-session-can-write-to-github]
+    blockers: []
 cloud-session-works-on-a-plan-branch:
   band: B
   value: 2
@@ -86,7 +74,7 @@ cloud-session-works-on-a-plan-branch:
     finds."
   seen:
     status: idea
-    blockers: [cloud-session-can-write-to-github]
+    blockers: []
 cloud-team-member-merges-its-work:
   band: B
   value: 4
@@ -97,7 +85,7 @@ cloud-team-member-merges-its-work:
   verdict: "The heart of the epic. Plan it as soon as the probe names the route."
   seen:
     status: idea
-    blockers: [cloud-session-can-write-to-github]
+    blockers: []
 cloud-waits-wake-on-a-schedule:
   band: B
   value: 3
@@ -110,7 +98,7 @@ cloud-waits-wake-on-a-schedule:
     only items with no blocker."
   seen:
     status: idea
-    blockers: [cloud-session-can-write-to-github]
+    blockers: []
 command-slots-spike:
   band: A
   value: 5
@@ -383,7 +371,7 @@ sprint-record-outlives-its-session:
     the probe, which says whether such a ref can be written from the cloud."
   seen:
     status: idea
-    blockers: [cloud-session-can-write-to-github]
+    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4

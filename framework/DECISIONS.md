@@ -2022,3 +2022,45 @@ one rule). Asking the tool at launch (Claude Code has no list command).
 reads it as before, and `launch` says the names are missing until
 `/refresh-model-tiers` runs. Completes FW-060 for FW-059's team members. Source: the
 backlog item `launched-team-members-run-on-the-large-pick`.
+
+## FW-063: The merge token is a branch, and a cloud session merges through its own GitHub tools
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`cloud-team-member-merges-its-work`.
+
+**Decision:** The merge token moves from `refs/tropis/merge-token` to a branch, the same
+one for every session wherever it runs, so a session on the developer's machine and one
+in the cloud take turns under one token. Taking it is a push with an empty lease, as now.
+Releasing it replaces its commit with one whose message says `holder: none`, so a free
+token is that branch with that commit, never a missing ref. A session where `gh` cannot
+write, such as a Claude Code cloud session, opens, updates and sets its pull request to
+merge with its own GitHub tools, and waits for it by subscribing to the pull request's
+activity. A squash merge takes its message from the pull request's title and
+description, which this repository's settings now say (`squash_merge_commit_title`
+`PR_TITLE`, `squash_merge_commit_message` `PR_BODY`, set 2026-11-03), so a session whose
+tool cannot pass a subject and body sets them as the pull request's title and
+description. Tropis's setup sets the same for every project.
+
+**Evidence:** A probe on 2026-11-03, Claude Code 2.1.317 in a Claude Code cloud session,
+Linux x86_64, on this repository. Every push to a ref outside `refs/heads/` was refused
+with HTTP 403, and so was every write through `gh`. A branch used as the token was taken
+with an empty lease, refused a second take, and was released by replacing its commit;
+deleting it was refused. The session's GitHub tools opened a pull request, set
+auto-merge as a squash and turned it off, updated its branch and closed it, and a
+subscription woke the session on each check result. The tool that sets auto-merge takes
+no subject or body. No setting the session could see allows `gh` writes. The findings
+are in `docs/superpowers/specs/2026-11-03-cloud-sprint-design.md`, *The answer*.
+Source: none in particular.
+
+**Rejected:** A token on `refs/tropis/` for local sessions and a branch for cloud ones
+(two tokens would not exclude each other). Cloud team members merging without the token
+(they would race and re-run checks, which FW-052 exists to stop). Each cloud team member
+squashing its branch to one commit before its pull request (a step on every merge, where
+one repository setting does it).
+
+**Consequences:** Supersedes FW-049's choice of a ref outside heads and tags. The token
+branch shows in the branch list; the main branch's ruleset does not cover it, and
+automatic deletion of merged branches never touches it because it is never a pull
+request's head. A cloud session cannot delete a branch, so it never deletes the token.
+Projects already set up take the new token location, and the squash setting, through
+their update.
