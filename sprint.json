@@ -41,6 +41,10 @@
       "id": "readme-gives-an-overview-not-a-feature-list",
       "points": 2,
       "bundle": "release-writing"
+    },
+    {
+      "id": "large-tier-admits-on-judgment-evidence",
+      "points": 2
     }
   ],
   "baseline": [
