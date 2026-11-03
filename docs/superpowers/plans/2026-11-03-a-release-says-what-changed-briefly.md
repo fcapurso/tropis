@@ -178,3 +178,83 @@ sibling `../tropis-brief-notes-build`.
 ### Outstanding
 
 - No screen. The next real `/release` draft is the developer's check.
+
+## Review record
+
+Reviewed by a fresh reviewer: Claude Code 2.1.317, model claude-sonnet-5-5, on Linux
+x86_64 (`uname -sm`); git 2.43.0, node v22.23.4. It had only this repository and the
+branch `plan/a-release-says-what-changed-briefly`, and did not write the change.
+
+### Checks re-run
+
+- `guard.sh . guards/release.test.js` (working tree copied to a temporary directory, jest
+  there): `Tests: 83 passed, 83 total`.
+- Re-broken: `commands/release.md` replaced with `origin/main`'s copy, same guard:
+  `Tests: 7 failed, 76 passed, 83 total` (the seven new phrases). Restored from a backup
+  copy; `git status --short` printed nothing afterwards.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 167 passed,
+  167 total`.
+- `git diff origin/main...HEAD --stat`: five files, all in the plan's File Structure.
+- A search of the added lines for home paths, hostnames and email-like strings found
+  nothing; no names appear. A search of the source folders for the two replaced phrases
+  finds them only in `feature-catalog.yaml` (an older shipped item's description, a
+  record), the plan, and the installed `.claude/commands/release.md`, which is the last
+  release and not edited.
+- Read the commit body: it records the probe's tool, version, model, OS and architecture
+  and its three runs, and the doc closeout.
+
+### Found
+
+- **The wording is correct and consistent.** Item 2 keeps by-hand steps in full and says
+  nothing below shortens them; item 3 sets one or two sentences, bold lead counted, how
+  left to a link; item 4 keeps only a noticed correction and sends every other fix to
+  `Dropped:`, which Stage 4's printed block already has ("each change left out of the
+  notes, and why"). The *While writing* bullet agrees with item 3, and with the existing
+  "Leave out a change that changes nothing for them". Nothing in Stage 4, Stage 5 or Step
+  1 contradicts it. The section *Back to staging for a newer commit* is not on this
+  branch (the plan it comes from, `release-notes-cover-a-restaged-commit`, has not
+  landed, and this plan merges after it); its redraft "to Stage 3's shape" stays true
+  either way. Each backlog criterion maps to wording and a guard phrase; criterion 4 maps
+  to the commit body.
+- **The guard is sound.** Each new phrase is a contiguous run in the source and is not
+  split by emphasis (the bold ends after the phrase), whitespace collapses as before, and
+  seven of the new assertions fail against the old command. No guard was lowered; two
+  assertions were replaced by seven.
+- **Cosmetic, not a defect:** in `commands/release.md` Stage 3 item 3, the line
+  beginning "sentences at most, and a bold lead counts as one of them:** a detail such
+  as a setting, a default or" runs to about 112 columns, where the rest wrap near 90. A
+  re-wrap changes no guard result. Left as is; fix it in the next edit of that section.
+- **Cosmetic:** the commit body says the third run had each change "in two" sentences;
+  the handover report says one sentence and a bold lead. Both fit "at most two".
+- **One judgment point, not a defect:** "the how is one link away, in the document that
+  holds it" assumes a document to link to exists for the reader (a notes reader may only
+  have the release page). The same instruction already says to check each path against
+  where the reader has it, so a drafter has the cover it needs; no change.
+- Mechanical defects needing a fix before merge: none.
+
+### Outstanding disposition
+
+- The next real `/release` draft is the developer's check (no screen). Nothing else
+  outstanding. The cosmetic re-wrap above is dropped as not worth a commit of its own,
+  with the reason given.
+
+### Learnings routed
+
+- No rule, decision or architecture change; the command is the durable place. Nothing for
+  the upstream queue: this repository is the upstream, and the lesson (a probe must be
+  told how a bold lead counts) is in the wording itself.
+
+### Merged because
+
+The change does what the backlog item's four criteria ask, the guard fails without it and
+passes with it, the installed release's checks are green, the diff stays inside the plan's
+files and holds no private material, and the fresh-agent check is recorded in the
+commit body. The plan's merge authority is self-merge after this review; it still merges
+after `release-notes-cover-a-restaged-commit`, as its header says, and the rebase onto
+that plan's changes to `commands/release.md` and `guards/release.test.js` re-runs the
+criteria then.
+
+### Fixed after this record, by the author
+
+The over-long line in Stage 3 item 3 is re-wrapped; no word changed, and the guard still
+passes. Self-merged on the reviewer's recommendation, as the plan's merge authority says.

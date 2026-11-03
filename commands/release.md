@@ -189,9 +189,9 @@ anything. Where the log and the backlog disagree about what shipped, the log dec
    now do, in their words, as a bullet under a heading such as "What you can now do":
    "Hooks warn only when they should", not the mechanism that achieves it. The how is
    one link away, in the document that holds it, never a paragraph here. **Two
-   sentences at most, and a bold lead counts as one of them:** a detail such as a setting, a default or
-   an edge case is left to that document, and a change that cannot be said in two
-   sentences is said at the level of what it lets them do.
+   sentences at most, and a bold lead counts as one of them:** a detail such as a
+   setting, a default or an edge case is left to that document, and a change that
+   cannot be said in two sentences is said at the level of what it lets them do.
 4. **A small correction only where someone taking the release would notice it** —
    something they saw go wrong, or that now behaves differently for them — as a
    one-line bullet under a closing heading such as "Smaller corrections". Leave every
