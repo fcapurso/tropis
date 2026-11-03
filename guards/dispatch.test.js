@@ -609,7 +609,7 @@ describe('dispatch names the pick to use', () => {
   it('says so when no subscriptions are recorded', () => {
     const p = withPicks(PICKS);
     try {
-      expect(dispatch(p).stdout).toContain('**Use:** not chosen — which subscriptions you have is not recorded on this machine. Run /refresh-model-tiers.');
+      expect(dispatch(p).stdout).toContain('**Use:** not chosen — which subscriptions you have is not recorded on this machine. Run /refresh-model-tiers, or set TROPIS_SUBSCRIPTIONS.');
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
   });
 
