@@ -6,8 +6,9 @@
  * `node scripts/check-version.mjs <project-root> [--from <version>]`.
  * The tag is the target version. This file is not installed into projects.
  *
- * It takes the release in a scratch clone, with `takeVersion`, then runs the project's
- * checks there. It writes nothing in the project. Exit 0 with a verdict on stdout
+ * It runs the project's checks in a scratch clone on the version it holds, takes the release
+ * there with `takeVersion`, and runs them again: only failures the release causes make the
+ * verdict `not now`. It writes nothing in the project. Exit 0 with a verdict on stdout
  * (including nothing to take), or exit 1 with one `check-version:` line on stderr.
  */
 import {
@@ -233,6 +234,37 @@ function reprefix(message, clone, project) {
 }
 
 /**
+ * Makes the clone's dependencies available and runs the project's suite there into
+ * `resultsPath`. A nested run inherits FRAMEWORK_ROOT and the Jest worker variables, which
+ * would check another tree or skip the suite, so they are removed.
+ * @returns {{ results: object|null, output: string[] }}
+ */
+function runSuite({ project, clone, resultsPath }) {
+  if (!dependencyLink(project, clone).linked) {
+    // The project's own install and suite may take as long as they take: only the
+    // framework's steps have a limit.
+    const hasLock = existsSync(join(clone, '.tropis/package-lock.json'));
+    const installed = run('npm', ['--prefix', '.tropis', hasLock ? 'ci' : 'install', '--no-audit', '--no-fund'], { cwd: clone, timeout: undefined });
+    if (installed.status !== 0) return { results: null, output: tail(`${installed.stdout}\n${installed.stderr}`) };
+  }
+  const env = { ...process.env };
+  delete env.FRAMEWORK_ROOT;
+  for (const key of Object.keys(env)) if (key.startsWith('JEST_')) delete env[key];
+  const tested = run('npm', [
+    '--prefix', '.tropis', 'test', '--', '--json', `--outputFile=${resultsPath}`,
+  ], { cwd: clone, env, timeout: undefined });
+  let results = null;
+  if (existsSync(resultsPath)) {
+    try {
+      results = JSON.parse(readFileSync(resultsPath, 'utf8'));
+    } catch {
+      results = null;
+    }
+  }
+  return { results, output: tail(`${tested.stdout}\n${tested.stderr}`) };
+}
+
+/**
  * @returns {{ status: number, text: string }}
  */
 function checkVersion({ project, from = null }) {
@@ -252,6 +284,19 @@ function checkVersion({ project, from = null }) {
     const cloned = run('git', ['clone', '-q', '--no-hardlinks', project, clone]);
     if (cloned.status !== 0) {
       return { status: 1, text: `check-version: cannot clone ${project}: ${(cloned.stderr || cloned.stdout).trim()}\n` };
+    }
+
+    // The baseline: the project's checks on the version it holds, before the take.
+    const baseline = runSuite({ project, clone, resultsPath: join(tmp, 'baseline.json') });
+    const before = baseline.results === null ? null : failingNames(baseline.results, clone);
+    // A symlink at .tropis/node_modules is untracked, and the take refuses a dirty tree.
+    rmSync(join(clone, '.tropis/node_modules'), { recursive: true, force: true });
+    const left = git(clone, 'status', '--porcelain').stdout.trim();
+    if (left !== '') {
+      return {
+        status: 1,
+        text: `check-version: running the project's checks on the version it holds left changes in the scratch copy: ${left.split('\n').join('; ')}\n`,
+      };
     }
 
     let applied;
@@ -285,64 +330,40 @@ function checkVersion({ project, from = null }) {
     }
 
     const { held, target, breaking, result } = applied;
-    const linked = dependencyLink(project, clone);
-    if (!linked.linked) {
-      // The project's own install and suite may take as long as they take: only the
-      // framework's steps have a limit.
-      const installed = run('npm', ['--prefix', '.tropis', 'install', '--no-audit', '--no-fund'], { cwd: clone, timeout: undefined });
-      if (installed.status !== 0) {
-        return {
-          status: 0,
-          text: render({
-            project, held, target, verdict: 'not now',
-            why: tail(`${installed.stdout}\n${installed.stderr}`),
-            steps: [], release: [], changed: [], settings: [], tests: [], rules: [],
-          }),
-        };
-      }
-    }
-
     const pointed = acceptNewFiles(clone, result.newFiles);
 
-    const resultsPath = join(tmp, 'results.json');
-    // A nested run inherits FRAMEWORK_ROOT and would check that tree instead of the clone.
-    const env = { ...process.env };
-    delete env.FRAMEWORK_ROOT;
-    // The check is itself a Jest test during the self-check. A nested Jest that
-    // inherits the worker id does not run the clone's suite.
-    for (const key of Object.keys(env)) if (key.startsWith('JEST_')) delete env[key];
-    const tested = run('npm', [
-      '--prefix', '.tropis', 'test', '--', '--json', `--outputFile=${resultsPath}`,
-    ], { cwd: clone, env, timeout: undefined });
-
-    let results = null;
-    if (existsSync(resultsPath)) {
-      try {
-        results = JSON.parse(readFileSync(resultsPath, 'utf8'));
-      } catch {
-        results = null;
-      }
-    }
-    if (results === null) {
+    const after = runSuite({ project, clone, resultsPath: join(tmp, 'results.json') });
+    if (after.results === null) {
       return {
         status: 0,
         text: render({
-          project, held, target, verdict: 'not now',
-          why: tail(`${tested.stdout}\n${tested.stderr}`),
+          project, held, target, verdict: 'not now', why: after.output,
           steps: [], release: [], changed: [], settings: [], tests: [], rules: [],
         }),
       };
     }
+    const results = after.results;
 
     const names = failingNames(results, clone);
     const passed = results.numPassedTests ?? 0;
     const failed = results.numFailedTests ?? 0;
-    const testsFailed = failed > 0 || names.length > 0;
+    const caused = before === null ? names : names.filter((name) => !before.includes(name));
+    const already = before === null ? [] : names.filter((name) => before.includes(name));
+    const testsFailed = before === null ? (failed > 0 || names.length > 0) : caused.length > 0;
     const changed = changedLines(result);
     const settings = settingsThatDoNotFit(clone, result);
     const steps = stepsFor(held, breaking, changed, settings);
     const verdict = testsFailed ? 'not now' : (steps.length > 0 ? 'safe with these steps' : 'safe');
     const why = testsFailed ? ['the project\'s checks failed against the release'] : [];
+    const testLines = [`${passed} passed, ${failed} failed`];
+    if (caused.length > 0) testLines.push('failing because of the release:', ...caused.map((name) => `  ${name}`));
+    if (already.length > 0) {
+      testLines.push('already failing before the release, not counted against it:', ...already.map((name) => `  ${name}`));
+    }
+    if (before === null) {
+      testLines.push(`the checks could not be run on ${held} first, so every failure is counted against the release`);
+    }
+    testLines.push(...pointed.map((rel) => `the tests ran with the project's version of ${rel}`));
 
     return {
       status: 0,
@@ -351,11 +372,7 @@ function checkVersion({ project, from = null }) {
         release: releaseLines(result),
         changed,
         settings,
-        tests: [
-          `${passed} passed, ${failed} failed`,
-          ...names,
-          ...pointed.map((rel) => `the tests ran with the project's version of ${rel}`),
-        ],
+        tests: testLines,
         rules: ruleChanges(project, clone, held, target),
       }),
     };
