@@ -252,3 +252,49 @@ lines.
    live check after a release). Commit.
 5. `git push -u origin plan/sprint-record-outlives-its-session`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Darwin) on arm64. Source worked from: none in particular; the read, change and lease-push loop is written against this repository's own `scripts/merge-token.mjs` mechanism (FW-063) and `scripts/sprint.mjs` names.
+
+### Task completion
+
+- Task 0: done. `npm --prefix .tropis ci`, clean tree, baseline `bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1: done. Seven cases added to `guards/sprint.test.js` (the six the plan names plus one: a change overtaken five times refuses with the one line). Run alone before the source change: `Tests: 6 failed, 35 passed, 41 total`. The six that failed: a sprint started in one clone is under way in another; a mark from a team member's clone reaches the sprint session; two changes at once both land; a change that is overtaken every time refuses with one line; end leaves the branch with no record, and a new sprint can start; a local sprint file is carried to origin by the next change.
+- Task 2: done. The record is on `tropis/sprint`; both guards rewritten where they read the local file. `sprint` and `team-member-cli` together: `Tests: 68 passed, 68 total`.
+- Task 3: done. `commands/sprint.md`, `templates/README.md`, `framework/DECISIONS.md` (heading `FW-NNN`, to be numbered at merge).
+- Task 4: done, by hand against a scratch bare origin and two clones (output below).
+- Task 5: done (catalog item shipped, board row removed, this report).
+
+### Verification results
+
+- Final `bash scripts/check-blueprint.sh` on the last commit before this report: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` (An earlier run failed on `private-material`: the placeholder author email and a variable named `read.local` matched; renamed in a follow-up commit, run again green.)
+- `npm --prefix .tropis test`: `Tests: 163 passed, 163 total` (the installed release's checks; it does not exercise this source).
+- Single guards were run with `guard.sh`, a scratch script that does what the self-check does for one guard: `git archive HEAD` into a temp dir, write `{"type":"module"}` as `package.json`, copy `templates/framework-jest.config.js` to `jest.config.js`, link `.self-check/node_modules`, then `node --experimental-vm-modules .self-check/node_modules/.bin/jest --config jest.config.js guards/sprint.test.js guards/team-member-cli.test.js`.
+- Task 4, run by hand (clone A, clone B, bare origin; output trimmed):
+  - A `start e1`: `Sprint: started with 1 backlog items, 3 of 20 effort points; team members start as here.`
+  - B `mark e1 parked testing`: `Sprint: e1 marked parked.`
+  - A `status`: `Sprint: needs you — 1 stopped or parked.` then `  e1 — parked: testing`
+  - A `end`, then A `status`: `Sprint: none under way; run propose, then start.`
+  - `git log --format=%s tropis/sprint` on the origin: `sprint: ended`, `sprint: record changed`, `sprint: record changed`; `git ls-tree` of that last commit: empty.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this report): commands/sprint.md, docs/backlog-board/bands.yaml, feature-catalog.yaml, framework/DECISIONS.md, guards/sprint.test.js, guards/team-member-cli.test.js, scripts/sprint.mjs, templates/README.md: 8 files, 393 insertions, 114 deletions. Every file is in the File Structure table; `docs/backlog-board/index.html` did not change. Worktree used: the sibling `../tropis-sprint-record` of the `tropis` checkout.
+
+### Judgment calls
+
+- `readSprint` returns `{ sprint, sha, fromLocal, ... }` and is exported with `updateSprint`; `sprintPath` is kept for the team folder and the local file.
+- The overtaking case (test 3) is driven through the exported `updateSprint`: the change function, on its first call, has another clone make its own change, so the first push is refused and the change runs again on the other's record. No test-only seam in the script.
+- Origin unreachable: a read uses the last fetched copy of the branch (silently; the backlog read already names a failed fetch); a change refuses with `Sprint: could not reach origin, so the sprint record was not changed.` The plan did not say; the GitHub-origin cases in `status` need the read to work offline.
+- A sprint command run where git has no identity writes the record under a stand-in author (`Tropis sprint`, example.com address).
+- Retry is on any push refusal matching stale info, fetch first, already exists, non-fast-forward or rejected; any other push failure stops with the first line of git's error.
+
+### What the plan got wrong
+
+- Test 6 (without an origin the record stays local) cannot fail before the change: it describes behaviour that already held, so it is a regression case, not a red-then-green one.
+- The plan's list of test 3's two ways (hook or `updateSprint`) was fine; the plan did not list that a hostname-shaped name (`read.local`) or any email in the script trips `private-material`.
+
+### Outstanding
+
+No screen. A resumed cloud sprint session finding the sprint under way is the developer's live check after a release. The decision heading is `FW-NNN` and must be numbered at merge; the release-note line is the developer's at `/release`. Nothing was opened as a pull request, no review record written, nothing merged.
