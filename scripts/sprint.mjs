@@ -60,6 +60,7 @@ import YAML from './load-yaml.mjs';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
 import { mergesAfterIds, pickToUse, pickForTool, NO_PICKS_USE } from './plan-binding.js';
 import { bandOf, inRankOrder, isClosed } from './next-work.js';
+import { readSubscriptions } from './subscriptions.js';
 import { originOnGitHub } from './main-status.mjs';
 import { tokenStatus } from './merge-token.mjs';
 import {
@@ -164,13 +165,8 @@ function sprintPath(root, env) {
 // for a TEAM_TIER plan, from the project's picks and the subscriptions record.
 function teamModelLine(root, env) {
   const picksPath = resolve(root, 'docs/model-picks.md');
-  const subsPath = resolve(dirname(sprintPath(root, env)), 'subscriptions.txt');
   const use = existsSync(picksPath)
-    ? pickToUse(
-      readFileSync(picksPath, 'utf8'),
-      TEAM_TIER,
-      existsSync(subsPath) ? readFileSync(subsPath, 'utf8') : null,
-    )
+    ? pickToUse(readFileSync(picksPath, 'utf8'), TEAM_TIER, readSubscriptions(root, env))
     : NO_PICKS_USE;
   const none = use.startsWith('**Use:** not chosen') || use.startsWith('**Use:** none');
   return `Sprint: team members run on the ${TEAM_TIER} tier. ${use}${none ? " Start them on the tool's default model." : ''}`;
@@ -180,11 +176,10 @@ function teamModelLine(root, env) {
 // project's picks and the subscriptions record. See `pickForTool`.
 function teamModelFor(root, env, toolName) {
   const picksPath = resolve(root, 'docs/model-picks.md');
-  const subsPath = resolve(dirname(sprintPath(root, env)), 'subscriptions.txt');
   return pickForTool(
     existsSync(picksPath) ? readFileSync(picksPath, 'utf8') : null,
     TEAM_TIER,
-    existsSync(subsPath) ? readFileSync(subsPath, 'utf8') : null,
+    readSubscriptions(root, env),
     toolName,
   );
 }
