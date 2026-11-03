@@ -24,7 +24,8 @@ things are the way they are.
 ## What it does for you
 
 - **An idea becomes a merged change along one path.** It is captured in the backlog,
-  shaped, planned by one session, carried out by another, reviewed, and merged.
+  shaped, planned by one session, carried out by another, reviewed, and merged, or a
+  team of agent sessions delivers a whole sprint of them at once with `/sprint`.
 - **You see what to do next**, in the terminal or on one page in a browser. Product
   work and work on how the project is run are two streams, each with its own next step:
   dispatch the plan that is waiting, or write one. The backlog sits in four bands, from
@@ -67,9 +68,9 @@ things are the way they are.
   safe to take and why.
 - **Release notes say what a release does for the people who take it**, not which commits
   it contains.
-- **A release can be rehearsed before it is tagged.** It is tried first on a
-  pre-production copy, through the same upgrade production will go through, and
-  production then ships exactly the commit that was checked.
+- **A release can be checked on staging before production.** Deploy to staging puts
+  it through the same upgrade production will go through, and promote to production
+  then ships exactly the commit that was checked.
 
 ## Who it is for
 
@@ -83,8 +84,9 @@ code.
 
 ## What it needs
 
-- **Required on your machine:** `git`, `bash`, `python3` and `node` 18.14 or later. They
-  run Tropis's hooks and checks, and enter none of your project's dependencies. Why these
+- **Required on your machine:** `git`, `bash`, `python3` and `node` 18.14 or later, on
+  an even-numbered version from 20 on (Jest, which runs the checks, refuses 19, 21 and
+  23). They run Tropis's hooks and checks, and enter none of your project's dependencies. Why these
   four, and what you get without `node`, is in
   [`framework/DECISIONS.md`](framework/DECISIONS.md) under *Independent of the project's
   technology, opinionated about its own*.
@@ -114,14 +116,15 @@ If your tool cannot run `/bootstrap`, or you want to see what it does, follow
 ## How it works
 
 Everything lives in your project's repository and is committed: rules, commands and hook
-settings in `.claude/`, Tropis's own code and checks in `.tropis/`, and the backlog,
-designs and plans beside your code. A fresh clone is a working copy.
+settings in `.claude/`, Tropis's own code and checks and your project's settings for it
+in `.tropis/`, and the backlog, designs and plans beside your code. A fresh clone is a
+working copy once `npm --prefix .tropis ci` has run, and says so if it has not.
 
 Three roles share each change. A specifying session writes a plan that carries everything
-its executor needs. An executing agent carries it out and opens a pull request. Every branch,
-whoever creates it, lives in a worktree of its own beside the project's checkout. A developer tries the result before it merges. The cycle is in
-[`framework/workflow.md`](framework/workflow.md), and handing a plan over in
-[`framework/dispatch.md`](framework/dispatch.md).
+its executor needs. An executing agent carries it out and opens a pull request. A
+developer tries the result before it merges. Every branch, whoever creates it, lives in
+a worktree of its own beside the project's checkout. The cycle is in [`framework/workflow.md`](framework/workflow.md), and
+handing a plan over in [`framework/dispatch.md`](framework/dispatch.md).
 
 Rules are delivered by the area of the code being touched: Claude Code loads a rule when
 the agent first touches a file in its area, and Cursor attaches a copy generated for it
@@ -147,14 +150,15 @@ fixes and your scripts fill, described in the operator guide your project gets a
 - **`/idea`** adds an entry to the backlog; **`/feature`** moves it along
   `idea → shaped → building → shipped`. An entry can also be parked on purpose, or
   dropped when nobody will do it, and the board then shows it as closed.
+- **`/sprint`** plans a sprint with you and starts the team that delivers it.
 - **`/dispatch`** prints the prompt that hands a plan to an executing agent, and
   **`/manual-check`** writes down a check only a person can do and records how it went.
 - **`/capture-learning`** decides where a lesson belongs: a rule, a decision, or a
   suggestion for Tropis itself, which **`/flush-upstream`** later sends as pull requests
   under a name you choose, so a private project's own name never appears in them.
 - **`/refresh-readme`** brings the README up to date; **`/release`** drafts release notes
-  if your project ships versions; **`/refresh-model-tiers`** updates which AI model
-  `/dispatch` suggests for each kind of plan.
+  and guides each step if your project ships versions; **`/refresh-model-tiers`** updates
+  which AI model `/dispatch` suggests for each kind of plan.
 - **`node .tropis/scripts/pipeline.mjs run <stage>`** runs one pipeline stage on your
   machine the way CI runs it.
 - **`/update`** takes a new Tropis release on its own branch, after telling you whether it
@@ -166,11 +170,12 @@ fixes and your scripts fill, described in the operator guide your project gets a
 ## Where it stands
 
 - **Working today:** setup in a project's own repository, the plan-and-review cycle,
-  rule delivery in Claude Code and Cursor, the backlog report and board, versioned
-  releases with an update command and an optional rehearsal before each one, a README
-  kept current, one pipeline for every project with an optional environment per pull
-  request, and a main branch gated by its host, whose red is reported to whoever merged
-  and whoever starts next. Tropis is developed with its own last release installed.
+  rule delivery in Claude Code and Cursor, the backlog report and board, sprints run by a
+  team of agent sessions on your machine or in the cloud, versioned releases with an
+  update command and an optional deploy to staging before each one, a README kept
+  current, one pipeline for every project with an optional environment per pull request,
+  and a main branch gated by its host, whose red is reported to whoever merged and
+  whoever starts next. Tropis is developed with its own last release installed.
 - **Before 1.0.** A release that needs you to do something by hand raises the middle
   number, and its notes say what to do first.
 - **Built from two projects, not a theory.** The layer grew in one real project and was
@@ -178,8 +183,7 @@ fixes and your scripts fill, described in the operator guide your project gets a
   language, a platform and a developer, which limits what that proves.
   [docs/history/PORTABILITY-NOTES.md](docs/history/PORTABILITY-NOTES.md) records what
   was kept, what was left behind, and what the evidence does not cover.
-- **Not yet:** running without `node`, and parking a lesson instead of turning it into a
-  rule, are in the backlog and set aside for now.
+- **Not yet:** running without `node` is in the backlog and set aside for now.
 
 ## Where to go next
 
