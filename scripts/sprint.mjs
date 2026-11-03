@@ -220,7 +220,7 @@ function recordAt(root, env, sha) {
  */
 export function readSprint(root, env) {
   if (!hasOrigin(root, env)) {
-    return { sprint: readLocalSprint(root, env), sha: null, fromLocal: false, local: true };
+    return { sprint: readLocalSprint(root, env), sha: null, fromLocal: false, noOrigin: true };
   }
   const tracking = `refs/remotes/origin/${SPRINT_BRANCH}`;
   const listed = git(root, env, ['ls-remote', 'origin', SPRINT_REF]);
@@ -247,8 +247,8 @@ function commitRecord(root, env, record, parent) {
   if (git(root, env, ['var', 'GIT_AUTHOR_IDENT']).status !== 0
     || git(root, env, ['var', 'GIT_COMMITTER_IDENT']).status !== 0) {
     Object.assign(lone, {
-      GIT_AUTHOR_NAME: 'Tropis sprint', GIT_AUTHOR_EMAIL: 'sprint@tropis.invalid',
-      GIT_COMMITTER_NAME: 'Tropis sprint', GIT_COMMITTER_EMAIL: 'sprint@tropis.invalid',
+      GIT_AUTHOR_NAME: 'Tropis sprint', GIT_AUTHOR_EMAIL: 'sprint@example.com',
+      GIT_COMMITTER_NAME: 'Tropis sprint', GIT_COMMITTER_EMAIL: 'sprint@example.com',
     });
   }
   const step = (args, input) => {
@@ -283,7 +283,7 @@ export function updateSprint(root, env, change) {
   for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
     const read = readSprint(root, env);
     const next = change(read.sprint);
-    if (read.local) {
+    if (read.noOrigin) {
       const path = sprintPath(root, env);
       if (next === null) {
         rmSync(path, { force: true });
