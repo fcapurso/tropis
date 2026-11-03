@@ -17,6 +17,11 @@
  *       [--interval <seconds>] [--timeout <minutes>] holder, 3 the holder turned stale, or
  *                                                    the --timeout (optional, no default)
  *                                                    passed, 2 it could not be taken
+ *   merge-token.mjs take [--holder <name>] [--hold] --once
+ *                                                    one check, for a session that wakes
+ *                                                    itself on a schedule: as take, but
+ *                                                    where take would wait it exits 5 with
+ *                                                    `Still waiting: ...`; not with --timeout
  *   merge-token.mjs release [--holder <name>] [--hold]  exit 0 released or free, 1 held by
  *                                                    another, 2 it could not be released
  *   merge-token.mjs break --holder <name>            as release, for whoever is named
@@ -283,7 +288,7 @@ function judgeStale(ctx, marker, minutes, now) {
  * @returns {Promise<{ exit: number, line: string }>}
  */
 export async function take(root, {
-  env = process.env, ref, holder, hold = false, intervalMs = 30000, timeoutMs = Infinity,
+  env = process.env, ref, holder, hold = false, intervalMs = 30000, timeoutMs = Infinity, once = false,
   now = Date.now, sleep: pause = sleep,
 } = {}) {
   const ctx = open(root, env, ref);
@@ -309,6 +314,9 @@ export async function take(root, {
       return { exit: 0, line: `${LINE} already held by ${who.holder}; keeping it.` };
     }
     if (marker.state === 'held') {
+      if (once && !judgeHolder(ctx, marker, now)) {
+        return { exit: 5, line: `Still waiting: the merge token is held by ${marker.holder}.` };
+      }
       if (now() >= deadline) return { exit: 3, line: `STOPPED: waiting for the token, held by ${marker.holder}` };
       if (judgeHolder(ctx, marker, now)) {
         return {
@@ -377,7 +385,7 @@ export function breakToken(root, { env = process.env, ...options } = {}) {
 }
 
 const USAGE = 'usage: merge-token.mjs [status | take | release | break --holder <name>] [--holder <name>] [--hold] '
-  + '[--interval <seconds>] [--timeout <minutes>] [--ref <ref>]\n';
+  + '[--interval <seconds>] [--timeout <minutes>] [--once] [--ref <ref>]\n';
 
 /** The options the command line asks for, or null when it is not understood. */
 function parseArgs(argv) {
@@ -391,6 +399,10 @@ function parseArgs(argv) {
       opts.hold = true;
       continue;
     }
+    if (flag === '--once') {
+      opts.once = true;
+      continue;
+    }
     const value = rest.shift();
     if (value === undefined) return null;
     if (flag === '--holder') opts.holder = value;
@@ -402,6 +414,7 @@ function parseArgs(argv) {
     } else return null;
   }
   if (opts.command === 'break' && opts.holder === undefined) return null;
+  if (opts.once && (opts.command !== 'take' || Number.isFinite(opts.timeoutMs))) return null;
   return opts;
 }
 

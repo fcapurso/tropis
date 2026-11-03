@@ -28,9 +28,11 @@
  *       (for a `session` sprint, start and add also name the team member's model)
  *   sprint.mjs mark <id> planning|parked|stopped|clear [<reason> ...]
  *   sprint.mjs note <id> <text> ...              a decision a team member reports
- *   sprint.mjs wait <id> [--interval <seconds>]  exit 0 when what the entry is blocked
- *       by has shipped, 3 (`PARKED: depends on <id>`) when a blocker was dropped, parked
- *       or stopped, 1 for an id not in the backlog. No time limit; works with no sprint.
+ *   sprint.mjs wait <id> [--interval <seconds>] | [--once]  exit 0 when what the entry is
+ *       blocked by has shipped, 3 (`PARKED: depends on <id>`) when a blocker was dropped,
+ *       parked or stopped, 1 for an id not in the backlog. No time limit; works with no
+ *       sprint. With --once it checks one time and, where the wait would go on, exits 5
+ *       with `Still waiting: ...`, for a session that wakes itself on a schedule.
  *   sprint.mjs brief <id>                        the team member's brief
  *   sprint.mjs launch <id> [--tool claude|cursor] [--model <m>] [--interval <seconds>]
  *       starts the entry's team member in that tool's command line, in print mode, in a
@@ -84,7 +86,7 @@ const COMMANDS = ['propose', 'start', 'add', 'drop', 'mark', 'note', 'wait', 'br
 const PLANS_DIR = 'docs/superpowers/plans/';
 const USAGE = 'usage: sprint.mjs propose [--points <n>] | start <id> ... [--points <n>] [--way session|here|claude|cursor] | '
   + 'add <id> | drop <id> | mark <id> planning|parked|stopped|clear [<reason>] | note <id> <text> | '
-  + 'wait <id> [--interval <seconds>] | brief <id> | launch <id> [--tool claude|cursor] [--model <m>] | '
+  + 'wait <id> [--interval <seconds> | --once] | brief <id> | launch <id> [--tool claude|cursor] [--model <m>] | '
   + 'run <id> --tool <t> (started by launch) | watch | status | report | end';
 const NONE_UNDER_WAY = 'Sprint: none under way; run propose, then start.';
 
@@ -923,7 +925,8 @@ function end(ctx) {
 /**
  * The team member's wait: ends when nothing it is blocked by is open (exit 0), or when a
  * blocker was dropped, parked or stopped (exit 3). It reads the backlog afresh every
- * interval and has no time limit. `print` writes a line as it happens.
+ * interval and has no time limit. With `opts.once` it checks one time and returns exit 5
+ * with a `Still waiting:` line instead of going on. `print` writes a line as it happens.
  */
 async function wait(ctx, opts, print) {
   const id = opts.ids[0];
@@ -944,6 +947,12 @@ async function wait(ctx, opts, print) {
     if (!open.length) {
       return { exit: 0, lines: [`Sprint: ${id} can start — nothing it is blocked by is still open.`] };
     }
+    if (opts.once) {
+      return {
+        exit: 5,
+        lines: [`Still waiting: ${id} is blocked by ${open.join(', ')}, which ${open.length === 1 ? 'has' : 'have'} not shipped.`],
+      };
+    }
     if (!told) {
       print(`Sprint: ${id} waits for ${open.join(', ')} to ship.`);
       told = true;
@@ -963,6 +972,8 @@ function parseArgs(argv) {
     const word = rest[i];
     if (command === 'mark' || command === 'note' || !word.startsWith('--')) {
       opts.ids.push(word);
+    } else if (word === '--once' && command === 'wait') {
+      opts.once = true;
     } else if (['--points', '--way', '--interval', '--tool', '--model'].includes(word) && rest[i + 1] !== undefined) {
       const value = rest[i + 1];
       i += 1;

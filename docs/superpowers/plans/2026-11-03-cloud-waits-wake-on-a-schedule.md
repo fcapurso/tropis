@@ -251,3 +251,102 @@ the body of Task 3's commit (amend) or a new commit.
    red, fix what it names first.
 5. `git push -u origin plan/cloud-waits-wake-on-a-schedule`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Darwin) on arm64. Source worked from: none in particular; the `--once` flags are written against this repository's own `scripts/sprint.mjs`, `scripts/plan-overlap.mjs` and `scripts/merge-token.mjs`.
+
+### Task completion
+
+- Task 0: done. `npm --prefix .tropis ci`, clean tree, baseline self-check ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1: done. Seven † cases added (sprint 2, plan-overlap 2, merge-token 3, one of the sprint cases covering exit 5 and then 0). Run alone before the change: `Tests: 6 failed, 96 passed, 102 total`. Failing: sprint `wait --once` exits 5 then 0; sprint `wait --once` exits 3 PARKED; merge-token `take --once` exits 3 for a stale holder; merge-token `take --once` takes a free token; and two of the other three, the held-token case and the plan-overlap cases (the `--once` with `--timeout` usage-error case already exited 2 before the change, so it cannot fail first; see below).
+- Task 2: done. Same three guards after: `Tests: 102 passed, 102 total`.
+- Task 3: done. Workflow section and three pointers, sprint command sentence, spec paragraph and piece 4, decision (heading `FW-NNN`, to be numbered at merge). Self-check passed.
+- Task 4: done, by hand (below).
+- Task 5: done, passed on the first run; outcome is in the body of Task 3's commit.
+- Task 6: done.
+
+### Verification results
+
+- Single guards were run with a scratch script that does what the self-check does for one guard: `git archive HEAD` into a temp dir, write `{"type":"module"}` as `package.json`, copy `templates/framework-jest.config.js` to `jest.config.js`, link `.self-check/node_modules`, then `node --experimental-vm-modules .self-check/node_modules/.bin/jest --config jest.config.js guards/sprint.test.js guards/plan-overlap.test.js guards/merge-token.test.js`.
+- Task 4, by hand, against a scratch bare origin and two clones holding this branch's `merge-token.mjs`:
+  - clone a `take --holder a`: `Merge token: taken by a.`, exit 0
+  - clone b `take --holder b --once`: `Still waiting: the merge token is held by a.`, exit 5
+  - clone a `release --holder a`: `Merge token: released by a.`, exit 0
+  - clone b `take --holder b --once`: `Merge token: taken by b.`, exit 0
+- Task 5, fresh-agent check: Claude Code 2.1.300 on macOS (Darwin) arm64, `claude -p --output-format stream-json --verbose`, `ANTHROPIC_API_KEY` unset, signed in to the developer's plan, Bash, Edit and Write disallowed, in a scratch clone of this branch outside the repository. Its tool calls were a search of and two reads of `framework/workflow.md`. Its answer: run `node .tropis/scripts/merge-token.mjs take --once`; "That shows as exit 5 and a line starting `Still waiting:`"; call `send_later` with `delay_minutes: 30` and a message naming that command; "I end the turn. I don't use cron or a background loop"; on the wake run the same command again. It passed on the first run, so the wording was not changed. The default user instructions on this machine say nothing about waits, so the probe did not follow them in place of the change.
+- `npm --prefix .tropis test` (the installed release's checks, not this source): `Test Suites: 13 passed, 13 total`, `Tests: 164 passed, 164 total`.
+- `bash scripts/check-blueprint.sh` after the handover commit: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD` (before this edit): 13 files changed, 269 insertions, 33 deletions; commands/sprint.md, docs/backlog-board/bands.yaml, the plan, the spec, feature-catalog.yaml, framework/DECISIONS.md, framework/workflow.md, three guards, three scripts.
+
+### Scope
+
+Files changed are the ones in the File Structure table; `docs/backlog-board/index.html` did not change. Worktree used: the sibling `../tropis-cloud-waits` of the `tropis` checkout.
+
+### Judgment calls
+
+- Exit 5 lines: `Still waiting: <id> is blocked by <ids>, which has/have not shipped.` (sprint), `Still waiting: this plan merges after <ids>, which is/are still building.` (plan-overlap), `Still waiting: the merge token is held by <holder>.` (token).
+- `--once` is accepted with `--interval` and ignores it. Only `--once` with `--timeout` is a usage error (plan-overlap and merge-token). `--once` on any merge-token command other than `take` is a usage error. On `sprint.mjs` it is accepted only for `wait`.
+- For `take --once`, a stale branch holder is judged before the exit 5, so it exits 3 as `take` does.
+- The spec cites the decision as "the decision that follows FW-065", since its number is given at merge.
+
+### What the plan got wrong
+
+- The plan's † case that `--once` with `--timeout` is a usage error cannot fail before the change: an unknown flag already exits 2 with the usage line, so it is a regression case. The red count was six of seven.
+- The fresh-agent probe noticed a gap that is older than this change: the workflow does not say what a session does when its wake lands in a new container where its worktree is gone, so `take` would claim the token under whatever branch is checked out. Not fixed here.
+
+### Outstanding
+
+There is no screen. A cloud session waiting through a container replacement, woken by its own `send_later`, is the developer's live check after a release. The decision's `FW-NNN` heading needs its number at merge.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Rebased onto `origin/main` cleanly. Scope: 13 files, all in *File Structure*.
+- The handover's self-check ran after its own commit: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` The reviewer's changes below touch only the decision's number and the spec's
+  reference to it, and the pull request's pipeline runs the checks again.
+- The hand run: `take --once` printed `Still waiting: the merge token is held by a.` and
+  exited 5 while another clone held the token, and exited 0 taking it once released.
+- The fresh-agent check is in the handover: `claude -p` 2.1.300 on macOS arm64, with
+  Bash, Edit and Write disallowed, chose `take --once`, then `send_later` with 30 minutes
+  naming that command, and ended its turn, with no background loop or cron. It found
+  what the change intended.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The three waits take `--once` with exit 5 and a `Still waiting:` line; every other exit
+  keeps its meaning; `--once` with `--timeout` is refused. The workflow's new section and
+  its three pointers say when to use it and how to re-arm.
+- The executor's choices where the plan was silent stand (`--interval` ignored with
+  `--once`; `--once` only on `take`).
+- The decision is numbered FW-066, and the spec's forward reference now names it.
+- **Not fixed here, proposed as a backlog item:** a cloud session whose wake lands after
+  a container replacement may find its worktree gone, and `take` without `--holder` names
+  the holder from the current branch, which in a cloud session's only checkout is the
+  assigned branch. The probe found the disk survived its one restart, so the worktree
+  normally stays; the workflow does not yet say what to do when it does not.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen. A cloud session waiting through a
+  container replacement is the developer's live check after a release.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- The follow-up above, put to the developer as a backlog item.
+
+### Merged because
+
+Each wait can check once and say it is still waiting, the workflow tells a session that
+may not last to re-run it from a wake it schedules, a fresh agent did exactly that, and
+the self-check passes.

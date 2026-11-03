@@ -269,6 +269,30 @@ describe('--wait', () => {
     expect(r.stdout).toMatch(/go ahead/);
   });
 
+  test('† --once exits 5 naming the ids while one is building, and 0 once none is', () => {
+    const { root, origin, clone } = waitProject({ status: 'building' });
+    const waiting = run(clone, '--wait', P('mine'), '--once');
+    expect(waiting.status).toBe(5);
+    expect(waiting.stdout).toBe('Still waiting: this plan merges after a, which is still building.\n');
+
+    const other = join(root, 'other');
+    git(root, 'clone', '-q', origin, other);
+    identify(other);
+    put(other, 'feature-catalog.yaml', catalog([{ id: 'a', status: 'shipped' }]));
+    git(other, 'commit', '-q', '-am', 'a ships');
+    git(other, 'push', '-q', 'origin', 'main');
+    const done = run(clone, '--wait', P('mine'), '--once');
+    expect(done.status).toBe(0);
+    expect(done.stdout).toMatch(/go ahead/);
+  });
+
+  test('† --once with --timeout is a usage error', () => {
+    const { clone } = waitProject({ status: 'building' });
+    const r = run(clone, '--wait', P('mine'), '--once', '--timeout', '1');
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/usage/);
+  });
+
   test('goes ahead when the entry was dropped', () => {
     const { clone } = waitProject({ status: 'dropped' });
     expect(run(clone, '--wait', P('mine'), ...FAST).status).toBe(0);

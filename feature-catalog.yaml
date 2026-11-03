@@ -5690,9 +5690,13 @@
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-sprint-record-outlives-its-session.md
+# Shipped by docs/superpowers/plans/2026-11-03-cloud-waits-wake-on-a-schedule.md.
+# Criterion 1 (each wait checks once and exits 5 saying what it waits on, other exits unchanged): guards/sprint.test.js, 'wait --once' cases; guards/plan-overlap.test.js, the two '--once' cases; guards/merge-token.test.js, the three 'take --once' cases.
+# Criterion 2 (the workflow tells such a session to run each wait once from a wake it schedules, about every 30 minutes): framework/workflow.md, 'Waiting where a session may not last', and the pointers in the three places that ran a wait in the background.
+# Criterion 3 (a fresh agent in a cloud session with a held token checks once, schedules the next check and ends its turn): the fresh-agent check recorded in the body of the commit that changed framework/workflow.md, with tool and version.
 - id: cloud-waits-wake-on-a-schedule
   title: A wait that outlasts a cloud container still ends when its event happens
-  status: building
+  status: shipped
   value: A team member waiting hours for a blocked item, the token or another plan picks
     up where it left off when that happens, even if its container was reclaimed in the
     meantime. Today the wait is one background command, which ends with the container.
@@ -5707,7 +5711,11 @@
       schedules its next check and ends its turn, recorded with its tool and version.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/sprint.mjs
+    - scripts/plan-overlap.mjs
+    - scripts/merge-token.mjs
+    - framework/workflow.md
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-cloud-waits-wake-on-a-schedule.md

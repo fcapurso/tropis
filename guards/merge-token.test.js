@@ -177,6 +177,27 @@ describe('against a local origin', () => {
     expect(marker(origin.bare)).toContain('holder: b');
   }, 30000);
 
+  it('† take --once exits 5 naming the holder while another holds it, and leaves the token as it was', () => {
+    const origin = makeOrigin();
+    const a = makeClone(origin, 'a');
+    const b = makeClone(origin, 'b');
+    expect(run(a, ['take', '--holder', 'a']).status).toBe(0);
+    const before = git(origin.bare, ['rev-parse', REF]);
+    const r = run(b, ['take', '--holder', 'b', '--once']);
+    expect(r.status).toBe(5);
+    expect(r.stdout).toBe('Still waiting: the merge token is held by a.\n');
+    expect(git(origin.bare, ['rev-parse', REF])).toBe(before);
+  });
+
+  it('† take --once takes a free token and exits 0', () => {
+    const origin = makeOrigin();
+    const a = makeClone(origin, 'a');
+    const r = run(a, ['take', '--holder', 'a', '--once']);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toBe('Merge token: taken by a.\n');
+    expect(marker(origin.bare)).toContain('holder: a');
+  });
+
   it('releases only for its holder', () => {
     const origin = makeOrigin();
     const a = makeClone(origin, 'a');
@@ -349,6 +370,15 @@ describe('against a local origin', () => {
         + 'node .tropis/scripts/merge-token.mjs break --holder plan/gone\n');
       expect(r.status).toBe(3);
     }, 20000);
+
+    it('† take --once exits 3 for a stale holder, as take does', () => {
+      const origin = makeOrigin();
+      const a = makeClone(origin, 'a');
+      plantMarker(origin, 'plan/gone', 45);
+      const r = run(a, ['take', '--holder', 'plan/a', '--once']);
+      expect(r.status).toBe(3);
+      expect(r.stdout).toContain('STOPPED: waiting for the token, held by plan/gone, which is stale');
+    });
 
     it('shows that holder as stale in the status line, and not once its branch has a push', () => {
       const origin = makeOrigin();

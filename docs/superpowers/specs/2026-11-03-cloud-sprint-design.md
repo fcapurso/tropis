@@ -81,6 +81,20 @@ local and cloud, and a squash takes its message from the pull request's title an
 description, set in this repository's settings on 2026-11-03 and by Tropis's setup for
 every project.
 
+A second probe, on 2026-11-03 (Claude Code 2.1.317, Claude Code cloud session, Linux
+x86_64), asked what keeps a wait alive. An idle container is replaced: after about two
+hours with nothing running, `uptime` printed `up 0 min`, files survived, processes did
+not, and the session saw only that its worker process was restarted. The shell tool stops
+a background command after two hours; a 90-minute background `sleep` did finish and woke
+the idle session, in the same container, but whether a running command keeps a container
+alive was not established. A wake the session scheduled for itself with `send_later`, whose
+description says delivery survives container restarts, woke it 35 seconds after the due
+minute as its own turn; cron, `ScheduleWakeup` and `Monitor` live in the container or in
+a loop and do not survive. A cloud session is woken by the developer, another session's
+message, pull request activity it subscribed to (one pull request at a time), a scheduled
+task and a background command ending; nothing subscribes to pushes to a branch, so a change
+on the main branch is seen only by checking. The decision that follows FW-065 records the answer.
+
 ## The pieces, in order
 
 1. The probe above. Done.
@@ -90,7 +104,9 @@ every project.
 3. The sprint's record lives on GitHub, on a branch as the token does, so a resumed
    sprint session finds it.
 4. A wait that may outlast the container is kept by a subscription or a scheduled check
-   that wakes the session, rather than one long background command.
+   that wakes the session, rather than one long background command. Built this way: each
+   of the three waits has `--once`, and the workflow tells such a session to run it from a
+   wake it schedules for 30 minutes later (FW-066).
 5. A cloud session can be told which subscriptions the developer holds without anything
    personal being committed, for instance through a variable the cloud environment sets.
 6. A fresh clone says to run `npm --prefix .tropis ci` when the installed packages are

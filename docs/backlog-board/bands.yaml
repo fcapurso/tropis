@@ -51,19 +51,6 @@ capture-at-write-tests-pass-under-load:
   seen:
     status: idea
     blockers: []
-cloud-waits-wake-on-a-schedule:
-  band: B
-  value: 3
-  valueWhy: A blocked item or a long token wait is exactly where an unattended sprint
-    spends hours.
-  effort: 3
-  effortWhy: Replacing one long background command with a scheduled check, in each wait
-    the sprint uses.
-  verdict: "Worth doing after the merge piece; until then a cloud sprint should start
-    only items with no blocker."
-  seen:
-    status: building
-    blockers: []
 command-slots-spike:
   band: A
   value: 5
