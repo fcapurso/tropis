@@ -317,3 +317,47 @@ used: `../tropis-groups`, on `plan/sprint-proposal-groups-bundles`, created by
 - No screen: the developer sees the grouping at the next `/sprint`.
 - The fresh-agent probe of step 1's sentence, the pull request and the merge are the
   specifying session's.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: Claude Code
+2.1.317, git 2.43.0, node v22.23.4, Linux x86_64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists 6 files, all in *File Structure*.
+- The full self-check on `HEAD` after the rebase, and `npm --prefix .tropis test`; their
+  results are in the merge's pull request.
+- Read the code, the rewritten and new cases, the bands block removal and the backlog
+  comment: as planned.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+none.
+
+- The plan's bundle case left out the `next in line` line its fixture prints; the
+  executor added it. The plan was wrong, the fix right.
+- **Fixed by the reviewer on the branch:** step 1's paragraph in `commands/sprint.md` ran
+  one line past the file's wrap; re-wrapped, no word changed.
+- **Fresh-agent probe of step 1's sentence:** a fresh general-purpose agent on Claude
+  Code 2.1.317 (Opus, the session's Large-tier model, since no subscription is recorded
+  for `dispatch.mjs --tier Large` to choose from), Linux x86_64, was given only the
+  worktree, told the output was a probe, handed an invented `propose` output with a
+  bundle, and asked for what it would show the developer at step 1. It showed the
+  proposal as printed, the bundle as one entry with its two backlog items beneath it, and
+  quoted the new sentence as what governed that. It found what the change intended.
+
+### Outstanding disposition
+
+- No screen; the developer sees the grouping at the next `/sprint`. Nothing else
+  outstanding.
+
+### Learnings routed
+
+- No durable change beyond this plan: the command and script are the change itself.
+
+### Merged because
+
+The output matches the plan's lines, the guard proves each criterion red-then-green, and
+the probe shows the step 1 sentence reaching a sprint session.
