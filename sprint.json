@@ -216,6 +216,9 @@
     },
     "a-release-says-what-changed-briefly": {
       "state": "planning"
+    },
+    "readme-gives-an-overview-not-a-feature-list": {
+      "state": "planning"
     }
   },
   "notes": {}
