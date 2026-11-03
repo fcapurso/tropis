@@ -353,6 +353,16 @@ Claude Code cloud session), naming the command to run again, and end the turn. O
 wake, run the command again. A scheduler that lives in the container, such as cron, does
 not survive a replacement.
 
+**The wake names where and for whom.** A wake may start in the session's only checkout,
+on the branch the cloud assigned it, and after a replacement the plan's worktree may be
+gone. So the command a wake runs is written whole: it changes to the plan's worktree and
+passes the holder, as in `cd ../<repo>-<slug> && node .tropis/scripts/merge-token.mjs
+take --once --holder <the plan's branch>`. A wake that finds the worktree gone first
+re-creates it from the pushed branch, `git fetch origin && git worktree add
+../<repo>-<slug> <the plan's branch>`, and runs the command there. Without `--holder`,
+`take` names the holder from the branch it runs on, so a wake in the main checkout would
+take the token for the assigned branch, and the plan's release would then not match it.
+
 A wait for a pull request is a subscription to its activity instead, where the tool has
 one (*Merge and clean up*). Each check is a turn, so a long wait costs about two turns an
 hour; the wake is how a wait ends without anyone watching.
