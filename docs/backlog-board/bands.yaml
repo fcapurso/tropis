@@ -51,30 +51,6 @@ capture-at-write-tests-pass-under-load:
   seen:
     status: idea
     blockers: []
-cloud-session-knows-the-subscriptions:
-  band: B
-  value: 2
-  valueWhy: Without it a cloud team member starts on the default model, which works but
-    may cost more of the allowance.
-  effort: 1
-  effortWhy: dispatch.mjs reads one more place for the record.
-  verdict: "Small; do it with the merge piece once the probe has found a route."
-  seen:
-    status: building
-    blockers: []
-cloud-session-works-on-a-plan-branch:
-  band: B
-  value: 2
-  valueWhy: Two instructions about branches that disagree leave each cloud session to
-    choose.
-  effort: 1
-  effortWhy: A paragraph in the workflow, once the probe says which branch a cloud
-    session can push and merge.
-  verdict: "Small; write it with the merge piece, since both depend on what the probe
-    finds."
-  seen:
-    status: building
-    blockers: []
 cloud-waits-wake-on-a-schedule:
   band: B
   value: 3
