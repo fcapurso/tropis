@@ -5876,3 +5876,19 @@
     - framework/workflow.md
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+# 2026-11-03, from a sprint session: twice in a row the developer was shown the proposal
+# as a flat table, with bundles only as a trailing label, and had to ask for it grouped.
+# propose in scripts/sprint.mjs prints one line per backlog item, and step 1 of
+# commands/sprint.md says only "Show the proposal", so nothing makes the session group it.
+- id: sprint-proposal-groups-bundles
+  title: The sprint proposal shows one entry per team member, a bundle's items grouped under it
+  status: idea
+  value: The developer agreeing a sprint sees it as the team that will run it, one entry
+    per team member with a bundle's items and their points together, so they can judge
+    the team's size and each bundle's weight without regrouping a flat list themselves or
+    asking the sprint session to.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []

@@ -311,6 +311,18 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+sprint-proposal-groups-bundles:
+  band: A
+  value: 2
+  valueWhy: Every sprint proposal meets it, and the developer has had to ask for the
+    grouping twice.
+  effort: 1
+  effortWhy: Group the proposal's lines by bundle in sprint.mjs, one sentence in
+    /sprint's step 1, and a test.
+  verdict: Do now; the developer put it in the sprint that found it.
+  seen:
+    status: idea
+    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4
