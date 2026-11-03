@@ -5619,9 +5619,19 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+# Shipped by docs/superpowers/plans/2026-11-03-cloud-team-member-merges-its-work.md.
+# Criterion 1: guards/merge-token.test.js "a free marker is read as free, and the next
+# take leases on it" and "releases with a free marker, but only its own marker, and never
+# deletes the branch". Criterion 2: the same free-marker case, plus the status and
+# stale cases there and the red-main case in guards/next-report.test.js. Criterion 3:
+# guards/merge-token.test.js "takes and releases where gh refuses every write and the
+# origin refuses pushes outside branches". Criterion 4: framework/workflow.md "Where gh
+# cannot write" and the fresh-agent check in the commit that wrote it. Criterion 5:
+# commands/bootstrap.md and templates/README.md. Criterion 6: the fresh-agent check
+# recorded in the handover report of that plan.
 - id: cloud-team-member-merges-its-work
   title: A team member in a cloud session takes the token and merges its pull request
-  status: building
+  status: shipped
   value: A sprint started from a phone delivers its backlog items all the way to main,
     because a team member in a cloud session merges its work the same way as one on the
     developer's machine, with the token taken and released, rather than stopping at a
@@ -5645,7 +5655,9 @@
       workflow gives, recorded with its tool and version.
   type: feature
   layer: product
-  modules: []
+  modules:
+    - scripts/merge-token.mjs
+    - framework/workflow.md
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-cloud-team-member-merges-its-work.md
