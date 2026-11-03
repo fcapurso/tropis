@@ -146,6 +146,13 @@ function kept(w, run) {
 
 const bumpNext = (root) => edit(root, 'commands/next.md', (t) => `${t}\nA line from the next version.\n`);
 
+const addOutputIgnore = (root) => edit(root, 'scripts/set-up-project.sh', (t) => {
+  const line = "append_once .gitignore '.claude/settings.local.json'";
+  const next = t.replace(line, `${line}\nappend_once .gitignore '.tropis/extra-output/'`);
+  expect(next).not.toBe(t);
+  return next;
+});
+
 const passedLine = (stdout) => {
   const match = stdout.match(/(\d+) passed, (\d+) failed/);
   expect(match).not.toBeNull();
@@ -375,5 +382,26 @@ describe('check-version.mjs', () => {
     const r = kept(w, () => w.check('v0.2.1', '--from', 'v0.2.0'));
     expect(r.status).toBe(0);
     expect(r.stdout.split('\n')[0]).toMatch(/is safe\.$/);
+  }), SLOW);
+
+  it('lists each ignore and export line the release adds, as a step', () => inWorld({}, (w) => {
+    w.release('v0.2.1', addOutputIgnore);
+    const r = kept(w, () => w.check('v0.2.1'));
+    expect(r.status).toBe(0);
+    expect(r.stdout.split('\n')[0]).toMatch(/is safe with these steps\.$/);
+    expect(r.stdout).toContain('Lines the release adds to .gitignore and .gitattributes');
+    expect(r.stdout).toContain('.gitignore: .tropis/extra-output/');
+    expect(r.stdout).toContain('the take adds .tropis/extra-output/ to .gitignore');
+    expect(passedLine(r.stdout).failed).toBe(0);
+  }), SLOW);
+
+  it('lists no line the project already has', () => inWorld({}, (w) => {
+    edit(w.project, '.gitignore', (t) => `${t.replace(/\n?$/, '\n')}.tropis/extra-output/\n`);
+    w.commit();
+    w.release('v0.2.1', addOutputIgnore);
+    const r = kept(w, () => w.check('v0.2.1'));
+    expect(r.status).toBe(0);
+    expect(r.stdout).not.toContain('Lines the release adds');
+    expect(r.stdout).not.toContain('.tropis/extra-output/');
   }), SLOW);
 });

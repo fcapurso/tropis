@@ -340,15 +340,3 @@ update-check-runs-the-projects-own-checks:
   seen:
     status: idea
     blockers: []
-version-check-lists-ignore-lines:
-  band: B
-  value: 2
-  valueWhy: Makes the safe verdict honest about ignore and export lines.
-  effort: 2
-  effortWhy: A listing added to the version check.
-  bundle: update-fixes
-  verdict: "Small addition to the version check that makes its verdict honest
-    about ignore and export lines; batch with the update fixes."
-  seen:
-    status: idea
-    blockers: []

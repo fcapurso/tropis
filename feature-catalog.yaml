@@ -1355,9 +1355,13 @@
 # v0.3.1 in a scratch clone). The report lists shipped files only, not the lines a release
 # adds to .gitignore or .gitattributes. The root cause of these particular lines is
 # update-keeps-ignore-lines-in-their-own-form; this entry is about the report saying so.
+# Shipped by docs/superpowers/plans/2026-11-03-version-check-lists-ignore-lines.md.
+# Criterion 1 rests on the case "lists each ignore and export line the release adds, as a
+# step" in guards/check-version.test.js, which asserts the heading and the line under it.
+# Criterion 2 rests on the same case, which asserts the step and the verdict it gives.
 - id: version-check-lists-ignore-lines
   title: The version check lists the ignore and export lines a release would add
-  status: building
+  status: shipped
   after:
     - project-knows-whether-to-update
   value: Someone deciding whether to take a release sees every line the update would add
@@ -1371,7 +1375,8 @@
       safe.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/check-version.mjs
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-16-project-knows-whether-to-update.md
