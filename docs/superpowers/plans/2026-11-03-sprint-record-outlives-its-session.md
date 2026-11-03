@@ -268,7 +268,7 @@ Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Da
 
 ### Verification results
 
-- Final `bash scripts/check-blueprint.sh` on the last commit before this report: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` (An earlier run failed on `private-material`: the placeholder author email and a variable named `read.local` matched; renamed in a follow-up commit, run again green.)
+- Final `bash scripts/check-blueprint.sh` on the last commit before this report: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` (An earlier run failed on `private-material`: the placeholder author email and a variable named the read result's `local` field matched; renamed in a follow-up commit, run again green.)
 - `npm --prefix .tropis test`: `Tests: 163 passed, 163 total` (the installed release's checks; it does not exercise this source).
 - Single guards were run with `guard.sh`, a scratch script that does what the self-check does for one guard: `git archive HEAD` into a temp dir, write `{"type":"module"}` as `package.json`, copy `templates/framework-jest.config.js` to `jest.config.js`, link `.self-check/node_modules`, then `node --experimental-vm-modules .self-check/node_modules/.bin/jest --config jest.config.js guards/sprint.test.js guards/team-member-cli.test.js`.
 - Task 4, run by hand (clone A, clone B, bare origin; output trimmed):
@@ -293,7 +293,7 @@ Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Da
 ### What the plan got wrong
 
 - Test 6 (without an origin the record stays local) cannot fail before the change: it describes behaviour that already held, so it is a regression case, not a red-then-green one.
-- The plan's list of test 3's two ways (hook or `updateSprint`) was fine; the plan did not list that a hostname-shaped name (`read.local`) or any email in the script trips `private-material`.
+- The plan's list of test 3's two ways (hook or `updateSprint`) was fine; the plan did not list that a hostname-shaped name (the read result's `local` field) or any email in the script trips `private-material`.
 
 ### Outstanding
 
