@@ -210,6 +210,9 @@
     },
     "version-check-lists-ignore-lines": {
       "state": "planning"
+    },
+    "release-notes-cover-a-restaged-commit": {
+      "state": "planning"
     }
   },
   "notes": {}
