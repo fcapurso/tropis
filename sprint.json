@@ -201,6 +201,9 @@
   "marks": {
     "update-survives-a-dropped-edited-rule": {
       "state": "planning"
+    },
+    "update-skips-a-new-file-that-matches": {
+      "state": "planning"
     }
   },
   "notes": {}
