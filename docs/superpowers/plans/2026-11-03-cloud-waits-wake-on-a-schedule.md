@@ -1,0 +1,253 @@
+# A wait that outlasts a cloud container still ends on its event — Implementation Plan
+
+> **For agentic workers:** execute task by task, in order. Read the whole plan first,
+> including *Traps*. Nothing in it stops for the developer.
+
+**Goal:** each of the three waits a delivery runs — for what a backlog item is blocked by,
+for a plan it merges after, and for the merge token — can check once and say it is still
+waiting, and the workflow tells a session whose processes may not outlast its idle time,
+such as a Claude Code cloud session, to run them that way from a wake it schedules for
+itself, instead of as one long background command.
+
+**Backlog item:** `cloud-waits-wake-on-a-schedule` in `feature-catalog.yaml`. Spec:
+`docs/superpowers/specs/2026-11-03-cloud-sprint-design.md`, *What a cloud session hit*
+item 5, and *The pieces, in order*, piece 4. Decisions it builds on: FW-055 (waits end
+when something happens) and FW-063.
+
+**One plan:** what becomes true is one sentence — a wait ends when its event happens,
+however long the session sits idle and wherever it runs.
+
+**What the specifying session verified on 2026-11-03, against `origin/main` at `3cefb56`
+(git 2.49.0, node v22.15.0, macOS 26.2 on arm64), and what a cloud session measured the
+same day (Claude Code 2.1.317, Claude Code cloud session, Linux x86_64):**
+
+- **The cloud replaces an idle container, and that ends every process.** At 14:15:59Z
+  `uptime` printed `up 0 min` after the session had sat idle about two hours with nothing
+  running; files on disk survived, processes did not, and the session saw only
+  `This session's worker process was restarted.` when next woken.
+- **A background command is capped and is not safe across that.** The shell tool stops a
+  background command after 7 200 000 ms, two hours. A 90-minute `sleep` started in the
+  background did finish and woke the idle session, in the same container; whether a
+  running command keeps a container alive was not established.
+- **A self-scheduled wake survives it.** `send_later` (fields `message`, `at` or
+  `delay_minutes`, `name`, `initiation`; its description says "Delivery survives
+  container restarts") was set for 20 minutes and woke the session 35 s after the due
+  minute, as its own turn. `create_trigger` is the general form, stored on the server.
+  `CronCreate`, `ScheduleWakeup` and `Monitor` live in the container or only in a loop,
+  and do not survive.
+- **What can wake a cloud session:** the developer, another session's message, pull
+  request activity it subscribed to (one pull request at a time), a scheduled task, and a
+  background command ending. Nothing subscribes to pushes to a branch, so a change on
+  `main` is seen only by checking.
+- **The three waits today.** `scripts/sprint.mjs wait <id> [--interval <seconds>]`: exit
+  0 when what the item is blocked by has shipped, 3 with `PARKED: depends on <id>` when a
+  blocker was dropped, parked or stopped, 1 for an unknown id; no time limit (module
+  comment, lines 31–33). `scripts/plan-overlap.mjs --wait <plan> [--interval]
+  [--timeout]`: exit 0 when nothing it merges after is `building`, 2 when origin or its
+  catalog cannot be read, 3 at the `--timeout` with `STOPPED: waiting on <ids>` (lines
+  12–18). `scripts/merge-token.mjs take`: exit 0 taken or already held by this holder, 3
+  when the holder turned stale or at the `--timeout`, 2 when it could not be taken.
+- **Where the workflow runs them in the background:** `framework/workflow.md`, *Plans
+  that touch the same files* (around line 272), *The merge token* (around line 311) and
+  *Delivering a backlog item* step 0 (around line 468).
+
+**Decided by the specifying session:**
+
+- **`--once` on each of the three:** it checks once and exits; where the wait would go
+  on, it exits **5** with one line starting `Still waiting:` and saying on what (the ids,
+  or the token's holder). Every other exit keeps its meaning: a `--once` that finds the
+  event done behaves as the wait does when it ends, `take --once` takes a free token, and
+  a stale holder or a parked blocker still exits 3. `--once` and `--timeout` together are
+  refused as a usage error.
+- **The workflow's rule:** where a session's processes may not outlast its idle time — a
+  Claude Code cloud session, whose container can be replaced while it sits idle and whose
+  background commands stop after two hours — run each wait with `--once`. On exit 5,
+  schedule a wake for 30 minutes later with the session's own scheduling tool that
+  survives a restart (`send_later` in a Claude Code cloud session), naming the command to
+  run again, and end the turn; on that wake, run it again. A wait for a pull request is a
+  subscription to its activity instead, where the tool has one (*Merge and clean up*).
+  Each check is a turn, so a long wait costs about two turns an hour.
+- **Decision record:** write one, numbered at merge as the next free FW number, with the
+  rejected options: one long background command (capped at two hours and ended by a
+  container replacement); a scheduler inside the container such as cron (it lives in the
+  container); and a shorter interval (more turns for an event that takes hours).
+
+**Model tier: Large.** Three scripts, their guards, and the workflow's wording, with a
+fresh-agent check.
+
+**Merge authority: parent review.** The specifying session reviews, opens the pull
+request and merges. Stop after Task 6; do not open a pull request, write a review record
+or merge.
+
+**A fresh-agent check is owed**, because `framework/workflow.md` changes: Task 5.
+
+Do not store a kick-off prompt on this plan.
+
+---
+
+## Delivers
+
+cloud-waits-wake-on-a-schedule
+
+## Repositories
+
+| Checkout | Role | Isolation |
+|---|---|---|
+| `tropis` | execute here | `git worktree add ../tropis-cloud-waits -b plan/cloud-waits-wake-on-a-schedule origin/main` |
+
+## Global Constraints
+
+- **Edit the source, never the installed release.** Do not edit anything under
+  `.claude/`, `.cursor/`, `.tropis/`, `CLAUDE.md` or `AGENTS.md`.
+- **Add no dependency. Do not lower, skip or delete a guard or a test.**
+- **Never take, release or break the live merge token, and never push to `main`,
+  `tropis/merge-token` or `tropis/sprint` of the real repository.** Every test runs
+  against a local bare origin.
+- **Every commit has a body** saying what becomes true; the commit touching
+  `framework/workflow.md` states the fresh-agent check's outcome once it has run.
+- **This repository is public.** No home paths, hostnames (a dotted name with a local-network suffix
+  counts), personal or computer names in anything committed, the handover
+  included.
+- **Every agent runs on the developer's plan (FW-053):** no API key, no cloud agent API.
+- **Write the code yourself against this repository's own names**, and say in the
+  handover which named source, if any, you worked from.
+
+## The change
+
+1. **`scripts/sprint.mjs`**, `wait`: `--once`. Update the module comment's usage lines.
+2. **`scripts/plan-overlap.mjs`**, `--wait`: `--once`. Update the module comment.
+3. **`scripts/merge-token.mjs`**, `take`: `--once`. Update the module comment and `USAGE`.
+4. **`framework/workflow.md`:** a short section, **Waiting where a session may not last**,
+   after *The merge token*, stating the rule above in the workflow's voice, and in each
+   of the three places that say to run a wait in the background, one clause pointing to
+   it. Keep the existing wording otherwise.
+5. **`commands/sprint.md`**, where it describes the sprint session waiting on its team
+   (`watch`, and "where are we?"): one sentence that a sprint session in such a session
+   checks `status` on a scheduled wake the same way, since command-line team members are
+   not started there.
+6. **The spec**, `docs/superpowers/specs/2026-11-03-cloud-sprint-design.md`: under *The
+   answer*, a short paragraph with the wait probe's findings above; in *The pieces, in
+   order*, piece 4 says it is built this way.
+7. **`framework/DECISIONS.md`:** the decision, numbered at merge.
+
+## Tests
+
+1. In `guards/sprint.test.js`: † `wait --once` exits 5 with `Still waiting:` and the
+   blocker's id while it is `building`, and 0 once it has shipped; and † it exits 3 with
+   `PARKED: depends on <id>` when the blocker was parked.
+2. In `guards/plan-overlap.test.js`: † `--wait --once` exits 5 naming the ids while one
+   is `building`, and 0 once none is; † `--once` with `--timeout` is a usage error.
+3. In `guards/merge-token.test.js`: † `take --once` exits 5 naming the holder while
+   another holds it and leaves the token as it was; † it takes a free token and exits 0;
+   † it exits 3 for a stale holder, as `take` does.
+
+Every † case must fail before the change and pass after it.
+
+## Traps
+
+- **The self-check reads `HEAD` only.** Commit before each run, and **run it again after
+  the handover report is committed**: a handover can break a check on its own.
+- **`npm --prefix .tropis test` runs the installed release's checks, not this source.**
+- **Run a single guard the way the self-check runs one**, on the project-shaped tree
+  `scripts/check-blueprint.sh` builds from a `git archive` of `HEAD`, with the jest under
+  `.self-check/`. Say the exact command in the handover.
+- **A child process takes the machine's real environment under Jest** unless the test
+  passes `env` explicitly; deleting from `process.env` inside a test does not reach it.
+- **The decision's number.** Write it as `FW-NNN`; the reviewing session numbers it at
+  merge. A heading with `NNN` must not reach `main`.
+- **A framework document may name a path in backticks only if it exists in a project.**
+  Name the spec and plans in plain text in `framework/` and `commands/`.
+- **Tool names are not a contract.** The workflow names `send_later` as the Claude Code
+  cloud session's tool, as an example; the rule is a wake the session schedules that
+  survives a restart.
+- **The scope check.** `git diff --stat origin/main...HEAD` must list only files in
+  *File Structure*.
+
+## File Structure
+
+| File | Change |
+|---|---|
+| `scripts/sprint.mjs` | `wait --once` |
+| `scripts/plan-overlap.mjs` | `--wait --once` |
+| `scripts/merge-token.mjs` | `take --once` |
+| `guards/sprint.test.js` | the `wait --once` cases |
+| `guards/plan-overlap.test.js` | the `--wait --once` cases |
+| `guards/merge-token.test.js` | the `take --once` cases |
+| `framework/workflow.md` | *Waiting where a session may not last*, and three pointers |
+| `commands/sprint.md` | one sentence |
+| `docs/superpowers/specs/2026-11-03-cloud-sprint-design.md` | the wait probe's findings; piece 4 |
+| `framework/DECISIONS.md` | the decision |
+| `feature-catalog.yaml` | the item to `shipped`, a comment mapping criteria to cases (Task 6) |
+| `docs/backlog-board/bands.yaml` | the item's row removed (Task 6) |
+| `docs/backlog-board/index.html` | only if the board's hook rebuilt and staged it |
+| `docs/superpowers/plans/2026-11-03-cloud-waits-wake-on-a-schedule.md` | the handover report |
+
+Nothing else. If a guard demands a change to a file not listed, stop and hand back with
+its output.
+
+Doc closeout, decided by the specifying session: the workflow, the sprint command and
+the spec change here, and the decision is recorded. No upstream queue: this repository is
+the upstream. A release-note line is the developer's at `/release`.
+
+## Tasks
+
+### Task 0 — Setup in the worktree
+
+`npm --prefix .tropis ci`, `git status --porcelain` (nothing), and
+`bash scripts/check-blueprint.sh` (last line starts `Self-check passed`). Record
+`git --version`, `node --version`, `uname -sm` and `claude --version`.
+
+### Task 1 — The tests, red
+
+Add the † cases. Commit. Run the three guards alone: the † cases fail. Paste their names.
+
+### Task 2 — The three waits
+
+*The change* items 1–3. Commit. Run the three guards alone: all pass.
+
+### Task 3 — The documents and the decision
+
+*The change* items 4–7. Commit. Then `bash scripts/check-blueprint.sh`: last line starts
+`Self-check passed`.
+
+### Task 4 — A run by hand
+
+In a scratch folder outside the repository, with a bare origin and two clones holding
+this branch's scripts as a project has them: take the token in one clone, run
+`take --once` in the other (expect exit 5 and the holder), release in the first, and run
+`take --once` again (expect exit 0). Paste the lines and exits.
+
+### Task 5 — The fresh-agent check
+
+In a scratch clone of this branch outside the repository, run
+`claude -p --output-format stream-json --verbose`, with `ANTHROPIC_API_KEY` unset, Bash,
+Edit and Write disallowed, and a prompt saying it is a probe whose output is discarded,
+that it is a team member in a Claude Code cloud session (its container can be replaced
+while it sits idle, its background commands stop after two hours, and it has
+`send_later`), that its invented plan is ready to merge but the merge token is held by
+another session, and asking what it runs now and what it does until the token is free,
+following `framework/workflow.md` in this checkout, without running anything. It passes
+when it runs `merge-token.mjs take --once`, and on exit 5 schedules a wake about 30
+minutes later naming that command, and ends its turn rather than starting a background
+wait. Quote the relevant part, with tool, version, operating system and architecture. If
+it misses, change the wording until a new run finds it, and say so. State the outcome in
+the body of Task 3's commit (amend) or a new commit.
+
+### Task 6 — The backlog, the board and the handover
+
+1. In `feature-catalog.yaml`, the item to `status: shipped`, `modules` set to
+   `scripts/sprint.mjs`, `scripts/plan-overlap.mjs`, `scripts/merge-token.mjs` and
+   `framework/workflow.md`, and above it a
+   `# Shipped by docs/superpowers/plans/2026-11-03-cloud-waits-wake-on-a-schedule.md.`
+   comment with one line per acceptance criterion naming what covers it. No `: ` inside
+   an unquoted YAML value.
+2. In `docs/backlog-board/bands.yaml`, delete the item's block, nothing else.
+3. Commit. Append `## Handover report` with the six sections the planning rule names
+   (Outstanding says there is no screen, and that a cloud session waiting through a
+   container replacement is the developer's live check after a release). Commit.
+4. **Then**, with everything committed: `npm --prefix .tropis test`,
+   `bash scripts/check-blueprint.sh` and `git diff --stat origin/main...HEAD`. Add their
+   output to the handover's Verification results and commit again; if the self-check is
+   red, fix what it names first.
+5. `git push -u origin plan/cloud-waits-wake-on-a-schedule`. **Do not open a pull
+   request**, write a review record, set auto-merge or merge. Leave the worktree in place.

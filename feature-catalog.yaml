@@ -5692,18 +5692,25 @@
     - docs/superpowers/plans/2026-11-03-sprint-record-outlives-its-session.md
 - id: cloud-waits-wake-on-a-schedule
   title: A wait that outlasts a cloud container still ends when its event happens
-  status: idea
+  status: building
   value: A team member waiting hours for a blocked item, the token or another plan picks
     up where it left off when that happens, even if its container was reclaimed in the
     meantime. Today the wait is one background command, which ends with the container.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The wait for a blocker, the wait for a plan merged after, and the merge token's take
+      can each check once and exit 5 with a line saying what they still wait on, every
+      other exit keeping its meaning.
+    - The workflow tells a session whose processes may not outlast its idle time to run
+      each wait once from a wake it schedules for itself that survives a restart, about
+      every 30 minutes, instead of one long background command.
+    - A fresh agent told it is a cloud session waiting for a held token checks once,
+      schedules its next check and ends its turn, recorded with its tool and version.
   type: improvement
   layer: product
-  blockedBy:
-    - cloud-session-can-write-to-github
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+    - docs/superpowers/plans/2026-11-03-cloud-waits-wake-on-a-schedule.md
 # Shipped by docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md.
 # Criterion 1 (variable gives the lines, a local record wins): guards/subscriptions.test.js, 'reads the record from TROPIS_SUBSCRIPTIONS where no local record exists' and 'a local record wins over the variable'.
 # Criterion 2 (dispatch and the sprint name the pick; the no-record line names the variable): guards/subscriptions.test.js, 'dispatch names the included pick from the variable'; guards/sprint.test.js, case e; guards/dispatch.test.js, 'says so when no subscriptions are recorded'.
