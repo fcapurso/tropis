@@ -2092,7 +2092,7 @@ would carry other work).
 variable once. Nothing changes for a local session. The no-record message names the
 variable.
 
-## FW-NNN: The sprint's record is a branch on origin, changed by a push with a lease
+## FW-065: The sprint's record is a branch on origin, changed by a push with a lease
 
 **Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
 `sprint-record-outlives-its-session`.

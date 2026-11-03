@@ -267,7 +267,7 @@ function commitRecord(root, env, record, parent) {
     record === null ? 'sprint: ended' : 'sprint: record changed']);
 }
 
-const MOVED = /stale info|fetch first|already exists|non-fast-forward|rejected/;
+const MOVED = /stale info|fetch first|already exists|non-fast-forward/;
 const ATTEMPTS = 5;
 
 /**
