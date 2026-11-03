@@ -264,3 +264,60 @@ Paste the `Tests:` lines.
    so there is no developer check). Commit, and run the self-check again on that commit.
 3. `git push -u origin plan/update-survives-a-dropped-edited-rule`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 4 done. Commits: tests (red), change, backlog and board, this report.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, Linux x86_64 (cloud session).
+
+- Task 0 baseline `bash scripts/check-blueprint.sh` on `2981561`: FAILED once, on the clean
+  baseline: `a run ends › † SHIPPED when the repository agrees…` in the sprint guard
+  (`STOPPED: Sprint: could not fetch the sprint record — error: cannot lock ref
+  'refs/remotes/origin/tropis/sprint': is at … but expected …`). It ran while I also ran
+  another jest process; the guard passed in the two later full self-checks with nothing
+  changed in it. Recorded as an unexplained, probably racy failure (see Outstanding).
+- Task 1, `guards/take-version.test.js` alone before the change: `Tests: 2 failed, 55
+  passed, 57 total`; failing: `keeps a dropped rule the project edited as its own rule`,
+  `keeps a dropped rule the project added to as its own rule`.
+- Task 2, after the change: take-version `Tests: 57 passed, 57 total`; check-version
+  `Tests: 11 passed, 11 total`.
+  Command (a staged `git archive HEAD` with `{"type":"module"}` package.json, the
+  template jest config and `node_modules` linked to `.self-check/node_modules`, as
+  `check-blueprint.sh` builds it):
+  `FRAMEWORK_ROOT=<stage> node --experimental-vm-modules .self-check/node_modules/.bin/jest --config <stage>/jest.config.js guards/take-version.test.js`
+- Task 3 and 4: `npm --prefix .tropis test`: `Tests: 172 passed, 172 total`.
+- `bash scripts/check-blueprint.sh` on the commit before this report: last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD` (before this report): 7 files, all in File Structure
+  (`docs/backlog-board/index.html` untouched).
+
+### Scope
+
+Only the files in File Structure.
+
+### Judgment calls
+
+- Names source: none; written against this repository's own `apply()` and
+  `joinAdditions`.
+- The dropped rules' texts are captured before the main loop (as the plan says) into
+  `droppedRuleText`, keyed by name, for baseline rule texts the release lacks.
+- In `check-version.mjs` the now-unused `unlinkSync` import was removed along with
+  `dropStaleAdditions`; `exact`/`describe` lookup it fed was removed too.
+- The `Shipped by` and criterion comments sit below the existing `# 2026-10-15…` comment,
+  directly above the item.
+
+### What the plan got wrong
+
+Nothing material. Test names in the plan assumed the take-version world uses the shipped
+text at v0.2.0 as the baseline; it does, so no adjustment was needed.
+
+### Outstanding
+
+- The one-off baseline failure above (sprint ref lock race) is not diagnosed; two later
+  full self-checks were green.
+- The change has no screen, so there is no developer check.
