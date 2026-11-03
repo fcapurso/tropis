@@ -64,9 +64,12 @@ is no refresh point yet.
 Read the skeleton: `docs/readme/skeleton.md` when that file exists, otherwise
 `.tropis/templates/readme-skeleton.md`. Do not edit the skeleton during a refresh.
 
-A skeleton is a header comment, then one `## <Heading>` per section, in order. Under
-a heading, either three lines — **Job**, **Facts from**, **Length** — or a line
-`Fixed text:` followed by the text to copy word for word, up to the next `## `.
+A skeleton is a header comment, then a line `**Page length:**` giving the most words
+the whole page may have, then one `## <Heading>` per section, in order. Under a
+heading, either three lines — **Job**, **Facts from**, **Length** — or a line
+`Fixed text:` followed by the text to copy word for word, up to the next `## `. A
+skeleton with no `**Page length:**` line, such as one a project copied before the line
+existed, limits the page to 1,200 words; say so.
 
 Read `README.md` (a missing page is a page with no sections). Read the facts each
 section names: the project brief, the backlog, the decision record, the operator
@@ -96,6 +99,10 @@ point. With no refresh point, every section is a candidate.
 A `Fixed text:` section is out of date when the README's text differs from that text
 in any way. Fine means it matches exactly.
 
+**Count the page's words** as `wc -w README.md` counts them, title and fixed text
+included. A page over its limit is out of date as a whole, whatever each section says:
+say by how many words.
+
 When the README's `##` headings are not the skeleton's headings in the skeleton's order —
 leaving out the page's `#` title and the first skeleton section, which has no heading on
 the page —
@@ -104,7 +111,8 @@ and what the old page said is rewritten into the section whose job it serves.
 
 ## At `suggests`, or `manual`, or an unchosen level
 
-Report, per section, what is missing or out of date and why. Change nothing: do not
+Report, per section, what is missing or out of date and why, and the page's word count
+against its limit. Change nothing: do not
 edit `README.md`, the settings file, or the skeleton. Stop.
 
 ## At `writes`
@@ -115,10 +123,23 @@ restructured, in which case every section is written into the skeleton's order. 
 `Fixed text:` exactly — the words that follow that line, not the line itself and not
 the job bullets. The page stays prose: no skeleton markup.
 
+**Replace and fold; do not only add.** What has shipped since the refresh point goes into
+the text that already covers its part of the work, in place of words it makes untrue,
+not beside them as a new bullet or paragraph. A section whose **Length** says how many
+bullets it holds keeps that many.
+
+**Then keep the page under its limit.** Count it again. If it is over, cut until it is
+under: fold two bullets or sentences that say one thing, drop detail a linked document
+already holds, and shorten the sections you judged fine as well, if need be. Never cut
+`Fixed text:`, and never cut a step from Getting started that a reader needs for it to
+work as written.
+
 Run the project's checks (`npm --prefix .tropis test`). If any fails because of the page,
 fix the page and run them again; if one still fails, say which and why when you ask.
 
-Then list each changed section with one line on why. Ask the developer to read the
+Then list each changed section with one line on why, the page's word count against
+its limit, and **what you cut to stay under it**, section by section: a reader who
+misses something can then ask for it back. Ask the developer to read the
 page and edit it if they like, and to say yes to keep it or no to put it back. Wait.
 Do not commit and do not restore until they answer.
 

@@ -121,3 +121,77 @@ readme-gives-an-overview-not-a-feature-list
 3. Run the fresh-agent check with its tool calls visible; record it in the commit body.
 4. Move the item to `shipped`, write the handover report.
 5. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.317 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the page is rewritten
+from this repository's own README, and the command against its own text.
+
+### Task completion
+
+- Task 1: done. Four cases in `guards/readme-usable.test.js`: both outlines set a page
+  length and five to seven aspects; *What it does for you* has five to seven bullets; the
+  page is within its outline's limit; `/refresh-readme` says to fold, keep the page under
+  its limit and report what it cut.
+- Task 2: done. Both outlines, the command, and `README.md` (2,107 → 1,115 words, 16 →
+  6 bullets).
+- Task 3: done, passed on the second run (below).
+- Task 4: done.
+- Task 5: the fresh reviewer's record follows.
+
+### Verification results
+
+- Guard on the working tree, with a scratch script that copies the tracked and untracked
+  files into a temporary directory and runs jest there: `guards/readme-usable.test.js`
+  with the change: `Tests: 8 passed, 8 total`. With `README.md`, both outlines and the
+  command stashed: `Tests: 4 failed, 4 passed, 8 total`, the four new cases.
+- `wc -w README.md`: `1115 README.md`, against a limit of 1,200.
+- Fresh-agent check: Claude Code 2.1.317 on Linux x86_64, `claude -p --model
+  claude-sonnet-5-5 --output-format stream-json --verbose
+  --disallowedTools=Bash,Edit,Write,NotebookEdit,Agent`, signed in to the developer's
+  plan with no API key, in a scratch clone of this branch. The task: refresh, at
+  `writes`, an invented shop's README with five aspects after a price filter shipped,
+  saying what it would write, the count, and its report. Its tool calls were reads of
+  `commands/refresh-readme.md` and `templates/readme-skeleton.md`.
+  - Run 1, limit 260 words, the page said to be 252: it folded the feature into the
+    existing bullet ("The feature folds into the existing 'Sell from your own site'
+    bullet … instead of getting a bullet of its own"), kept five bullets, counted 255
+    against 260 and so cut nothing. Not a test of trimming: the page was not over.
+  - Run 2, limit 240: it folded the feature the same way, cut words across *What it does
+    for you*, *Who it is for*, *What it needs* and *How it works*, left Getting started
+    whole ("No step was cut from Getting started"), and reported "What I cut to get under
+    the limit" section by section. It also counted the given page by hand at 283 words,
+    not the 252 the prompt claimed, and said "A real run recounts with `wc -w` and keeps
+    cutting until it is under." **Pass.**
+- `bash scripts/check-blueprint.sh`: run by the pull request's pipeline.
+
+### Scope
+
+`README.md`, `templates/readme-skeleton.md`, `docs/readme/skeleton.md`,
+`commands/refresh-readme.md`, `guards/readme-usable.test.js`, `feature-catalog.yaml`,
+`docs/backlog-board/bands.yaml` and this plan, all in *File Structure*. Worktree: the
+sibling `../tropis-readme-overview-build`.
+
+### Judgment calls
+
+- The six aspects: one path from idea to merged change; knowing what to do next; rules
+  and lessons reaching the agent; records that cannot go stale (the public-repository
+  check folded in); a main branch that takes only checked changes (merges seen through,
+  red noticed, parallel sessions folded in); releases you can take safely.
+- Cut from the page, each still in the document it links to: the board's bands and
+  grooming, the per-pull-request environment, the update path for a project without
+  `/update`, `node .tropis/scripts/pipeline.mjs run`, the list of what works today
+  (now "everything above"), and the links to `doc-architecture.md` and `bootstrap.md`
+  under *Where to go next* (`bootstrap.md` stays linked from Getting started).
+- `refreshedAt` is unchanged: the page was rewritten by hand to the new outline, not by
+  the command.
+
+### What the plan got wrong
+
+- Nothing found.
+
+### Outstanding
+
+- The developer may want to read the page: it is what someone deciding on Tropis reads
+  first. The next `/refresh-readme` is the live check of the command.
