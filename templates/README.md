@@ -103,7 +103,8 @@ starts on the model the sprint names: the Large tier's first pick that your subs
 include; a cloud session, which has no local record, is told them by setting
 `TROPIS_SUBSCRIPTIONS` (`Claude Code: Max; Cursor: Pro`) in its environment's settings. Ask it where the sprint stands at any time; team members that need you come
 first. `node .tropis/scripts/sprint.mjs status` prints the same from the shell; the
-agreed sprint lives in a file under `.git/`, never committed.
+agreed sprint's record is the branch `tropis/sprint` on `origin`, which nothing deletes (a
+project with no `origin` keeps it in a file under `.git/`).
 Team members can also start in the other tool's command line:
 `node .tropis/scripts/sprint.mjs launch <id> --tool cursor` (or `claude`). They start on
 the Large tier's pick in that tool when the model picks give its command-line name.

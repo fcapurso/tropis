@@ -2091,3 +2091,35 @@ would carry other work).
 **Consequences:** A developer who wants the included model named in the cloud sets one
 variable once. Nothing changes for a local session. The no-record message names the
 variable.
+
+## FW-065: The sprint's record is a branch on origin, changed by a push with a lease
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`sprint-record-outlives-its-session`.
+
+**Decision:** The agreed sprint is kept on `origin`, as the file `sprint.json` in the last
+commit of the branch `tropis/sprint`, in place of a local file. Every command that changes
+the sprint reads the branch, applies its change to the record read, and pushes a new
+commit with a lease on the commit it read; a push refused because another session moved
+the branch first reads again and applies the same change again, up to five times, then
+stops with one line. So a sprint session resumed in a new cloud container or on another
+machine finds the sprint under way, and a team member's mark or note from its own
+checkout reaches it. The branch is never deleted: an ended sprint is a commit whose tree
+is empty, because a cloud session cannot delete a branch (FW-063). Where there is no
+remote named origin the record stays in the local file, and a record an earlier release
+kept in that file is carried to the branch by the next change, then the file is removed.
+The team folder and the subscriptions record stay on the machine.
+
+**Evidence:** A cloud session reported on 2026-11-03 (Claude Code 2.1.317, Linux x86_64)
+that its container is reclaimed after inactivity, taking the local file with it, and that
+it can push branches with a lease but not refs outside branches or deletions (FW-063).
+In the cloud-sprint design of 2026-11-03, under What a cloud session hit.
+Source: the merge token's mechanism (FW-063), in this repository; nothing else.
+
+**Rejected:** Keeping the file local and committing a copy to the main branch on each
+change (every change would need a pull request). A ref outside branches (a cloud session
+cannot push one).
+
+**Consequences:** The branch shows in the branch list and nothing deletes it. Each change
+costs one fetch and one push, and a sprint command without a reachable origin refuses to
+change the record, and reads the last fetched copy.

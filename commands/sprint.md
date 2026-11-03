@@ -9,8 +9,9 @@ and it does not decide the order of merges: each team member does those under
 small: read what the script prints, not the team members' work.
 
 Every step runs `node .tropis/scripts/sprint.mjs`, which reads the backlog on `origin`'s
-main branch and keeps the agreed sprint in a local file git does not track, so a sprint
-survives this conversation being reset. **Start by running
+main branch and keeps the agreed sprint on `origin`, on the branch `tropis/sprint`, so it
+survives this conversation being reset and the machine it ran on (without an `origin`, in a
+local file). **Start by running
 `node .tropis/scripts/sprint.mjs status`.** If it shows a sprint, carry on with it; if it
 says none is under way, plan one.
 

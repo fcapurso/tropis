@@ -118,8 +118,9 @@ const run = (clone, args, env = ENV) => spawnSync(
 );
 const lines = (r) => r.stdout.split('\n').filter((l) => l !== '');
 const teamDir = (clone) => join(resolve(realpathSync(clone), git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/team');
-const sprintFile = (clone) => join(resolve(realpathSync(clone), git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/sprint.json');
-const readSprint = (clone) => JSON.parse(readFileSync(sprintFile(clone), 'utf8'));
+const readSprint = (clone) => JSON.parse(git(
+  clone, ['--git-dir', git(clone, ['config', 'remote.origin.url']), 'show', 'refs/heads/tropis/sprint:sprint.json'],
+));
 const resultOf = (clone, id) => JSON.parse(readFileSync(join(teamDir(clone), `${id}.json`), 'utf8'));
 const hasResult = (clone, id) => existsSync(join(teamDir(clone), `${id}.json`));
 const worktreeOf = (clone, id) => join(dirname(realpathSync(clone)), `${clone.split('/').pop()}-team-${id}`);
