@@ -337,3 +337,50 @@ added to their copy lists, and are not in the table; per the plan, not edited.
 - Add `load-yaml.mjs` to the copy lists of the six guards (a plan amendment or a small
   fixup), then re-run the self-check. Nothing else known to fail.
 - The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists 18 files: those in *File Structure*,
+  plus the six guards fixed below.
+- The full self-check on `HEAD` after the fix: `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+- The handover shows the new guard red before the change (`3 failed`) and green after;
+  the reviewer read the guard and the three cases against the plan.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found. The new guard's git identity is `probe@example.test`.
+
+- **The plan missed six guards, and the reviewer fixed them on the branch.** Six guards
+  build a scratch project from a hand-written list of scripts (`next-report`,
+  `team-member-cli`, `backlog-board`, `plan-overlap`, `board-hooks`, `sprint`), so each
+  failed on the missing `load-yaml.mjs`. The fix adds the file to each list, one line
+  per guard, nothing else. It is mechanical and understood, so it was made here rather
+  than dispatched; the developer is told so. Commit
+  `test(guards): the guards that copy scripts into a scratch project copy the yaml loader too`.
+- The executor's two judgment calls stand: clearing the two Python cache variables in
+  case 3 is needed for the case to test the hook, and the shipped comments sit above
+  each `- id:` line because neither item had a block.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`, including that a project with
+  an existing `.tropis/hooks/__pycache__/` folder can delete it.
+
+### Learnings routed
+
+- No new rule: the planning rule already says a changed import surface reaches every
+  guard that copies the scripts. The specifying session did not apply it.
+
+### Merged because
+
+A script without its packages says to run `npm --prefix .tropis ci` and exits 1, the
+scripts import yaml only through one module with a check that fails otherwise, the hook
+leaves no cache, and the full self-check passes.
