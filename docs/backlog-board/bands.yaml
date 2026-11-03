@@ -179,26 +179,6 @@ framework-reaches-every-tool:
   seen:
     status: shaped
     blockers: []
-fresh-clone-says-to-install:
-  band: B
-  value: 2
-  valueWhy: Every fresh clone and new worktree meets a Node error before anything works.
-  effort: 1
-  effortWhy: One check and message where the scripts load their packages.
-  verdict: "Small and independent of the probe; worth doing in the next sprint."
-  seen:
-    status: building
-    blockers: []
-hooks-leave-no-untracked-cache:
-  band: B
-  value: 2
-  valueWhy: A dirty tree after the hooks run fails the preflight on a clean checkout.
-  effort: 1
-  effortWhy: One ignore line in what setup and updates add.
-  verdict: "Small and independent of the probe; worth doing in the next sprint."
-  seen:
-    status: building
-    blockers: []
 instruction-files-have-a-delivery-map:
   band: C
   value: 3

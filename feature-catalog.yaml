@@ -5675,9 +5675,13 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+# Shipped by docs/superpowers/plans/2026-11-03-fresh-clone-runs-clean.md.
+# Criterion 1 (one line, status 1): guards/fresh-clone.test.js, 'a script without its packages says to install them'.
+# Criterion 2 (behaves as before with packages): guards/sprint.test.js and the other script guards, run on the new loader.
+# Criterion 3 (one shared module, a check fails otherwise): guards/fresh-clone.test.js, 'no framework script imports yaml except through load-yaml'.
 - id: fresh-clone-says-to-install
   title: A fresh clone says to install the framework's packages instead of failing
-  status: building
+  status: shipped
   value: Someone or an agent running a framework command in a fresh clone is told to run
     npm --prefix .tropis ci, instead of meeting a missing-package error from Node. Every
     cloud session and every new worktree is a fresh clone.
@@ -5690,13 +5694,17 @@
       a script imports it any other way.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/load-yaml.mjs
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-fresh-clone-runs-clean.md
+# Shipped by docs/superpowers/plans/2026-11-03-fresh-clone-runs-clean.md.
+# Criterion 1 (no cache folder after the hooks run): guards/fresh-clone.test.js, 'the branch hook leaves no cache behind'.
+# Criterion 2 (a check runs the matcher-loading hook and fails on a cache folder): the same case.
 - id: hooks-leave-no-untracked-cache
   title: Running the hooks leaves no untracked files behind
-  status: building
+  status: shipped
   value: A checkout stays clean after the framework's hooks run, so the preflight's
     clean-tree check passes. Today Python writes a cache folder under .tropis/hooks/ that
     nothing ignores, and the check fails until someone deletes or ignores it.
@@ -5706,7 +5714,8 @@
       appears.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/branch-in-worktree.sh
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-fresh-clone-runs-clean.md
