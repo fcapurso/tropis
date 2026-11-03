@@ -119,6 +119,11 @@ when the framework half exists to serve the application half. Full rule:
   `git checkout -b`, `git switch -c` and `git branch <name>` in the main checkout and
   prints that command. Once the branch has merged, remove the worktree and delete the
   branch, as *Merge and clean up* does.
+- **A cloud session leaves the branch it was assigned alone.** A Claude Code cloud
+  session starts in its only checkout, on a branch the cloud assigned it. It does a
+  plan's work as any session does: it creates the plan's branch in a worktree from
+  `origin/main` (above) and pushes that branch, one worktree per plan. It commits
+  nothing to the assigned branch and needs nothing merged from it.
 - **Where the main branch is gated, nothing goes directly to `main`.** It is gated when
   its host refuses a merge whose checks have not passed — on GitHub, the ruleset Tropis
   ships — and an agent treats it as gated unless `.tropis/project.json` records

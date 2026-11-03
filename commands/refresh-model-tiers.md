@@ -86,6 +86,12 @@ read by anyone, and a person's subscriptions are theirs.
    the repository, and never write the developer's subscriptions into the picks file or
    a commit message.
 
+A fresh clone has no record, since the record is never committed. Where one is used, such
+as a Claude Code cloud session, the developer sets `TROPIS_SUBSCRIPTIONS` in that
+environment's settings, in the same `<tool>: <subscription>` form with the lines
+separated by `;`, for example `Claude Code: Max; Cursor: Pro`. A local record wins where
+both exist.
+
 ## What to gather
 
 For the models that count, search independent aggregators and benchmark leaderboards,
