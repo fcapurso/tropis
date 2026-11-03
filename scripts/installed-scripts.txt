@@ -5,6 +5,7 @@ build-backlog-board.mjs
 install-board-hooks.mjs
 dispatch.mjs
 plan-binding.js
+load-yaml.mjs
 projections.js
 isolate-for-plan.mjs
 isolate-for-plan.sh

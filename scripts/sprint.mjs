@@ -56,7 +56,7 @@ import {
 } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import YAML from 'yaml';
+import YAML from './load-yaml.mjs';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
 import { mergesAfterIds, pickToUse, pickForTool, NO_PICKS_USE } from './plan-binding.js';
 import { bandOf, inRankOrder, isClosed } from './next-work.js';

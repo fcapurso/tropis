@@ -24,7 +24,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, realpathSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import YAML from 'yaml';
+import YAML from './load-yaml.mjs';
 import {
   fileStructurePaths, deliversIds, mergesAfterIds, withMergesAfter,
 } from './plan-binding.js';
