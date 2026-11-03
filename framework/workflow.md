@@ -270,7 +270,8 @@ items.
   dependency while planning. Needing the other backlog item's code is not this: that is
   `blockedBy`, and no branch is built on another unmerged branch.
 - **Before merging**, run `node .tropis/scripts/plan-overlap.mjs --wait <plan>` as a
-  background command that wakes you when it ends. It asks `origin` every 30 seconds
+  background command that wakes you when it ends (where a session may not last, with
+  `--once`: *Waiting where a session may not last*). It asks `origin` every 30 seconds
   until no backlog item the plan merges after is `building` there — shipped, dropped, or
   parked back to `shaped` — and goes ahead at once when the plan has no `Merges after`. It
   has no time limit: a backlog item still building after hours is still being worked on,
@@ -308,7 +309,8 @@ It is taken and released by git pushes alone, so it works where `gh` cannot writ
   A clean rebase needs no new review; a conflict needs its resolution reviewed, except
   in the files every plan touches (*Plans that touch the same files*).
 - **The wait ends when something happens, not after a time.** Run `take` as a
-  background command that wakes you when it ends. It waits as long as the holder is
+  background command that wakes you when it ends (where a session may not last, with
+  `--once`: *Waiting where a session may not last*). It waits as long as the holder is
   working, however long that is, and takes the token once it is free. When the token
   turns stale (below), it exits 3 and prints `STOPPED: waiting for the token, held by
   <holder>, which is stale`, the reason and the command that breaks it: report that line
@@ -333,6 +335,27 @@ It is taken and released by git pushes alone, so it works where `gh` cannot writ
   re-run the token avoids. No check refuses a pull request opened without it. Where
   `take` cannot reach the token at all, it exits 2 saying why: report the line, and go
   on without it.
+
+## Waiting where a session may not last
+
+Three waits end when something happens: for what a backlog item is blocked by
+(`sprint.mjs wait <id>`), for the plans a plan merges after (`plan-overlap.mjs --wait
+<plan>`), and for the merge token (`merge-token.mjs take`). Run as one long background
+command, each depends on the session's processes outliving its idle time.
+
+Where they may not — a Claude Code cloud session, whose container can be replaced while
+it sits idle, ending every process in it, and whose background commands stop after two
+hours — run each wait with `--once` instead. It checks one time and exits. Exit 5 and a
+line starting `Still waiting:` mean the event has not happened; every other exit means
+what it means without `--once`. On exit 5, schedule a wake for 30 minutes later with the
+session's own scheduling tool whose schedule survives a restart (`send_later` in a
+Claude Code cloud session), naming the command to run again, and end the turn. On that
+wake, run the command again. A scheduler that lives in the container, such as cron, does
+not survive a replacement.
+
+A wait for a pull request is a subscription to its activity instead, where the tool has
+one (*Merge and clean up*). Each check is a turn, so a long wait costs about two turns an
+hour; the wake is how a wait ends without anyone watching.
 
 ## Merge and clean up — in this order
 
@@ -433,8 +456,9 @@ Parallel branches share a base, so `main` moves under them as siblings land. Bef
 merge:
 
 1. `node .tropis/scripts/plan-overlap.mjs --wait <plan>`, in the background — *Plans
-   that touch the same files*.
-2. `node .tropis/scripts/merge-token.mjs take`, in the background — *The merge token*.
+   that touch the same files*; with `--once` where a session may not last.
+2. `node .tropis/scripts/merge-token.mjs take`, in the background — *The merge token*;
+   with `--once` where a session may not last.
 3. `git fetch origin && git rebase origin/main`
 4. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
    invalidate a criterion with no textual conflict — new files shift coverage figures and
@@ -465,7 +489,8 @@ A session that takes one backlog item to shipped — a team member a sprint star
 session the developer started by hand — runs the whole of this document, in this order:
 
 0. If the backlog item is `blockedBy` one that has not shipped, run
-   `node .tropis/scripts/sprint.mjs wait <id>` as a background command and do nothing
+   `node .tropis/scripts/sprint.mjs wait <id>` as a background command (where a session
+   may not last, with `--once`: *Waiting where a session may not last*) and do nothing
    else until it ends. It ends when everything the backlog item is blocked by has shipped,
    and has no time limit. If it prints `PARKED: depends on <id>`, end with that line.
 1. Shape the backlog item (`/feature`) and write its plan.

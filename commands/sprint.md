@@ -66,6 +66,11 @@ the plan the developer already pays for, never on a key billed per use. The spri
 no limit of its own to what a team member may run: that is the tool's permission
 settings, and a permission prompt is answered in that team member's session.
 
+A sprint session in a session whose processes may not outlast its idle time, such as a
+Claude Code cloud session, checks `status` on a wake it schedules for itself in the same
+way (workflow, *Waiting where a session may not last*), since command-line team members
+are not started there.
+
 ## 3. Where are we?
 
 When the developer asks, run `node .tropis/scripts/sprint.mjs status` and report it as it

@@ -2123,3 +2123,34 @@ cannot push one).
 **Consequences:** The branch shows in the branch list and nothing deletes it. Each change
 costs one fetch and one push, and a sprint command without a reachable origin refuses to
 change the record, and reads the last fetched copy.
+
+## FW-NNN: A wait that may outlast the container is checked once, from a wake the session schedules
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`cloud-waits-wake-on-a-schedule`.
+
+**Decision:** The three waits a delivery runs — for what a backlog item is blocked by,
+for the plans a plan merges after, and for the merge token — each take `--once`: one
+check, then exit. Where the wait would go on, it exits 5 with a line starting `Still
+waiting:` that names the blockers or the holder; every other exit keeps its meaning, and
+`--once` with `--timeout` is refused. The workflow tells a session whose processes may
+not outlast its idle time, such as a Claude Code cloud session, to run each wait with
+`--once`, and on exit 5 to schedule a wake 30 minutes later with its own scheduling tool
+that survives a restart (`send_later` there), naming the command to run again, and end
+the turn. This follows FW-055: a wait still ends when its event happens, and the wake
+only decides when to look.
+
+**Evidence:** A cloud session measured on 2026-11-03 (Claude Code 2.1.317, Linux x86_64):
+an idle container was replaced after about two hours, ending every process while files
+survived; the shell tool stops a background command after two hours; a wake set with
+`send_later` for 20 minutes arrived 35 seconds after its minute, as the session's own
+turn. In the cloud-sprint design of 2026-11-03, under The answer. Source: the existing
+waits in this repository; nothing else.
+
+**Rejected:** One long background command (capped at two hours, and ended by a container
+replacement). A scheduler inside the container such as cron (it lives in the container and
+goes with it). A shorter interval (more turns for an event that takes hours).
+
+**Consequences:** A long wait in the cloud costs about two turns an hour, and a wake
+may arrive up to a minute late. A session that cannot schedule a wake keeps to the
+background command and its limits.
