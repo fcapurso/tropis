@@ -198,3 +198,148 @@ the second.
 5. `git push -u origin plan/sprint-status-works-in-a-cloud-session`. **Do not open a
    pull request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+Executor: a Claude Code cloud session, Haiku 5.5, on git 2.43.0, node v22.23.4, Linux
+x86_64. Branch `plan/sprint-status-works-in-a-cloud-session`, worktree `../tropis-sprint-rest`
+created from `origin/main` by `isolate-for-plan.sh`. Nothing was committed in the main
+checkout.
+
+### Task completion
+
+- **Task 0, setup:** done. `npm --prefix .tropis ci` exited 0; the tree was clean; the
+  baseline self-check passed before any change.
+- **Task 1, tests red:** done. Commit `9264d0e`. The four cases that fail before the change
+  are the two existing ones that read pull requests and the two new `†` cases:
+  - `status › † shows each of the eleven states for an origin on GitHub, stopped and parked entries first`
+  - `status › † lists an open pull request no entry accounts for, and a new bug and a new feature, the bug first`
+  - `status › † asks GitHub for open pull requests through the REST API, never gh pr list`
+  - `status › † says open pull requests are unknown with gh’s own line when gh refuses`
+- **Task 2, the change:** done. Commit `41e5f46`. All 48 cases in `guards/sprint.test.js` pass.
+- **Task 3, the route by hand:** done (below).
+- **Task 4, backlog, board and handover:** done. Backlog commit `fabfda2`; this report is
+  committed after it.
+
+### Verification results
+
+Single-guard command: the self-check's staging, done by hand from a scratch script kept
+outside the repository. It runs `git archive HEAD` into a temporary directory, writes
+`{"type":"module"}` as its `package.json`, copies `templates/framework-jest.config.js` to
+`jest.config.js`, symlinks `.self-check/node_modules` in, and then runs
+`node --experimental-vm-modules <stage>/node_modules/.bin/jest --config <stage>/jest.config.js guards/sprint.test.js`
+from the stage.
+
+1. `npm --prefix .tropis ci`: exit 0. npm printed an audit notice, which was not acted
+   on, since the plan adds no dependency.
+2. `git status --porcelain`: empty.
+3. `bash scripts/check-blueprint.sh`, baseline: last line
+   `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+4. Single guard, red (on `9264d0e`): `Tests: 4 failed, 44 passed, 48 total`; the four
+   names are listed under Task 1.
+5. Single guard, green (on `41e5f46`): `Test Suites: 1 passed, 1 total`,
+   `Tests: 48 passed, 48 total`, exit 0.
+6. `bash scripts/check-blueprint.sh`, after the change: same last line as step 3, exit 0.
+7. `gh api 'repos/{owner}/{repo}/pulls?state=open&per_page=100' --jq '[.[]|{number,ref:.head.ref}]'`:
+   `[]`, exit 0. No pull request was open at execution, so this shows the route answers,
+   not what a populated answer looks like against GitHub. The populated case is covered
+   by the stub only.
+8. `gh pr list --state open`, first line: `HTTP 403: GitHub GraphQL is not available from Claude Code sessions; use the REST API (gh api repos/{owner}/{repo}/...). ...`, exit 1. The environment refuses the old call.
+9. `npm --prefix .tropis test` (the installed release's checks, not this source, as the
+   trap says): `Test Suites: 13 passed, 13 total`, `Tests: 173 passed, 173 total`, exit 0.
+10. `bash scripts/check-blueprint.sh`, after the backlog commit: same last line, exit 0.
+11. `git diff --stat origin/main...HEAD`, before this report's commit:
+    ```
+    docs/backlog-board/bands.yaml | 12 ------------
+    feature-catalog.yaml          | 10 ++++++++--
+    guards/sprint.test.js         | 40 +++++++++++++++++++++++++++++++++++++---
+    scripts/sprint.mjs            | 12 ++++++++----
+    4 files changed, 53 insertions(+), 21 deletions(-)
+    ```
+    The checks were rerun on the pushed commit, this report's included; their results are
+    in the handback, not repeated here.
+
+### Scope
+
+Every file in the diff is in the File Structure table: `scripts/sprint.mjs`,
+`guards/sprint.test.js`, `feature-catalog.yaml` and `docs/backlog-board/bands.yaml`, plus
+this report in the plan file. `docs/backlog-board/index.html` is unchanged: the board hook
+did not rebuild it. The worktree path used is `../tropis-sprint-rest`.
+
+### Judgment calls
+
+- `stubGh` writes `pulls.json` in the REST shape, mapping the callers' `{ number,
+  headRefName }` to `{ number, head: { ref } }`. Its `null` case writes no file, so the stub
+  answers with the unexpected-call line.
+- The third new case matches the stub's line by prefix (`Sprint: open pull requests
+  unknown — stub gh: unexpected call: api repos/{owner}/{repo}/pulls`), not as a whole line.
+  The full line also carries the query string, which the case does not need to pin.
+- The catalog's shipped comment maps criterion 1 to the new REST case and to the
+  eleven-states case, which reads a team member's pull request through the stub. Criterion
+  2 maps to the gh-refuses case.
+- `openPullRequests` maps each item with `p.head?.ref`. A non-object item throws in the
+  mapping and lands in the existing `gh answered with something unexpected` path.
+
+### What the plan got wrong
+
+- Nothing untrue about the code was found. The line numbers it gave had moved slightly, as
+  its Note said; the cases it named were all present.
+- Task 1's third case asked for the exact stub line to be run once; the line was checked by
+  the passing test, not by a separate run.
+
+### Outstanding
+
+- No pull request was opened, no review record was written, and nothing was set to merge
+  or merged, as the plan says. The header's `Merges after: sprint-proposal-groups-bundles`
+  is unchanged. That item has shipped on `origin/main`, so the merging session still runs
+  the overlap wait before it merges.
+- Not seen here: a populated answer from GitHub. The first `sprint.mjs status` run with an
+  open team member pull request is the check that shows it.
+- A release-note line for `/release` is the developer's to write.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, gh 2.89.0, Linux x86_64.
+
+### Checks re-run
+
+- `guards/sprint.test.js` alone, staged from `git archive HEAD` with the self-check's
+  jest: `Tests: 48 passed, 48 total`.
+- The same guard with `scripts/sprint.mjs` from `origin/main` put back in the stage (the
+  fix reverted, tests kept): `Tests: 4 failed, 44 passed, 48 total`.
+- Before the plan was written, in this cloud session: `gh pr list` answered the HTTP 403
+  GraphQL refusal, and `gh api 'repos/{owner}/{repo}/pulls?state=open&per_page=100'`
+  answered a populated list whose items carry `number` and `head.ref`. So the shape the
+  executor could not see populated was seen live.
+- Scope: `git diff --stat origin/main...HEAD` lists five files, all in *File Structure*.
+- The full self-check was not re-run by the reviewer; the executor's run on the handover
+  commit passed, and the pipeline re-runs it on the pull request.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The code matches the plan: one REST call, items mapped to `{ number, headRefName }`,
+  every error line unchanged. Nothing else found.
+
+### Outstanding disposition
+
+- `Merges after: sprint-proposal-groups-bundles` stays; that item has shipped, so the
+  wait goes ahead at once.
+- No developer check: the change has no screen.
+- The Dependabot alerts the push reported are on `main` and unrelated to this change.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- No durable change. `scripts/submit-upstream.sh` also runs `gh pr list`, so a flush
+  from a cloud session would hit the same refusal; it runs against the upstream and from
+  a project's own machine as a rule, and nothing has reported it failing, so it is noted
+  here, not made a backlog item.
+
+### Merged because
+
+The sprint status asks GitHub through the REST route a cloud session answers, the four
+cases that read pull requests go red without the fix, and the guard passes.

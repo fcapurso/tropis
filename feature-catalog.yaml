@@ -5992,9 +5992,14 @@
 # (`gh api repos/<owner>/<repo>/pulls?state=open`) is answered there. Without the list,
 # status cannot tell whether the merge token's holder has an open pull request, which is
 # how it judges the token stale.
+# Shipped by docs/superpowers/plans/2026-11-03-sprint-status-works-in-a-cloud-session.md.
+# Criterion 1: the case "† asks GitHub for open pull requests through the REST API, never
+# gh pr list", and "shows each of the eleven states" for a team member's pull request.
+# Criterion 2: the case "† says open pull requests are unknown with gh’s own line when gh
+# refuses".
 - id: sprint-status-works-in-a-cloud-session
   title: The sprint status lists open pull requests in a cloud session
-  status: building
+  status: shipped
   value: A developer running a sprint from a Claude Code cloud session sees which team
     members have a pull request open and whether the merge token has gone stale, as they
     would from their own computer, instead of a line saying the list is unknown.
@@ -6005,7 +6010,8 @@
       line and goes on.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/sprint.mjs
   refs:
     - docs/superpowers/plans/2026-11-03-sprint-status-works-in-a-cloud-session.md
 # 2026-11-03, from the developer in a sprint session. With Claude Code: Max recorded,
