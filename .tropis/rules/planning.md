@@ -314,7 +314,10 @@ Six sections. (Incident:
   "verified": the number, the failing test name, the byte count. A claim without its
   evidence cannot be reviewed: a check that ran as written and passed can still have
   been incomplete, and only its output shows it. (Incident:
-  `.tropis/rules/incidents/planning.md#what-earned-the-handover-sections`)
+  `.tropis/rules/incidents/planning.md#what-earned-the-handover-sections`) The results
+  come from the commit that is pushed, the report's own commit included: run the checks
+  again after committing the report, because the report itself can break one. (Incident:
+  `.tropis/rules/incidents/planning.md#a-handover-that-broke-the-check-it-reported`)
 - **Scope** — the diff stat, confirmation every file is in the File Structure table, and
   the worktree path actually used in each checkout, so a reviewer can see whether
   isolation happened at all.

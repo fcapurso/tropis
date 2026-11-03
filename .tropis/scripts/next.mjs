@@ -13,7 +13,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import YAML from 'yaml';
+import YAML from './load-yaml.mjs';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
 import {
   inFlight, blocked, arcs, isClosed, nextStep, bandOf, readyInBandOrder, hasBandRows, blockedAhead,

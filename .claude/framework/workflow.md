@@ -119,13 +119,19 @@ when the framework half exists to serve the application half. Full rule:
   `git checkout -b`, `git switch -c` and `git branch <name>` in the main checkout and
   prints that command. Once the branch has merged, remove the worktree and delete the
   branch, as *Merge and clean up* does.
+- **A cloud session leaves the branch it was assigned alone.** A Claude Code cloud
+  session starts in its only checkout, on a branch the cloud assigned it. It does a
+  plan's work as any session does: it creates the plan's branch in a worktree from
+  `origin/main` (above) and pushes that branch, one worktree per plan. It commits
+  nothing to the assigned branch and needs nothing merged from it.
 - **Where the main branch is gated, nothing goes directly to `main`.** It is gated when
   its host refuses a merge whose checks have not passed — on GitHub, the ruleset Tropis
   ships — and an agent treats it as gated unless `.tropis/project.json` records
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
   worktree of its own (above), take the merge token, push it, open the pull request,
-  run `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  run `gh pr merge <N> --auto --squash` with `--subject` and `--body` (or, where `gh`
+  cannot write, as *Merge and clean up* says), and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
   Release the token once that command has reported (*The merge token*).
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
@@ -264,7 +270,8 @@ items.
   dependency while planning. Needing the other backlog item's code is not this: that is
   `blockedBy`, and no branch is built on another unmerged branch.
 - **Before merging**, run `node .tropis/scripts/plan-overlap.mjs --wait <plan>` as a
-  background command that wakes you when it ends. It asks `origin` every 30 seconds
+  background command that wakes you when it ends (where a session may not last, with
+  `--once`: *Waiting where a session may not last*). It asks `origin` every 30 seconds
   until no backlog item the plan merges after is `building` there — shipped, dropped, or
   parked back to `shaped` — and goes ahead at once when the plan has no `Merges after`. It
   has no time limit: a backlog item still building after hours is still being worked on,
@@ -277,8 +284,10 @@ items.
 A gated main branch that requires branches to be up to date lets one pull request
 merge at a time, and each merge puts every other open pull request behind, to update
 and run its checks again. So sessions working at the same time take turns, under one
-token on `origin` that any session can take: the ref `refs/tropis/merge-token`, whose
-commit names its holder and when it was taken.
+token on `origin` that any session can take: the branch `tropis/merge-token`, whose
+last commit names its holder and when it was taken. The token is free when no such
+branch exists or when its last commit says `holder: none`; the branch is never deleted.
+It is taken and released by git pushes alone, so it works where `gh` cannot write.
 
 - **Every pull request opens under the token** — a plan's, a claim's, a backlog
   edit's, a release's — whoever opens it: a session started by hand as much as one a
@@ -293,14 +302,15 @@ commit names its holder and when it was taken.
   request straight after, such as a move to `shipped`, and release it after the last
   one. Without `--holder`, a release acts for the branch you are on, so from any
   other branch, `main` after a merge included, name the branch it was taken in:
-  `release --holder <branch>`. A release removes the token only for its holder;
-  otherwise it says who holds it and leaves it.
+  `release --holder <branch>`. A release frees the token only for its holder, by
+  pushing a commit that says `holder: none`; otherwise it says who holds it and leaves it.
 - **Hand it back before a fix that needs judgement.** When the merge criteria fail
   after the rebase in a way that is not mechanical, release the token first, then fix.
   A clean rebase needs no new review; a conflict needs its resolution reviewed, except
   in the files every plan touches (*Plans that touch the same files*).
 - **The wait ends when something happens, not after a time.** Run `take` as a
-  background command that wakes you when it ends. It waits as long as the holder is
+  background command that wakes you when it ends (where a session may not last, with
+  `--once`: *Waiting where a session may not last*). It waits as long as the holder is
   working, however long that is, and takes the token once it is free. When the token
   turns stale (below), it exits 3 and prints `STOPPED: waiting for the token, held by
   <holder>, which is stale`, the reason and the command that breaks it: report that line
@@ -325,6 +335,37 @@ commit names its holder and when it was taken.
   re-run the token avoids. No check refuses a pull request opened without it. Where
   `take` cannot reach the token at all, it exits 2 saying why: report the line, and go
   on without it.
+
+## Waiting where a session may not last
+
+Three waits end when something happens: for what a backlog item is blocked by
+(`sprint.mjs wait <id>`), for the plans a plan merges after (`plan-overlap.mjs --wait
+<plan>`), and for the merge token (`merge-token.mjs take`). Run as one long background
+command, each depends on the session's processes outliving its idle time.
+
+Where they may not — a Claude Code cloud session, whose container can be replaced while
+it sits idle, ending every process in it, and whose background commands stop after two
+hours — run each wait with `--once` instead. It checks one time and exits. Exit 5 and a
+line starting `Still waiting:` mean the event has not happened; every other exit means
+what it means without `--once`. On exit 5, schedule a wake for 30 minutes later with the
+session's own scheduling tool whose schedule survives a restart (`send_later` in a
+Claude Code cloud session), naming the command to run again, and end the turn. On that
+wake, run the command again. A scheduler that lives in the container, such as cron, does
+not survive a replacement.
+
+**The wake names where and for whom.** A wake may start in the session's only checkout,
+on the branch the cloud assigned it, and after a replacement the plan's worktree may be
+gone. So the command a wake runs is written whole: it changes to the plan's worktree and
+passes the holder, as in `cd ../<repo>-<slug> && node .tropis/scripts/merge-token.mjs
+take --once --holder <the plan's branch>`. A wake that finds the worktree gone first
+re-creates it from the pushed branch, `git fetch origin && git worktree add
+../<repo>-<slug> <the plan's branch>`, and runs the command there. Without `--holder`,
+`take` names the holder from the branch it runs on, so a wake in the main checkout would
+take the token for the assigned branch, and the plan's release would then not match it.
+
+A wait for a pull request is a subscription to its activity instead, where the tool has
+one (*Merge and clean up*). Each check is a turn, so a long wait costs about two turns an
+hour; the wake is how a wait ends without anyone watching.
 
 ## Merge and clean up — in this order
 
@@ -374,9 +415,24 @@ not wait for checks that are still running, so a merge waits until the pull requ
 checks have finished green. In one project a pull request merged with both checks
 pending; they passed afterwards, by luck.
 
-Pass `--subject` and `--body` explicitly. Left to itself the squash inherits the branch
-commits' messages, and the merged commit then lists working history instead of saying
-what the plan made true.
+A squash takes its message from the pull request's title and description where the
+repository is set so (setup asks for it: the default squash message is the pull request
+title and description). Pass `--subject` and `--body` explicitly anyway where `gh` can;
+where it cannot, the title and description are the subject and body. Left to itself,
+a repository set the old way inherits the branch commits' messages, and the merged
+commit then lists working history instead of saying what the plan made true.
+
+**Where `gh` cannot write.** A session whose `gh` writes are refused (a Claude Code cloud
+session's answer HTTP 403) merges the same way, with its own GitHub tools in place of
+`gh pr merge`. It takes and releases the merge token as everyone does. It opens the pull
+request with the subject as its title and the body as its description, sets it to merge
+itself as a squash, and brings its branch up to date when it falls behind. It waits with
+`main-status.mjs --pull-request <N>`, which only reads. When that stops because the
+branch could not be brought up to date, bring it up to date with the tool and run the
+wait again. Where the tool can subscribe to the pull request's activity, that wakes the
+session on each check result. Where a run must be re-run by hand (`gh run rerun`), report
+the line and the run's address to the developer instead. The session cannot delete a
+branch and does not need to: the repository deletes merged head branches.
 
 **The sequence ends by waiting for the run the merge started on the main branch.**
 `main-status.mjs --wait` asks GitHub, through `gh`, for the pipeline's push run on that
@@ -410,8 +466,9 @@ Parallel branches share a base, so `main` moves under them as siblings land. Bef
 merge:
 
 1. `node .tropis/scripts/plan-overlap.mjs --wait <plan>`, in the background — *Plans
-   that touch the same files*.
-2. `node .tropis/scripts/merge-token.mjs take`, in the background — *The merge token*.
+   that touch the same files*; with `--once` where a session may not last.
+2. `node .tropis/scripts/merge-token.mjs take`, in the background — *The merge token*;
+   with `--once` where a session may not last.
 3. `git fetch origin && git rebase origin/main`
 4. **Re-run the plan's full merge criteria, not just the test suite.** A rebase can
    invalidate a criterion with no textual conflict — new files shift coverage figures and
@@ -442,7 +499,8 @@ A session that takes one backlog item to shipped — a team member a sprint star
 session the developer started by hand — runs the whole of this document, in this order:
 
 0. If the backlog item is `blockedBy` one that has not shipped, run
-   `node .tropis/scripts/sprint.mjs wait <id>` as a background command and do nothing
+   `node .tropis/scripts/sprint.mjs wait <id>` as a background command (where a session
+   may not last, with `--once`: *Waiting where a session may not last*) and do nothing
    else until it ends. It ends when everything the backlog item is blocked by has shipped,
    and has no time limit. If it prints `PARKED: depends on <id>`, end with that line.
 1. Shape the backlog item (`/feature`) and write its plan.

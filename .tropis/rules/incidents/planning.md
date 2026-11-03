@@ -113,3 +113,10 @@ went into a commit message, where it was saved and never read.
 Review was required by three documents and produced no artifact anywhere: ten merged
 pull requests carried no review, and one plan merged with its verification record still
 reading `<paste the run URL>`.
+
+## A handover that broke the check it reported
+
+In this framework an executor ran the self-check, saw it pass, then committed its
+handover report and pushed. The report quoted a variable name the private-material check
+reads as a hostname, so the pushed branch failed the check the report said had passed.
+Review caught it on its own run.

@@ -9,8 +9,9 @@ and it does not decide the order of merges: each team member does those under
 small: read what the script prints, not the team members' work.
 
 Every step runs `node .tropis/scripts/sprint.mjs`, which reads the backlog on `origin`'s
-main branch and keeps the agreed sprint in a local file git does not track, so a sprint
-survives this conversation being reset. **Start by running
+main branch and keeps the agreed sprint on `origin`, on the branch `tropis/sprint`, so it
+survives this conversation being reset and the machine it ran on (without an `origin`, in a
+local file). **Start by running
 `node .tropis/scripts/sprint.mjs status`.** If it shows a sprint, carry on with it; if it
 says none is under way, plan one.
 
@@ -64,6 +65,11 @@ each run's session. Every team member runs signed in to
 the plan the developer already pays for, never on a key billed per use. The sprint adds
 no limit of its own to what a team member may run: that is the tool's permission
 settings, and a permission prompt is answered in that team member's session.
+
+A sprint session in a session whose processes may not outlast its idle time, such as a
+Claude Code cloud session, checks `status` on a wake it schedules for itself in the same
+way (workflow, *Waiting where a session may not last*), since command-line team members
+are not started there.
 
 ## 3. Where are we?
 

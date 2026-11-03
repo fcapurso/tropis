@@ -2,32 +2,43 @@
 // Shared machinery: no part of this file is project-owned.
 /**
  * The sprint: a proposal of about 20 story points from the top of the backlog's ranking,
- * the agreed sprint kept in a local file, a team member's wait for what blocks it, and
+ * the agreed sprint kept on origin, a team member's wait for what blocks it, and
  * where the sprint stands (framework/workflow.md, *Delivering a backlog item*; the /sprint
  * command; decisions FW-055 and the one that follows it).
  *
- * The sprint file is `<git common dir>/tropis/sprint.json`: local, shared by every
- * worktree of the checkout, never committed. Every command that reads the backlog first
- * fetches origin and reads `feature-catalog.yaml` and `docs/backlog-board/bands.yaml` at
+ * The sprint's record is the file `sprint.json` in the last commit of the branch
+ * `tropis/sprint` on origin, so a session in a new cloud container or on another machine
+ * finds the sprint under way, and a team member's `mark` or `note` from its own checkout
+ * reaches it. Each change is a commit on the one before, pushed with a lease on the commit
+ * it read; a push refused because another session got there first reads again and
+ * applies the same change again. The branch is never deleted (a cloud session cannot
+ * delete one): an ended sprint is a commit with an empty tree. Without a remote named
+ * origin the record is the local file `<git common dir>/tropis/sprint.json`, as before,
+ * and a record an earlier release left there is carried to the branch by the next change
+ * and the file removed. The team folder below stays on this machine.
+ *
+ * Every command that reads the backlog first fetches origin and reads `feature-catalog.yaml` and `docs/backlog-board/bands.yaml` at
  * origin/main, so a team member in a worktree and the sprint session see one backlog.
  *
  *   sprint.mjs propose [--points <n>]            the proposal; exit 0
  *   sprint.mjs start <id> ... [--points <n>] [--way session|here|claude|cursor]
- *                                                writes the sprint file; exit 1 when
+ *                                                writes the record; exit 1 when
  *                                                one exists or an id is unknown
  *   sprint.mjs add <id> | drop <id>              change the sprint; exit 1 on a bad id
  *       (for a `session` sprint, start and add also name the team member's model)
  *   sprint.mjs mark <id> planning|parked|stopped|clear [<reason> ...]
  *   sprint.mjs note <id> <text> ...              a decision a team member reports
- *   sprint.mjs wait <id> [--interval <seconds>]  exit 0 when what the entry is blocked
- *       by has shipped, 3 (`PARKED: depends on <id>`) when a blocker was dropped, parked
- *       or stopped, 1 for an id not in the backlog. No time limit; works with no sprint.
+ *   sprint.mjs wait <id> [--interval <seconds>] | [--once]  exit 0 when what the entry is
+ *       blocked by has shipped, 3 (`PARKED: depends on <id>`) when a blocker was dropped,
+ *       parked or stopped, 1 for an id not in the backlog. No time limit; works with no
+ *       sprint. With --once it checks one time and, where the wait would go on, exits 5
+ *       with `Still waiting: ...`, for a session that wakes itself on a schedule.
  *   sprint.mjs brief <id>                        the team member's brief
  *   sprint.mjs launch <id> [--tool claude|cursor] [--model <m>] [--interval <seconds>]
  *       starts the entry's team member in that tool's command line, in print mode, in a
  *       worktree `<checkout>-team-<id>` beside the checkout, as a detached `run`, and
  *       returns at once. Records `launched[id]` ({ tool, model, worktree, pid, started,
- *       log }) in the sprint file and marks the entry planning.
+ *       log }) in the record and marks the entry planning.
  *   sprint.mjs run <id> --tool <t> [--model <m>] [--interval <seconds>]
  *       what launch starts: waits for what blocks the entry, runs the tool on exact
  *       grants and no API key, judges its last line against origin/main and writes the
@@ -35,12 +46,12 @@
  *   sprint.mjs watch [--interval <seconds>]      exit 0 with the line of the first ended
  *       command-line team member not yet reported, 1 when none is running or unreported.
  *   sprint.mjs status | report | end             where it stands, the report, the report
- *                                                and then the sprint file removed
+ *                                                and then the sprint ended
  *
  * The team folder `<git common dir>/tropis/team/` holds, per launched entry, `<id>.brief.md`
  * (the prompt), `<id>.log` (the run's output, stream-json) and `<id>.json` (the result:
  * { tool, line, denied, sessionId, exit, finished, reported? }). It is written by this
- * script only, and outlives the sprint file.
+ * script only, and outlives the sprint.
  *
  * Every command except propose, start, wait and run exits 1 with one line when no sprint is
  * under way; an unknown command exits 2 with the usage line. Every line is on stdout,
@@ -56,10 +67,11 @@ import {
 } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import YAML from 'yaml';
+import YAML from './load-yaml.mjs';
 import { bandBundles, bandLetters, bandScores } from './board-bands.js';
 import { mergesAfterIds, pickToUse, pickForTool, NO_PICKS_USE } from './plan-binding.js';
 import { bandOf, inRankOrder, isClosed } from './next-work.js';
+import { readSubscriptions } from './subscriptions.js';
 import { originOnGitHub } from './main-status.mjs';
 import { tokenStatus } from './merge-token.mjs';
 import {
@@ -74,7 +86,7 @@ const COMMANDS = ['propose', 'start', 'add', 'drop', 'mark', 'note', 'wait', 'br
 const PLANS_DIR = 'docs/superpowers/plans/';
 const USAGE = 'usage: sprint.mjs propose [--points <n>] | start <id> ... [--points <n>] [--way session|here|claude|cursor] | '
   + 'add <id> | drop <id> | mark <id> planning|parked|stopped|clear [<reason>] | note <id> <text> | '
-  + 'wait <id> [--interval <seconds>] | brief <id> | launch <id> [--tool claude|cursor] [--model <m>] | '
+  + 'wait <id> [--interval <seconds> | --once] | brief <id> | launch <id> [--tool claude|cursor] [--model <m>] | '
   + 'run <id> --tool <t> (started by launch) | watch | status | report | end';
 const NONE_UNDER_WAY = 'Sprint: none under way; run propose, then start.';
 
@@ -152,7 +164,10 @@ function openPullRequests(root, env) {
   }
 }
 
-// ---------------------------------------------------------------- the sprint file
+// ---------------------------------------------------------------- the sprint record
+
+const SPRINT_BRANCH = 'tropis/sprint';
+const SPRINT_REF = `refs/heads/${SPRINT_BRANCH}`;
 
 function sprintPath(root, env) {
   const r = git(root, env, ['rev-parse', '--git-common-dir']);
@@ -164,13 +179,8 @@ function sprintPath(root, env) {
 // for a TEAM_TIER plan, from the project's picks and the subscriptions record.
 function teamModelLine(root, env) {
   const picksPath = resolve(root, 'docs/model-picks.md');
-  const subsPath = resolve(dirname(sprintPath(root, env)), 'subscriptions.txt');
   const use = existsSync(picksPath)
-    ? pickToUse(
-      readFileSync(picksPath, 'utf8'),
-      TEAM_TIER,
-      existsSync(subsPath) ? readFileSync(subsPath, 'utf8') : null,
-    )
+    ? pickToUse(readFileSync(picksPath, 'utf8'), TEAM_TIER, readSubscriptions(root, env))
     : NO_PICKS_USE;
   const none = use.startsWith('**Use:** not chosen') || use.startsWith('**Use:** none');
   return `Sprint: team members run on the ${TEAM_TIER} tier. ${use}${none ? " Start them on the tool's default model." : ''}`;
@@ -180,27 +190,126 @@ function teamModelLine(root, env) {
 // project's picks and the subscriptions record. See `pickForTool`.
 function teamModelFor(root, env, toolName) {
   const picksPath = resolve(root, 'docs/model-picks.md');
-  const subsPath = resolve(dirname(sprintPath(root, env)), 'subscriptions.txt');
   return pickForTool(
     existsSync(picksPath) ? readFileSync(picksPath, 'utf8') : null,
     TEAM_TIER,
-    existsSync(subsPath) ? readFileSync(subsPath, 'utf8') : null,
+    readSubscriptions(root, env),
     toolName,
   );
 }
 
-function readSprint(root, env) {
+const hasOrigin = (root, env) => git(root, env, ['remote', 'get-url', 'origin']).status === 0;
+
+function readLocalSprint(root, env) {
   const path = sprintPath(root, env);
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
 }
 
-/** Written to a sibling file and renamed, so a reader never sees half a file. */
-function writeSprint(root, env, sprint) {
-  const path = sprintPath(root, env);
-  mkdirSync(dirname(path), { recursive: true });
-  const partial = `${path}.${process.pid}`;
-  writeFileSync(partial, `${JSON.stringify(sprint, null, 2)}\n`);
-  renameSync(partial, path);
+/** The record in the tree of `sha`, or null when that commit holds no `sprint.json`. */
+function recordAt(root, env, sha) {
+  const shown = git(root, env, ['show', `${sha}:sprint.json`]);
+  return shown.status === 0 ? JSON.parse(shown.stdout) : null;
+}
+
+/**
+ * The sprint and the commit it was read from: `{ sprint, sha, fromLocal }`. With an origin
+ * the record is the file `sprint.json` in the last commit of `tropis/sprint` there; no
+ * branch, or a commit with no file, means none under way (`sha` is null for no branch).
+ * When origin cannot be reached the last fetched copy is read, and `unreachable` is set.
+ * A record an earlier release kept in the local file is returned (`fromLocal`) where the
+ * branch holds none, so the next change carries it to origin. Without an origin it is the
+ * local file, `sha` null.
+ */
+export function readSprint(root, env) {
+  if (!hasOrigin(root, env)) {
+    return { sprint: readLocalSprint(root, env), sha: null, fromLocal: false, noOrigin: true };
+  }
+  const tracking = `refs/remotes/origin/${SPRINT_BRANCH}`;
+  const listed = git(root, env, ['ls-remote', 'origin', SPRINT_REF]);
+  let unreachable = false;
+  let sha = null;
+  if (listed.status !== 0) {
+    unreachable = true;
+    const last = git(root, env, ['rev-parse', '--verify', '--quiet', `${tracking}^{commit}`]);
+    sha = last.status === 0 ? last.stdout.trim() : null;
+  } else if (listed.stdout.trim() !== '') {
+    const fetched = git(root, env, ['fetch', '--quiet', 'origin', `+${SPRINT_REF}:${tracking}`]);
+    if (fetched.status !== 0) throw new Refusal(`Sprint: could not fetch the sprint record — ${firstLine(fetched.stderr) ?? `git exited ${fetched.status}`}`);
+    sha = git(root, env, ['rev-parse', `${tracking}^{commit}`]).stdout.trim();
+  }
+  const sprint = sha ? recordAt(root, env, sha) : null;
+  if (sprint) return { sprint, sha, fromLocal: false, unreachable };
+  const local = readLocalSprint(root, env);
+  return { sprint: local, sha, fromLocal: local !== null, unreachable };
+}
+
+/** Writes the commit holding `record` (or an empty tree) on `parent`, returns its hash. */
+function commitRecord(root, env, record, parent) {
+  const lone = { ...env };
+  if (git(root, env, ['var', 'GIT_AUTHOR_IDENT']).status !== 0
+    || git(root, env, ['var', 'GIT_COMMITTER_IDENT']).status !== 0) {
+    Object.assign(lone, {
+      GIT_AUTHOR_NAME: 'Tropis sprint', GIT_AUTHOR_EMAIL: 'sprint@example.com',
+      GIT_COMMITTER_NAME: 'Tropis sprint', GIT_COMMITTER_EMAIL: 'sprint@example.com',
+    });
+  }
+  const step = (args, input) => {
+    const r = spawnSync('git', args, { cwd: root, env: lone, encoding: 'utf8', input });
+    if (r.status !== 0) throw new Refusal(`Sprint: could not write the sprint record — ${firstLine(r.stderr) ?? `git exited ${r.status}`}`);
+    return r.stdout.trim();
+  };
+  let tree;
+  if (record === null) {
+    tree = step(['mktree'], '');
+  } else {
+    const blob = step(['hash-object', '-w', '--stdin'], `${JSON.stringify(record, null, 2)}\n`);
+    tree = step(['mktree'], `100644 blob ${blob}\tsprint.json\n`);
+  }
+  return step(['commit-tree', tree, ...(parent ? ['-p', parent] : []), '-m',
+    record === null ? 'sprint: ended' : 'sprint: record changed']);
+}
+
+const MOVED = /stale info|fetch first|already exists|non-fast-forward/;
+const ATTEMPTS = 5;
+
+/**
+ * Changes the sprint: reads it, calls `change(sprint)` (null when none is under way) for
+ * the new record, or null to end the sprint, and pushes that as a commit on the one read,
+ * with a lease on exactly that commit. A push refused because another session moved the
+ * branch first reads again and calls `change` again, up to ATTEMPTS times, so `change`
+ * must hold no state of its own. Returns the new record. Without an origin the local file
+ * is written, or removed for null. The branch is never deleted: an ended sprint is a
+ * commit with an empty tree, because a cloud session cannot delete a branch.
+ */
+export function updateSprint(root, env, change) {
+  for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
+    const read = readSprint(root, env);
+    const next = change(read.sprint);
+    if (read.noOrigin) {
+      const path = sprintPath(root, env);
+      if (next === null) {
+        rmSync(path, { force: true });
+      } else {
+        mkdirSync(dirname(path), { recursive: true });
+        const partial = `${path}.${process.pid}`;
+        writeFileSync(partial, `${JSON.stringify(next, null, 2)}\n`);
+        renameSync(partial, path);
+      }
+      return next;
+    }
+    if (read.unreachable) throw new Refusal('Sprint: could not reach origin, so the sprint record was not changed.');
+    const commit = commitRecord(root, env, next, read.sha);
+    const pushed = git(root, env, ['push', '--quiet',
+      `--force-with-lease=${SPRINT_REF}:${read.sha ?? ''}`, 'origin', `${commit}:${SPRINT_REF}`]);
+    if (pushed.status === 0) {
+      if (read.fromLocal) rmSync(sprintPath(root, env), { force: true });
+      return next;
+    }
+    if (!MOVED.test(pushed.stderr)) {
+      throw new Refusal(`Sprint: could not push the sprint record — ${firstLine(pushed.stderr) ?? `git exited ${pushed.status}`}`);
+    }
+  }
+  throw new Refusal('Sprint: the record kept changing under this command; run it again.');
 }
 
 const pointsOf = (sprint) => sprint.entries.reduce((sum, e) => sum + e.points, 0);
@@ -410,16 +519,20 @@ function launch(ctx, opts) {
   child.unref();
   if (!child.pid) throw new Refusal(`Sprint: could not start the run for ${id}.`);
 
-  const latest = requireSprint(ctx);
-  latest.launched = {
-    ...(latest.launched ?? {}),
-    [id]: {
-      tool, ...(model ? { model } : {}), worktree, pid: child.pid,
-      started: isoSeconds(ctx.now()), log,
-    },
-  };
-  latest.marks[id] = { state: 'planning' };
-  writeSprint(ctx.root, ctx.env, latest);
+  updateSprint(ctx.root, ctx.env, (current) => {
+    if (!current) throw new Refusal(NONE_UNDER_WAY);
+    return {
+      ...current,
+      launched: {
+        ...(current.launched ?? {}),
+        [id]: {
+          tool, ...(model ? { model } : {}), worktree, pid: child.pid,
+          started: isoSeconds(ctx.now()), log,
+        },
+      },
+      marks: { ...current.marks, [id]: { state: 'planning' } },
+    };
+  });
   return [
     `Sprint: ${id} started in ${name}'s command line (pid ${child.pid}), in ${worktree}.`,
     `Sprint: its log is ${log}; status names the command that opens its session.`,
@@ -565,7 +678,7 @@ function newSinceStart(sprint, catalog) {
 // ---------------------------------------------------------------- commands
 
 function requireSprint(ctx) {
-  const sprint = readSprint(ctx.root, ctx.env);
+  const { sprint } = readSprint(ctx.root, ctx.env);
   if (!sprint) throw new Refusal(NONE_UNDER_WAY);
   return sprint;
 }
@@ -608,29 +721,33 @@ function propose(ctx, opts) {
 }
 
 function start(ctx, opts) {
-  const existing = readSprint(ctx.root, ctx.env);
-  if (existing) throw new Refusal(`Sprint: one is under way since ${existing.started}; end it first.`);
-  if (!opts.ids.length) throw new Refusal('Sprint: start takes at least one backlog item id.');
-  if (opts.way !== undefined && !WAYS.includes(opts.way)) {
-    throw new Refusal(`Sprint: --way takes ${WAYS.join(' or ')}.`);
-  }
-  const budget = opts.points === undefined ? DEFAULT_BUDGET : parseBudget(opts.points);
-  const backlog = ctx.backlog();
-  const entries = opts.ids.map((id) => {
-    requireInBacklog(backlog, id);
-    return sprintEntry(backlog, id);
-  });
-  const twice = opts.ids.find((id, i) => opts.ids.indexOf(id) !== i);
-  if (twice) throw new Refusal(`Sprint: ${twice} is listed twice.`);
-  const way = opts.way ?? 'here';
-  writeSprint(ctx.root, ctx.env, {
-    started: isoSeconds(ctx.now()),
-    budget,
-    way,
-    entries,
-    baseline: backlog.catalog.map((e) => e.id),
-    marks: {},
-    notes: {},
+  let way;
+  let entries;
+  let budget;
+  updateSprint(ctx.root, ctx.env, (existing) => {
+    if (existing) throw new Refusal(`Sprint: one is under way since ${existing.started}; end it first.`);
+    if (!opts.ids.length) throw new Refusal('Sprint: start takes at least one backlog item id.');
+    if (opts.way !== undefined && !WAYS.includes(opts.way)) {
+      throw new Refusal(`Sprint: --way takes ${WAYS.join(' or ')}.`);
+    }
+    budget = opts.points === undefined ? DEFAULT_BUDGET : parseBudget(opts.points);
+    const backlog = ctx.backlog();
+    entries = opts.ids.map((id) => {
+      requireInBacklog(backlog, id);
+      return sprintEntry(backlog, id);
+    });
+    const twice = opts.ids.find((id, i) => opts.ids.indexOf(id) !== i);
+    if (twice) throw new Refusal(`Sprint: ${twice} is listed twice.`);
+    way = opts.way ?? 'here';
+    return {
+      started: isoSeconds(ctx.now()),
+      budget,
+      way,
+      entries,
+      baseline: backlog.catalog.map((e) => e.id),
+      marks: {},
+      notes: {},
+    };
   });
   const out = [`Sprint: started with ${entries.length} backlog items, ${entries.reduce((s, e) => s + e.points, 0)} of ${budget} effort points; team members start as ${way}.`];
   if (way === 'session') out.push(teamModelLine(ctx.root, ctx.env));
@@ -638,14 +755,16 @@ function start(ctx, opts) {
 }
 
 function add(ctx, opts) {
-  const sprint = requireSprint(ctx);
   const id = opts.ids[0];
+  let added;
+  const sprint = updateSprint(ctx.root, ctx.env, (current) => {
+    if (!current) throw new Refusal(NONE_UNDER_WAY);
+    requireInBacklog(ctx.backlog(), id);
+    if (current.entries.some((e) => e.id === id)) throw new Refusal(`Sprint: ${id} is already in the sprint.`);
+    added = sprintEntry(ctx.backlog(), id);
+    return { ...current, entries: [...current.entries, added] };
+  });
   const backlog = ctx.backlog();
-  requireInBacklog(backlog, id);
-  if (sprint.entries.some((e) => e.id === id)) throw new Refusal(`Sprint: ${id} is already in the sprint.`);
-  const added = sprintEntry(backlog, id);
-  sprint.entries.push(added);
-  writeSprint(ctx.root, ctx.env, sprint);
   const total = pointsOf(sprint);
   const out = [`Sprint: added ${id} (${added.points} pts); ${total} of ${sprint.budget} effort points.`];
   if (total > sprint.budget) {
@@ -668,42 +787,47 @@ function add(ctx, opts) {
 }
 
 function drop(ctx, opts) {
-  const sprint = requireSprint(ctx);
   const id = opts.ids[0];
-  requireEntry(sprint, id);
-  sprint.entries = sprint.entries.filter((e) => e.id !== id);
-  delete sprint.marks[id];
-  delete sprint.notes[id];
-  writeSprint(ctx.root, ctx.env, sprint);
+  const sprint = updateSprint(ctx.root, ctx.env, (current) => {
+    if (!current) throw new Refusal(NONE_UNDER_WAY);
+    requireEntry(current, id);
+    const { [id]: _mark, ...marks } = current.marks;
+    const { [id]: _notes, ...notes } = current.notes;
+    return { ...current, entries: current.entries.filter((e) => e.id !== id), marks, notes };
+  });
   return [`Sprint: dropped ${id}; ${pointsOf(sprint)} of ${sprint.budget} effort points.`];
 }
 
 function mark(ctx, opts) {
-  const sprint = requireSprint(ctx);
   const [id, state, ...reason] = opts.ids;
-  requireEntry(sprint, id);
-  if (!['planning', 'parked', 'stopped', 'clear'].includes(state)) {
-    throw new Refusal('Sprint: mark takes planning, parked, stopped or clear.');
-  }
-  if (state === 'clear') {
-    delete sprint.marks[id];
-    writeSprint(ctx.root, ctx.env, sprint);
-    return [`Sprint: ${id} mark cleared.`];
-  }
-  if ((state === 'parked' || state === 'stopped') && !reason.length) {
-    throw new Refusal(`Sprint: a ${state} mark needs a reason.`);
-  }
-  sprint.marks[id] = reason.length ? { state, reason: reason.join(' ') } : { state };
-  writeSprint(ctx.root, ctx.env, sprint);
-  return [`Sprint: ${id} marked ${state}.`];
+  updateSprint(ctx.root, ctx.env, (current) => {
+    if (!current) throw new Refusal(NONE_UNDER_WAY);
+    requireEntry(current, id);
+    if (!['planning', 'parked', 'stopped', 'clear'].includes(state)) {
+      throw new Refusal('Sprint: mark takes planning, parked, stopped or clear.');
+    }
+    if (state === 'clear') {
+      const { [id]: _mark, ...marks } = current.marks;
+      return { ...current, marks };
+    }
+    if ((state === 'parked' || state === 'stopped') && !reason.length) {
+      throw new Refusal(`Sprint: a ${state} mark needs a reason.`);
+    }
+    return {
+      ...current,
+      marks: { ...current.marks, [id]: reason.length ? { state, reason: reason.join(' ') } : { state } },
+    };
+  });
+  return [state === 'clear' ? `Sprint: ${id} mark cleared.` : `Sprint: ${id} marked ${state}.`];
 }
 
 function note(ctx, opts) {
-  const sprint = requireSprint(ctx);
   const [id, ...words] = opts.ids;
-  requireEntry(sprint, id);
-  sprint.notes[id] = [...(sprint.notes[id] ?? []), words.join(' ')];
-  writeSprint(ctx.root, ctx.env, sprint);
+  updateSprint(ctx.root, ctx.env, (current) => {
+    if (!current) throw new Refusal(NONE_UNDER_WAY);
+    requireEntry(current, id);
+    return { ...current, notes: { ...current.notes, [id]: [...(current.notes[id] ?? []), words.join(' ')] } };
+  });
   return [`Sprint: noted for ${id}.`];
 }
 
@@ -792,14 +916,17 @@ function report(ctx) {
 
 function end(ctx) {
   const lines = report(ctx);
-  rmSync(sprintPath(ctx.root, ctx.env));
-  return [...lines, 'Sprint: ended; the sprint file is removed.'];
+  updateSprint(ctx.root, ctx.env, () => null);
+  return [...lines, hasOrigin(ctx.root, ctx.env)
+    ? 'Sprint: ended; the record on origin says no sprint is under way.'
+    : 'Sprint: ended; the sprint file is removed.'];
 }
 
 /**
  * The team member's wait: ends when nothing it is blocked by is open (exit 0), or when a
  * blocker was dropped, parked or stopped (exit 3). It reads the backlog afresh every
- * interval and has no time limit. `print` writes a line as it happens.
+ * interval and has no time limit. With `opts.once` it checks one time and returns exit 5
+ * with a `Still waiting:` line instead of going on. `print` writes a line as it happens.
  */
 async function wait(ctx, opts, print) {
   const id = opts.ids[0];
@@ -807,7 +934,7 @@ async function wait(ctx, opts, print) {
   for (;;) {
     const backlog = ctx.backlog();
     const entry = requireInBacklog(backlog, id);
-    const marks = teamMarks(ctx.root, ctx.env, readSprint(ctx.root, ctx.env));
+    const marks = teamMarks(ctx.root, ctx.env, readSprint(ctx.root, ctx.env).sprint);
     const state = (other) => backlog.catalog.find((e) => e.id === other)?.status;
     const open = [];
     for (const blocker of entry.blockedBy ?? []) {
@@ -819,6 +946,12 @@ async function wait(ctx, opts, print) {
     }
     if (!open.length) {
       return { exit: 0, lines: [`Sprint: ${id} can start — nothing it is blocked by is still open.`] };
+    }
+    if (opts.once) {
+      return {
+        exit: 5,
+        lines: [`Still waiting: ${id} is blocked by ${open.join(', ')}, which ${open.length === 1 ? 'has' : 'have'} not shipped.`],
+      };
     }
     if (!told) {
       print(`Sprint: ${id} waits for ${open.join(', ')} to ship.`);
@@ -839,6 +972,8 @@ function parseArgs(argv) {
     const word = rest[i];
     if (command === 'mark' || command === 'note' || !word.startsWith('--')) {
       opts.ids.push(word);
+    } else if (word === '--once' && command === 'wait') {
+      opts.once = true;
     } else if (['--points', '--way', '--interval', '--tool', '--model'].includes(word) && rest[i + 1] !== undefined) {
       const value = rest[i + 1];
       i += 1;

@@ -2022,3 +2022,135 @@ one rule). Asking the tool at launch (Claude Code has no list command).
 reads it as before, and `launch` says the names are missing until
 `/refresh-model-tiers` runs. Completes FW-060 for FW-059's team members. Source: the
 backlog item `launched-team-members-run-on-the-large-pick`.
+
+## FW-063: The merge token is a branch, and a cloud session merges through its own GitHub tools
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`cloud-team-member-merges-its-work`.
+
+**Decision:** The merge token moves from `refs/tropis/merge-token` to a branch, the same
+one for every session wherever it runs, so a session on the developer's machine and one
+in the cloud take turns under one token. Taking it is a push with an empty lease, as now.
+Releasing it replaces its commit with one whose message says `holder: none`, so a free
+token is that branch with that commit, never a missing ref. A session where `gh` cannot
+write, such as a Claude Code cloud session, opens, updates and sets its pull request to
+merge with its own GitHub tools, and waits for it by subscribing to the pull request's
+activity. A squash merge takes its message from the pull request's title and
+description, which this repository's settings now say (`squash_merge_commit_title`
+`PR_TITLE`, `squash_merge_commit_message` `PR_BODY`, set 2026-11-03), so a session whose
+tool cannot pass a subject and body sets them as the pull request's title and
+description. Tropis's setup sets the same for every project.
+
+**Evidence:** A probe on 2026-11-03, Claude Code 2.1.317 in a Claude Code cloud session,
+Linux x86_64, on this repository. Every push to a ref outside `refs/heads/` was refused
+with HTTP 403, and so was every write through `gh`. A branch used as the token was taken
+with an empty lease, refused a second take, and was released by replacing its commit;
+deleting it was refused. The session's GitHub tools opened a pull request, set
+auto-merge as a squash and turned it off, updated its branch and closed it, and a
+subscription woke the session on each check result. The tool that sets auto-merge takes
+no subject or body. No setting the session could see allows `gh` writes. The findings
+are in the cloud-sprint design of 2026-11-03, under The answer.
+Source: none in particular.
+
+**Rejected:** A token on `refs/tropis/` for local sessions and a branch for cloud ones
+(two tokens would not exclude each other). Cloud team members merging without the token
+(they would race and re-run checks, which FW-052 exists to stop). Each cloud team member
+squashing its branch to one commit before its pull request (a step on every merge, where
+one repository setting does it).
+
+**Consequences:** Supersedes FW-049's choice of a ref outside heads and tags. The token
+branch shows in the branch list; the main branch's ruleset does not cover it, and
+automatic deletion of merged branches never touches it because it is never a pull
+request's head. A cloud session cannot delete a branch, so it never deletes the token.
+Projects already set up take the new token location, and the squash setting, through
+their update.
+
+## FW-064: A fresh clone is told the subscriptions by a variable, and a cloud session works on the plan's branch
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog items
+`cloud-session-knows-the-subscriptions` and `cloud-session-works-on-a-plan-branch`.
+
+**Decision:** Where a machine has no local subscriptions record, as in any fresh clone
+and so in a Claude Code cloud session, `TROPIS_SUBSCRIPTIONS` holds the same
+`<tool>: <subscription>` lines separated by `;`. One reader, `readSubscriptions`, serves
+`/dispatch` and the sprint: the local record wins where both exist. The variable is set
+in the cloud environment's settings, never in a committed file. A cloud session starts on
+a branch the cloud assigned it and leaves that branch alone: it creates each plan's
+branch in a worktree from `origin/main` and pushes that, as every session does.
+
+**Evidence:** A cloud session on 2026-11-03, Claude Code 2.1.317, Linux x86_64, printed
+that the subscriptions were not recorded on its machine. Pushing branches with other
+names than the assigned one worked.
+Source: none in particular.
+
+**Rejected:** A committed record (personal, and this project is public). Asking the
+developer in every cloud session (a sprint session starts team members unattended).
+Working on the assigned branch (it is not the plan's branch, and a squash merge of it
+would carry other work).
+
+**Consequences:** A developer who wants the included model named in the cloud sets one
+variable once. Nothing changes for a local session. The no-record message names the
+variable.
+
+## FW-065: The sprint's record is a branch on origin, changed by a push with a lease
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`sprint-record-outlives-its-session`.
+
+**Decision:** The agreed sprint is kept on `origin`, as the file `sprint.json` in the last
+commit of the branch `tropis/sprint`, in place of a local file. Every command that changes
+the sprint reads the branch, applies its change to the record read, and pushes a new
+commit with a lease on the commit it read; a push refused because another session moved
+the branch first reads again and applies the same change again, up to five times, then
+stops with one line. So a sprint session resumed in a new cloud container or on another
+machine finds the sprint under way, and a team member's mark or note from its own
+checkout reaches it. The branch is never deleted: an ended sprint is a commit whose tree
+is empty, because a cloud session cannot delete a branch (FW-063). Where there is no
+remote named origin the record stays in the local file, and a record an earlier release
+kept in that file is carried to the branch by the next change, then the file is removed.
+The team folder and the subscriptions record stay on the machine.
+
+**Evidence:** A cloud session reported on 2026-11-03 (Claude Code 2.1.317, Linux x86_64)
+that its container is reclaimed after inactivity, taking the local file with it, and that
+it can push branches with a lease but not refs outside branches or deletions (FW-063).
+In the cloud-sprint design of 2026-11-03, under What a cloud session hit.
+Source: the merge token's mechanism (FW-063), in this repository; nothing else.
+
+**Rejected:** Keeping the file local and committing a copy to the main branch on each
+change (every change would need a pull request). A ref outside branches (a cloud session
+cannot push one).
+
+**Consequences:** The branch shows in the branch list and nothing deletes it. Each change
+costs one fetch and one push, and a sprint command without a reachable origin refuses to
+change the record, and reads the last fetched copy.
+
+## FW-066: A wait that may outlast the container is checked once, from a wake the session schedules
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`cloud-waits-wake-on-a-schedule`.
+
+**Decision:** The three waits a delivery runs — for what a backlog item is blocked by,
+for the plans a plan merges after, and for the merge token — each take `--once`: one
+check, then exit. Where the wait would go on, it exits 5 with a line starting `Still
+waiting:` that names the blockers or the holder; every other exit keeps its meaning, and
+`--once` with `--timeout` is refused. The workflow tells a session whose processes may
+not outlast its idle time, such as a Claude Code cloud session, to run each wait with
+`--once`, and on exit 5 to schedule a wake 30 minutes later with its own scheduling tool
+that survives a restart (`send_later` there), naming the command to run again, and end
+the turn. This follows FW-055: a wait still ends when its event happens, and the wake
+only decides when to look.
+
+**Evidence:** A cloud session measured on 2026-11-03 (Claude Code 2.1.317, Linux x86_64):
+an idle container was replaced after about two hours, ending every process while files
+survived; the shell tool stops a background command after two hours; a wake set with
+`send_later` for 20 minutes arrived 35 seconds after its minute, as the session's own
+turn. In the cloud-sprint design of 2026-11-03, under The answer. Source: the existing
+waits in this repository; nothing else.
+
+**Rejected:** One long background command (capped at two hours, and ended by a container
+replacement). A scheduler inside the container such as cron (it lives in the container and
+goes with it). A shorter interval (more turns for an event that takes hours).
+
+**Consequences:** A long wait in the cloud costs about two turns an hour, and a wake
+may arrive up to a minute late. A session that cannot schedule a wake keeps to the
+background command and its limits.
