@@ -41,7 +41,8 @@ git_dir=$(git rev-parse --path-format=absolute --git-dir 2>/dev/null) || exit 0
 common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
 [ "$git_dir" = "$common_dir" ] || exit 0
 
-branch=$(HOOK_COMMAND="$command" python3 - "$here/command-at-position.py" <<'PY'
+# -B: loading the matcher as a module would write __pycache__/ beside it.
+branch=$(HOOK_COMMAND="$command" python3 -B - "$here/command-at-position.py" <<'PY'
 import importlib.util
 import os
 import sys

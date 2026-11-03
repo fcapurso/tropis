@@ -441,7 +441,7 @@ export function pickToUse(picksText, tier, subscriptionsText) {
   }
   const held = subscriptionsText === null ? new Map() : parseSubscriptions(subscriptionsText);
   if (held.size === 0) {
-    return '**Use:** not chosen — which subscriptions you have is not recorded on this machine. Run /refresh-model-tiers.';
+    return '**Use:** not chosen — which subscriptions you have is not recorded on this machine. Run /refresh-model-tiers, or set TROPIS_SUBSCRIPTIONS.';
   }
   for (let i = from; i < TIER_ORDER.length; i++) {
     const models = picksForTier(picksText, TIER_ORDER[i])
