@@ -8,21 +8,25 @@ include; the second table gives each pick's usage and the subscriptions that inc
 
 **Last verified: 2026-11-02.**
 
+Placement was re-applied on 2026-11-03 to the figures below, under FW-067's bar for
+Large: within 1 point of the best selectable pick on every board scored from 0 to 100.
+No figure was read again.
+
 | Tier | Models |
 |---|---|
-| **Large** | Claude Sonnet 5.5 *(all)*; Claude Opus 5.5 *(all)*; Gemini 4 Argon *(Cursor)*; Claude Fable 5.1 *(all)* |
-| **Medium–large** | Muse Wonder *(Cursor)*; or any pick from a higher tier |
+| **Large** | Claude Opus 5.5 *(all)* |
+| **Medium–large** | Claude Sonnet 5.5 *(all)*; Muse Wonder *(Cursor)*; Gemini 4 Argon *(Cursor)*; Claude Fable 5.1 *(all)*; or any pick from a higher tier |
 | **Medium** | DeepSeek V4.1 Flash 1017 *(Cursor)*; GPT-5.6 Sol *(Cursor)*; Grok 4.7 *(Cursor)*; or any pick from a higher tier |
 | **Small–medium** | Claude Haiku 5.5 *(all)*; GPT-5.6 Terra *(Cursor)*; Gemini 3.8 Flash *(Cursor)*; or any pick from a higher tier |
 | **Small** | GPT-5.6 Luna *(Cursor)*; Composer 2.5 *(Cursor)*; or any pick from a higher tier |
 
 | Model | Usage per task | Included on | Command-line name |
 |---|---|---|---|
-| Claude Sonnet 5.5 | $1.20 per task (CursorBench 4.0, High effort; 37,391 tokens per task) | Claude Code: Pro, Max, Ultra, Team Standard, Team Premium; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-sonnet-5-5; Cursor: claude-sonnet-5-5-high |
 | Claude Opus 5.5 | $3.97 per task (CursorBench 4.0, High effort; 53,078 tokens per task) | Claude Code: Pro, Max, Ultra, Team Standard, Team Premium; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-opus-5-5; Cursor: claude-opus-5-5-high |
+| Claude Sonnet 5.5 | $1.20 per task (CursorBench 4.0, High effort; 37,391 tokens per task) | Claude Code: Pro, Max, Ultra, Team Standard, Team Premium; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-sonnet-5-5; Cursor: claude-sonnet-5-5-high |
+| Muse Wonder | $3.51 per task (CursorBench 4.0, High effort; 33,612 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: muse-wonder-1.0-high |
 | Gemini 4 Argon | $4.57 per task (CursorBench 4.0, High effort; 109,500 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gemini-4-argon-high |
 | Claude Fable 5.1 | $9.08 per task (CursorBench 4.0, High effort; 58,438 tokens per task) | Claude Code: Max (up to 50% of the weekly limit), Ultra (up to 50% of the weekly limit), Team Premium (up to 50% of the weekly limit); Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-fable-5-1; Cursor: claude-fable-5-1-high |
-| Muse Wonder | $3.51 per task (CursorBench 4.0, High effort; 33,612 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: muse-wonder-1.0-high |
 | DeepSeek V4.1 Flash 1017 | $0.77 per task (CursorBench 4.0, High effort; 385,196 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: deepseek-v41-flash-1017-high |
 | GPT-5.6 Sol | $2.85 per task (CursorBench 4.0, High effort; 16,174 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gpt-5.6-sol-high |
 | Grok 4.7 | $4.69 per task (CursorBench 4.0, High effort; 56,382 tokens per task) | Claude Code: none; Cursor: Free, Plus, Premium, Super, Ultra, Teams, Enterprise, Hobby, Start, Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: grok-4.7-high |
@@ -87,20 +91,26 @@ Boards used for placement, each compared only with itself:
 - **Arena WebDev**: LMArena's WebDev board, 2026-10-27 snapshot.
 
 - **Claude Opus 5.5**: AA v5.0 58 (max), the highest selectable; CursorBench 4.0 57.8%
-  (Max), first; TB 4.0 64.85% (max, Claude Code); Arena WebDev 1810, first. Launched
-  2026-09-22.
+  (Max), first; TB 4.0 64.85% (max, Claude Code); Arena WebDev 1810, first. **Alone in
+  Large**: it sets the best score on every board (FW-067). Launched 2026-09-22.
 - **Claude Sonnet 5.5**: AA v5.0 54 (max); CursorBench 4.0 55.5% (Max); TB 4.0 61.82%
-  (max); Arena WebDev 1770. Second to Opus 5.5 on every board. Launched 2026-09-28.
-- **Gemini 4 Argon**: AA v5.0 50 (high), level with Fable 5.1's 50 (xhigh);
-  CursorBench 4.0 52.9% (High) against Fable 5.1's 51.8% (Max). **Moved up from
-  Medium–large**: it is level with Fable 5.1 on both boards that score them together,
-  and below it only on Arena WebDev (1679 against 1746). No TB 4.0 entry. Released
-  2026-09-30.
+  (max); Arena WebDev 1770. Second to Opus 5.5 on every board. **Moved down from
+  Large**: 4 points below Opus 5.5 on AA v5.0, 2.3 on CursorBench 4.0 and 3.03 on TB 4.0,
+  each more than FW-067's 1-point margin. Launched 2026-09-28.
+- **Muse Wonder**: AA v5.0 43 (max), well below the other Medium–large picks' 50 and
+  above; CursorBench 4.0 50.4% (Max); Arena WebDev 1652. No TB 4.0 entry. Released
+  2026-10-12.
+- **Gemini 4 Argon**: AA v5.0 50 (high); CursorBench 4.0 52.9% (High); Arena WebDev 1679.
+  No TB 4.0 entry. **Moved down from Large**: 8 points below Opus 5.5 on AA v5.0 and 4.9
+  on CursorBench 4.0. Level with Fable 5.1 on both boards that score them together (AA
+  50 against 50 at xhigh, CursorBench 52.9% against 51.8% at Max), and below it on Arena
+  WebDev (1746). Released 2026-09-30.
 - **Claude Fable 5.1**: AA v5.0 50 (xhigh); CursorBench 4.0 51.8% (Max); TB 4.0 57.88%
-  (max), third among selectable models; Arena WebDev 1746. Below Opus 5.5 and Sonnet
-  5.5 everywhere, and the most expensive pick per task. Launched 2026-09-01.
-- **Muse Wonder**: AA v5.0 43 (max), well below the Large picks' 50 and above; CursorBench
-  4.0 50.4% (Max); Arena WebDev 1652. No TB 4.0 entry. Released 2026-10-12.
+  (max), third among selectable models; Arena WebDev 1746. **Moved down from Large**:
+  below Opus 5.5 and Sonnet 5.5 on every board. AA scores it at xhigh, below the max
+  effort Fable 5.1 supports, while Opus 5.5 is scored at max, so AA may understate it;
+  CursorBench 4.0 and TB 4.0 score both at max, and there it is 6.0 and 6.97 points below
+  Opus 5.5. The most expensive pick per task. Launched 2026-09-01.
 - **DeepSeek V4.1 Flash 1017**: CursorBench 4.0 47.7% (Max), above Grok 4.7's 46.3%;
   Arena WebDev 1665, above Grok 4.7's 1637; but AA v5.0 32 (max), below Grok 4.7's 34
   (xhigh) and level with Gemini 3.8 Flash. **New; placement contested**: two boards put
@@ -206,3 +216,4 @@ neither Claude Code nor Cursor, so they cannot be picks.
 - https://www.tbench.ai/leaderboard
 - https://arena.ai/leaderboard/webdev
 - https://labs.scale.com/leaderboard/swe_bench_pro_public
+- https://platform.claude.com/docs/en/build-with-claude/effort
