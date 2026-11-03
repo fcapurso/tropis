@@ -75,17 +75,6 @@ cloud-session-works-on-a-plan-branch:
   seen:
     status: idea
     blockers: []
-cloud-team-member-merges-its-work:
-  band: B
-  value: 4
-  valueWhy: The piece that makes a sprint from the cloud deliver anything to main.
-  effort: 3
-  effortWhy: The token and the merge sequence on a second route, with its tests and the
-    workflow's wording.
-  verdict: "The heart of the epic. Plan it as soon as the probe names the route."
-  seen:
-    status: building
-    blockers: []
 cloud-waits-wake-on-a-schedule:
   band: B
   value: 3

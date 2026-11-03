@@ -70,10 +70,11 @@ or reads anything under `pipeline/` except to run it.
 pipeline. On GitHub, print, with `<owner>/<name>` taken from `origin`:
 `gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
 and say to turn on *Allow auto-merge* and *Automatically delete head branches* under
-Settings → General → Pull Requests. The developer runs it; never run it yourself. A
-private repository on GitHub's free plan cannot have rulesets. If the developer will not
-or cannot apply it, or the host is not GitHub, ask why, and write their reason into
-`.tropis/project.json` as `"ungated": "<reason>"`, keeping any key already there. Until
+Settings → General → Pull Requests, and, under *Allow squash merging* there, to set the
+default commit message to *Pull request title and description*. The developer runs it;
+never run it yourself. A private repository on GitHub's free plan cannot have rulesets.
+If the developer will not or cannot apply it, or the host is not GitHub, ask why, and
+write their reason into `.tropis/project.json` as `"ungated": "<reason>"`, keeping any key already there. Until
 one of the two is done, the pipeline's `host` job fails on every run, by design.
 
 **Any other host.** Show the output of `node .tropis/scripts/pipeline.mjs commands`

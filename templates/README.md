@@ -83,13 +83,16 @@ already in `building` it writes `Merges after` into the plan's header, and `node
 items have shipped. The backlog, the bands file, the board, the release notes and the
 decision record do not count as shared.
 
-Pull requests open one at a time, under a merge token on `origin`:
+Pull requests open one at a time, under a merge token on `origin`, the branch
+`tropis/merge-token`:
 `node .tropis/scripts/merge-token.mjs take` before a session opens one, waiting while
 another holds it, and `release` once `main-status.mjs` has reported. To make every
 session wait — while you run something by hand, say — run
 `node .tropis/scripts/merge-token.mjs take --hold`, and `release --hold` after; `/release`
 does this itself. `node .tropis/scripts/merge-token.mjs` alone says who holds the token
-and for how long, as the second line of `/next` does.
+and for how long, as the second line of `/next` does. A project that took an earlier
+release has the old token at `refs/tropis/merge-token`; once every checkout runs this
+release, delete it with `git push origin :refs/tropis/merge-token`.
 
 `/sprint` plans a sprint with you and runs it: it proposes about 20 effort points from
 the top of the ranking, you agree the backlog items and their order, and when you say to
@@ -222,8 +225,9 @@ changes only through a pull request, needs no approval, requires the check
 lets nobody bypass it. Apply it with
 `gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
 and turn on *Allow auto-merge* and *Automatically delete head branches* under Settings →
-General → Pull Requests. If you renamed the job in `pipeline.yml` or the gate, apply a
-copy with the check's name changed. The pipeline's `host` job fails on every run until
+General → Pull Requests, and under *Allow squash merging* there set the default commit
+message to *Pull request title and description*. If you renamed the job in `pipeline.yml`
+or the gate, apply a copy with the check's name changed. The pipeline's `host` job fails on every run until
 the main branch requires a pull request and a check and auto-merge is not turned off, or
 until `.tropis/project.json` says why not, as `"ungated": "<the reason>"` — a private
 repository on GitHub's free plan cannot have rulesets, for one; the run summary then

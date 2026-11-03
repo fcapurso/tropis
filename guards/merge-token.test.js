@@ -5,10 +5,11 @@
  *
  * The pure functions are imported. The command-line cases run a copy of the script
  * installed at .tropis/scripts/ in a clone of a local bare repository, as a session
- * would, so the lock form of a push is tested for real, including two sessions at once.
- * The cases for an origin on GitHub fake it: the clone's origin URL is a github.com URL
- * whose pushes are redirected to a path that does not exist, and a stateful stub gh
- * placed first on PATH answers the REST calls. Nothing here reaches the network.
+ * would, so the lease on a push is tested for real, including two sessions at once.
+ * The cases for an origin on GitHub fake it: the clone's origin URL is a github.com URL,
+ * a git shim placed first on PATH sends ls-remote, fetch and push to the local bare
+ * repository, and a stub gh answers the only reads the token makes of GitHub, the
+ * pull requests and branches that judge a holder stale. Nothing here reaches the network.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import {
@@ -21,7 +22,7 @@ import * as token from '../scripts/merge-token.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
-const REF = 'refs/tropis/merge-token';
+const REF = 'refs/heads/tropis/merge-token';
 
 const roots = [];
 afterAll(() => roots.forEach((r) => rmSync(r, { recursive: true, force: true })));
@@ -190,7 +191,7 @@ describe('against a local origin', () => {
     const released = run(a, ['release', '--holder', 'a']);
     expect(released.status).toBe(0);
     expect(released.stdout).toBe('Merge token: released by a.\n');
-    expect(spawnSync('git', ['rev-parse', '--verify', '--quiet', REF], { cwd: origin.bare }).status).not.toBe(0);
+    expect(marker(origin.bare)).toContain('holder: none');
 
     const nothing = run(a, ['release', '--holder', 'a']);
     expect(nothing.status).toBe(0);
@@ -241,15 +242,46 @@ describe('against a local origin', () => {
     expect(run(dir, []).stdout).toBe('Merge token: could not tell — no remote named origin.\n');
   });
 
-  it('refuses a ref under refs/heads/ and one that is not a ref', () => {
+  it('refuses a ref that is not a plain branch, and none as a holder', () => {
     const origin = makeOrigin();
     const a = makeClone(origin, 'a');
-    expect(run(a, ['take', '--holder', 'a', '--ref', 'refs/heads/x']).status).toBe(2);
     expect(run(a, ['take', '--holder', 'a', '--ref', 'refs/tags/x']).status).toBe(2);
+    expect(run(a, ['take', '--holder', 'none']).stdout)
+      .toBe('Merge token: could not take — --holder must not be none, which marks a free token.\n');
     expect(run(a, ['take', '--holder', 'a', '--ref', 'x']).status).toBe(2);
     expect(run(a, ['break']).status).toBe(2);
     expect(run(a, ['take', '--holder', 'a\nb']).status).toBe(2);
-    expect(spawnSync('git', ['for-each-ref', 'refs/heads/x'], { cwd: origin.bare, encoding: 'utf8' }).stdout).toBe('');
+    expect(spawnSync('git', ['for-each-ref', 'refs/tags/x'], { cwd: origin.bare, encoding: 'utf8' }).stdout).toBe('');
+  });
+
+  it('refuses the default branch and refs outside branches as the token, and accepts another branch', () => {
+    const origin = makeOrigin();
+    const a = makeClone(origin, 'a');
+    expect(run(a, ['take', '--holder', 'a', '--ref', 'refs/heads/main']).status).toBe(2);
+    expect(run(a, ['take', '--holder', 'a', '--ref', 'refs/tropis/x']).status).toBe(2);
+    expect(run(a, ['status', '--ref', 'refs/heads/main']).status).toBe(2);
+    expect(spawnSync('git', ['rev-parse', 'main'], { cwd: origin.bare, encoding: 'utf8' }).stdout.trim())
+      .toBe(git(a, ['rev-parse', 'origin/main']));
+    const ok = run(a, ['take', '--holder', 'a', '--ref', 'refs/heads/probe/x']);
+    expect(ok.status).toBe(0);
+    expect(git(origin.bare, ['log', '-1', '--format=%B', 'refs/heads/probe/x'])).toContain('holder: a');
+    expect(spawnSync('git', ['rev-parse', '--verify', '--quiet', REF], { cwd: origin.bare }).status).not.toBe(0);
+  });
+
+  it('a free marker is read as free, and the next take leases on it', () => {
+    const origin = makeOrigin();
+    const a = makeClone(origin, 'a');
+    const b = makeClone(origin, 'b');
+    expect(run(a, ['take', '--holder', 'a']).status).toBe(0);
+    expect(run(a, ['release', '--holder', 'a']).status).toBe(0);
+    expect(run(b, []).stdout).toBe('Merge token: free.\n');
+    expect(marker(origin.bare)).toContain('holder: none');
+    // The free marker sits on the empty tree, so the branch never looks like the code.
+    expect(git(origin.bare, ['rev-parse', `${REF}^{tree}`])).toBe('4b825dc642cb6eb9a060e54bf8d69288fbee4904');
+    const second = run(b, ['take', '--holder', 'b']);
+    expect(second.stdout).toBe('Merge token: taken by b.\n');
+    expect(marker(origin.bare)).toContain('holder: b');
+    expect(run(b, ['release', '--holder', 'b']).status).toBe(0);
   });
   describe('with no time limit', () => {
     const GIT_IDENTITY = {
@@ -351,132 +383,139 @@ describe('against a local origin', () => {
 });
 
 describe('against an origin on GitHub, faked', () => {
-  // A stub gh that keeps its state in $STUB_DIR/state.json and logs each call to
-  // gh.log. State: ref (sha or null), commits (sha to message), createReplies (one per
-  // ref create: ok, ok-but-500, 500, rival-422), rival (sha and message a 422 leaves
-  // behind), readsFail, pulls, branch (a date, or null for no such branch).
+  // The clone's origin is a github.com URL, so the script judges staleness through gh.
+  // `git remote get-url` expands url.insteadOf rules, so those cannot redirect the
+  // clone; a git shim first on PATH swaps the remote name for the bare repository's path
+  // in ls-remote, fetch and push instead. The stub gh serves the pull request and branch
+  // reads in $STUB_DIR/state.json (pulls, branch: a date or null for no such branch),
+  // logs each call to gh.log, and answers any write as a Claude Code cloud session does.
   const STUB_GH = `#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
 const dir = process.env.STUB_DIR;
-const file = path.join(dir, 'state.json');
-const state = JSON.parse(fs.readFileSync(file, 'utf8'));
+const state = JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'));
 const args = process.argv.slice(2);
 fs.appendFileSync(path.join(dir, 'gh.log'), JSON.stringify(args) + '\\n');
-const save = () => fs.writeFileSync(file, JSON.stringify(state));
 const fail = (status, message, body) => {
   if (body) process.stdout.write(JSON.stringify({ message, status: String(status) }));
   process.stderr.write('gh: ' + message + ' (HTTP ' + status + ')\\n');
   process.exit(1);
 };
-const flag = (name) => {
-  const hit = args.find((a, i) => args[i - 1] === '-f' && a.startsWith(name + '='));
-  return hit ? hit.slice(name.length + 1) : undefined;
-};
 const url = args.find((a) => a.startsWith('repos/'));
 const method = args.includes('-X') ? args[args.indexOf('-X') + 1] : 'GET';
 if (args[0] !== 'api' || !url) { process.stderr.write('stub gh: unexpected call: ' + args.join(' ') + '\\n'); process.exit(99); }
-if (method === 'POST' && url.endsWith('/git/commits')) {
-  state.counter = (state.counter || 0) + 1;
-  const sha = String(state.counter).padStart(40, 'c');
-  state.commits[sha] = flag('message');
-  save();
-  process.stdout.write(JSON.stringify({ sha }));
-} else if (method === 'POST' && url.endsWith('/git/refs')) {
-  const reply = (state.createReplies || []).shift() || 'ok';
-  const sha = flag('sha');
-  if (reply === 'ok' || reply === 'ok-but-500') state.ref = sha;
-  if (reply === 'rival-422') { state.ref = state.rival.sha; state.commits[state.rival.sha] = state.rival.message; }
-  save();
-  if (reply === 'ok') process.stdout.write('{}');
-  else if (reply === '422' || reply === 'rival-422') fail(422, 'Reference already exists', true);
-  else fail(500, 'Internal Server Error', false);
-} else if (method === 'DELETE') {
-  state.ref = null;
-  save();
-} else if (url.includes('/git/ref/')) {
-  if (state.readsFail) fail(500, 'Internal Server Error', false);
-  if (!state.ref) fail(404, 'Not Found', true);
-  process.stdout.write(JSON.stringify({ object: { sha: state.ref } }));
-} else if (url.includes('/git/commits/')) {
-  process.stdout.write(JSON.stringify({ message: state.commits[url.split('/').pop()] }));
-} else if (url.startsWith('repos/{owner}/{repo}/pulls')) {
+if (method !== 'GET') fail(403, 'Write access to this GitHub API path is not permitted through this proxy.', false);
+if (url.startsWith('repos/{owner}/{repo}/pulls')) {
   process.stdout.write(JSON.stringify(state.pulls || []));
 } else if (url.includes('/branches/')) {
   if (!state.branch) fail(404, 'Branch not found', true);
   process.stdout.write(JSON.stringify({ commit: { commit: { committer: { date: state.branch } } } }));
 } else { process.stderr.write('stub gh: unexpected call: ' + args.join(' ') + '\\n'); process.exit(99); }
 `;
+  const SHIM_GIT = `#!/bin/sh
+case "$1" in
+  ls-remote|fetch|push)
+    for a in "$@"; do
+      shift
+      if [ "$a" = origin ]; then set -- "$@" "$BARE"; else set -- "$@" "$a"; fi
+    done;;
+esac
+exec "$REAL_GIT" "$@"
+`;
 
   const ago = (minutes) => new Date(Date.now() - minutes * 60000).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const message = (holder, taken, kind = 'branch') => token.markerMessage({ holder, kind, taken });
+  const IDENTITY = {
+    ...ENV,
+    GIT_AUTHOR_NAME: 'Seed', GIT_AUTHOR_EMAIL: 'seed@example.com',
+    GIT_COMMITTER_NAME: 'Seed', GIT_COMMITTER_EMAIL: 'seed@example.com',
+  };
 
-  /** A clone whose origin is on GitHub as far as the script can tell. */
-  function stage(initial = {}) {
+  /** A clone whose origin is on GitHub as far as the script can tell; `planted` is a marker message. */
+  function stage({ planted, ...initial } = {}) {
     const origin = makeOrigin();
     const clone = makeClone(origin, 'a', { branch: 'plan/a' });
     git(clone, ['remote', 'set-url', 'origin', 'https://github.com/acme/kiln.git']);
-    git(clone, ['config', 'url./no/such/path.pushInsteadOf', 'https://github.com/acme/kiln.git']);
+    if (planted) {
+      const empty = git(origin.bare, ['hash-object', '-t', 'tree', '-w', '--stdin']);
+      git(origin.bare, ['update-ref', REF, git(origin.bare, ['commit-tree', empty, '-m', planted], IDENTITY)]);
+    }
     const stub = join(origin.dir, 'stub');
     mkdirSync(join(stub, 'bin'), { recursive: true });
     writeFileSync(join(stub, 'bin/gh'), STUB_GH);
+    writeFileSync(join(stub, 'bin/git'), SHIM_GIT);
     chmodSync(join(stub, 'bin/gh'), 0o755);
+    chmodSync(join(stub, 'bin/git'), 0o755);
     writeFileSync(join(stub, 'gh.log'), '');
-    writeFileSync(join(stub, 'state.json'), JSON.stringify({ ref: null, commits: {}, ...initial }));
-    const env = { ...ENV, STUB_DIR: stub, PATH: `${join(stub, 'bin')}:${process.env.PATH}` };
+    writeFileSync(join(stub, 'state.json'), JSON.stringify(initial));
+    const realGit = spawnSync('which', ['git'], { encoding: 'utf8' }).stdout.trim();
+    const env = {
+      ...ENV, STUB_DIR: stub, BARE: origin.bare, REAL_GIT: realGit, PATH: `${join(stub, 'bin')}:${process.env.PATH}`,
+    };
     const calls = () => readFileSync(join(stub, 'gh.log'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
-    const callsTo = (method, part) => calls().filter((c) => {
-      const m = c.includes('-X') ? c[c.indexOf('-X') + 1] : 'GET';
-      return m === method && c.some((a) => a.includes(part));
-    });
-    return { clone, env, calls, callsTo };
+    return { origin, clone, env, calls };
   }
 
-  const SHA = 'a'.repeat(40);
-
-  it('reads the marker before deciding when the create fails for another reason', () => {
-    // The create in fact succeeded and the reply was lost: the next read shows the
-    // marker this session sent, so it holds the token and does not create it again.
-    const { clone, env, callsTo } = stage({ createReplies: ['ok-but-500'] });
+  it('retries a push that failed for another reason, and takes the token', () => {
+    const { origin, clone, env } = stage();
+    // The first push is refused by the server for a reason that is not a rival taking it.
+    const hook = join(origin.bare, 'hooks/pre-receive');
+    const counter = join(origin.dir, 'pushes');
+    writeFileSync(hook, `#!/bin/sh\nif [ ! -e ${counter} ]; then : > ${counter}; echo busy >&2; exit 1; fi\n`);
+    chmodSync(hook, 0o755);
     const r = run(clone, ['take', '--holder', 'plan/a', '--interval', '0', '--timeout', '0.01'], env);
-    expect(r.stdout).toContain('already held by plan/a');
+    expect(r.stdout).toBe('Merge token: taken by plan/a.\n');
     expect(r.status).toBe(0);
-    expect(callsTo('POST', '/git/refs')).toHaveLength(1);
+    expect(marker(origin.bare)).toContain('holder: plan/a');
   });
 
-  it('waits and stops, naming the holder, when the create says the reference exists', () => {
-    const rival = { sha: SHA, message: message('other', ago(1)) };
-    const { clone, env } = stage({ createReplies: ['rival-422'], rival });
+  it('waits and stops, naming the holder, when another session holds the branch', () => {
+    const { clone, env } = stage({ planted: message('other', ago(1)) });
     const r = run(clone, ['take', '--holder', 'plan/a', '--interval', '0', '--timeout', '0.01'], env);
     expect(r.status).toBe(3);
     expect(r.stdout).toBe('STOPPED: waiting for the token, held by other\n');
   });
 
   it('gives up after three failed reads', () => {
-    const { clone, env, callsTo } = stage({ readsFail: true });
-    const r = run(clone, ['take', '--holder', 'plan/a', '--interval', '0'], env);
+    const { clone, env } = stage();
+    const r = run(clone, ['take', '--holder', 'plan/a', '--interval', '0'], { ...env, BARE: '/no/such/origin' });
     expect(r.status).toBe(2);
     expect(r.stdout).toMatch(/^Merge token: could not take — /);
-    expect(callsTo('GET', '/git/ref/')).toHaveLength(3);
   });
 
-  it('releases through the API when the push cannot, but only its own marker', () => {
-    const mine = stage({ ref: SHA, commits: { [SHA]: message('plan/x', ago(1)) } });
+  it('releases with a free marker, but only its own marker, and never deletes the branch', () => {
+    const mine = stage({ planted: message('plan/x', ago(1)) });
+    const before = git(mine.origin.bare, ['rev-parse', REF]);
     const done = run(mine.clone, ['release', '--holder', 'plan/x'], mine.env);
-    expect(done.stdout).toBe('Merge token: released by plan/x through the API.\n');
+    expect(done.stdout).toBe('Merge token: released by plan/x.\n');
     expect(done.status).toBe(0);
-    expect(mine.callsTo('DELETE', '/git/refs/tropis/merge-token')).toHaveLength(1);
+    expect(marker(mine.origin.bare)).toContain('holder: none');
+    expect(git(mine.origin.bare, ['rev-parse', REF])).not.toBe(before);
+    expect(mine.calls().filter((c) => c.includes('-X'))).toHaveLength(0);
 
-    const theirs = stage({ ref: SHA, commits: { [SHA]: message('other', ago(1)) } });
+    const theirs = stage({ planted: message('other', ago(1)) });
+    const kept = git(theirs.origin.bare, ['rev-parse', REF]);
     const refused = run(theirs.clone, ['release', '--holder', 'plan/x'], theirs.env);
     expect(refused.status).toBe(1);
-    expect(theirs.callsTo('DELETE', '/git/refs')).toHaveLength(0);
+    expect(git(theirs.origin.bare, ['rev-parse', REF])).toBe(kept);
+  });
+
+  it('takes and releases where gh refuses every write and the origin refuses pushes outside branches', () => {
+    const { origin, clone, env, calls } = stage();
+    const hook = join(origin.bare, 'hooks/pre-receive');
+    writeFileSync(hook, '#!/bin/sh\nwhile read old new ref; do\n  case "$ref" in refs/heads/*) ;; *) echo "HTTP 403" >&2; exit 1;; esac\ndone\n');
+    chmodSync(hook, 0o755);
+    const args = (c) => [c, '--holder', 'plan/a', '--interval', '0', '--timeout', '0.01'];
+    expect(run(clone, args('take'), env).status).toBe(0);
+    expect(marker(origin.bare)).toContain('holder: plan/a');
+    expect(run(clone, args('release'), env).status).toBe(0);
+    expect(run(clone, args('take'), env).status).toBe(0);
+    expect(marker(origin.bare)).toContain('holder: plan/a');
+    expect(calls().filter((c) => c.includes('-X'))).toHaveLength(0);
   });
 
   it('stops naming a holder GitHub shows stale: no pull request and no push for half an hour', () => {
-    const { clone, env } = stage({
-      ref: SHA, commits: { [SHA]: message('plan/x', ago(45)) }, pulls: [], branch: null,
-    });
+    const { clone, env } = stage({ planted: message('plan/x', ago(45)), pulls: [], branch: null });
     const r = spawnSync('node', [scriptOf(clone), 'take', '--holder', 'plan/a', '--interval', '0'], {
       cwd: clone, env, encoding: 'utf8', timeout: 15000,
     });
@@ -488,8 +527,7 @@ if (method === 'POST' && url.endsWith('/git/commits')) {
 
   it('does not call a holder with an open pull request stale: only the limit stops the wait', () => {
     const { clone, env } = stage({
-      ref: SHA, commits: { [SHA]: message('plan/x', ago(45)) },
-      pulls: [{ head: { ref: 'plan/x' } }], branch: null,
+      planted: message('plan/x', ago(45)), pulls: [{ head: { ref: 'plan/x' } }], branch: null,
     });
     const r = run(clone, ['take', '--holder', 'plan/a', '--interval', '0', '--timeout', '0.01'], env);
     expect(r.status).toBe(3);
@@ -497,7 +535,7 @@ if (method === 'POST' && url.endsWith('/git/commits')) {
   });
 
   it('shows a token held 45 minutes by a branch with no pull request and no push as stale', () => {
-    const held = { ref: SHA, commits: { [SHA]: message('plan/x', ago(45)) } };
+    const held = { planted: message('plan/x', ago(45)) };
     const stale = stage({ ...held, pulls: [], branch: null });
     const line = run(stale.clone, [], stale.env).stdout;
     expect(line).toContain('held by plan/x for 45 min');
@@ -510,7 +548,7 @@ if (method === 'POST' && url.endsWith('/git/commits')) {
     const pushed = stage({ ...held, pulls: [], branch: ago(5) });
     expect(run(pushed.clone, [], pushed.env).stdout).not.toContain('stale');
 
-    const hold = stage({ ref: SHA, commits: { [SHA]: message('Some Person', ago(500), 'hold') }, pulls: [], branch: null });
+    const hold = stage({ planted: message('Some Person', ago(500), 'hold'), pulls: [], branch: null });
     const holdLine = run(hold.clone, [], hold.env).stdout;
     expect(holdLine).toContain('(a hold)');
     expect(holdLine).not.toContain('stale');
