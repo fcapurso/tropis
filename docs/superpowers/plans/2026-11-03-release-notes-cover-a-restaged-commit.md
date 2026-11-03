@@ -124,3 +124,70 @@ release-notes-cover-a-restaged-commit
 4. Move the item to `shipped`, write the handover report, run
    `bash scripts/check-blueprint.sh` after committing it.
 5. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.317 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the section is written
+against this repository's own `commands/release.md`.
+
+### Task completion
+
+- Task 1: done. The guard's new `describe`, *the /release way back to staging*, run
+  against `commands/release.md` as it stood: `Tests: 11 failed, 77 passed, 88 total`.
+- Task 2: done. The section *Back to staging for a newer commit* sits between *Resume at
+  staging* and *Stage 7*; the four paths point at it. After: `Tests: 88 passed, 88 total`.
+- Task 3: done, passed on the first run (below).
+- Task 4: done.
+- Task 5: the fresh reviewer's record follows.
+
+### Verification results
+
+- Guards were run on the working tree with a scratch script that copies the tracked and
+  untracked files into a temporary directory, writes `{"type":"module"}` as
+  `package.json`, copies `templates/framework-jest.config.js` and links the
+  `.self-check/node_modules` the self-check installed, then runs
+  `node --experimental-vm-modules node_modules/.bin/jest guards/release.test.js`.
+  With the change: `Tests: 88 passed, 88 total`. With `commands/release.md` stashed:
+  `Tests: 11 failed, 77 passed, 88 total` (the eleven new cases, and the existing Stage 7
+  case, whose phrase moved to the new pointer).
+- Fresh-agent check: Claude Code 2.1.317 on Linux x86_64, `claude -p --model
+  claude-sonnet-5-5 --output-format stream-json --verbose
+  --disallowedTools=Bash,Edit,Write,NotebookEdit,Agent`, signed in to the developer's
+  plan with no API key, in a scratch clone of this branch. The task: an invented project
+  whose check on staging failed, a fix and a `feat:` merged since, and the developer
+  saying the fix has merged; say what you do up to the staging trigger, running nothing.
+  Its only tool call was a read of `commands/release.md`. It went *Resume at staging*
+  item 5 → *Back to staging for a newer commit*, quoted
+  `git log aaa1111..origin/main --format='%h|%s|%(trailers:key=Implements,valueonly)'`,
+  judged the price filter a change for readers ("So I take step 3, 'Otherwise redraft'"),
+  worked the bump out again ("`ccc3333` is a `feat:`, so the bump is at least minor"),
+  confirmed as Stage 4, committed as Stage 5's filled slot with a fresh `Bump:` line, and
+  printed the staging trigger with "the full hash of the redraft's merge commit, not
+  `aaa1111`, `bbb2222` or `ccc3333`". It found what the change intended.
+- `bash scripts/check-blueprint.sh`: run by the pull request's pipeline
+  (`pipeline / framework / checks`); locally it outran this session's command limit.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: `commands/release.md`, `guards/release.test.js`,
+`feature-catalog.yaml`, `docs/backlog-board/bands.yaml` and this plan, all in *File
+Structure*. Worktree: the sibling `../tropis-restaged-notes-build`.
+
+### Judgment calls
+
+- The window starts at the notes commit, not the staged commit: in the failed-check path
+  they are the same commit, and in Stage 7's path the notes commit is the one whose
+  draft is out of date.
+- The private-material reading covers only the new window, since the earlier one was
+  read when the notes were first drafted.
+- Stage 6's `fail` already stops "as for a failed run", so it needed no pointer of its
+  own.
+
+### What the plan got wrong
+
+- Nothing found.
+
+### Outstanding
+
+- No screen; a real release that goes back to staging is the developer's live check.

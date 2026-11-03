@@ -381,6 +381,43 @@ describe('the /release README stage', () => {
   });
 });
 
+// Backs release-notes-cover-a-restaged-commit: every way back to staging for a newer
+// commit passes through a redraft of the notes, so a release cannot ship a change its
+// notes never mention.
+describe('the /release way back to staging', () => {
+  const command = readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), '../commands/release.md'),
+    'utf8'
+  ).replace(/\s+/g, ' ');
+  const at = command.indexOf('## Back to staging for a newer commit');
+  const section = command.slice(at, command.indexOf('## Stage 7'));
+
+  it('has a section between resuming at staging and the promotion', () => {
+    expect(at).toBeGreaterThan(command.indexOf('## Resume at staging'));
+    expect(at).toBeLessThan(command.indexOf('## Stage 7'));
+  });
+
+  it.each([
+    ['what merged since the notes commit', "git log <notes commit>..origin/main --format='%h|%s|%(trailers:key=Implements,valueonly)'"],
+    ['the notes commit as resuming finds it', 'git log -1 --format=%H origin/main -- <notes file>'],
+    ['the backlog mapping', 'Map it onto the backlog as Stage 2 does'],
+    ['nothing for readers keeps the notes and names the commits', 'naming each commit and why, keep the notes'],
+    ['a redraft to the drafting shape', "Stage 3's shape"],
+    ['the bump worked out again', 'Work the bump out again'],
+    ['the developer confirms', 'Confirm with the developer as Stage 4 does'],
+    ['staging gets the commit carrying the redraft', 'the commit that landed the redraft'],
+  ])('says %s', (_, phrase) => {
+    expect(section).toContain(phrase);
+  });
+
+  it('is the only place that goes to step 1 with the head of the main branch', () => {
+    const elsewhere = command.slice(0, at) + command.slice(at + section.length);
+    expect(elsewhere).not.toMatch(/head of (`origin\/main`|the main branch)/);
+    expect(elsewhere.split('go *Back to staging for a newer commit*').length - 1).toBe(3);
+    expect(elsewhere).toContain('`/release` goes *Back to staging for a newer commit*');
+  });
+});
+
 describe('the pipeline offer', () => {
   const text = (rel) => readFileSync(
     resolve(dirname(fileURLToPath(import.meta.url)), '..', rel),
@@ -594,7 +631,7 @@ describe('the /release steps', () => {
     expect(stage7).toContain('git diff --name-only <staged> origin/main');
     expect(stage7).toContain('git diff --name-only <staged> HEAD');
     expect(stage7).toContain('anything but the notes file and the version files');
-    expect(stage7).toContain('go to *Step 1* with `<commit>` the head of `origin/main`');
+    expect(stage7).toContain('go *Back to staging for a newer commit*');
     expect(stage7).toContain('Checked on staging: yes');
     expect(stage7).toContain('node .tropis/scripts/main-status.mjs --pull-request <N>');
     expect(stage7).not.toContain('Step 2 of 2');
