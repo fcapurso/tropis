@@ -430,3 +430,64 @@ every checkout has taken this release (written in the operator guide); the relea
 should name that and the squash setting. Until a release is installed, the installed
 `.tropis/scripts/merge-token.mjs` still uses the old ref, so do not use it against a
 project that has taken this source.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists 9 files, all in *File Structure*
+  (`guards/next-report.test.js` among its "only where" rows; `sprint` and
+  `team-member-cli` needed no change).
+- The full self-check on `HEAD`: `Self-check passed: every guard caught its defect, the
+  clean baseline passed, and the framework repository's own guards passed.`
+- The handover shows the † cases red before the script change and every case green after;
+  the reviewer read the script diff against *The change* §1 and FW-063.
+- The fresh-agent check is in the handover: `claude -p` 2.1.300, macOS 26.2 on arm64, in
+  a scratch clone with no API key, two read-only calls on the workflow, and a list that
+  takes the token, opens the pull request with its own tool with subject and body as title
+  and description, sets auto-merge as a squash, subscribes, waits with `main-status.mjs`
+  and updates the branch on exit 4, reports instead of `gh run rerun`, and releases with
+  `--holder`. It found what the change intended.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- Every token step now goes through git, on GitHub as elsewhere; only stale judging reads
+  through `gh`. A take leases on the commit it read, a release pushes a `holder: none`
+  marker, `none` is refused as a holder, and `--ref` takes only a branch that is not the
+  default.
+- The executor's corrections to the plan stand: the existing cases cannot pass on the
+  rebuilt fake before the ref moves; `insteadOf` makes the origin read as not GitHub, so
+  a `git` shim stands in; the lost-reply case became a retry after a refused push; and
+  `guards/next-report.test.js` needed its token read pointed at a local repository.
+- **Fixed by the reviewer on the branch:** the sentences added to `commands/bootstrap.md`
+  and `templates/README.md` ran past the line width; rewrapped, no wording changed.
+- Tropis's own pipeline runs on pushes to the default branch only, so taking the token
+  starts no run. A project whose own workflows run on a push to any branch would see one
+  per take or release.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen. The live check, a cloud session merging
+  under the new token, is the developer's to run once a release carries this.
+- Release-note lines are the developer's at `/release`: set the squash default to the pull
+  request's title and description; delete `refs/tropis/merge-token` once every checkout
+  runs the release; and a project whose workflows run on a push to any branch will see a
+  run per token take, which it can exclude with `branches-ignore: [tropis/merge-token]`.
+
+### Learnings routed
+
+- Nothing new to route: FW-063 holds the decision and the epic's spec the evidence. The
+  plan's two wrong guesses about the test fake are recorded above, for whoever writes the
+  next test that fakes a GitHub origin.
+
+### Merged because
+
+The token is a branch taken and released by git pushes alone, its tests prove it against
+an origin that refuses what a cloud session's does, the workflow gives a session whose
+`gh` cannot write a route a fresh agent followed, and the full self-check passes.
