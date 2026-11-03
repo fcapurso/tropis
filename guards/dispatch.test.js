@@ -18,6 +18,11 @@ import { parseLastVerified, picksForTier } from '../scripts/plan-binding.js';
 // A namespace, so the file still loads while these are not yet exported.
 import * as binding from '../scripts/plan-binding.js';
 
+// A developer's own TROPIS_SUBSCRIPTIONS would answer the cases that expect no record,
+// so every run here gets an environment without it.
+const CHILD_ENV = { ...process.env };
+delete CHILD_ENV.TROPIS_SUBSCRIPTIONS;
+
 const here = dirname(fileURLToPath(import.meta.url));
 const blueprint = resolve(here, '..');
 const PLAN = 'docs/superpowers/plans/2026-01-01-example.md';
@@ -102,7 +107,7 @@ function project(planText) {
 }
 
 function run(cwd, cmd, args) {
-  return spawnSync(cmd, args, { cwd, encoding: 'utf8' });
+  return spawnSync(cmd, args, { cwd, encoding: 'utf8', env: CHILD_ENV });
 }
 
 /** The repository a worktree belongs to, physically resolved. */
