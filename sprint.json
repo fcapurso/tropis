@@ -207,6 +207,9 @@
     },
     "version-check-tells-a-red-baseline": {
       "state": "planning"
+    },
+    "version-check-lists-ignore-lines": {
+      "state": "planning"
     }
   },
   "notes": {}
