@@ -261,7 +261,7 @@ release-notes-cover-a-restaged-commit:
   verdict: "A real gap in the release flow, small to close. Best done together with
     the shorter notes, since both change how /release drafts."
   seen:
-    status: building
+    status: shipped
     blockers: []
 release-notes-stay-a-readable-size:
   band: D

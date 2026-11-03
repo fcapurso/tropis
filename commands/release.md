@@ -309,8 +309,8 @@ the commit, the reset, the deploy, and the **By hand** list, numbered.
 **A failed run** — `gh run watch` exits non-zero, or the block says something failed:
 add an entry to `docs/verification-log.md` for this commit, its *Change* line
 ``staging deploy at `<short hash>` ``, *Result* `fail — <what the summary says failed>`,
-naming the run's URL. The notes stay. Say that once a fix has merged, `/release` starts
-step 1 again for the new head of the main branch. Stop.
+naming the run's URL. The notes stay. Say that once a fix has merged, `/release` goes
+*Back to staging for a newer commit*, and from there to step 1. Stop.
 
 ## Stage 6 — The check on staging
 
@@ -333,9 +333,37 @@ On `fail`, the entry records it; stop as for a failed run. On `pass`, go to Stag
 3. No such entry: go to *Step 1*, with `<commit>` the commit on `origin/main` that last
    changed the notes file (`git log -1 --format=%H origin/main -- <notes file>`).
 4. `pending`: the check was started and not finished. Resume Stage 6 on that entry.
-5. `fail`: say what it reported. The notes stay. Go to *Step 1* with `<commit>` the head
-   of `origin/main`, once the developer says the fix has merged.
+5. `fail`: say what it reported. Once the developer says the fix has merged, go *Back
+   to staging for a newer commit*.
 6. `pass`: go to Stage 7, with `<staged>` that full hash.
+
+## Back to staging for a newer commit
+
+Every path that sends the developer back to staging for a newer commit comes here
+first: a failed run or check whose fix has since merged, and Stage 7 finding that
+something merged after staging was checked. The notes were drafted for an earlier
+commit, so anything merged since is in the release and not yet in its notes.
+
+1. **List what merged since the notes were drafted.** The notes commit is
+   `git log -1 --format=%H origin/main -- <notes file>`. Then:
+
+   ```bash
+   git log <notes commit>..origin/main --format='%h|%s|%(trailers:key=Implements,valueonly)'
+   ```
+
+   Map it onto the backlog as Stage 2 does, residue included. In a public project, read
+   `git diff <notes commit>..origin/main` for private material first, as Stage 3 says.
+2. **Nothing in it changes anything for the notes' readers** (Stage 3's test) — a fix
+   for the check that failed often does not: say so, naming each commit and why, keep
+   the notes, and go to *Step 1* with `<commit>` the head of `origin/main`.
+3. **Otherwise redraft.** Write those changes into the body of `## [Unreleased]` to
+   Stage 3's shape, keeping the facts already there and its last line. Work the bump
+   out again over the whole window, `<last-tag>..origin/main` with the last release as
+   Stage 2 finds it: a `feat:` merged after a draft of fixes raises it. Confirm with the developer as Stage 4 does, with
+   `Dropped:` covering the new commits too, and wait. Commit it as Stage 5's filled
+   slot does, with a fresh `Bump:` line, and go to *Step 1* with `<commit>` the commit
+   that landed the redraft on `main`. Where this command gave the merge token back on
+   the failure, take it again before that pull request.
 
 ## Stage 7 — The promotion pull request
 
@@ -347,8 +375,8 @@ git diff --name-only <staged> origin/main
 
 If it names anything but the notes file and the version files, something merged after
 staging was checked, and production would get code nobody checked. Say which paths, do
-not prepare the pull request, and go to *Step 1* with `<commit>` the head of
-`origin/main`: staging must be deployed and checked again. Production waits.
+not prepare the pull request, and go *Back to staging for a newer commit*: staging
+must be deployed and checked again. Production waits.
 
 **Otherwise**, read the bump from the newest `Bump:` line in
 `git log <staged> --format=%b`, work out the version as Stage 4 does, and ask the
@@ -369,8 +397,8 @@ git diff --name-only <staged> HEAD
 ```
 
 If it names anything but the notes file and the version files, refuse: something merged
-since staging was checked. Say so, remove the worktree and the branch, and go to
-*Step 1* with `<commit>` the head of `origin/main`.
+since staging was checked. Say so, remove the worktree and the branch, and go *Back
+to staging for a newer commit*.
 
 Then push, open the pull request, run `gh pr merge <N> --auto --squash` with that
 subject, then `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only

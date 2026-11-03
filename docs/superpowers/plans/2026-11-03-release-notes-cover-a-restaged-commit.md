@@ -124,3 +124,155 @@ release-notes-cover-a-restaged-commit
 4. Move the item to `shipped`, write the handover report, run
    `bash scripts/check-blueprint.sh` after committing it.
 5. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.317 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the section is written
+against this repository's own `commands/release.md`.
+
+### Task completion
+
+- Task 1: done. The guard's new `describe`, *the /release way back to staging*, run
+  against `commands/release.md` as it stood: `Tests: 11 failed, 77 passed, 88 total`.
+- Task 2: done. The section *Back to staging for a newer commit* sits between *Resume at
+  staging* and *Stage 7*; the four paths point at it. After: `Tests: 88 passed, 88 total`.
+- Task 3: done, passed on the first run (below).
+- Task 4: done.
+- Task 5: the fresh reviewer's record follows.
+
+### Verification results
+
+- Guards were run on the working tree with a scratch script that copies the tracked and
+  untracked files into a temporary directory, writes `{"type":"module"}` as
+  `package.json`, copies `templates/framework-jest.config.js` and links the
+  `.self-check/node_modules` the self-check installed, then runs
+  `node --experimental-vm-modules node_modules/.bin/jest guards/release.test.js`.
+  With the change: `Tests: 88 passed, 88 total`. With `commands/release.md` stashed:
+  `Tests: 11 failed, 77 passed, 88 total` (the eleven new cases, and the existing Stage 7
+  case, whose phrase moved to the new pointer).
+- Fresh-agent check: Claude Code 2.1.317 on Linux x86_64, `claude -p --model
+  claude-sonnet-5-5 --output-format stream-json --verbose
+  --disallowedTools=Bash,Edit,Write,NotebookEdit,Agent`, signed in to the developer's
+  plan with no API key, in a scratch clone of this branch. The task: an invented project
+  whose check on staging failed, a fix and a `feat:` merged since, and the developer
+  saying the fix has merged; say what you do up to the staging trigger, running nothing.
+  Its only tool call was a read of `commands/release.md`. It went *Resume at staging*
+  item 5 → *Back to staging for a newer commit*, quoted
+  `git log aaa1111..origin/main --format='%h|%s|%(trailers:key=Implements,valueonly)'`,
+  judged the price filter a change for readers ("So I take step 3, 'Otherwise redraft'"),
+  worked the bump out again ("`ccc3333` is a `feat:`, so the bump is at least minor"),
+  confirmed as Stage 4, committed as Stage 5's filled slot with a fresh `Bump:` line, and
+  printed the staging trigger with "the full hash of the redraft's merge commit, not
+  `aaa1111`, `bbb2222` or `ccc3333`". It found what the change intended.
+- `bash scripts/check-blueprint.sh`: run by the pull request's pipeline
+  (`pipeline / framework / checks`); locally it outran this session's command limit.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: `commands/release.md`, `guards/release.test.js`,
+`feature-catalog.yaml`, `docs/backlog-board/bands.yaml` and this plan, all in *File
+Structure*. Worktree: the sibling `../tropis-restaged-notes-build`.
+
+### Judgment calls
+
+- The window starts at the notes commit, not the staged commit: in the failed-check path
+  they are the same commit, and in Stage 7's path the notes commit is the one whose
+  draft is out of date.
+- The private-material reading covers only the new window, since the earlier one was
+  read when the notes were first drafted.
+- Stage 6's `fail` already stops "as for a failed run", so it needed no pointer of its
+  own.
+
+### What the plan got wrong
+
+- Nothing found.
+
+### Outstanding
+
+- No screen; a real release that goes back to staging is the developer's live check.
+
+## Review record
+
+Reviewed by a fresh reviewer: Claude Code 2.1.317 on the model Claude Sonnet 5.5
+(`claude-sonnet-5-5`), Linux x86_64, git 2.43.0, node v22.23.4. The reviewer had only the
+repository and the plan, and edited nothing but this record.
+
+### Checks re-run
+
+- Guard on the working tree, through the scratch guard script (copy to a temporary
+  directory, jest there): `bash guard.sh . guards/release.test.js` printed
+  `Tests: 88 passed, 88 total`.
+- Re-broken: `git show origin/main:commands/release.md > commands/release.md`, same
+  guard: `Tests: 11 failed, 77 passed, 88 total`. Restored from a copy; `git status
+  --short` and `git diff HEAD --stat` then printed nothing.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 166 passed,
+  166 total`.
+- `git diff origin/main...HEAD --stat`: `commands/release.md`, `guards/release.test.js`,
+  `feature-catalog.yaml`, `docs/backlog-board/bands.yaml` and this plan, all in the plan's
+  File Structure. One commit.
+- Private material: the added lines match no home path, hostname, email address, Atlassian
+  site or session id.
+- `bash scripts/check-blueprint.sh` was not re-run (the handover says the pipeline runs it).
+
+### Found
+
+No defect that must be fixed before merge. Read against the four acceptance criteria and
+Stages 2-5, *Step 1*, *Resume at staging*, Stage 7 and *The merge token*:
+
+- Every path back to staging for a newer commit goes through the new section: Step 1's
+  failed run, Stage 6's `fail` (stops as for a failed run, then Resume item 5), Resume
+  item 5, and both Stage 7 comparisons. Resume item 3 (no entry yet) goes to Step 1 with
+  the notes commit itself, which is not a newer commit, so skipping the redraft there is
+  right. `head of` now appears once in the file, inside the section.
+- Criteria 1-3 hold: the list with `Implements` trailers and the backlog mapping;
+  redraft, bump again, confirm, commit as Stage 5's filled slot with a fresh `Bump:`,
+  and Step 1 with the landing commit; keeping the notes with each commit named. Stage 7
+  reads the newest `Bump:` in `git log <staged>`, and staged is then the redraft's
+  commit, so the fresh line is the one used. The token wording matches *The merge token*
+  (held through Step 1 and Stage 6; taken again after a failure).
+- The guard is sound. Its whitespace collapse covers the re-wrapped pointer (`go *Back\nto
+  staging...*` in Resume item 5 is counted), the count of three plus the Step 1 `goes`
+  pointer covers all four paths, and the existing Stage 7 case was updated rather than
+  weakened. Re-broken it fails eleven cases, as the handover says.
+- Minor, not blocking (wording a later pass may tighten):
+  1. Step 3 says "from the last release (Stage 2)", and Stage 2's commands read
+     `<last-tag>..HEAD`, while Resume fetches without pulling, so local `HEAD` may be
+     behind `origin/main`. Writing the window as `<last-tag>..origin/main` there would
+     remove the doubt. An agent that follows the section's own list of commits will
+     probably get it right anyway.
+  2. When nothing has merged since the notes commit, step 2's "naming each commit" is
+     vacuous; harmless, since Stage 7 and Resume only reach here when something has.
+  3. The notes commit is the last commit that touched the notes file. A change that
+     edits `## [Unreleased]` as it lands would move it forward and hide earlier unnoted
+     commits from the window. This is the same expression Resume already uses; it is a
+     limit of the design, not a regression.
+
+### Outstanding disposition
+
+The three minor points above are not defects of this plan. Point 1 is a one-phrase
+tightening and may ride with the next change to `commands/release.md` (the backlog item
+`release-notes-stay-a-readable-size` in the same bundle touches how `/release` drafts).
+Point 3 is dropped with this reason: it is shared with Resume at staging and needs its own
+design if it ever shows up in a real release. The developer's live check is a real release
+that goes back to staging; the plan names no screen.
+
+### Learnings routed
+
+None portable beyond the change itself: the guard and the command are the change. No
+decision record entry (no alternatives chosen beyond those in the plan's Decisions); no
+rule added.
+
+### Merged because
+
+Not merged by this record: the reviewer does not merge. It recommends MERGE. The guard
+passes and fails when the command is reverted, the installed release's checks pass, the
+diff stays inside the plan's file list with nothing private in it, and the wording is
+consistent with the other stages with no path to staging that skips the redraft check.
+
+### Fixed after this record, by the author
+
+Point 1 above, being understood and mechanical: step 3 of the new section now names the
+window as `<last-tag>..origin/main`, so a local `HEAD` behind `origin/main` cannot shorten
+it. The guard's phrase `Work the bump out again` is unchanged and still passes. Self-merged
+on the reviewer's recommendation, as the plan's merge authority says.
