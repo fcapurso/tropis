@@ -197,3 +197,117 @@ and the report case 1 printed.
    so there is no developer check). Commit, and run the self-check again on that commit.
 3. `git push -u origin plan/version-check-lists-ignore-lines`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+- **Task 0.** `npm --prefix .tropis ci` ran; the tree was clean; the baseline self-check
+  on `f1c90ee` passed (exit 0).
+- **Task 1.** The two cases are committed as `6099f00`, red. The guard run alone gave
+  `Tests: 1 failed, 14 passed, 15 total`; the failing case is `lists each ignore and
+  export line the release adds, as a step`. `lists no line the project already has`
+  passed before the change, as the plan expects.
+- **Task 2.** The change is committed as `19dfbdd`. The guard run alone gave
+  `Tests: 15 passed, 15 total`.
+- **Task 3.** The backlog edits are committed as `3b76eff`. The item reads `shipped`,
+  its `modules` names `scripts/check-version.mjs`, and a comment above it maps each
+  criterion to its case. Its row is removed from `docs/backlog-board/bands.yaml`. The
+  board's hook did not rebuild `docs/backlog-board/index.html`, so it is unchanged.
+- **Task 4.** The verification below ran on `3b76eff`. This report is committed after it.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, npm 10.9.9, `uname -sm` Linux x86_64, in a Claude Code
+cloud session.
+
+- Baseline self-check on `f1c90ee`: last line `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+  (exit 0).
+- Guard alone, as the self-check runs it: the helper `runguard.sh` from the session's
+  scratch folder, which stages `git archive HEAD` and runs jest from `.self-check/`,
+  invoked as `bash runguard.sh ../tropis-ignore-lines HEAD check-version.test.js`. It
+  prints the `Tests:` line and failing names only.
+- The report for case 1 was printed once from a scratch copy of `HEAD` with one
+  `process.stdout.write` added, then discarded. The printed report:
+
+  ```
+  check-version: <scratch project> holds v0.2.0; taking v0.2.1 is safe with these steps.
+
+  Steps
+    the take adds .tropis/extra-output/ to .gitignore; if you already cover that path another way, keep one of the two
+
+  Lines the release adds to .gitignore and .gitattributes
+    .gitignore: .tropis/extra-output/
+
+  Tests against v0.2.1 in a scratch copy
+    62 passed, 0 failed
+  ```
+
+- `npm --prefix .tropis test` on `3b76eff`: `Tests: 173 passed, 173 total`. This runs
+  the installed release's checks and shows nothing of this change.
+- `bash scripts/check-blueprint.sh` on `3b76eff`: `Self-check passed` line above, exit 0.
+- `git diff --stat origin/main...HEAD`, before this report was added:
+
+  ```
+   docs/backlog-board/bands.yaml | 12 ------------
+   feature-catalog.yaml          |  9 +++++++--
+   guards/check-version.test.js  | 28 ++++++++++++++++++++++++++++
+   scripts/check-version.mjs     | 41 ++++++++++++++++++++++++++++++++++++-----
+   4 files changed, 71 insertions(+), 19 deletions(-)
+  ```
+
+  Every file is in *File Structure*. This report adds the plan file, which that table
+  lists.
+
+### Scope
+
+The four files above and the plan's own handover, all in *File Structure*. No file under
+`.claude/`, `.cursor/`, `.tropis/`, `CLAUDE.md`, `AGENTS.md`, `framework/`, `rules/` or
+`commands/` changed. No dependency was added. No guard or test was skipped or deleted.
+
+### Judgment calls
+
+- `addedLines` runs after the take's own suite, just before `stepsFor`, which is where the
+  plan put it. The two early `render` calls pass `ignoreLines: []` explicitly, matching
+  the other empty sections there, not a default parameter.
+- Exact-text comparison means a line the take writes in a different spelling from one the
+  project has (a leading slash, for example) is not listed. The take itself skips such
+  a line, so the list agrees with what the take adds.
+- The case for "lists no line the project already has" also asserts that the string
+  `.tropis/extra-output/` appears nowhere in the report. That is stricter than the plan's
+  "no step naming it".
+- Both criteria in the catalog comment rest on the first case. Criterion 2 ("not plainly
+  safe") is covered by its verdict assertion, and "each line is a step" by its step
+  assertion.
+- The header sentence went into the file's existing JSDoc paragraph, as one sentence.
+
+### What the plan got wrong
+
+- The doc-closeout paragraph says the operator guide already states that lines are added
+  only when missing. A search for that wording (and for "when missing" and "ignore line")
+  in `.tropis/README.md`, `README.md` and `docs/` found nothing. I did not establish where
+  the source operator guide lives, so I changed nothing there. The claim is unverified.
+- The plan says `commands/update.md` performs each listed step. Checked: it does perform
+  required steps when they are mechanical and asks otherwise. The ignore steps are not
+  marked optional, so they are required. See Outstanding.
+
+### Outstanding
+
+- No developer check. The change has no screen, so there is nothing for a developer to
+  click through.
+- The ignore steps are required. `commands/update.md` treats each required step as one
+  to perform, and the step's text asks the user to keep one of two entries. So a release
+  that adds an ignore line will prompt on every update until the project already has
+  that line. Whether these should be optional is a design question. It is not changed
+  here.
+- `addedLines` assumes the take only appends to the ignore files. `appendMissingLines`
+  does append only. If a take ever rewrites an existing line, the rewritten line would be
+  listed as added.
+- The operator guide wording above is unverified.
+- No fresh-agent check is owed, since no file under `framework/`, `rules/` or `commands/`
+  changed.
+- No upstream queue entry and no decision record: this repository is the upstream, and
+  the plan records the one choice made.
+- Not done, as the plan requires: no pull request, no review record, no auto-merge, no
+  merge. The branch is pushed; the worktree `../tropis-ignore-lines` is left in place.
