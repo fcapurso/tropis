@@ -183,6 +183,17 @@ describe('dispatch command', () => {
     }
   });
 
+  it('tells /refresh-model-tiers to admit to Large only models within 1 point of the best pick', () => {
+    const command = readFileSync(join(blueprint, 'commands/refresh-model-tiers.md'), 'utf8')
+      .replace(/\s+/g, ' ');
+    expect(command).toContain('**Large takes only models level with the best selectable pick.**');
+    expect(command).toContain('it is within **1 point** of that highest score.');
+    expect(command).toContain('**Read each model at its best score on the board**');
+    expect(command).toContain('that states none orders models and does not decide Large.');
+    expect(command).toContain('Large holds each model that has the highest score on at least one board');
+    expect(command).toContain('recorded in FW-067');
+  });
+
   it('ships no picks: the framework tier file has no pick table and no date', () => {
     const shipped = readFileSync(join(blueprint, 'framework/model-tiers.md'), 'utf8');
     for (const tier of ['Small', 'Small–medium', 'Medium', 'Medium–large', 'Large']) {
