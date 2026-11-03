@@ -133,19 +133,6 @@ instruction-files-have-a-delivery-map:
   seen:
     status: shaped
     blockers: []
-large-tier-anchors-on-the-best-pick:
-  band: A
-  value: 4
-  valueWhy: Every Large plan, sprint team member and fresh reviewer runs on the tier's
-    first included pick, and today that is a model the boards place below the best.
-  effort: 2
-  effortWhy: A decision, a change to /refresh-model-tiers, and a pass of it that moves
-    three picks down a tier.
-  verdict: Do now. The developer agreed on 2026-11-03 that Large takes only the best
-    pick at its higher usage, with a margin of 1 point, and put it in the current sprint.
-  seen:
-    status: idea
-    blockers: []
 living-documents-stay-current:
   band: C
   value: 4

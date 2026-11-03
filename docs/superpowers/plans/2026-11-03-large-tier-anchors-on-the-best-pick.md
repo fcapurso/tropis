@@ -365,3 +365,164 @@ Commit.
    so there is no developer check). Commit, and run the self-check again on that commit.
 3. `git push -u origin plan/large-tier-anchors-on-the-best-pick`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+Executed on 2026-11-03 by an executing agent in `../tropis-large-anchor` on branch
+`plan/large-tier-anchors-on-the-best-pick`, from `origin/main` at `1bedcec`. No pull
+request is open and nothing is merged, as Task 5 asks.
+
+### Task completion
+
+- **Task 0, setup:** done. `npm --prefix .tropis ci` ran (it reported npm audit findings
+  in the installed release's dependencies, which the plan does not cover and nothing here
+  changed). `git status --porcelain` printed nothing. The self-check passed (see
+  *Verification results*).
+- **Task 1, the test, red:** done, commit `4c8f3ce`. The new case fails on its first
+  `toContain`, as expected.
+- **Task 2, the command and the decision:** done, commit `c9a02a9`. Every case in the
+  guard passes.
+- **Task 3, the picks:** done, commit `5360e3a`. Both checks pass.
+- **Task 4, the backlog and the board:** done, commit `cb3f880`. The item's status was
+  `building`, and it was set to `shipped` as the plan says. `docs/backlog-board/index.html`
+  was not changed, and the working tree is clean after the commit.
+- **Task 5, verification and handover:** this section, committed on top of `cb3f880`.
+  The self-check was run on `cb3f880` and passed. It was then run again on the commit
+  carrying this section, which is the last commit of the branch; its result is in the
+  report to the caller.
+
+### Verification results
+
+Tools for every run: git 2.43.0, Node v22.23.4, Linux x86_64.
+
+- **Guard alone, the way the self-check runs it.** The guard is run on a staged copy of
+  `HEAD`, with the self-check's jest linked in. From the worktree, the command is:
+  `NM=$PWD/.self-check/node_modules; S=$(mktemp -d); git archive HEAD | tar -x -C "$S"; echo '{"type":"module"}' > "$S/package.json"; cp "$S/templates/framework-jest.config.js" "$S/jest.config.js"; ln -s "$NM" "$S/node_modules"; cd "$S" && node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js guards/dispatch.test.js`
+- **Task 1, red:** `● dispatch command › tells /refresh-model-tiers to admit to Large only
+  models within 1 point of the best pick`, and `Tests: 1 failed, 40 passed, 41 total`.
+- **Task 2, green:** `Tests: 41 passed, 41 total`.
+- **Task 3, picks:**
+  - `grep -c 'Claude Opus 5.5 \*(all)\*' docs/model-picks.md` printed `1`.
+  - `grep -n '^| \*\*Large\*\*' docs/model-picks.md` printed
+    `17:| **Large** | Claude Opus 5.5 *(all)* |`.
+  - `picksForTier(text, 'Large')` printed `Claude Opus 5.5 *(all)*`, and
+    `inclusionTable(text).size` printed `13`. The plan's one-liner was used as written,
+    since `scripts/plan-binding.js` exports both names.
+- **Task 4, installed release's checks:** `npm --prefix .tropis test` printed
+  `Test Suites: 13 passed, 13 total` and `Tests: 174 passed, 174 total`.
+- **Task 5, self-check on `cb3f880`:** the last line is
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+  The run takes about half an hour on this machine. A run started in the foreground ended
+  at the shell timeout, and an earlier background run ended without a verdict, so the
+  verdict above comes from a detached run that finished with exit 0.
+- **Scope, `git diff --stat origin/main...HEAD`:** every file is in *File Structure*:
+  `commands/refresh-model-tiers.md`, `framework/DECISIONS.md`, `docs/model-picks.md`,
+  `guards/dispatch.test.js`, `feature-catalog.yaml`, `docs/backlog-board/bands.yaml`, and
+  this plan. `index.html` is not in the diff.
+
+### Scope
+
+Nothing outside *File Structure* changed. The installed release (`.claude/`, `.tropis/`,
+`CLAUDE.md`, `AGENTS.md`) was not edited. No dependency was added, and no guard or test was
+lowered, skipped or deleted. The only test change is the added case.
+
+### Judgment calls
+
+- **Ran the guard through a staged copy of `HEAD`, not the working tree.** This matches how
+  the self-check reads committed content, and it is what *Traps* asks for.
+- **Set the item's `modules` to the two files the plan names, and wrote the criterion
+  comments as the plan gives them.** The comments on criteria 1 and 2 point at "the plan's
+  Review record", which does not exist yet; the specifying session writes it in review.
+- **Wrote the commit bodies with the fresh-agent check marked as not yet run.** The plan
+  places that check with the specifying session, not with this branch. The commit that
+  changes `commands/` and `framework/DECISIONS.md` does not touch `.claude/framework/` or
+  `.claude/rules/`, so the commit-body requirement for those paths does not apply.
+- **The working-tree `framework/DECISIONS.md` append was made with a heredoc.** Its text is
+  the plan's, verbatim, with one blank line before the heading.
+- **Stopped a duplicate self-check run** that was started while the first one was still
+  going. Both were on `cb3f880`, and only the first is cited above.
+- **Reminder from the hook on writing `framework/DECISIONS.md` and `commands/`:** noted, and
+  learnings were not routed in this branch. The specifying session routes them in review.
+
+### What the plan got wrong
+
+- **The Muse Wonder bullet does not say what it means.** The plan's text reads "AA v5.0 43
+  (max), well below the other Medium–large picks' 50 and above". Sonnet 5.5 is also a
+  Medium–large pick in the same plan, at 54 on AA v5.0, so "50 and above" is not an accurate
+  description of the other Medium–large picks. The text was applied verbatim, as the plan
+  says to. The specifying session should decide whether to fix the wording.
+- **The criterion comments point at a Review record that does not exist yet.** The plan
+  writes that record in review, so a reader of the catalog in the meantime finds a pointer
+  to nothing. It was written as the plan says.
+
+### Outstanding
+
+- **No developer check.** The change has no screen. Its only user-facing text is the
+  command's section, the picks file and the decision record, so there is no manual check
+  for the developer to run.
+- **Not reviewed or merged.** The branch is pushed, and no pull request is open. Parent
+  review, the fresh-agent check on `commands/refresh-model-tiers.md` and the review record
+  belong to the specifying session.
+- **Release note.** The plan leaves the release-note line to the developer at `/release`.
+- **The Muse Wonder wording** (see *What the plan got wrong*) is open.
+
+## Review record
+
+### Checks re-run
+
+- The new case's six assertions, run with node v22 on Linux x86_64 against
+  `commands/refresh-model-tiers.md` at `origin/main` and at `f5aa94a`: `000000` before,
+  `111111` after. Each fails on the old text and passes on the new.
+- `git diff --stat origin/main...HEAD`: the seven files in *File Structure*, 219
+  insertions, 36 deletions; `docs/backlog-board/index.html` untouched.
+- **Fresh-agent check**, on the Large tier's pick after this change, Claude Opus 5.5
+  (`claude-opus-5-5`; `/dispatch --tier Large` names none because no subscriptions are
+  recorded in this cloud session, and Opus 5.5 is the one Large pick Claude Code
+  offers). Run as `claude -p --model claude-opus-5-5 --output-format stream-json
+  --verbose`, Claude Code 2.1.317, Linux x86_64, in a cloud session where no personal
+  instructions load, on a `git archive` of `f5aa94a`. The task, said to be a probe whose
+  output is discarded: follow `commands/refresh-model-tiers.md` with six invented models
+  and invented figures on two 0-to-100 boards and one Elo board with stated intervals,
+  and write the tier table. Its tool calls show it reading the command and
+  `framework/model-tiers.md`, nothing else. The expected answer, written before the run:
+  Large is Bexa 4 then Arro 9; Coro 2 out at 1.2 points below on one board, although
+  within 1 point of Bexa 4, which is the bar falling by admission that the change
+  forbids; Dyne 7 out on the Elo board, its below-max figure marked; Eldo 1 out,
+  unconfirmed, because no 0-to-100 board scores it. **It answered exactly that**,
+  citing step 1 for Coro 2, step 3 for Dyne 7 (with the effort note from step 2) and
+  step 4 for Eldo 1, and ordered Large by usage.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found.
+
+- The handover says the Muse Wonder bullet's "the other Medium–large picks' 50 and
+  above" is wrong because Sonnet 5.5 scores 54. 54 is above 50, so the wording is
+  accurate; no change.
+- The developer asked why Fable 5.1 sits below Opus 5.5 when AA v5.0 scores Fable at
+  xhigh and Opus at max. Anthropic's effort page says Fable 5.1 supports max, so that AA
+  comparison is not like with like, and the picks now say so beside the figure. The
+  placement does not rest on it: CursorBench 4.0 and Terminal-Bench 4.0 score both at
+  max, with Fable 6.0 and 6.97 points below Opus, and Arena WebDev 1746 against 1810.
+  Whether AA lists a max variant of Fable could not be read: this session's network
+  reaches none of the boards.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`.
+- The next `/refresh-model-tiers` pass with network access reads the boards again,
+  including a max-effort AA figure for Fable 5.1 if one exists; that is the command's
+  ordinary work, so it is not a backlog item.
+
+### Learnings routed
+
+The lesson is the change itself: a bar stated relative to models already admitted falls
+with each admission, and it is now in the command and in FW-067. Nothing else
+generalises.
+
+### Merged because
+
+The command, the decision and the re-placed picks say what the developer agreed, the
+new case goes red without the command change, and a fresh agent with only the
+repository applied the bar correctly to a case built to tempt it.
