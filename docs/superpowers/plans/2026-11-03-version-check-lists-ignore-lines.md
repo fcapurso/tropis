@@ -311,3 +311,51 @@ The four files above and the plan's own handover, all in *File Structure*. No fi
   the plan records the one choice made.
 - Not done, as the plan requires: no pull request, no review record, no auto-merge, no
   merge. The branch is pushed; the worktree `../tropis-ignore-lines` is left in place.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, Linux x86_64.
+
+### Checks re-run
+
+- `guards/check-version.test.js` alone, staged from `git archive HEAD` with the
+  self-check's jest: `Tests: 15 passed, 15 total`.
+- The same guard with `scripts/check-version.mjs` put back as `origin/main` has it (the
+  change reverted, tests kept): `Tests: 1 failed, 14 passed, 15 total`, the failing case
+  being `lists each ignore and export line the release adds, as a step`, the plan's †
+  case.
+- Scope: five files, all in *File Structure*.
+- The full self-check was not re-run by the reviewer; the pipeline runs it on the pull
+  request.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The code matches the plan. The handover's doubt about the operator guide is answered:
+  the source operator guide is `templates/README.md`, whose paragraph on taking a release
+  says lines in `.gitignore` and `.gitattributes` are added only when missing; it stays
+  true.
+
+### Outstanding disposition
+
+- *The ignore steps are required, so `/update` prompts on each*: not so. The steps
+  `/update` performs (Stage 6, step 6) are the update helper's `steps`, from
+  `scripts/update.mjs`, not the lines of this report; the check's report is shown uncut
+  in Stage 3. Dropped.
+- *`addedLines` assumes the take only appends*: true of `appendMissingLines` today, and
+  a later change to how the take writes those files would have to change this listing
+  with it. Dropped as hypothetical.
+- No developer check: the change has no screen.
+
+### Learnings routed
+
+- None generalise beyond this plan.
+
+### Merged because
+
+The version check lists every line the take would add to `.gitignore` and
+`.gitattributes`, under its own heading and as a step, and the case that pins it goes
+red without the change.
