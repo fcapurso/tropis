@@ -230,6 +230,9 @@
     },
     "large-tier-admits-on-judgment-evidence": {
       "state": "planning"
+    },
+    "sprint-status-works-in-a-cloud-session": {
+      "state": "planning"
     }
   },
   "notes": {}
