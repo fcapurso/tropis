@@ -95,4 +95,51 @@ describe('blueprint README usable', () => {
       }
     }
   });
+
+  // Backs readme-gives-an-overview-not-a-feature-list: an overview in five to seven
+  // aspects, and a page kept under the limit its skeleton sets.
+  it('both README outlines set a page length and five to seven aspects', () => {
+    for (const path of ['templates/readme-skeleton.md', 'docs/readme/skeleton.md']) {
+      const text = readFileSync(join(root, path), 'utf8');
+      expect({ path, limit: /^\*\*Page length:\*\* at most [0-9,]+ words/m.test(text) })
+        .toEqual({ path, limit: true });
+      const section = text.split(/^## /m).find((s) => s.startsWith('What it does for you')) ?? '';
+      expect({ path, length: section.includes('- **Length:** five to seven bullets.') })
+        .toEqual({ path, length: true });
+      expect({ path, single: section.includes('No bullet describes a single feature') })
+        .toEqual({ path, single: true });
+    }
+  });
+
+  it('What it does for you has five to seven bullets', () => {
+    const at = readme.indexOf('## What it does for you');
+    expect(at).toBeGreaterThanOrEqual(0);
+    const section = readme.slice(at, readme.indexOf('\n## ', at + 3));
+    const bullets = section.split('\n').filter((l) => l.startsWith('- ')).length;
+    expect(bullets).toBeGreaterThanOrEqual(5);
+    expect(bullets).toBeLessThanOrEqual(7);
+  });
+
+  it('the page is within the length its skeleton sets', () => {
+    const skeleton = readFileSync(join(root, 'docs/readme/skeleton.md'), 'utf8');
+    const limit = Number(skeleton.match(/^\*\*Page length:\*\* at most ([0-9,]+) words/m)[1].replace(/,/g, ''));
+    const words = readme.split(/\s+/).filter(Boolean).length;
+    expect({ words, within: words <= limit }).toEqual({ words, within: true });
+  });
+
+  it('/refresh-readme folds rather than adds, keeps the page under its limit, and says what it cut', () => {
+    const command = readFileSync(join(root, 'commands/refresh-readme.md'), 'utf8').replace(/\s+/g, ' ');
+    for (const phrase of [
+      'Replace and fold; do not only add.',
+      'keeps that many',
+      'Then keep the page under its limit.',
+      'cut until it is under',
+      'Never cut `Fixed text:`',
+      'what you cut to stay under it',
+      'limits the page to 1,200 words',
+      'and the page\'s word count against its limit',
+    ]) {
+      expect({ phrase, found: command.includes(phrase) }).toEqual({ phrase, found: true });
+    }
+  });
 });
