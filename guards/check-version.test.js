@@ -200,6 +200,59 @@ describe('check-version.mjs', () => {
     expect(r.stdout).toContain('set-up project layout fails on purpose for the version check');
   }), SLOW);
 
+  const addFailingCheck = (w) => {
+    write(w.project, '.tropis/guards/our-own.test.js', `describe('our own check', () => {
+  it('fails before and after', () => {
+    expect(1).toBe(2);
+  });
+});
+`);
+    w.commit('a check of our own that fails');
+  };
+
+  it('does not count a check already failing against the release', () => inWorld({}, (w) => {
+    addFailingCheck(w);
+    w.release('v0.2.1', bumpNext);
+    const r = kept(w, () => w.check('v0.2.1'));
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('is safe.');
+    expect(r.stdout).not.toContain('is not now.');
+    expect(r.stdout).toContain('already failing before the release');
+    expect(r.stdout).toContain('our own check fails before and after');
+    expect(passedLine(r.stdout).failed).toBeGreaterThanOrEqual(1);
+  }), SLOW);
+
+  it('names the failures the release causes apart from those already failing', () => inWorld({}, (w) => {
+    addFailingCheck(w);
+    w.release('v0.2.1', (root) => {
+      unlinkSync(join(root, 'commands/next.md'));
+      edit(root, 'templates/project-layout.test.js', (t) => {
+        const rooted = t.replace(
+          "const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');",
+          'const root = process.env.FRAMEWORK_ROOT ?? resolve(dirname(fileURLToPath(import.meta.url)), \'../..\');',
+        );
+        if (rooted === t) throw new Error('project-layout root line was not found');
+        return rooted.replace(
+          "describe('set-up project layout', () => {",
+          "describe('set-up project layout', () => {\n  it('fails on purpose for the version check', () => {\n    expect(existsSync(resolve(root, '.claude/commands/next.md'))).toBe(true);\n  });\n",
+        );
+      });
+    });
+    const r = kept(w, () => w.check('v0.2.1'));
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('is not now.');
+    const caused = r.stdout.indexOf('failing because of the release:');
+    const already = r.stdout.indexOf('already failing before the release');
+    const releaseFailure = r.stdout.indexOf('set-up project layout fails on purpose for the version check');
+    const ownFailure = r.stdout.indexOf('our own check fails before and after');
+    expect(caused).toBeGreaterThanOrEqual(0);
+    expect(releaseFailure).toBeGreaterThan(caused);
+    expect(already).toBeGreaterThanOrEqual(0);
+    expect(ownFailure).toBeGreaterThan(already);
+    // the release's failure is listed under its own heading only
+    expect(r.stdout.indexOf('set-up project layout fails on purpose for the version check', already)).toBe(-1);
+  }), SLOW);
+
   it("says a rule the release drops is kept as the project's own", () => inWorld({
     v020: {
       'rules/extra.md': '# Extra\n\nA rule this release ships.\n',
