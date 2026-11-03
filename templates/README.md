@@ -226,8 +226,8 @@ lets nobody bypass it. Apply it with
 `gh api repos/<owner>/<name>/rulesets -X POST --input .tropis/templates/main-branch-ruleset.json`,
 and turn on *Allow auto-merge* and *Automatically delete head branches* under Settings →
 General → Pull Requests, and under *Allow squash merging* there set the default commit
-message to *Pull request title and description*. If you renamed the job in `pipeline.yml` or the gate, apply a
-copy with the check's name changed. The pipeline's `host` job fails on every run until
+message to *Pull request title and description*. If you renamed the job in `pipeline.yml`
+or the gate, apply a copy with the check's name changed. The pipeline's `host` job fails on every run until
 the main branch requires a pull request and a check and auto-merge is not turned off, or
 until `.tropis/project.json` says why not, as `"ungated": "<the reason>"` — a private
 repository on GitHub's free plan cannot have rulesets, for one; the run summary then
