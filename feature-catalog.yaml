@@ -5809,3 +5809,32 @@
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md
+# 2026-11-03, found reviewing cloud-waits-wake-on-a-schedule. A cloud session's scheduled
+# wake may start in its only checkout, on the branch the cloud assigned it, and after a
+# container replacement the plan's worktree may be gone. merge-token.mjs take without
+# --holder names the holder from the current branch, so such a wake would take the token
+# for the assigned branch, and the plan's release, naming the plan's branch, would not
+# match it, leaving every other session waiting until the token turned stale.
+# Shipped by the workflow change in this commit; criterion 1 and 2 by its paragraph in
+# Waiting where a session may not last, criterion 3 by the fresh-agent check in the
+# commit body.
+- id: scheduled-wait-names-its-holder
+  title: A scheduled wait runs in the plan's worktree and names the token's holder
+  status: shipped
+  value: A cloud session that waits for the merge token from a wake it scheduled takes the
+    token for its plan's branch, wherever the wake starts and even if its worktree was
+    lost, so its release matches and no other session is left waiting on a token
+    nobody can release.
+  acceptanceCriteria:
+    - The workflow says the command a wake runs changes to the plan's worktree and passes
+      the holder with --holder.
+    - It says a wake that finds the worktree gone re-creates it from the pushed branch
+      before running anything.
+    - A fresh agent told its wake started in the main checkout runs take in the plan's
+      worktree with --holder, recorded with its tool and version.
+  type: bug
+  layer: product
+  modules:
+    - framework/workflow.md
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
