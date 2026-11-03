@@ -1319,20 +1319,27 @@
 # reading, not now with 49 of 388 tests red, is that case. In the updates arc.
 - id: version-check-tells-a-red-baseline
   title: The version check says which failing checks the release caused
-  status: idea
+  status: building
   after:
     - project-knows-whether-to-update
   value: Someone deciding whether to take a release can tell the checks the release
     breaks from the ones already failing in their project, instead of reading every
     failure as the release's fault and putting off an update that changes nothing about
     them.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The version check runs the project's checks on the version it holds before taking
+      the release, in its scratch copy.
+    - A check that fails both before and after the release is listed as already failing
+      and does not make the verdict not now.
+    - A check the release makes fail is listed as failing because of the release and makes
+      the verdict not now.
   type: improvement
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-16-project-knows-whether-to-update.md
+    - docs/superpowers/plans/2026-11-03-version-check-tells-a-red-baseline.md
 # 2026-10-17, found when this repository checked v0.3.1 before taking it: check-version.mjs
 # answered safe, yet the take appends 11 unanchored export lines to .gitattributes beside
 # the anchored ones this repository keeps, which break its self-check (confirmed by taking
@@ -1341,20 +1348,25 @@
 # update-keeps-ignore-lines-in-their-own-form; this entry is about the report saying so.
 - id: version-check-lists-ignore-lines
   title: The version check lists the ignore and export lines a release would add
-  status: idea
+  status: building
   after:
     - project-knows-whether-to-update
   value: Someone deciding whether to take a release sees every line the update would add
     to .gitignore and .gitattributes, so lines that duplicate ones the project already
     wrote its own way show up as a step, instead of a safe verdict followed by a broken
     export.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The version check lists every line the take would add to .gitignore and
+      .gitattributes, under its own heading.
+    - Each such line is a step, so a release that adds one is not reported as plainly
+      safe.
   type: improvement
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-16-project-knows-whether-to-update.md
+    - docs/superpowers/plans/2026-11-03-version-check-lists-ignore-lines.md
 # 2026-10-17, from the review of docs/superpowers/plans/2026-10-17-this-repository-takes-v0-3-1.md:
 # .tropis/package.json here is named tropis-take-v031-framework, as the v0.3.0 take left it
 # tropis-take-v030-framework. take-version.mjs sets the scratch project up under the
@@ -2007,35 +2019,46 @@
 # 2026-10-15, found in the review of docs/superpowers/plans/2026-10-15-take-a-framework-version.md.
 - id: update-survives-a-dropped-edited-rule
   title: An update completes when a release drops a shipped rule the project edited
-  status: idea
+  status: building
   value: When a new version stops shipping a rule whose text the project had edited, the
     update finishes and tells the operator what to do with the edited text. Today the
     rule's area is removed but its edited text is kept, the rule generator then refuses a
     rule text with no area, and the update stops part-way with only a restore command to
     offer.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - An update whose release drops a rule the project edited completes and keeps the
+      project's text as its own rule with the area it had.
+    - An update whose release drops a rule the project added to completes and keeps the
+      shipped text with the additions as its own rule.
+    - The update and the version check both say which rule was kept and that it can be
+      deleted.
   type: bug
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-15-take-a-framework-version.md
+    - docs/superpowers/plans/2026-11-03-update-survives-a-dropped-edited-rule.md
 # 2026-10-15, raised by the executor and confirmed in the review of
 # docs/superpowers/plans/2026-10-15-take-a-framework-version.md.
 - id: update-skips-a-new-file-that-matches
   title: An update writes no .new file when the project already has the new text
-  status: idea
+  status: building
   value: An operator is asked to merge only files that actually differ. Today, when a
     project changed a shipped file in exactly the way the new version does, the update
     still writes a .new identical to the file beside it, and the operator has to notice
     that and delete it.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - An update writes no .new beside a file the project changed in exactly the way the
+      release does, and leaves that file as it is.
+    - The update's report names such a file as already holding the new version's text.
   type: improvement
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-15-take-a-framework-version.md
+    - docs/superpowers/plans/2026-11-03-update-skips-a-new-file-that-matches.md
 # 2026-10-16, from the review of docs/superpowers/plans/2026-10-16-framework-moves-to-tropis.md:
 # one of seven local self-check runs on the reviewer's machine failed the clean baseline;
 # the failing guard's output was not kept, and the next five runs and CI were green.
