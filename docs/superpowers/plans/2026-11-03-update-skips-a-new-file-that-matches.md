@@ -282,3 +282,52 @@ All four are in *File Structure*. This report adds the plan file, also listed.
 - `npm ci` reported audit findings. Nothing was changed for them; this plan adds no
   dependency and did not run `npm audit fix`.
 - No pull request, review record or merge: parent review.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, Linux x86_64.
+
+### Checks re-run
+
+- After rebasing on `origin/main` at `461bc43` (which holds
+  `update-survives-a-dropped-edited-rule`), `guards/take-version.test.js` alone, staged
+  from `git archive HEAD` with the self-check's jest: `Tests: 59 passed, 59 total`.
+- The same guard with `scripts/take-version.mjs` put back as `origin/main` has it (the
+  fix reverted, tests kept): `Tests: 2 failed, 57 passed, 59 total`, the two failing
+  being `writes no .new when the project already made the release's change` and
+  `writes no .new for a newly shipped file the project already has with the same text`.
+- Scope: five files, all in *File Structure*.
+- The full self-check was not re-run by the reviewer after the rebase; the pipeline runs
+  it on the pull request.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The rebase applied the code commits cleanly; `docs/backlog-board/bands.yaml` conflicted
+  because both plans deleted adjacent blocks, and was resolved by keeping both
+  deletions. It is a file every plan touches, so the resolution needs no review.
+- The code matches the plan: the block-count case still writes its `.new`, and
+  `packageChanged` is not set for a skipped file.
+
+### Outstanding disposition
+
+- *What the plan got wrong*, first point: the Task 0 baseline must run before Task 1's
+  commit. True; plans 3 and 4 of this bundle were dispatched with that order spelled out.
+  Not a backlog item: the plans' own Task 0 already says to run it first; the executor
+  committed first.
+- The helper's missing failing names: fixed in the helper, which lives outside the
+  repository.
+- `npm ci` audit findings: unrelated to this plan, which adds no dependency; dropped.
+- No developer check: the change has no screen.
+
+### Learnings routed
+
+- None generalise beyond this plan.
+
+### Merged because
+
+An update writes no `.new` beside a file that already holds the release's text and names
+it instead, and the two cases that pin it go red without the fix.
