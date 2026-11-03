@@ -259,7 +259,7 @@ Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Da
 ### Task completion
 
 - Task 0: done. `npm --prefix .tropis ci`, clean tree, baseline self-check ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
-- Task 1: done. Eight † cases added (sprint 2, plan-overlap 2, merge-token 3, and the sprint case covering exit 0 and 5 in one). Run alone before the change: `Tests: 6 failed, 96 passed, 102 total`. Failing: `wait --once` exits 5 then 0; `wait --once` exits 3 PARKED; `--once` exits 5 then 0 (plan-overlap); `--once` with `--timeout` is a usage error; `take --once` exits 5 holding the token as it was; `take --once` takes a free token; `take --once` exits 3 for a stale holder (the last three are in `guards/merge-token.test.js`; Jest counted six failures because the stale-holder and held-holder cases run as `take` with an unknown flag, which both fail as usage errors).
+- Task 1: done. Seven † cases added (sprint 2, plan-overlap 2, merge-token 3, one of the sprint cases covering exit 5 and then 0). Run alone before the change: `Tests: 6 failed, 96 passed, 102 total`. Failing: sprint `wait --once` exits 5 then 0; sprint `wait --once` exits 3 PARKED; merge-token `take --once` exits 3 for a stale holder; merge-token `take --once` takes a free token; and two of the other three, the held-token case and the plan-overlap cases (the `--once` with `--timeout` usage-error case already exited 2 before the change, so it cannot fail first; see below).
 - Task 2: done. Same three guards after: `Tests: 102 passed, 102 total`.
 - Task 3: done. Workflow section and three pointers, sprint command sentence, spec paragraph and piece 4, decision (heading `FW-NNN`, to be numbered at merge). Self-check passed.
 - Task 4: done, by hand (below).
@@ -275,7 +275,9 @@ Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Da
   - clone a `release --holder a`: `Merge token: released by a.`, exit 0
   - clone b `take --holder b --once`: `Merge token: taken by b.`, exit 0
 - Task 5, fresh-agent check: Claude Code 2.1.300 on macOS (Darwin) arm64, `claude -p --output-format stream-json --verbose`, `ANTHROPIC_API_KEY` unset, signed in to the developer's plan, Bash, Edit and Write disallowed, in a scratch clone of this branch outside the repository. Its tool calls were a search of and two reads of `framework/workflow.md`. Its answer: run `node .tropis/scripts/merge-token.mjs take --once`; "That shows as exit 5 and a line starting `Still waiting:`"; call `send_later` with `delay_minutes: 30` and a message naming that command; "I end the turn. I don't use cron or a background loop"; on the wake run the same command again. It passed on the first run, so the wording was not changed. The default user instructions on this machine say nothing about waits, so the probe did not follow them in place of the change.
-- Final checks after the last commit: see below.
+- `npm --prefix .tropis test` (the installed release's checks, not this source): `Test Suites: 13 passed, 13 total`, `Tests: 164 passed, 164 total`.
+- `bash scripts/check-blueprint.sh` after the handover commit: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD` (before this edit): 13 files changed, 269 insertions, 33 deletions; commands/sprint.md, docs/backlog-board/bands.yaml, the plan, the spec, feature-catalog.yaml, framework/DECISIONS.md, framework/workflow.md, three guards, three scripts.
 
 ### Scope
 
@@ -290,7 +292,7 @@ Files changed are the ones in the File Structure table; `docs/backlog-board/inde
 
 ### What the plan got wrong
 
-- Test 1 groups exit 5 and exit 0 in one case, so the eight cases the plan lists are seven functions, and Jest's red count was six, not seven (see Task 1).
+- The plan's † case that `--once` with `--timeout` is a usage error cannot fail before the change: an unknown flag already exits 2 with the usage line, so it is a regression case. The red count was six of seven.
 - The fresh-agent probe noticed a gap that is older than this change: the workflow does not say what a session does when its wake lands in a new container where its worktree is gone, so `take` would claim the token under whatever branch is checked out. Not fixed here.
 
 ### Outstanding
