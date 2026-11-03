@@ -6040,8 +6040,9 @@
     - docs/model-picks.md
     - docs/superpowers/specs/2026-11-03-large-tier-evidence-finding.md
     - docs/superpowers/specs/2026-11-03-large-tier-judgment-probe.md
-# 2026-11-03, the recommendation of the spike large-tier-admits-on-judgment-evidence, put
-# to the developer and not yet agreed. No board measures judgment, and a pilot of seeded
+# 2026-11-03, the recommendation of the spike large-tier-admits-on-judgment-evidence,
+# agreed by the developer the same day with a margin of 1 point, and put in the current
+# sprint. No board measures judgment, and a pilot of seeded
 # review defects did not separate the tiers, so Large is anchored on the best pick by
 # policy. Applied to the 2026-11-02 figures it leaves Claude Opus 5.5 alone in Large.
 - id: large-tier-anchors-on-the-best-pick
@@ -6052,7 +6053,11 @@
     already in the tier, because in Large no check catches a weaker model's mistake. The
     refresh states the margin within which a model counts as level with the best, so the
     bar no longer falls each time a model is admitted.
-  acceptanceCriteria: []
+  # Stated by the developer on 2026-11-03. Arena WebDev is on another scale, so a point
+  # margin cannot apply to it; how it counts is for shaping.
+  acceptanceCriteria:
+    - A model sits in Large only when it is within 1 point of the best selectable pick on
+      every board in percentage points that scores both.
   type: feature
   layer: product
   modules: []
