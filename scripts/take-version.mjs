@@ -12,7 +12,8 @@
  * A project that holds the framework in the layout this release no longer takes is
  * refused before any write.
  * A shipped file the project left alone is replaced; one it changed is kept and the new
- * text lands beside it as `<path>.new`. A shipped file the project lacks is listed as
+ * text lands beside it as `<path>.new`. A changed file that already holds the new text gets
+ * no `.new`. A shipped file the project lacks is listed as
  * removed by the project when a record says it was given it, and written when the
  * baseline came from `--from`. `.claude/settings.json`, the rule areas file and the
  * ignore files are merged, never replaced. Every refusal comes before any write, and
@@ -540,6 +541,7 @@ function apply(input) {
   const blockMismatch = [];
   const removedByProject = [];
   const keptButGone = [];
+  const alreadyNew = [];
   let packageChanged = false;
   let lockfileChanged = false;
 
@@ -599,14 +601,20 @@ function apply(input) {
         }
       } else if (nextFiles[rel] !== baseline[rel]) {
         const carried = carryBlocks(projectText, nextText);
-        writeNew(carried.text);
-        if (carried.mismatch) blockMismatch.push(rel);
+        if (!carried.mismatch && carried.text === projectText) {
+          alreadyNew.push(rel);
+        } else {
+          writeNew(carried.text);
+          if (carried.mismatch) blockMismatch.push(rel);
+        }
       }
     } else if (inN) {
       if (projectText === null) {
         writeText(dest, nextText, source);
         added.push(rel);
         if (rel === '.tropis/package.json') packageChanged = true;
+      } else if (nextText === projectText) {
+        alreadyNew.push(rel);
       } else {
         writeNew(nextText);
       }
@@ -710,6 +718,7 @@ function apply(input) {
     blockMismatch,
     removedByProject,
     keptButGone,
+    alreadyNew,
     areasAdded,
     areasRemoved,
     ownRules,
@@ -741,6 +750,7 @@ function apply(input) {
   list('Replaced', replaced);
   list('Added', added);
   list('Deleted, no longer shipped', deleted);
+  list('Already the new version\'s text, left as it is', alreadyNew);
   list('Rule areas added', areasAdded);
   list('Rule areas removed', areasRemoved);
   list('Moved', moved);
