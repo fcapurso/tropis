@@ -45,6 +45,10 @@
     {
       "id": "large-tier-admits-on-judgment-evidence",
       "points": 2
+    },
+    {
+      "id": "sprint-status-works-in-a-cloud-session",
+      "points": 0
     }
   ],
   "baseline": [
