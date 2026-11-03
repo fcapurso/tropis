@@ -407,6 +407,36 @@ describe('wait', () => {
   }, 30000);
 });
 
+describe('wait --once', () => {
+  const catalog = (blockerStatus = 'shaped') => [
+    entry('up', { status: blockerStatus }), entry('down', { blockedBy: ['up'] }),
+  ];
+  const bands = { up: row('A', 3, 3), down: row('A', 3, 3) };
+
+  it('† exits 5 with Still waiting and the blocker while it is open, and 0 once it has shipped', () => {
+    const world = makeWorld(catalog('building'), bands);
+    const clone = makeClone(world);
+    const waiting = run(clone, ['wait', 'down', '--once']);
+    expect(waiting.status).toBe(5);
+    expect(waiting.stdout).toBe('Still waiting: down is blocked by up, which has not shipped.\n');
+
+    publish(world, { 'feature-catalog.yaml': YAML.stringify(catalog('shipped')) }, 'ship up');
+    const done = run(clone, ['wait', 'down', '--once']);
+    expect(done.status).toBe(0);
+    expect(done.stdout).toBe('Sprint: down can start — nothing it is blocked by is still open.\n');
+  });
+
+  it('† exits 3 with PARKED when the blocker was parked', () => {
+    const world = makeWorld(catalog(), bands);
+    const clone = makeClone(world);
+    expect(run(clone, ['start', 'up', 'down']).status).toBe(0);
+    expect(run(clone, ['mark', 'up', 'parked', 'needs', 'a', 'choice']).status).toBe(0);
+    const r = run(clone, ['wait', 'down', '--once']);
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('PARKED: depends on up\n');
+  });
+});
+
 describe('status', () => {
   it('† reads the backlog from origin after fetching, and an entry shipped on main is shipped whatever its mark says', () => {
     const world = makeWorld(
