@@ -193,3 +193,92 @@ Make the change. Commit. Run the guard alone: every case passes. Paste the `Test
    so there is no developer check). Commit, and run the self-check again on that commit.
 3. `git push -u origin plan/update-skips-a-new-file-that-matches`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+Executed by a Claude Code cloud session (Haiku 5.5, claude-haiku-5-5), node v22.23.4,
+npm 10.9.9, git 2.43.0, Linux x86_64. Branch `plan/update-skips-a-new-file-that-matches`,
+built on `origin/main` at `fbeb529`. Not rebased on `update-survives-a-dropped-edited-rule`,
+which is still `building`.
+
+### Task completion
+
+- Task 0: worktree isolated; `npm --prefix .tropis ci` ran. The first self-check ran after
+  Task 1's commit, so it was a red run, not a baseline (see *What the plan got wrong*).
+- Task 1 (`ef2c70b`): two cases added. Both fail on the `.new` assertion before the change.
+- Task 2 (`cd4b645`): `scripts/take-version.mjs` changed as specified. The guard passes.
+- Task 3 (`dbe7501`): catalog item set to `shipped` with comments mapping criteria to
+  cases; `modules` set to `scripts/take-version.mjs`; band block removed. The board was not
+  rebuilt, since no hook staged it.
+- Task 4: scope checked, self-check run, this report committed, branch pushed. No pull
+  request, review record or merge.
+
+### Verification results
+
+- `bash /tmp/claude-0/…/scratchpad/runguard.sh <worktree> ef2c70b take-version.test.js`
+  (red): `Tests:       2 failed, 54 passed, 56 total`. Failing names, from the self-check's
+  clean-baseline log: `writes no .new when the project already made the release's change`
+  and `writes no .new for a newly shipped file the project already has with the same text`.
+  Both fail with `Expected: false / Received: true` on the `.new` existence check.
+- `runguard.sh <worktree> cd4b645 take-version.test.js` (green): `Tests:       56 passed, 56 total`.
+- `npm --prefix .tropis test` at `dbe7501` (installed release's checks on this repository,
+  not the source): `Tests:       172 passed, 172 total`. It shows nothing of this change.
+- `bash scripts/check-blueprint.sh` at `ef2c70b`: failed in the clean baseline on the two
+  red cases only; every conformance and framework guard passed.
+- `bash scripts/check-blueprint.sh` at `dbe7501`: last line
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Private-material scan of `git diff origin/main...HEAD` for home paths, hostnames, email
+  addresses, Atlassian sites and session ids: no match.
+- Self-check on the final commit: see the report's last line.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report:
+
+```
+ docs/backlog-board/bands.yaml | 12 ------------
+ feature-catalog.yaml          | 11 +++++++++--
+ guards/take-version.test.js   | 29 +++++++++++++++++++++++++++++
+ scripts/take-version.mjs      | 16 +++++++++---
+ 4 files changed, 51 insertions(+), 17 deletions(-)
+```
+
+All four are in *File Structure*. This report adds the plan file, also listed.
+
+### Judgment calls
+
+- Three commits, one plan: the red tests first, the change second, the backlog edit third,
+  so each commit's self-check result is recorded.
+- Case 1 writes nothing only when `!carried.mismatch && carried.text === projectText`;
+  case 3 only when `nextText === projectText`. A block-count mismatch still writes its `.new`.
+- The new report line is placed after `Deleted, no longer shipped`, as the plan says.
+  `update-survives-a-dropped-edited-rule` also edits `apply()` and the report; the
+  specifying session should expect a conflict there at rebase.
+- `alreadyNew` is also a field of the result object `takeVersion()` returns to library
+  callers. It is additive.
+- The header sentence was added as the plan specifies, wrapped to the file's comment width.
+- Named source: none. The code was written from the plan and this repository's existing
+  `apply()` and tests.
+- The fresh-agent check is not owed: nothing under `framework/`, `rules/` or `commands/` changed.
+
+### What the plan got wrong
+
+- Task 0's expected `Self-check passed` cannot hold where Task 0 runs after Task 1's commit,
+  as the plan's order implies. I committed the red tests before the first self-check, so
+  that run was red by design. A baseline run belongs before Task 1's commit.
+- The plan asks for the failing names from the guard run. `runguard.sh` greps for `✕`,
+  and this Jest prints no such line, so the helper shows only `Tests:` and the names had to
+  come from the self-check log. The helper should print the `●` lines.
+- The plan's verified facts name `origin/main` at `f43d4bf`; the branch was built on
+  `fbeb529`. The lines the plan cites still held; the line numbers had moved.
+- Its Task 0 check says `Self-check passed`, which was not the first run's result (above).
+
+### Outstanding
+
+- No developer check: the change has no screen, so none is owed. The update's report now
+  shows a new heading, which is the only visible surface.
+- Not rebased on `update-survives-a-dropped-edited-rule`, still `building`. Both plans
+  edit the same `apply()` and the same report; the specifying session rebases at merge.
+- `npm ci` reported audit findings. Nothing was changed for them; this plan adds no
+  dependency and did not run `npm audit fix`.
+- No pull request, review record or merge: parent review.
