@@ -182,12 +182,20 @@ anything. Where the log and the backlog disagree about what shipped, the log dec
    heading out when there is nothing to do.
    Each says in one sentence why it is needed, then exactly what to do and where, in the
    reader's terms: the file to open, the command to run, the line to delete. A reader
-   who reads only this section updates safely.
-3. **One section per change that matters to them**, its heading saying what they get —
-   "Hooks warn only when they should", not the mechanism that achieves it. The body
-   says what is different for them, and only then, if they need it, how.
-4. **Small fixes as one-line bullets** under a closing heading such as "Smaller
-   corrections". A fix that needs a paragraph to explain is not small.
+   who reads only this section updates safely. **These steps are written in full,
+   however short the rest is:** they are followed literally, so nothing below shortens
+   them.
+3. **Each change that matters to them in one or two sentences** saying what they can
+   now do, in their words, as a bullet under a heading such as "What you can now do":
+   "Hooks warn only when they should", not the mechanism that achieves it. The how is
+   one link away, in the document that holds it, never a paragraph here. **Two
+   sentences at most, and a bold lead counts as one of them:** a detail such as a
+   setting, a default or an edge case is left to that document, and a change that
+   cannot be said in two sentences is said at the level of what it lets them do.
+4. **A small correction only where someone taking the release would notice it** —
+   something they saw go wrong, or that now behaves differently for them — as a
+   one-line bullet under a closing heading such as "Smaller corrections". Leave every
+   other fix out, and list it under `Dropped:` in Stage 4.
 
 While writing:
 
@@ -196,6 +204,9 @@ While writing:
   mechanism is not the reader's vocabulary.
 - **Leave out a change that changes nothing for them**, even one an earlier draft
   carried, and say in Stage 4 that you dropped it.
+- **Keep it readable in a minute or two.** Apart from the steps to do by hand, the
+  notes are the summary and a sentence or two per change; when a draft runs longer,
+  shorten the changes, never the steps.
 - **Do not label each section breaking or not.** Everything a reader must act on is
   under step 2, so they find it all there. Whether the release is breaking is Stage 2's
   call, not the notes'.
