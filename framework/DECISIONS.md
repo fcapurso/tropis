@@ -2049,7 +2049,7 @@ deleting it was refused. The session's GitHub tools opened a pull request, set
 auto-merge as a squash and turned it off, updated its branch and closed it, and a
 subscription woke the session on each check result. The tool that sets auto-merge takes
 no subject or body. No setting the session could see allows `gh` writes. The findings
-are in `docs/superpowers/specs/2026-11-03-cloud-sprint-design.md`, *The answer*.
+are in the cloud-sprint design of 2026-11-03, under The answer.
 Source: none in particular.
 
 **Rejected:** A token on `refs/tropis/` for local sessions and a branch for cloud ones
