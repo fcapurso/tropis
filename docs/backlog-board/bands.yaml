@@ -24,7 +24,7 @@ a-release-says-what-changed-briefly:
   evidence: "2026-11-02 — the 0.8.0 notes are about 1,350 words; 0.5.0 to 0.7.0 are
     about 700 each."
   seen:
-    status: idea
+    status: building
     blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C

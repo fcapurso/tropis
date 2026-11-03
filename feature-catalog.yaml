@@ -5576,7 +5576,7 @@
 # file growing across releases; this is about the length of one release's notes.
 - id: a-release-says-what-changed-briefly
   title: A release's notes say briefly what changed, and in full what to do by hand
-  status: idea
+  status: building
   value: Someone taking a release reads in a minute or two what they can now do, and
     still gets every step they must do by hand in full, since those are followed
     literally. Today each shipped item gets its own paragraph and the notes have no
@@ -5585,10 +5585,15 @@
     - The steps to do by hand are written in full.
     - Each feature gets one or two sentences saying what someone can now do.
     - A small correction appears only where someone taking the release would notice it.
+    - A fresh agent drafting notes for an invented release writes its step by hand in
+      full and each change in at most two sentences, and leaves out a fix nobody would
+      notice, recorded with its tool and version.
   type: improvement
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - commands/release.md
+  refs:
+    - docs/superpowers/plans/2026-11-03-a-release-says-what-changed-briefly.md
 # 2026-11-02, raised by the developer. The README's "What it does for you" had grown to
 # 17 bullets, one per capability ever shipped, because /refresh-readme turns each into a
 # bullet and sets no limit. The section is meant as an overview of a few aspects.
