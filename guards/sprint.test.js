@@ -114,13 +114,19 @@ const lines = (r) => r.stdout.split('\n').filter((l) => l !== '');
 const sprintFile = (clone) => join(
   resolve(clone, git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/sprint.json',
 );
-const readSprint = (clone) => JSON.parse(readFileSync(sprintFile(clone), 'utf8'));
-/** The record on the branch `tropis/sprint` of the clone's origin, or null. */
-const onOrigin = (clone) => {
+/** The record kept in the local file, as a project without an origin keeps it. */
+const readLocal = (clone) => JSON.parse(readFileSync(sprintFile(clone), 'utf8'));
+/** The text of the record on the branch `tropis/sprint` of the clone's origin, or null. */
+const textOnOrigin = (clone) => {
   const r = spawnSync('git', ['--git-dir', git(clone, ['config', 'remote.origin.url']), 'show',
     'refs/heads/tropis/sprint:sprint.json'], { env: ENV, encoding: 'utf8' });
-  return r.status === 0 ? JSON.parse(r.stdout) : null;
+  return r.status === 0 ? r.stdout : null;
 };
+const onOrigin = (clone) => {
+  const text = textOnOrigin(clone);
+  return text === null ? null : JSON.parse(text);
+};
+const readSprint = onOrigin;
 
 function spawnScript(clone, args, env = ENV) {
   const child = spawn('node', [scriptOf(clone), ...args], { cwd: clone, env });
@@ -291,7 +297,7 @@ describe('start, and the sprint file', () => {
     const way = run(clone, ['start', 'e1', '--way', 'subagent']);
     expect(way.status).toBe(1);
     expect(way.stdout).toContain('--way');
-    expect(existsSync(sprintFile(clone))).toBe(false);
+    expect(onOrigin(clone)).toBeNull();
 
     const started = run(clone, ['start', 'e2', 'e1', '--points', '12', '--way', 'session'], at(T0));
     expect(started.status).toBe(0);
@@ -299,7 +305,7 @@ describe('start, and the sprint file', () => {
       'Sprint: started with 2 backlog items, 5 of 12 effort points; team members start as session.\n'
       + "Sprint: team members run on the Large tier. **Use:** not chosen — this project has no model picks. Run /refresh-model-tiers. Start them on the tool's default model.\n",
     );
-    expect(sprintFile(clone).endsWith('.git/tropis/sprint.json')).toBe(true);
+    expect(existsSync(sprintFile(clone))).toBe(false);
     expect(readSprint(clone)).toEqual({
       started: T0,
       budget: 12,
@@ -309,8 +315,8 @@ describe('start, and the sprint file', () => {
       marks: {},
       notes: {},
     });
-    expect(readFileSync(sprintFile(clone), 'utf8')).toMatch(/^\{\n {2}"started"/);
-    expect(readFileSync(sprintFile(clone), 'utf8').endsWith('}\n')).toBe(true);
+    expect(textOnOrigin(clone)).toMatch(/^\{\n {2}"started"/);
+    expect(textOnOrigin(clone).endsWith('}\n')).toBe(true);
 
     const again = run(clone, ['start', 'e3'], at('2026-11-02T10:00:00Z'));
     expect(again.status).toBe(1);
@@ -672,12 +678,12 @@ describe('report and end', () => {
     const r = run(clone, ['report'], at(later));
     expect(r.status).toBe(0);
     expect(lines(r)).toEqual(report);
-    expect(existsSync(sprintFile(clone))).toBe(true);
+    expect(onOrigin(clone)).not.toBeNull();
 
     const ended = run(clone, ['end'], at(later));
     expect(ended.status).toBe(0);
-    expect(lines(ended)).toEqual([...report, 'Sprint: ended; the sprint file is removed.']);
-    expect(existsSync(sprintFile(clone))).toBe(false);
+    expect(lines(ended)).toEqual([...report, 'Sprint: ended; the record on origin says no sprint is under way.']);
+    expect(onOrigin(clone)).toBeNull();
   });
 
   it('† prints none under each heading and 0.0 points per hour when nothing has happened', () => {
@@ -949,9 +955,9 @@ describe('the record on origin', () => {
     writeFileSync(join(a, 'docs/backlog-board/bands.yaml'), YAML.stringify(bands));
     const started = run(a, ['start', 'e1'], at(T0));
     expect(started.status).toBe(0);
-    expect(readSprint(a).entries.map((e) => e.id)).toEqual(['e1']);
+    expect(readLocal(a).entries.map((e) => e.id)).toEqual(['e1']);
     expect(run(a, ['mark', 'e1', 'planning']).status).toBe(0);
-    expect(readSprint(a).marks).toEqual({ e1: { state: 'planning' } });
+    expect(readLocal(a).marks).toEqual({ e1: { state: 'planning' } });
     const ended = run(a, ['end'], at('2026-11-02T10:00:00Z'));
     expect(lines(ended).pop()).toBe('Sprint: ended; the sprint file is removed.');
     expect(existsSync(sprintFile(a))).toBe(false);
