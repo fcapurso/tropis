@@ -9,13 +9,15 @@
  * removing). Exit 0 whether or not there was an overlap; 2 when the catalog or the plan
  * cannot be read, or the plan lists no file.
  *
- * --wait <plan> [--interval <seconds>] [--timeout <minutes>]: before a merge, waits until
+ * --wait <plan> [--interval <seconds>] [--timeout <minutes>] | [--once]: before a merge, waits until
  * no entry in the plan's `Merges after` is `building` in the catalog on origin's main
  * branch (shipped, dropped, or parked back to shaped), fetching every time. Defaults 30
  * seconds and no limit. Exit 0 when none is, or when the plan merges after nothing (git
  * is not run); 2 when origin or its catalog cannot be read, or names an id the catalog
  * lacks; 3 at the --timeout, only when one was given, printing `STOPPED: waiting on
- * <ids>`.
+ * <ids>`. With --once (refused together with --timeout) it asks origin one
+ * time and, where it would go on waiting, exits 5 printing `Still waiting: ...`, for a
+ * session that wakes itself on a schedule.
  *
  * Pure functions are exported for the guard; the command line runs only when this file is
  * run directly.
@@ -74,20 +76,25 @@ export function overlaps(catalog, planPath, planText, readPlan) {
   return { found, unreadable };
 }
 
-const USAGE = 'usage: plan-overlap.mjs --claim <plan> | --wait <plan> [--interval <seconds>] [--timeout <minutes>]\n';
+const USAGE = 'usage: plan-overlap.mjs --claim <plan> | --wait <plan> [--interval <seconds>] [--timeout <minutes>] | [--once]\n';
 
 function parseArgs(argv) {
   const [mode, plan, ...rest] = argv;
   if (!['--claim', '--wait'].includes(mode) || !plan || plan.startsWith('--')) return null;
   const opts = { mode: mode.slice(2), plan, intervalS: 30, timeoutMin: Infinity };
   if (mode === '--claim') return rest.length ? null : opts;
-  for (let i = 0; i < rest.length; i += 2) {
+  for (let i = 0; i < rest.length; i += 1) {
+    if (rest[i] === '--once') {
+      opts.once = true;
+      continue;
+    }
     const n = Number(rest[i + 1]);
     if (!['--interval', '--timeout'].includes(rest[i]) || rest[i + 1] === undefined || !(n >= 0)) return null;
     if (rest[i] === '--interval') opts.intervalS = n;
     else opts.timeoutMin = n;
+    i += 1;
   }
-  return opts;
+  return opts.once && Number.isFinite(opts.timeoutMin) ? null : opts;
 }
 
 const say = (line) => process.stdout.write(`${line}\n`);
@@ -168,6 +175,10 @@ export async function waitForPlans(root, opts, { now = Date.now, sleep: pause = 
       const seen = ids.map((id) => `${id} ${byId.get(id).status}`).join(', ');
       say(`Merges after: ${ids.join(', ')} — none building on ${branch} (${seen}); go ahead.`);
       return 0;
+    }
+    if (opts.once) {
+      say(`Still waiting: this plan merges after ${pending.join(', ')}, which ${pending.length === 1 ? 'is' : 'are'} still building.`);
+      return 5;
     }
     if (now() >= deadline) {
       say(`STOPPED: waiting on ${pending.join(', ')}`);
