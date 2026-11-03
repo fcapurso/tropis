@@ -28,7 +28,7 @@ import * as binding from '../scripts/plan-binding.js';
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
 const FILES = [
-  'sprint.mjs', 'next-work.js', 'board-bands.js', 'plan-binding.js', 'projections.js',
+  'sprint.mjs', 'load-yaml.mjs', 'next-work.js', 'board-bands.js', 'plan-binding.js', 'projections.js',
   'main-status.mjs', 'merge-token.mjs', 'team-member-cli.mjs',
 ];
 

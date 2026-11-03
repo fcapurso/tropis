@@ -18,7 +18,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import YAML from 'yaml';
+import YAML from './load-yaml.mjs';
 import { bandBundles, bandLetters, bandScores, movedBands, stampBands } from './board-bands.js';
 import { arcs, bandOf, hasBandRows, nextStep } from './next-work.js';
 import { readmeFreshnessAt } from './readme-freshness.js';

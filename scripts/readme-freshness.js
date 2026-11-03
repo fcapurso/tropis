@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import YAML from 'yaml';
+import YAML from './load-yaml.mjs';
 
 const COUNTED = new Set(['feature', 'improvement']);
 

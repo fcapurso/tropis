@@ -51,6 +51,66 @@ capture-at-write-tests-pass-under-load:
   seen:
     status: idea
     blockers: []
+cloud-session-can-write-to-github:
+  band: A
+  value: 4
+  valueWhy: Decides whether a sprint can run from a phone at all, and every other piece
+    of the epic waits on it.
+  effort: 2
+  effortWhy: Three routes to try from one cloud session, each a few commands.
+  verdict: "Do first: it blocks the rest of the cloud-sprint epic, and its answer may be
+    that none of it is worth building."
+  seen:
+    status: idea
+    blockers: []
+cloud-session-knows-the-subscriptions:
+  band: B
+  value: 2
+  valueWhy: Without it a cloud team member starts on the default model, which works but
+    may cost more of the allowance.
+  effort: 1
+  effortWhy: dispatch.mjs reads one more place for the record.
+  verdict: "Small; do it with the merge piece once the probe has found a route."
+  seen:
+    status: idea
+    blockers: [cloud-session-can-write-to-github]
+cloud-session-works-on-a-plan-branch:
+  band: B
+  value: 2
+  valueWhy: Two instructions about branches that disagree leave each cloud session to
+    choose.
+  effort: 1
+  effortWhy: A paragraph in the workflow, once the probe says which branch a cloud
+    session can push and merge.
+  verdict: "Small; write it with the merge piece, since both depend on what the probe
+    finds."
+  seen:
+    status: idea
+    blockers: [cloud-session-can-write-to-github]
+cloud-team-member-merges-its-work:
+  band: B
+  value: 4
+  valueWhy: The piece that makes a sprint from the cloud deliver anything to main.
+  effort: 3
+  effortWhy: The token and the merge sequence on a second route, with its tests and the
+    workflow's wording.
+  verdict: "The heart of the epic. Plan it as soon as the probe names the route."
+  seen:
+    status: idea
+    blockers: [cloud-session-can-write-to-github]
+cloud-waits-wake-on-a-schedule:
+  band: B
+  value: 3
+  valueWhy: A blocked item or a long token wait is exactly where an unattended sprint
+    spends hours.
+  effort: 3
+  effortWhy: Replacing one long background command with a scheduled check, in each wait
+    the sprint uses.
+  verdict: "Worth doing after the merge piece; until then a cloud sprint should start
+    only items with no blocker."
+  seen:
+    status: idea
+    blockers: [cloud-session-can-write-to-github]
 command-slots-spike:
   band: A
   value: 5
@@ -311,6 +371,19 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+sprint-record-outlives-its-session:
+  band: B
+  value: 3
+  valueWhy: A sprint session that loses its record cannot report or end the sprint its
+    team is still running.
+  effort: 2
+  effortWhy: Keep the record on a GitHub ref beside the token, read and written by
+    sprint.mjs.
+  verdict: "Needed for any sprint session that can be reset, cloud or not; plan it after
+    the probe, which says whether such a ref can be written from the cloud."
+  seen:
+    status: idea
+    blockers: [cloud-session-can-write-to-github]
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4
