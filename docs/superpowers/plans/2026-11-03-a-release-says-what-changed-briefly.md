@@ -113,3 +113,68 @@ a-release-says-what-changed-briefly
 3. Run the fresh-agent check with its tool calls visible; record it in the commit body.
 4. Move the item to `shipped`, write the handover report.
 5. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.317 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the wording is written
+against this repository's own `commands/release.md`.
+
+### Task completion
+
+- Task 1: done. *The /release drafting stage* now asserts seven new phrases in place of
+  the two old ones.
+- Task 2: done. Stage 3 items 2–4 and a closing bullet under *While writing*.
+- Task 3: done, on the third run; the wording changed twice between runs (below).
+- Task 4: done.
+- Task 5: the fresh reviewer's record follows.
+
+### Verification results
+
+- Guard, run on the working tree with the scratch script described in the restaged-notes
+  plan's handover (copy to a temporary directory, jest there):
+  `guards/release.test.js` with the change: `Tests: 83 passed, 83 total`; with
+  `commands/release.md` stashed: the new phrases fail (`Tests: 6 failed, 76 passed, 82
+  total` before the seventh phrase was added in the second round).
+- Fresh-agent check: Claude Code 2.1.317 on Linux x86_64, `claude -p --model
+  claude-sonnet-5-5 --output-format stream-json --verbose
+  --disallowedTools=Bash,Edit,Write,NotebookEdit,Agent`, signed in to the developer's
+  plan with no API key, in a scratch clone of this branch. The task: draft the notes for
+  an invented shop with four shipped items — a price filter with several details, a
+  payment interface change that needs a key added by hand, an internal log fix nobody
+  outside hosting reads, and a mobile button colour administrators had reported.
+  - Run 1: the step by hand was in full (four numbered sub-steps), the log fix was
+    dropped and reported, the button fix kept; but the price filter took a bold lead and
+    three sentences. **Fail on "at most two sentences".** The wording then said "Two
+    sentences at most, a bold lead included".
+  - Run 2: same, with the lead and two sentences on each change: the lead was still not
+    counted. The wording then said "Two sentences at most, and a bold lead counts as one
+    of them", with the detail (a setting, a default or an edge case) left to the linked
+    document.
+  - Run 3: each change a bold lead and one sentence ("**Let shoppers filter by price.**
+    The search results page has a price slider, shown in the currency your shop is set
+    to, so shoppers no longer have to scroll through every result."); the step in full;
+    `Dropped: log-rotation-off-by-one, because only the hosting team reads those log
+    files…`; and "I also left the slider's remembered position and whole-unit rounding
+    out of the notes as detail the reader doesn't need to act on." **Pass.**
+- `bash scripts/check-blueprint.sh`: run by the pull request's pipeline.
+
+### Scope
+
+`commands/release.md`, `guards/release.test.js`, `feature-catalog.yaml`,
+`docs/backlog-board/bands.yaml` and this plan, all in *File Structure*. Worktree: the
+sibling `../tropis-brief-notes-build`.
+
+### Judgment calls
+
+- The two-sentence limit counts a bold lead as a sentence; without that, the probe read
+  the lead as a heading and wrote three.
+- No word limit for the notes as a whole (Decision 1).
+
+### What the plan got wrong
+
+- Nothing found in the plan; the first wording was not tight enough, as the probe showed.
+
+### Outstanding
+
+- No screen. The next real `/release` draft is the developer's check.

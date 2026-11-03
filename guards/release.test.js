@@ -320,6 +320,8 @@ describe('the release job', () => {
 
 // Backs release-notes-read-as-the-reader-would: the drafting stage sets the shape a
 // reader can act on. Each phrase is one instruction; rewording one means updating it here.
+// Backs a-release-says-what-changed-briefly as well: the steps by hand in full, each
+// change in a sentence or two, and a small correction only where it would be noticed.
 describe('the /release drafting stage', () => {
   // Whitespace is collapsed so re-wrapping the markdown does not fail the check.
   const command = readFileSync(
@@ -336,8 +338,13 @@ describe('the /release drafting stage', () => {
     ['what to do by hand next', 'What they must do by hand comes next'],
     ['the by-hand steps numbered', 'Number the steps'],
     ['optional steps marked inside the bold lead', 'Optional:'],
-    ['one section per change, headed by what the reader gets', 'One section per change that matters to them'],
-    ['small fixes as bullets', 'Small fixes as one-line bullets'],
+    ['the by-hand steps in full', 'These steps are written in full, however short the rest is'],
+    ['each change in one or two sentences', 'Each change that matters to them in one or two sentences'],
+    ['the how left to a link', 'The how is one link away'],
+    ['two sentences at most, the lead included', 'Two sentences at most, and a bold lead counts as one of them'],
+    ['a small correction only where it would be noticed', 'A small correction only where someone taking the release would notice it'],
+    ['other fixes left out and reported', 'Leave every other fix out, and list it under `Dropped:` in Stage 4'],
+    ['the notes kept short, never the steps', 'shorten the changes, never the steps'],
     ['internal terms spelled out', 'Spell out every term'],
     ['changes that do nothing for the reader left out', 'Leave out a change that changes nothing for them'],
     ['dropped changes reported', 'say in Stage 4 that you dropped it'],
