@@ -161,6 +161,21 @@ pipeline-bills-no-job-that-decides-nothing:
   seen:
     status: shaped
     blockers: []
+plan-dates-follow-the-project-time-zone:
+  band: B
+  value: 2
+  valueWhy: Hit only in the first hours after local midnight, but then a correct plan
+    is refused and the agent renames it and every reference to it.
+  effort: 2
+  effortWhy: One setting, one shared date function, and the three places that compute
+    today switched to it.
+  verdict: "Small and worth doing; keeps the check exact, which the rejected one-day
+    margin would not, so the sequence-number habit stays caught."
+  evidence: "2026-11-03 — guards/catalog-drift.test.js, guards/dispatch.test.js and
+    guards/sprint.test.js each compute today with toISOString().slice(0, 10)."
+  seen:
+    status: idea
+    blockers: []
 plan-folder-names-no-plugin:
   band: C
   value: 2

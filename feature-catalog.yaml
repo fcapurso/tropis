@@ -5554,3 +5554,33 @@
   layer: product
   modules: []
   refs: []
+# 2026-11-03, agreed with the developer. guards/catalog-drift.test.js "no live plan
+# filename is dated after today" reads today in UTC, so a plan written just after local
+# midnight in a zone ahead of UTC fails until UTC catches up; an agent hit it during the
+# sprint epic. guards/dispatch.test.js and guards/sprint.test.js compute today the same
+# way. The check exists because agents once read the date in a plan's filename as a
+# sequence number and raised it with every plan, so "later than today" must stay exact:
+# a one-day margin was considered and rejected for letting that habit through, and a
+# hook on writing a plan file for costing more while still dating plans in UTC.
+- id: plan-dates-follow-the-project-time-zone
+  title: A plan's date is checked against today in the project's time zone
+  status: idea
+  value: Someone writing a plan just after midnight dates it with the day on their own
+    calendar, and the check accepts it on their machine and in CI alike. Today the check
+    reads today in UTC, so in a time zone ahead of UTC a plan written in the first hours
+    of the day is refused until UTC catches up, while a date even one day ahead of today
+    is still refused, as it must be.
+  acceptanceCriteria:
+    - The project's settings under .tropis/ can name a time zone, and where none is
+      named the check uses UTC, so a project that sets nothing behaves as before.
+    - The check computes today in that zone from the current moment, whatever the
+      machine's clock zone, so a run on a UTC runner gives the same answer as one on
+      the developer's machine.
+    - Today is assembled from its year, month and day parts, never from a formatted
+      string, so the answer does not depend on the machine's locale.
+    - A plan dated even one day after today in that zone is refused.
+    - The other tests that compute today use the same function.
+  type: bug
+  layer: product
+  modules: []
+  refs: []
