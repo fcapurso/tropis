@@ -247,7 +247,8 @@
       "No plan: the finding was written by the team member and checked by a fresh reviewer (planning.md exception); reviewer's four defects fixed by the author and declared. Recommends Large admit only models within a stated margin (1 point proposed) of the best pick on every shared board; captured as idea large-tier-anchors-on-the-best-pick, decide first."
     ],
     "large-tier-anchors-on-the-best-pick": [
-      "Developer adopted the spike's recommendation with a 1-point margin, and added it to the sprint."
+      "Developer adopted the spike's recommendation with a 1-point margin, and added it to the sprint.",
+      "Shipped as FW-067 (PR #199): Large is Opus 5.5 alone; Sonnet 5.5, Gemini 4 Argon and Fable 5.1 moved to Medium-large. Fable sits below Opus on the two boards that score both at max (6.0 on CursorBench 4.0, 6.97 on TB 4.0); AA may understate it at xhigh. Reviewer kept the Muse Wonder wording the executor queried."
     ]
   }
 }
