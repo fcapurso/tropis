@@ -299,3 +299,53 @@ Run with git 2.49.0, node v22.15.0, Claude Code 2.1.300 (the plan header says 2.
 ### Outstanding
 
 No screen, so no manual check. Numbering the decision at merge, opening the pull request and merging are the reviewing session's.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists 16 files, all in *File Structure*;
+  `guards/plan-overlap.test.js` and `guards/fresh-clone.test.js` rightly needed no entry.
+- The full self-check on `HEAD`, run twice: as is, and with `TROPIS_SUBSCRIPTIONS` set
+  in the shell that ran it. Both: `Self-check passed: every guard caught its defect, the
+  clean baseline passed, and the framework repository's own guards passed.`
+- The fresh-agent check is in the handover: `claude -p` 2.1.300 on macOS arm64, in a
+  scratch clone on a branch `ccr-example`, quoted the new *Branching* bullet, created the
+  plan's branch in a worktree from `origin/main`, pushed it and left `ccr-example` alone.
+  It found what the change intended.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses, names and
+real subscriptions; the tests use invented ones.
+
+- `readSubscriptions` reads the local record first and the variable second, and the two
+  scripts and the no-record line use it, as planned.
+- **Fixed by the reviewer on the branch:** a developer with `TROPIS_SUBSCRIPTIONS` set
+  would turn `guards/dispatch.test.js`'s no-record cases red, because its children take
+  the machine's real environment. The test's `run` now passes an environment without the
+  variable; a first try that deleted it from the test's own `process.env` did not reach
+  the children under Jest, and was replaced. Mechanical and understood, so made here.
+- The decision is numbered FW-064.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen. Setting the variable in a cloud
+  environment and seeing a cloud session name the included model is the developer's
+  check after a release.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- Under Jest, deleting a variable from a test's `process.env` does not reach a child
+  process started without an explicit `env`. Worth a line in the tests rule; proposed to
+  the developer as a capture, not written here.
+
+### Merged because
+
+A fresh clone can be told the subscriptions without committing them, the included model
+is named from it, the workflow tells a cloud session to work on the plan's branch and a
+fresh agent did, and the self-check passes with and without the variable set.

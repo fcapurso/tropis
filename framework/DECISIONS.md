@@ -2065,7 +2065,7 @@ request's head. A cloud session cannot delete a branch, so it never deletes the 
 Projects already set up take the new token location, and the squash setting, through
 their update.
 
-## FW-NNN: A fresh clone is told the subscriptions by a variable, and a cloud session works on the plan's branch
+## FW-064: A fresh clone is told the subscriptions by a variable, and a cloud session works on the plan's branch
 
 **Date:** 2026-11-03 · **Status:** Accepted; built by the backlog items
 `cloud-session-knows-the-subscriptions` and `cloud-session-works-on-a-plan-branch`.
