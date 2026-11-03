@@ -5955,3 +5955,42 @@
   modules: []
   refs:
     - docs/superpowers/plans/2026-11-03-sprint-proposal-groups-bundles.md
+# 2026-11-03, from a sprint session in a Claude Code cloud session: `sprint.mjs status`
+# printed "open pull requests unknown — HTTP 403: GitHub GraphQL is not available from
+# Claude Code sessions; use the REST API". openPullRequests in scripts/sprint.mjs runs
+# `gh pr list`, which goes through GraphQL; the REST route
+# (`gh api repos/<owner>/<repo>/pulls?state=open`) is answered there. Without the list,
+# status cannot tell whether the merge token's holder has an open pull request, which is
+# how it judges the token stale.
+- id: sprint-status-works-in-a-cloud-session
+  title: The sprint status lists open pull requests in a cloud session
+  status: idea
+  value: A developer running a sprint from a Claude Code cloud session sees which team
+    members have a pull request open and whether the merge token has gone stale, as they
+    would from their own computer, instead of a line saying the list is unknown.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
+# 2026-11-03, from the developer in a sprint session. With Claude Code: Max recorded,
+# `dispatch.mjs --tier Large` names Claude Sonnet 5.5, not Opus 5.5. FW-057 orders a
+# tier least usage first, which is right only if every model in a tier is fit for its
+# work. Large is defined as open-ended judgment with no mechanical check, and every board
+# docs/model-picks.md places models with scores mechanically checked tasks, so nothing
+# measures what admits a model to Large and no bar says how close to the best is close
+# enough: Sonnet is "second to Opus 5.5 on every board" and sits in Large.
+- id: large-tier-admits-on-judgment-evidence
+  title: Find out what evidence should admit a model to the Large tier
+  status: idea
+  value: The model a Large plan, a team member or a probe is handed is one that can be
+    trusted with judgment nothing checks, so taking the least-usage pick in the tier
+    never trades away the quality the tier exists for. The spike answers which evidence,
+    if any, tells a Large model from a Medium–large one, and what the stated bar for
+    Large should be where no public board measures judgment.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/model-picks.md

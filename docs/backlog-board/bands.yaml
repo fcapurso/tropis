@@ -133,6 +133,18 @@ instruction-files-have-a-delivery-map:
   seen:
     status: shaped
     blockers: []
+large-tier-admits-on-judgment-evidence:
+  band: A
+  value: 3
+  valueWhy: Every Large plan, team member and probe is handed the tier's first included
+    pick, and today that can be a model below the tier's bar.
+  effort: 2
+  effortWhy: A spike, reading the boards and the tier definitions; its result is a
+    decision and a change to /refresh-model-tiers.
+  verdict: Do now; the developer put it in the sprint that found it.
+  seen:
+    status: idea
+    blockers: []
 living-documents-stay-current:
   band: C
   value: 4
