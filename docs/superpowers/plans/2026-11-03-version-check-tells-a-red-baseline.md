@@ -228,3 +228,94 @@ and the report case 2 printed.
    so there is no developer check). Commit, and run the self-check again on that commit.
 3. `git push -u origin plan/version-check-tells-a-red-baseline`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+- Task 0: `npm --prefix .tropis ci`, clean tree, `bash scripts/check-blueprint.sh` on `origin/main` (461bc43): `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1: two cases added, committed, run alone: `Tests: 2 failed, 11 passed, 13 total`; the failing names were `check-version.mjs › does not count a check already failing against the release` and `check-version.mjs › names the failures the release causes apart from those already failing`.
+- Task 2: change made; the guard alone gives `Tests: 13 passed, 13 total`. No case time limit was raised (SLOW stays 120000). The case 2 report was not printed separately; its format is fixed by the code (headings `failing because of the release:` and `already failing before the release, not counted against it:`, names indented two spaces).
+- Task 3: item set to `shipped` (it read `building`), `modules` set, criteria mapped in comments, its `bands.yaml` block removed. `npm --prefix .tropis test`: `Tests: 172 passed, 172 total`.
+- Task 4: see below. No pull request, review record or merge.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, Linux x86_64.
+
+- One guard alone: `bash <scratchpad>/runguard.sh /home/user/tropis-red-baseline HEAD check-version.test.js`. It stages `git archive HEAD` with `templates/framework-jest.config.js` as the jest config and `.self-check/node_modules`, and runs `FRAMEWORK_ROOT=<stage> node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js guards/check-version.test.js`.
+- `bash scripts/check-blueprint.sh` on the commit before this report: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD` (before this report): bands.yaml 14 deletions, feature-catalog.yaml 13, guards/check-version.test.js 53, scripts/check-version.mjs 111, templates/README.md 2; 5 files, 129 insertions, 64 deletions.
+- The self-check on the report's own commit is recorded in the final message of the run.
+
+### Scope
+
+All files are in File Structure; `docs/backlog-board/index.html` was not rebuilt by any hook and is unchanged. Worktree: `/home/user/tropis-red-baseline`, branch `plan/version-check-tells-a-red-baseline`, from `origin/main` 461bc43. Named source: none; written against this repository's own `check-version.mjs`.
+
+### Judgment calls
+
+- One `runSuite` function does the dependency link/install and the run; the baseline and the release run both call it. A clone with `.tropis/package-lock.json` and no link gets `npm ci`, otherwise `install`; the release run now uses the same rule (it used `install` before).
+- Failure names are compared as strings; a suite failing with no failed test is named `<file>: <first message line>`, so a changed message counts as a new failure.
+- When the baseline's install fails or its results are unreadable, `before` is null and the old rule applies, plus the "could not be run" line.
+- Names in the tests section are indented two spaces under their heading.
+
+### What the plan got wrong
+
+- Nothing blocked the work. The plan's rebase trap was already met by `origin/main`. The plan says the baseline "installs or links" and the cleanup removes the node_modules; that the link made by the release run is removed by the temp-dir cleanup, not explicitly, is fine. The plan's File Structure listed `docs/backlog-board/index.html` as conditional; nothing rebuilt it here.
+
+### Outstanding
+
+Nothing the executor could not do. The change has no screen, so there is no developer check. Review should re-break the guards (e.g. make the baseline run a no-op and watch both new cases go red) and confirm the cost: every check now runs the project's suite twice.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, Linux x86_64.
+
+### Checks re-run
+
+- After the reviewer's fix (below) and a rebase on `origin/main` at `1d7570a`,
+  `guards/check-version.test.js` alone, staged from `git archive HEAD` with the
+  self-check's jest: `Tests: 13 passed, 13 total`.
+- The same guard with `scripts/check-version.mjs` put back as `origin/main` has it (the
+  change reverted, tests kept): `Tests: 2 failed, 11 passed, 13 total`, the two failing
+  being `does not count a check already failing against the release` and
+  `names the failures the release causes apart from those already failing`.
+- Scope: six files, all in *File Structure*.
+- The full self-check was not re-run by the reviewer; the pipeline runs it on the pull
+  request.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- **The run after the take had switched from `npm install` to `npm ci`**, which the plan
+  asked for only for the baseline. After the take, a project that owns its package file
+  can hold a lockfile that no longer matches it, which `ci` refuses, and the check would
+  then answer `not now` for a reason that is not the release's. The reviewer fixed it on
+  the branch: `runSuite()` takes the install command, the baseline uses `ci` when the
+  clone has a lockfile, and the run after the take uses `install` as before. Mechanical
+  and understood, so fixed here rather than dispatched; commit
+  `fix(check-version): the run after the take installs as before, not with ci`. No case
+  pins it: a fixture with a mismatched lockfile would need a real install, which the
+  guard's worlds avoid by linking the dependencies.
+
+### Outstanding disposition
+
+- The check now runs the suite twice and takes about twice as long: the cost of the
+  item, accepted.
+- A suite failing with no failed test is named by its first message line, so a changed
+  message counts as a new failure: errs towards `not now`, which is the safe side;
+  dropped.
+- No developer check: the change has no screen.
+
+### Learnings routed
+
+- None generalise beyond this plan.
+
+### Merged because
+
+The version check runs the project's checks before and after the take and counts only
+the failures the release causes, the two cases that pin it go red without the change,
+and the reviewer's one fix restores the install behaviour the plan did not ask to change.

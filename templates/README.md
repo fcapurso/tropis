@@ -115,7 +115,7 @@ This project was set up from the framework at `{{BLUEPRINT_URL}}`. General adopt
 the development cycle, and maintenance after setup are documented there — start at
 its README, not by copying those pages into this repository.
 
-Before taking a release, `node scripts/check-version.mjs <project>` from your Tropis clone at that tag says whether it is safe, safe with these steps, or not now — not now means do not take it yet and look at the failing checks it names — and it changes nothing in the project.
+Before taking a release, `node scripts/check-version.mjs <project>` from your Tropis clone at that tag says whether it is safe, safe with these steps, or not now — not now means do not take it yet and look at the checks it names as failing because of the release; checks already failing before the release are listed apart and do not count against it — and it changes nothing in the project.
 
 To take a newer release, check out its tag in your Tropis clone and run
 `node scripts/take-version.mjs <project>` from it. The project must have no uncommitted
