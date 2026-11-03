@@ -5987,9 +5987,12 @@
 # docs/model-picks.md places models with scores mechanically checked tasks, so nothing
 # measures what admits a model to Large and no bar says how close to the best is close
 # enough: Sonnet is "second to Opus 5.5 on every board" and sits in Large.
+# Shipped 2026-11-03 by the spike itself, in a Claude Code cloud session: the answer is
+# the finding in refs, and its recommendation is large-tier-anchors-on-the-best-pick. A
+# spike, so no modules and no acceptance criteria.
 - id: large-tier-admits-on-judgment-evidence
   title: Find out what evidence should admit a model to the Large tier
-  status: idea
+  status: shipped
   value: The model a Large plan, a team member or a probe is handed is one that can be
     trusted with judgment nothing checks, so taking the least-usage pick in the tier
     never trades away the quality the tier exists for. The spike answers which evidence,
@@ -6001,3 +6004,23 @@
   modules: []
   refs:
     - docs/model-picks.md
+    - docs/superpowers/specs/2026-11-03-large-tier-evidence-finding.md
+    - docs/superpowers/specs/2026-11-03-large-tier-judgment-probe.md
+# 2026-11-03, the recommendation of the spike large-tier-admits-on-judgment-evidence, put
+# to the developer and not yet agreed. No board measures judgment, and a pilot of seeded
+# review defects did not separate the tiers, so Large is anchored on the best pick by
+# policy. Applied to the 2026-11-02 figures it leaves Claude Opus 5.5 alone in Large.
+- id: large-tier-anchors-on-the-best-pick
+  title: Large admits only models level with the best selectable pick
+  status: idea
+  value: A Large plan, a sprint team member and a fresh reviewer run on the best model the
+    boards agree on, not on a cheaper one admitted for being level with another model
+    already in the tier, because in Large no check catches a weaker model's mistake. The
+    refresh states the margin within which a model counts as level with the best, so the
+    bar no longer falls each time a model is admitted.
+  acceptanceCriteria: []
+  type: feature
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-large-tier-evidence-finding.md

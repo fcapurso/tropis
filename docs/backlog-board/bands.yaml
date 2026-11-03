@@ -133,15 +133,16 @@ instruction-files-have-a-delivery-map:
   seen:
     status: shaped
     blockers: []
-large-tier-admits-on-judgment-evidence:
-  band: A
-  value: 3
-  valueWhy: Every Large plan, team member and probe is handed the tier's first included
-    pick, and today that can be a model below the tier's bar.
+large-tier-anchors-on-the-best-pick:
+  band: C
+  value: 4
+  valueWhy: Every Large plan, sprint team member and fresh reviewer runs on the tier's
+    first included pick, and today that is a model the boards place below the best.
   effort: 2
-  effortWhy: A spike, reading the boards and the tier definitions; its result is a
-    decision and a change to /refresh-model-tiers.
-  verdict: Do now; the developer put it in the sprint that found it.
+  effortWhy: A decision, a change to /refresh-model-tiers, and a pass of it that moves
+    three picks down a tier.
+  verdict: Decide first - whether Large takes only the best pick at its higher usage, and
+    the margin within which a model counts as level with it.
   seen:
     status: idea
     blockers: []
