@@ -18,8 +18,9 @@ says none is under way, plan one.
 ## 1. Plan
 
 Run `node .tropis/scripts/sprint.mjs propose`, or `propose --points <n>` when the
-developer names a budget; 20 effort points is where it starts. Show the proposal and say
-how team members will start (below). The developer adds, drops, reorders and resizes it;
+developer names a budget; 20 effort points is where it starts. Show the proposal as
+`propose` prints it, one entry per team member with a bundle's backlog items beneath it,
+and say how team members will start (below). The developer adds, drops, reorders and resizes it;
 run `propose` again for a new budget. A backlog item you find missing a `blockedBy` while
 looking is proposed to the developer like any backlog edit. What the developer agrees is
 what the team is approved to do: each backlog item, in that order, carried through the
