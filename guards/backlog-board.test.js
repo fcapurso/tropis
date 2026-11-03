@@ -69,7 +69,7 @@ function stage(catalog, bands) {
   const fw = join(dir, '.tropis');
   mkdirSync(join(fw, 'scripts'), { recursive: true });
   mkdirSync(join(fw, 'templates'), { recursive: true });
-  for (const file of ['build-backlog-board.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js']) {
+  for (const file of ['build-backlog-board.mjs', 'load-yaml.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js']) {
     copyFileSync(join(shipped, file), join(fw, 'scripts', file));
   }
   copyFileSync(join(shipped, '../templates/backlog-board.html'), join(fw, 'templates', 'backlog-board.html'));

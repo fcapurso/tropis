@@ -25,7 +25,7 @@ const { mergesAfterIds, withMergesAfter, validateDispatchable } = binding;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
-const FILES = ['plan-overlap.mjs', 'plan-binding.js', 'projections.js'];
+const FILES = ['plan-overlap.mjs', 'load-yaml.mjs', 'plan-binding.js', 'projections.js'];
 
 const ENV = {
   ...process.env,

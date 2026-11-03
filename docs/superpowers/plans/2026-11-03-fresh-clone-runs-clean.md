@@ -273,3 +273,114 @@ alone (all three pass), then `bash scripts/check-blueprint.sh` (last line starts
    so there is no developer check). Commit.
 3. `git push -u origin plan/fresh-clone-runs-clean`. **Do not open a pull request**,
    write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+Tool and platform for every command below: git 2.49.0, node v22.15.0, Darwin arm64
+(macOS), jest from `.self-check/`. Worktree used: `../tropis-fresh-clone`.
+
+### Task completion
+
+- Task 0 done. `npm --prefix .tropis ci` clean; `git status --porcelain` empty; baseline
+  `bash scripts/check-blueprint.sh` ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1 done. The guard was run alone against a project-shaped tree built from `HEAD`
+  (the same build `check-conformance.sh` does). Before the change: `Tests: 3 failed, 3 total`.
+  Case 1 stderr was Node's `Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'yaml' imported from …/scripts/next.mjs`.
+- Task 2 done. Cases 1 and 2 pass. The installed `npm --prefix .tropis run next` runs the
+  installed release, so it shows nothing of this change; instead `next.mjs` and
+  `sprint.mjs status` from a scratch copy of `scripts/` under a `.tropis/` with the
+  packages linked ran (`Main branch: could not tell — no remote named origin.` and
+  `Sprint: none under way; run propose, then start.`).
+- Task 3 partly done. The hook change is made and the new guard passes `Tests: 3 passed, 3 total`.
+  The self-check does NOT pass (see below), so the stop condition in *File Structure* applies.
+- Task 4 done. `npm --prefix .tropis test`: `Tests: 160 passed, 160 total`.
+- Task 5: the self-check is red; stopped and handed back as the plan directs.
+
+### Verification results
+
+- `bash scripts/check-blueprint.sh` on the final commit:
+  `Self-check FAILED: conformance or the clean baseline (above).` Clean baseline:
+  `Tests: 124 failed, 883 passed, 1007 total`, in six guards: `next-report`,
+  `team-member-cli`, `backlog-board`, `plan-overlap`, `board-hooks`, `sprint`. Every
+  failure read `Cannot find module '…/.tropis/scripts/load-yaml.mjs' imported from …/next.mjs`
+  (or the other four scripts): each guard copies a hand-written list of script files
+  into a scratch project, and `load-yaml.mjs` is not on any list.
+- `git diff --stat origin/main...HEAD`: only the files in *File Structure*.
+
+### Scope
+
+All changed files are in *File Structure*. The six guards above need `load-yaml.mjs`
+added to their copy lists, and are not in the table; per the plan, not edited.
+
+### Judgment calls
+
+- Case 3 of the new guard deletes `PYTHONDONTWRITEBYTECODE` and `PYTHONPYCACHEPREFIX` from
+  the child's environment. The executor's shell had `PYTHONDONTWRITEBYTECODE=1`, under
+  which the case passed before the change; with the variable cleared it fails first
+  (`3 failed`). The payload `git checkout -b x` in a main checkout does reach the module
+  load. The hook copy in the case leaves out any `__pycache__` the tree already held.
+- Task 4 comment block: neither item had an existing comment block; the comments were put
+  above each item's `- id:` line. Both items read `building` and were set to `shipped`.
+- Worked from no named source.
+
+### What the plan got wrong
+
+- *File Structure* omits the guards that copy scripts by hand: `guards/next-report.test.js`,
+  `team-member-cli.test.js`, `backlog-board.test.js`, `plan-overlap.test.js`,
+  `board-hooks.test.js`, `sprint.test.js`. An import added to five scripts is a changed
+  import surface for every guard that copies them (the planning rule's last bullet).
+- Task 2 says to paste `npm --prefix .tropis run next`; that runs the installed release.
+- The plan did not say a shell setting `PYTHONDONTWRITEBYTECODE` hides the cache.
+
+### Outstanding
+
+- Add `load-yaml.mjs` to the copy lists of the six guards (a plan amendment or a small
+  fixup), then re-run the self-check. Nothing else known to fail.
+- The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists 18 files: those in *File Structure*,
+  plus the six guards fixed below.
+- The full self-check on `HEAD` after the fix: `Self-check passed: every guard caught its
+  defect, the clean baseline passed, and the framework repository's own guards passed.`
+- The handover shows the new guard red before the change (`3 failed`) and green after;
+  the reviewer read the guard and the three cases against the plan.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found. The new guard's git identity is `probe@example.test`.
+
+- **The plan missed six guards, and the reviewer fixed them on the branch.** Six guards
+  build a scratch project from a hand-written list of scripts (`next-report`,
+  `team-member-cli`, `backlog-board`, `plan-overlap`, `board-hooks`, `sprint`), so each
+  failed on the missing `load-yaml.mjs`. The fix adds the file to each list, one line
+  per guard, nothing else. It is mechanical and understood, so it was made here rather
+  than dispatched; the developer is told so. Commit
+  `test(guards): the guards that copy scripts into a scratch project copy the yaml loader too`.
+- The executor's two judgment calls stand: clearing the two Python cache variables in
+  case 3 is needed for the case to test the hook, and the shipped comments sit above
+  each `- id:` line because neither item had a block.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`, including that a project with
+  an existing `.tropis/hooks/__pycache__/` folder can delete it.
+
+### Learnings routed
+
+- No new rule: the planning rule already says a changed import surface reaches every
+  guard that copies the scripts. The specifying session did not apply it.
+
+### Merged because
+
+A script without its packages says to run `npm --prefix .tropis ci` and exits 1, the
+scripts import yaml only through one module with a check that fails otherwise, the hook
+leaves no cache, and the full self-check passes.

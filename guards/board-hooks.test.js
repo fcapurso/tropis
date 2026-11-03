@@ -68,7 +68,7 @@ function fill(dir) {
   const fw = join(dir, '.tropis');
   mkdirSync(join(fw, 'scripts'), { recursive: true });
   mkdirSync(join(fw, 'templates'), { recursive: true });
-  for (const f of ['build-backlog-board.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js', 'install-board-hooks.mjs']) {
+  for (const f of ['build-backlog-board.mjs', 'load-yaml.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js', 'install-board-hooks.mjs']) {
     copyFileSync(join(scripts, f), join(fw, 'scripts', f));
   }
   copyFileSync(join(src, 'templates/backlog-board.html'), join(fw, 'templates/backlog-board.html'));

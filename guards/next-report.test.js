@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
 // What the report imports, copied beside it into .tropis/scripts/ in every staged project.
-const REPORT_FILES = ['next.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js', 'main-status.mjs',
+const REPORT_FILES = ['next.mjs', 'load-yaml.mjs', 'next-work.js', 'board-bands.js', 'readme-freshness.js', 'main-status.mjs',
   'merge-token.mjs'];
 
 const HEADER_ONLY_BANDS = `# Bands and verdicts, with no rows yet.
