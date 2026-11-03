@@ -3462,8 +3462,16 @@
 # because the 31 installed checks passed in its scratch copy, and the repository's own
 # self-check then failed on the result; check-version runs only npm --prefix .tropis
 # test. Every release in RELEASES.md says "Checked on the release candidate" no.
-# Open point for shaping: check-version refuses a release that is not tagged, and the
-# candidate is untagged main.
+# Open point for shaping, settled 2026-11-03 with the developer: the candidate is tagged.
+# check-version refuses an untagged commit but takes any tag sitting exactly on HEAD;
+# tried that day in a scratch clone tagged v0.9.0-rc.1 against this repository on
+# v0.8.0, it gave a verdict and ran 159 checks, with no code change. A candidate tag
+# such as vX.Y.Z-rc.N stays as the record of what was tried (v tags cannot be deleted
+# here), the framework already ignores such tags when it counts releases, and the
+# result goes to docs/verification-log.md because a tag cannot say whether the try
+# passed. Rejected: an explicit untagged try (a code change, and no lasting name for
+# the commit tried). Kept out of the update-fixes bundle: a capability of its own, not
+# a fix, and too large to share one plan with them.
 # Rejected: a sandbox project deployed from main (synthetic, and someone keeps it up;
 # a real adopter beats it), and an environment per pull request for Tropis (a sandbox
 # per pull request, checked again on main anyway).
@@ -3476,7 +3484,11 @@
     take. The project's pipeline stages are what it runs, the same in every project.
     Before a release, the same check runs on this repository against the candidate,
     so the release notes can say truthfully whether the candidate was checked.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Before a release, /release tags the candidate commit vX.Y.Z-rc.N and the check
+      runs on that tag, with no step left for the developer to remember.
+    - The result of each try, pass or fail, is written to docs/verification-log.md
+      naming the tag.
   type: improvement
   layer: product
   modules: []

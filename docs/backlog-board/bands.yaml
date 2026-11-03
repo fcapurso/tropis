@@ -306,18 +306,18 @@ setup-offers-to-create-the-repository:
     status: idea
     blockers: []
 update-check-runs-the-projects-own-checks:
-  band: C
+  band: B
   value: 4
   valueWhy: Catches a release that breaks a project's own CI before the take.
   effort: 4
-  effortWhy: Running the project's stages in the check, after deciding how an
-    untagged candidate is checked.
-  verdict: "Valuable, since no release yet says its candidate was checked, but it
-    carries an open question: the check refuses anything not on a release tag,
-    and the candidate is untagged main. Decide how a candidate is checked before
-    building."
-  evidence: "2026-10-27 — scripts/check-version.mjs:358 runs only npm --prefix
-    .tropis test; :293 requires HEAD to be exactly on a tag."
+  effortWhy: Running the project's pipeline stages in the check, /release tagging
+    the candidate, and logging each try.
+  verdict: "Ready to plan now the candidate question is settled: /release tags the
+    candidate and the check runs on that tag. A plan of its own, apart from the
+    update-fixes bundle."
+  evidence: "2026-11-03 — in a scratch clone tagged v0.9.0-rc.1, scripts/check-version.mjs
+    took the tag against this repository on v0.8.0 and ran 159 checks with no code
+    change; it still runs only npm --prefix .tropis test."
   seen:
     status: idea
     blockers: []
