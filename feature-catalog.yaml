@@ -5582,15 +5582,24 @@
 # 2026-11-02, raised by the developer. The README's "What it does for you" had grown to
 # 17 bullets, one per capability ever shipped, because /refresh-readme turns each into a
 # bullet and sets no limit. The section is meant as an overview of a few aspects.
+# 2026-11-03, widened by the developer to the whole page and to keeping it short: the
+# refresh before the release after v0.8.0 only added, and was cut back by hand to
+# corrections plus one mention of sprints, to wait for this item. The id keeps its
+# original name because ids never change.
 - id: readme-gives-an-overview-not-a-feature-list
-  title: The README's "What it does for you" is an overview of a few aspects, not a feature list
+  title: The README is a short overview, and stays short as features ship
   status: idea
-  value: Someone deciding whether Tropis is for them sees in a glance what it covers,
-    across a handful of aspects, instead of reading every small thing ever added. Detail
-    stays one link away in the documents the README points to.
+  value: Someone deciding whether Tropis is for them reads the whole README quickly and
+    sees what it covers across a handful of aspects, instead of every small thing ever
+    added. Detail stays one link away in the documents the README points to. A refresh
+    keeps it that way, replacing and folding text rather than only adding, so the page
+    does not grow back release after release.
   acceptanceCriteria:
-    - The section covers a fixed set of aspects in five to seven bullets.
+    - The section What it does for you covers a fixed set of aspects in five to seven bullets.
     - No bullet describes a single feature; detail is left to linked documents.
+    - The whole page has a length limit, and every other section is cut to fit it.
+    - A refresh that would take the page over its limit trims or folds existing text to
+      stay under it, and says what it cut.
   type: improvement
   layer: product
   modules: []
