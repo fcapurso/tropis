@@ -145,12 +145,16 @@ export function readBacklog(root, env = process.env) {
   };
 }
 
-/** { value: [{ number, headRefName }] }, or { error } saying why the list is unknown. */
+/**
+ * { value: [{ number, headRefName }] }, or { error } saying why the list is unknown.
+ * It asks the REST API: `gh pr list` goes through GraphQL, which a Claude Code cloud
+ * session refuses with HTTP 403.
+ */
 function openPullRequests(root, env) {
   const origin = originOnGitHub(root, env);
   if (origin.error) return { error: origin.error };
-  const r = spawnSync('gh', ['pr', 'list', '--state', 'open', '--limit', '100', '--json',
-    'number,headRefName'], { cwd: root, env, encoding: 'utf8', timeout: 20000 });
+  const r = spawnSync('gh', ['api', 'repos/{owner}/{repo}/pulls?state=open&per_page=100'],
+    { cwd: root, env, encoding: 'utf8', timeout: 20000 });
   if (r.error?.code === 'ENOENT') return { error: 'gh is not installed' };
   if (r.error?.code === 'ETIMEDOUT') return { error: 'gh did not answer within 20 seconds' };
   if (r.error) return { error: `gh could not run: ${r.error.message}` };
@@ -158,7 +162,7 @@ function openPullRequests(root, env) {
   try {
     const list = JSON.parse(r.stdout);
     if (!Array.isArray(list)) throw new Error('not a list');
-    return { value: list };
+    return { value: list.map((p) => ({ number: p.number, headRefName: p.head?.ref })) };
   } catch {
     return { error: 'gh answered with something unexpected' };
   }
