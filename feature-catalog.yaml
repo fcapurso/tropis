@@ -1397,6 +1397,13 @@
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-17-this-repository-takes-v0-3-1.md
 # Borrowed idea 4: Trellis's ablate runs the same task with and without an instruction.
+# 2026-11-03, after the trial before the release after v0.8.0 came out inconclusive (a
+# plugin outside the repository may have told the agent what the clause says): the
+# developer asked for two experiments before rule-pruning-keeps-pace is designed. First,
+# rerun that trial where no plugins load, three times without the clause and three times
+# with it, to see whether the test tells the two apart and how much single runs vary.
+# Second, one tidy-up pass by a fresh agent over rules/planning.md in a scratch copy,
+# then discarded, to see how much it proposes and whether the proposals are sound.
 # Related to rules-are-retired-on-evidence, whose trial removes at most one clause per
 # release of this repository and watches a single agent; this asks whether a repeatable
 # comparison is worth its cost here.
@@ -1413,6 +1420,28 @@
   acceptanceCriteria: []
   type: spike
   layer: product
+  modules: []
+  refs: []
+# Raised by the developer on 2026-11-03, after the trial before the release after v0.8.0
+# came out inconclusive. Would replace the one-clause trial of rules-are-retired-on-evidence
+# (FW-046) and reverse that decision's rejection of a sweep. Blocked on the spike, whose
+# two experiments decide whether the design holds.
+- id: rule-pruning-keeps-pace
+  title: Rule files are trimmed as fast as they grow
+  status: idea
+  value: Every sentence in a rule file is read by every session working in its area, and
+    the files only grow, while the trial before each release removes at most one sentence
+    on one run's evidence. Here each rule file gets a word budget a release cannot
+    exceed. When a file is over it, a fresh agent proposes deletions and merges across
+    the whole file, such as repeated sentences, stories that belong in the incident
+    records and wordy passages, which the developer accepts or refuses as one pull
+    request. A deletion that changes what an agent is told, rather than removing a
+    repeat, is tested first with a fresh agent where no plugins load, three times.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  blockedBy:
+    - rule-is-measured-with-and-without
   modules: []
   refs: []
 # Raised by the developer on 2026-10-09. Trellis shows copying works from a package.
