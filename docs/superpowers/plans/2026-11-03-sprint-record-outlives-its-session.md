@@ -298,3 +298,57 @@ Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Da
 ### Outstanding
 
 No screen. A resumed cloud sprint session finding the sprint under way is the developer's live check after a release. The decision heading is `FW-NNN` and must be numbered at merge; the release-note line is the developer's at `/release`. Nothing was opened as a pull request, no review record written, nothing merged.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Rebased onto `4060054` (the plan this one merges after). One conflict, in
+  `framework/DECISIONS.md`, where both appended a decision: both kept, FW-064 first.
+  `scripts/sprint.mjs` rebased cleanly around the shared subscriptions reader.
+- Scope: `git diff --stat origin/main...HEAD` lists 9 files, all in *File Structure*.
+- The full self-check on `HEAD` after the fixes below: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+- The handover shows the † cases red before the change (`6 failed`) and green after, and
+  the hand run with two clones of a bare origin: start in one, mark in the other, status
+  and end in the first, the branch ending on an empty tree.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names.
+The script's fallback identity, for a clone with none, is `sprint@example.com`.
+
+- The record is the branch `tropis/sprint`; every change is a read, a change and a push
+  with a lease on the commit read, retried when another session got there first; an ended
+  sprint is a commit on the empty tree; without an origin the local file stays; a local
+  record from an earlier release is carried over by the next change. As planned.
+- The executor's additions stand: a case for a change overtaken five times, and a read
+  that falls back to the last fetched copy when origin cannot be reached, with a change
+  then refused in one line.
+- **Fixed by the reviewer on the branch:** a push refused for any reason, a branch rule
+  included, was treated as overtaken and retried, then reported as the record changing;
+  now only the refusals that mean another session moved the branch are retried. And the
+  handover quoted a variable name that the private-material check reads as a hostname,
+  turning the self-check red after the executor's last run; reworded. Both mechanical.
+- The decision is numbered FW-065.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen. A cloud sprint session resumed in a new
+  container finding its sprint is the developer's check after a release.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- An executor's last self-check ran before it committed its handover, and the handover
+  itself broke the check. Proposed to the developer: plans end with the self-check after
+  the handover is committed.
+
+### Merged because
+
+The sprint is the same for every session on the project, wherever it runs, its changes
+cannot overwrite each other, and the full self-check passes.
