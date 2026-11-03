@@ -49,6 +49,10 @@
     {
       "id": "sprint-status-works-in-a-cloud-session",
       "points": 0
+    },
+    {
+      "id": "large-tier-anchors-on-the-best-pick",
+      "points": 2
     }
   ],
   "baseline": [
