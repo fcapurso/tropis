@@ -266,3 +266,56 @@ All files are in File Structure; `docs/backlog-board/index.html` was not rebuilt
 ### Outstanding
 
 Nothing the executor could not do. The change has no screen, so there is no developer check. Review should re-break the guards (e.g. make the baseline run a no-op and watch both new cases go red) and confirm the cost: every check now runs the project's suite twice.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, Linux x86_64.
+
+### Checks re-run
+
+- After the reviewer's fix (below) and a rebase on `origin/main` at `1d7570a`,
+  `guards/check-version.test.js` alone, staged from `git archive HEAD` with the
+  self-check's jest: `Tests: 13 passed, 13 total`.
+- The same guard with `scripts/check-version.mjs` put back as `origin/main` has it (the
+  change reverted, tests kept): `Tests: 2 failed, 11 passed, 13 total`, the two failing
+  being `does not count a check already failing against the release` and
+  `names the failures the release causes apart from those already failing`.
+- Scope: six files, all in *File Structure*.
+- The full self-check was not re-run by the reviewer; the pipeline runs it on the pull
+  request.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- **The run after the take had switched from `npm install` to `npm ci`**, which the plan
+  asked for only for the baseline. After the take, a project that owns its package file
+  can hold a lockfile that no longer matches it, which `ci` refuses, and the check would
+  then answer `not now` for a reason that is not the release's. The reviewer fixed it on
+  the branch: `runSuite()` takes the install command, the baseline uses `ci` when the
+  clone has a lockfile, and the run after the take uses `install` as before. Mechanical
+  and understood, so fixed here rather than dispatched; commit
+  `fix(check-version): the run after the take installs as before, not with ci`. No case
+  pins it: a fixture with a mismatched lockfile would need a real install, which the
+  guard's worlds avoid by linking the dependencies.
+
+### Outstanding disposition
+
+- The check now runs the suite twice and takes about twice as long: the cost of the
+  item, accepted.
+- A suite failing with no failed test is named by its first message line, so a changed
+  message counts as a new failure: errs towards `not now`, which is the safe side;
+  dropped.
+- No developer check: the change has no screen.
+
+### Learnings routed
+
+- None generalise beyond this plan.
+
+### Merged because
+
+The version check runs the project's checks before and after the take and counts only
+the failures the release causes, the two cases that pin it go red without the change,
+and the reviewer's one fix restores the install behaviour the plan did not ask to change.
