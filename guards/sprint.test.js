@@ -10,7 +10,8 @@
  * is made from the local repository, then its origin URL is pointed at a github.com URL
  * and the script is run with GIT_ALLOW_PROTOCOL=file, so its fetch is refused at once
  * without reaching the network and it reads origin/main as last fetched. A stub gh first
- * on PATH answers `pr list` and fails every other call. Nothing here reaches the network.
+ * on PATH answers the REST pull request route (`gh api repos/{owner}/{repo}/pulls?...`)
+ * and fails every other call. Nothing here reaches the network.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import {
@@ -151,7 +152,7 @@ const path = require('path');
 const dir = process.env.STUB_DIR;
 const args = process.argv.slice(2);
 fs.appendFileSync(path.join(dir, 'gh.log'), JSON.stringify(args) + '\\n');
-if (args[0] === 'pr' && args[1] === 'list' && fs.existsSync(path.join(dir, 'pulls.json'))) {
+if (args[0] === 'api' && String(args[1]).startsWith('repos/{owner}/{repo}/pulls?') && fs.existsSync(path.join(dir, 'pulls.json'))) {
   process.stdout.write(fs.readFileSync(path.join(dir, 'pulls.json'), 'utf8'));
   process.exit(0);
 }
@@ -166,7 +167,11 @@ function stubGh(world, pulls) {
   writeFileSync(join(stub, 'bin/gh'), STUB_GH);
   chmodSync(join(stub, 'bin/gh'), 0o755);
   writeFileSync(join(stub, 'gh.log'), '');
-  if (pulls) writeFileSync(join(stub, 'pulls.json'), JSON.stringify(pulls));
+  if (pulls) {
+    writeFileSync(join(stub, 'pulls.json'), JSON.stringify(
+      pulls.map((p) => ({ number: p.number, head: { ref: p.headRefName } })),
+    ));
+  }
   return {
     env: { STUB_DIR: stub, PATH: `${join(stub, 'bin')}:${process.env.PATH}` },
     calls: () => readFileSync(join(stub, 'gh.log'), 'utf8').split('\n').filter(Boolean),
@@ -609,6 +614,35 @@ describe('status', () => {
     expect(r.stdout).toContain('Sprint: open pull requests unknown — origin is not on GitHub.\n');
     expect(r.stdout).toContain('  e1 — not started');
     expect(gh.calls()).toEqual([]);
+  });
+
+  it('† asks GitHub for open pull requests through the REST API, never gh pr list', () => {
+    const world = makeWorld([entry('e1')], { e1: row('A', 3, 3) });
+    const clone = makeClone(world);
+    expect(run(clone, ['start', 'e1'], at(T0)).status).toBe(0);
+    const gh = stubGh(world, [{ number: 5, headRefName: 'plan/e1-slug' }]);
+    const env = at(T0, { ...pretendGitHub(clone), ...gh.env });
+
+    const out = lines(run(clone, ['status'], env));
+    expect(out).toContain('  e1 — claiming (#5)');
+    const pullCalls = gh.calls().map((c) => JSON.parse(c)).filter((c) => ['pr', 'api'].includes(c[0]));
+    expect(pullCalls).toEqual([['api', 'repos/{owner}/{repo}/pulls?state=open&per_page=100']]);
+  });
+
+  it('† says open pull requests are unknown with gh’s own line when gh refuses', () => {
+    const world = makeWorld([entry('e1')], { e1: row('A', 3, 3) });
+    const clone = makeClone(world);
+    expect(run(clone, ['start', 'e1'], at(T0)).status).toBe(0);
+    const gh = stubGh(world, null);
+    const env = at(T0, { ...pretendGitHub(clone), ...gh.env });
+
+    const r = run(clone, ['status'], env);
+    expect(r.status).toBe(0);
+    const out = lines(r);
+    expect(out).toContainEqual(expect.stringMatching(
+      /^Sprint: open pull requests unknown — stub gh: unexpected call: api repos\/\{owner\}\/\{repo\}\/pulls/,
+    ));
+    expect(out).toContain('  e1 — not started');
   });
 });
 
