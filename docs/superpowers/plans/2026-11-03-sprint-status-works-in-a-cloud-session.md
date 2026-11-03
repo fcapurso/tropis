@@ -296,3 +296,50 @@ did not rebuild it. The worktree path used is `../tropis-sprint-rest`.
 - Not seen here: a populated answer from GitHub. The first `sprint.mjs status` run with an
   open team member pull request is the check that shows it.
 - A release-note line for `/release` is the developer's to write.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, gh 2.89.0, Linux x86_64.
+
+### Checks re-run
+
+- `guards/sprint.test.js` alone, staged from `git archive HEAD` with the self-check's
+  jest: `Tests: 48 passed, 48 total`.
+- The same guard with `scripts/sprint.mjs` from `origin/main` put back in the stage (the
+  fix reverted, tests kept): `Tests: 4 failed, 44 passed, 48 total`.
+- Before the plan was written, in this cloud session: `gh pr list` answered the HTTP 403
+  GraphQL refusal, and `gh api 'repos/{owner}/{repo}/pulls?state=open&per_page=100'`
+  answered a populated list whose items carry `number` and `head.ref`. So the shape the
+  executor could not see populated was seen live.
+- Scope: `git diff --stat origin/main...HEAD` lists five files, all in *File Structure*.
+- The full self-check was not re-run by the reviewer; the executor's run on the handover
+  commit passed, and the pipeline re-runs it on the pull request.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The code matches the plan: one REST call, items mapped to `{ number, headRefName }`,
+  every error line unchanged. Nothing else found.
+
+### Outstanding disposition
+
+- `Merges after: sprint-proposal-groups-bundles` stays; that item has shipped, so the
+  wait goes ahead at once.
+- No developer check: the change has no screen.
+- The Dependabot alerts the push reported are on `main` and unrelated to this change.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- No durable change. `scripts/submit-upstream.sh` also runs `gh pr list`, so a flush
+  from a cloud session would hit the same refusal; it runs against the upstream and from
+  a project's own machine as a rule, and nothing has reported it failing, so it is noted
+  here, not made a backlog item.
+
+### Merged because
+
+The sprint status asks GitHub through the REST route a cloud session answers, the four
+cases that read pull requests go red without the fix, and the guard passes.
