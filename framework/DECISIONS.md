@@ -2064,3 +2064,30 @@ automatic deletion of merged branches never touches it because it is never a pul
 request's head. A cloud session cannot delete a branch, so it never deletes the token.
 Projects already set up take the new token location, and the squash setting, through
 their update.
+
+## FW-064: A fresh clone is told the subscriptions by a variable, and a cloud session works on the plan's branch
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog items
+`cloud-session-knows-the-subscriptions` and `cloud-session-works-on-a-plan-branch`.
+
+**Decision:** Where a machine has no local subscriptions record, as in any fresh clone
+and so in a Claude Code cloud session, `TROPIS_SUBSCRIPTIONS` holds the same
+`<tool>: <subscription>` lines separated by `;`. One reader, `readSubscriptions`, serves
+`/dispatch` and the sprint: the local record wins where both exist. The variable is set
+in the cloud environment's settings, never in a committed file. A cloud session starts on
+a branch the cloud assigned it and leaves that branch alone: it creates each plan's
+branch in a worktree from `origin/main` and pushes that, as every session does.
+
+**Evidence:** A cloud session on 2026-11-03, Claude Code 2.1.317, Linux x86_64, printed
+that the subscriptions were not recorded on its machine. Pushing branches with other
+names than the assigned one worked.
+Source: none in particular.
+
+**Rejected:** A committed record (personal, and this project is public). Asking the
+developer in every cloud session (a sprint session starts team members unattended).
+Working on the assigned branch (it is not the plan's branch, and a squash merge of it
+would carry other work).
+
+**Consequences:** A developer who wants the included model named in the cloud sets one
+variable once. Nothing changes for a local session. The no-record message names the
+variable.

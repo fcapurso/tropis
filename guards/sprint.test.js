@@ -28,7 +28,7 @@ import * as binding from '../scripts/plan-binding.js';
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
 const FILES = [
-  'sprint.mjs', 'load-yaml.mjs', 'next-work.js', 'board-bands.js', 'plan-binding.js', 'projections.js',
+  'sprint.mjs', 'load-yaml.mjs', 'next-work.js', 'board-bands.js', 'plan-binding.js', 'projections.js', 'subscriptions.js',
   'main-status.mjs', 'merge-token.mjs', 'team-member-cli.mjs',
 ];
 
@@ -42,7 +42,7 @@ const scratch = (prefix) => {
   return dir;
 };
 
-const ENV = { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
+const ENV = { ...process.env, TROPIS_SUBSCRIPTIONS: undefined, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
 delete ENV.TROPIS_SPRINT_NOW;
 const git = (cwd, args, env = ENV) => {
   const r = spawnSync('git', args, { cwd, env, encoding: 'utf8' });
@@ -814,6 +814,13 @@ describe('the team member\'s model', () => {
     expect(modelLine(r).endsWith(
       `**Use:** not chosen — this project has no model picks. Run /refresh-model-tiers.${DEFAULT}`,
     )).toBe(true);
+  });
+
+  it('† e: with no local record, TROPIS_SUBSCRIPTIONS names the pick', () => {
+    const clone = setup(PICKS, null);
+    const r = run(clone, ['start', 'e1', '--way', 'session'], { ...ENV, TROPIS_SUBSCRIPTIONS: 'Claude Code: Max' });
+    expect(modelLine(r)).toContain('**Use:** Alder 3, in Claude Code');
+    expect(modelLine(r)).not.toContain('not chosen');
   });
 
   it.each([

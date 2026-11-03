@@ -27,6 +27,7 @@ import {
   NO_PICKS_USE,
   renderThinPrompt,
 } from './plan-binding.js';
+import { readSubscriptions } from './subscriptions.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -66,15 +67,9 @@ try {
 } catch {
   // No picks file: the prompt says to run /refresh-model-tiers.
 }
-// Which subscriptions the developer holds: a local record under the git directory shared
-// by every worktree, never committed. No git or no file means none is recorded.
-let subscriptionsText = null;
-try {
-  const dir = commonGitDir();
-  if (dir !== null) subscriptionsText = readFileSync(join(dir, 'tropis/subscriptions.txt'), 'utf8');
-} catch {
-  // No record.
-}
+// Which subscriptions the developer holds: the local record, or TROPIS_SUBSCRIPTIONS
+// where a fresh clone has none. Null means none is recorded.
+const subscriptionsText = readSubscriptions(root);
 
 // Prints the pick `/dispatch` would name for a plan of this tier: how a session starting
 // an agent that runs no plan (a fresh reviewer, a probe) chooses its model.

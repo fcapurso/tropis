@@ -5697,9 +5697,13 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+# Shipped by docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md.
+# Criterion 1 (variable gives the lines, a local record wins): guards/subscriptions.test.js, 'reads the record from TROPIS_SUBSCRIPTIONS where no local record exists' and 'a local record wins over the variable'.
+# Criterion 2 (dispatch and the sprint name the pick; the no-record line names the variable): guards/subscriptions.test.js, 'dispatch names the included pick from the variable'; guards/sprint.test.js, case e; guards/dispatch.test.js, 'says so when no subscriptions are recorded'.
+# Criterion 3 (nothing personal committed; the documents say to set the variable): commands/refresh-model-tiers.md and templates/README.md; the tests use invented subscriptions.
 - id: cloud-session-knows-the-subscriptions
   title: A cloud session can be told which subscriptions the developer holds
-  status: building
+  status: shipped
   value: Team members and fresh reviewers started from the cloud run on the included
     model their tier names, as they do on the developer's machine. Today a fresh clone has
     no subscription record, because it lives under the git directory and is never
@@ -5713,7 +5717,8 @@
       the variable in a cloud environment's settings.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/subscriptions.js
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md
@@ -5761,9 +5766,12 @@
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-fresh-clone-runs-clean.md
+# Shipped by docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md.
+# Criterion 1 (the workflow says it): framework/workflow.md, Branching, the bullet on a cloud session's assigned branch.
+# Criterion 2 (a fresh agent does the work on the plan's branch): the fresh-agent check recorded in the body of the commit that changed framework/workflow.md (Claude Code 2.1.300, macOS on arm64).
 - id: cloud-session-works-on-a-plan-branch
   title: The workflow says how a cloud session works on a plan's branch
-  status: building
+  status: shipped
   value: A cloud session follows one instruction about branches, not two. Today it starts
     on a branch assigned to it and is told to push only there, while the workflow wants a
     branch per plan in a worktree of its own.
@@ -5774,7 +5782,8 @@
       plan's branch, recorded with its tool and version.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - framework/workflow.md
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
     - docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md

@@ -257,3 +257,95 @@ or a new commit.
    says there is no screen). Commit.
 5. `git push -u origin plan/cloud-session-starts-like-local`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+- Task 0 done. Setup passed; baseline self-check passed before any change.
+- Task 1 done. Cases written and committed red.
+- Task 2 done. Reader, wiring, installed list, copy lists; guards pass.
+- Task 3 and Task 4 done in one commit (documents and decision together; see Judgment calls).
+- Task 5 done. The fresh-agent check passed on its first run; its outcome is in that commit's body.
+- Task 6 done. Both items shipped, bands rows removed, report appended, branch pushed. No pull request, review record or auto-merge.
+
+### Verification results
+
+Run with git 2.49.0, node v22.15.0, Claude Code 2.1.300 (the plan header says 2.1.317 for the cloud session, a different install), on macOS (Darwin) arm64.
+
+- Red run (guards subscriptions, sprint, dispatch on a `git archive` of the red commit): `Tests: 5 failed, 73 passed, 78 total`. Failing: `the subscriptions record › † reads the record from TROPIS_SUBSCRIPTIONS where no local record exists`; `† a local record wins over the variable`; `† dispatch names the included pick from the variable`; `the team member's model › † e: with no local record, TROPIS_SUBSCRIPTIONS names the pick`; and the existing `dispatch names the pick to use › says so when no subscriptions are recorded`, whose asserted ending I changed.
+- Green run (subscriptions, sprint, dispatch, team-member-cli, plan-overlap): all pass, no failures. Command used (a scratch script, not committed): stage `git archive HEAD` in a temp directory, add `package.json` `{"type":"module"}`, copy `templates/framework-jest.config.js` to `jest.config.js`, link `.self-check/node_modules`, then `FRAMEWORK_ROOT=<stage> node --experimental-vm-modules <jest> --config jest.config.js guards/<name>.test.js`. `fresh-clone` does not run under that shortcut (it needs a project-shaped tree), so it was covered by the full self-check only.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 163 passed, 163 total`.
+- `bash scripts/check-blueprint.sh`, last line: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Fresh-agent check: Claude Code 2.1.300, macOS (Darwin) on arm64, in a scratch clone outside the repository on a branch `ccr-example`, with `ANTHROPIC_API_KEY` unset and Bash, Edit and Write disallowed. Told it was a cloud session delivering an invented plan `example-change`. It found the new bullet and answered: a `plan/example-change-<slug>` branch from `origin/main` in a worktree beside the checkout, push that, and leave `ccr-example` alone (commit nothing, push nothing, merge nothing from it). Passed on the first run; wording unchanged.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: 15 files, 213 insertions, 51 deletions: `commands/refresh-model-tiers.md`, `docs/backlog-board/bands.yaml`, `feature-catalog.yaml`, `framework/DECISIONS.md`, `framework/workflow.md`, `guards/dispatch.test.js`, `guards/sprint.test.js`, `guards/subscriptions.test.js`, `guards/team-member-cli.test.js`, `scripts/dispatch.mjs`, `scripts/installed-scripts.txt`, `scripts/plan-binding.js`, `scripts/sprint.mjs`, `scripts/subscriptions.js`, `templates/README.md`. All are in the File Structure table. Worktree used: the sibling `tropis-cloud-start` of the `tropis` checkout.
+
+### Judgment calls
+
+- Tasks 3 and 4 went into one commit, so the fresh-agent outcome sits in the body of the commit that changes `framework/workflow.md`.
+- The decision heading is `FW-NNN` and must be numbered at merge (the next free number after FW-063 unless another plan takes it).
+- `readSubscriptions` returns null when git cannot say, instead of throwing as the sprint's old path lookup did; that lookup is still used for the sprint file itself.
+- The sprint test `ENV` now sets `TROPIS_SUBSCRIPTIONS: undefined` so a developer's own variable cannot leak into cases; the new guard deletes it explicitly. `guards/dispatch.test.js` was not changed beyond the one assertion, so a developer with the variable set locally would see its no-record cases differ.
+- Source worked from: nothing in particular.
+
+### What the plan got wrong
+
+- It says to add `subscriptions.js` to the copy lists in `guards/plan-overlap.test.js` and `guards/fresh-clone.test.js`. Neither needs it: `plan-overlap` copies only `plan-binding.js`, which does not import the new module, and `fresh-clone` copies the whole scripts folder. Only `guards/sprint.test.js` and `guards/team-member-cli.test.js` got the entry. `guards/dispatch.test.js` builds its project from `installed-scripts.txt`, so it picked it up there.
+- The plan's header names Claude Code 2.1.317 for the cloud session; locally 2.1.300 ran the check.
+
+### Outstanding
+
+No screen, so no manual check. Numbering the decision at merge, opening the pull request and merging are the reviewing session's.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Scope: `git diff --stat origin/main...HEAD` lists 16 files, all in *File Structure*;
+  `guards/plan-overlap.test.js` and `guards/fresh-clone.test.js` rightly needed no entry.
+- The full self-check on `HEAD`, run twice: as is, and with `TROPIS_SUBSCRIPTIONS` set
+  in the shell that ran it. Both: `Self-check passed: every guard caught its defect, the
+  clean baseline passed, and the framework repository's own guards passed.`
+- The fresh-agent check is in the handover: `claude -p` 2.1.300 on macOS arm64, in a
+  scratch clone on a branch `ccr-example`, quoted the new *Branching* bullet, created the
+  plan's branch in a worktree from `origin/main`, pushed it and left `ccr-example` alone.
+  It found what the change intended.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses, names and
+real subscriptions; the tests use invented ones.
+
+- `readSubscriptions` reads the local record first and the variable second, and the two
+  scripts and the no-record line use it, as planned.
+- **Fixed by the reviewer on the branch:** a developer with `TROPIS_SUBSCRIPTIONS` set
+  would turn `guards/dispatch.test.js`'s no-record cases red, because its children take
+  the machine's real environment. The test's `run` now passes an environment without the
+  variable; a first try that deleted it from the test's own `process.env` did not reach
+  the children under Jest, and was replaced. Mechanical and understood, so made here.
+- The decision is numbered FW-064.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen. Setting the variable in a cloud
+  environment and seeing a cloud session name the included model is the developer's
+  check after a release.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- Under Jest, deleting a variable from a test's `process.env` does not reach a child
+  process started without an explicit `env`. Worth a line in the tests rule; proposed to
+  the developer as a capture, not written here.
+
+### Merged because
+
+A fresh clone can be told the subscriptions without committing them, the included model
+is named from it, the workflow tells a cloud session to work on the plan's branch and a
+fresh agent did, and the self-check passes with and without the variable set.
