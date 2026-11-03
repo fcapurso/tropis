@@ -5692,19 +5692,24 @@
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
 - id: cloud-session-knows-the-subscriptions
   title: A cloud session can be told which subscriptions the developer holds
-  status: idea
+  status: building
   value: Team members and fresh reviewers started from the cloud run on the included
     model their tier names, as they do on the developer's machine. Today a fresh clone has
     no subscription record, because it lives under the git directory and is never
     committed, so no model is named.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - Where no local record exists, the variable TROPIS_SUBSCRIPTIONS gives the same
+      lines separated by semicolons, and a local record wins where both exist.
+    - Dispatch and the sprint name the included pick from the variable, and the line for
+      no record names the variable as the other way to say it.
+    - Nothing personal is committed; the refresh command and the operator guide say to set
+      the variable in a cloud environment's settings.
   type: improvement
   layer: product
-  blockedBy:
-    - cloud-session-can-write-to-github
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+    - docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md
 # Shipped by docs/superpowers/plans/2026-11-03-fresh-clone-runs-clean.md.
 # Criterion 1 (one line, status 1): guards/fresh-clone.test.js, 'a script without its packages says to install them'.
 # Criterion 2 (behaves as before with packages): guards/sprint.test.js and the other script guards, run on the new loader.
@@ -5751,15 +5756,18 @@
     - docs/superpowers/plans/2026-11-03-fresh-clone-runs-clean.md
 - id: cloud-session-works-on-a-plan-branch
   title: The workflow says how a cloud session works on a plan's branch
-  status: idea
+  status: building
   value: A cloud session follows one instruction about branches, not two. Today it starts
     on a branch assigned to it and is told to push only there, while the workflow wants a
     branch per plan in a worktree of its own.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The workflow says a cloud session creates each plan's branch in a worktree from
+      origin/main and pushes that, and commits nothing to the branch the cloud assigned.
+    - A fresh agent told it is a cloud session on an assigned branch does the work on the
+      plan's branch, recorded with its tool and version.
   type: improvement
   layer: product
-  blockedBy:
-    - cloud-session-can-write-to-github
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+    - docs/superpowers/plans/2026-11-03-cloud-session-starts-like-local.md

@@ -60,7 +60,7 @@ cloud-session-knows-the-subscriptions:
   effortWhy: dispatch.mjs reads one more place for the record.
   verdict: "Small; do it with the merge piece once the probe has found a route."
   seen:
-    status: idea
+    status: building
     blockers: []
 cloud-session-works-on-a-plan-branch:
   band: B
@@ -73,7 +73,7 @@ cloud-session-works-on-a-plan-branch:
   verdict: "Small; write it with the merge piece, since both depend on what the probe
     finds."
   seen:
-    status: idea
+    status: building
     blockers: []
 cloud-waits-wake-on-a-schedule:
   band: B
