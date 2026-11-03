@@ -115,6 +115,12 @@ const sprintFile = (clone) => join(
   resolve(clone, git(clone, ['rev-parse', '--git-common-dir'])), 'tropis/sprint.json',
 );
 const readSprint = (clone) => JSON.parse(readFileSync(sprintFile(clone), 'utf8'));
+/** The record on the branch `tropis/sprint` of the clone's origin, or null. */
+const onOrigin = (clone) => {
+  const r = spawnSync('git', ['--git-dir', git(clone, ['config', 'remote.origin.url']), 'show',
+    'refs/heads/tropis/sprint:sprint.json'], { env: ENV, encoding: 'utf8' });
+  return r.status === 0 ? JSON.parse(r.stdout) : null;
+};
 
 function spawnScript(clone, args, env = ENV) {
   const child = spawn('node', [scriptOf(clone), ...args], { cwd: clone, env });
@@ -840,5 +846,114 @@ describe('the team member\'s model', () => {
     const clone = setup(PICKS, RECORD);
     expect(lines(run(clone, ['start', 'e1']))).toHaveLength(1);
     expect(run(clone, ['add', 'e2']).stdout).not.toContain('Large tier');
+  });
+});
+
+describe('the record on origin', () => {
+  const catalog = [entry('e1'), entry('e2'), entry('e3')];
+  const bands = { e1: row('A', 3, 3), e2: row('A', 3, 2), e3: row('B', 2, 5) };
+
+  it('† a sprint started in one clone is under way in another', () => {
+    const world = makeWorld(catalog, bands);
+    const a = makeClone(world, 'a');
+    expect(run(a, ['start', 'e1'], at(T0)).status).toBe(0);
+    const b = makeClone(world, 'b');
+    const status = run(b, ['status'], at('2026-11-02T10:00:00Z'));
+    expect(status.status).toBe(0);
+    expect(status.stdout).toContain('Sprint: started 2026-11-02T09:00:00Z');
+    expect(onOrigin(b).entries.map((e) => e.id)).toEqual(['e1']);
+  });
+
+  it("† a mark from a team member's clone reaches the sprint session", () => {
+    const world = makeWorld(catalog, bands);
+    const a = makeClone(world, 'a');
+    expect(run(a, ['start', 'e1', 'e2'], at(T0)).status).toBe(0);
+    const b = makeClone(world, 'b');
+    expect(run(b, ['mark', 'e1', 'parked', 'needs', 'a', 'printer']).status).toBe(0);
+    expect(run(b, ['note', 'e2', 'took FW-060']).status).toBe(0);
+    const status = run(a, ['status'], at('2026-11-02T10:00:00Z'));
+    expect(status.stdout).toContain('  e1 — parked: needs a printer\n');
+    expect(onOrigin(a).notes).toEqual({ e2: ['took FW-060'] });
+  });
+
+  it('† two changes at once both land', () => {
+    const world = makeWorld(catalog, bands);
+    const a = makeClone(world, 'a');
+    const b = makeClone(world, 'b');
+    expect(run(a, ['start', 'e1', 'e2'], at(T0)).status).toBe(0);
+    // The first change's push is overtaken: b writes while a's change is being computed.
+    let calls = 0;
+    const result = sprint.updateSprint(a, ENV, (current) => {
+      calls += 1;
+      if (calls === 1) expect(run(b, ['mark', 'e2', 'parked', 'later']).status).toBe(0);
+      return { ...current, marks: { ...current.marks, e1: { state: 'planning' } } };
+    });
+    expect(calls).toBe(2);
+    expect(result.marks).toEqual({ e2: { state: 'parked', reason: 'later' }, e1: { state: 'planning' } });
+    expect(onOrigin(a).marks).toEqual(result.marks);
+  });
+
+  it('† a change that is overtaken every time refuses with one line', () => {
+    const world = makeWorld(catalog, bands);
+    const a = makeClone(world, 'a');
+    const b = makeClone(world, 'b');
+    expect(run(a, ['start', 'e1'], at(T0)).status).toBe(0);
+    let n = 0;
+    expect(() => sprint.updateSprint(a, ENV, (current) => {
+      n += 1;
+      run(b, ['note', 'e1', `n${n}`]);
+      return { ...current };
+    })).toThrow('Sprint: the record kept changing under this command; run it again.');
+    expect(n).toBe(5);
+  });
+
+  it('† end leaves the branch with no record, and a new sprint can start', () => {
+    const world = makeWorld(catalog, bands);
+    const a = makeClone(world, 'a');
+    expect(run(a, ['start', 'e1'], at(T0)).status).toBe(0);
+    const ended = run(a, ['end'], at('2026-11-02T10:00:00Z'));
+    expect(ended.status).toBe(0);
+    expect(lines(ended).pop()).toBe('Sprint: ended; the record on origin says no sprint is under way.');
+    expect(onOrigin(a)).toBeNull();
+    expect(git(a, ['ls-remote', 'origin', 'refs/heads/tropis/sprint'])).not.toBe('');
+    expect(run(a, ['status']).stdout).toBe('Sprint: none under way; run propose, then start.\n');
+    const b = makeClone(world, 'b');
+    expect(run(b, ['start', 'e2'], at('2026-11-02T11:00:00Z')).status).toBe(0);
+    expect(onOrigin(a).entries.map((e) => e.id)).toEqual(['e2']);
+  });
+
+  it('† a local sprint file is carried to origin by the next change', () => {
+    const world = makeWorld(catalog, bands);
+    const a = makeClone(world, 'a');
+    const file = sprintFile(a);
+    mkdirSync(dirname(file), { recursive: true });
+    const old = {
+      started: T0, budget: 20, way: 'here', entries: [{ id: 'e1', points: 3 }],
+      baseline: ['e1', 'e2', 'e3'], marks: {}, notes: {},
+    };
+    writeFileSync(file, `${JSON.stringify(old, null, 2)}\n`);
+    expect(run(a, ['status'], at('2026-11-02T10:00:00Z')).stdout).toContain('Sprint: started');
+    expect(onOrigin(a)).toBeNull();
+    expect(run(a, ['mark', 'e1', 'planning']).status).toBe(0);
+    expect(onOrigin(a)).toEqual({ ...old, marks: { e1: { state: 'planning' } } });
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it('† without an origin the record stays local', () => {
+    const world = makeWorld(catalog, bands);
+    const a = makeClone(world, 'a');
+    git(a, ['remote', 'remove', 'origin']);
+    // Without origin there is no origin/main either, so the working tree is the backlog.
+    writeFileSync(join(a, 'feature-catalog.yaml'), YAML.stringify(catalog));
+    mkdirSync(join(a, 'docs/backlog-board'), { recursive: true });
+    writeFileSync(join(a, 'docs/backlog-board/bands.yaml'), YAML.stringify(bands));
+    const started = run(a, ['start', 'e1'], at(T0));
+    expect(started.status).toBe(0);
+    expect(readSprint(a).entries.map((e) => e.id)).toEqual(['e1']);
+    expect(run(a, ['mark', 'e1', 'planning']).status).toBe(0);
+    expect(readSprint(a).marks).toEqual({ e1: { state: 'planning' } });
+    const ended = run(a, ['end'], at('2026-11-02T10:00:00Z'));
+    expect(lines(ended).pop()).toBe('Sprint: ended; the sprint file is removed.');
+    expect(existsSync(sprintFile(a))).toBe(false);
   });
 });
