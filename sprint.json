@@ -198,6 +198,10 @@
     "scheduled-wait-names-its-holder",
     "sprint-proposal-groups-bundles"
   ],
-  "marks": {},
+  "marks": {
+    "update-survives-a-dropped-edited-rule": {
+      "state": "planning"
+    }
+  },
   "notes": {}
 }
