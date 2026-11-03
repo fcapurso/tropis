@@ -5882,13 +5882,22 @@
 # commands/sprint.md says only "Show the proposal", so nothing makes the session group it.
 - id: sprint-proposal-groups-bundles
   title: The sprint proposal shows one entry per team member, a bundle's items grouped under it
-  status: idea
+  status: building
   value: The developer agreeing a sprint sees it as the team that will run it, one entry
     per team member with a bundle's items and their points together, so they can judge
     the team's size and each bundle's weight without regrouping a flat list themselves or
     asking the sprint session to.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - sprint.mjs propose prints one numbered entry per team member, a backlog item outside
+      a bundle on one line as before, and a bundle as one line naming it with its total
+      points and how many backlog items it has, each of them on its own line beneath.
+    - The first line of the proposal says how many team members it makes.
+    - A bundle's backlog items stay under its one entry even where an entry another of
+      them names in after or blockedBy falls between them in the sprint's order.
+    - Step 1 of /sprint tells the session to show the proposal as propose prints it, one
+      entry per team member.
   type: bug
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-03-sprint-proposal-groups-bundles.md
