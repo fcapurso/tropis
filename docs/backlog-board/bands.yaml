@@ -324,6 +324,18 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+sprint-status-works-in-a-cloud-session:
+  band: B
+  value: 2
+  valueWhy: A sprint run from a cloud session cannot tell the developer that a team
+    member is stuck holding the merge token.
+  effort: 1
+  effortWhy: One lookup in sprint.mjs moved from gh pr list to the REST route, and a
+    test.
+  verdict: In the sprint that found it, on the developer's word.
+  seen:
+    status: idea
+    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4
