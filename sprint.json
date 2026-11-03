@@ -235,5 +235,9 @@
       "state": "planning"
     }
   },
-  "notes": {}
+  "notes": {
+    "large-tier-admits-on-judgment-evidence": [
+      "No plan: the finding was written by the team member and checked by a fresh reviewer (planning.md exception); reviewer's four defects fixed by the author and declared. Recommends Large admit only models within a stated margin (1 point proposed) of the best pick on every shared board; captured as idea large-tier-anchors-on-the-best-pick, decide first."
+    ]
+  }
 }
