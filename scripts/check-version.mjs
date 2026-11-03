@@ -12,7 +12,7 @@
  */
 import {
   existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync,
-  symlinkSync, unlinkSync, writeFileSync,
+  symlinkSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -78,37 +78,6 @@ function ruleNames(dir) {
   return readdirSync(dir).filter((name) => name.endsWith('.md')).map((name) => name.slice(0, -3)).sort();
 }
 
-/** Additions to a rule the target does not ship. Committed in the clone so the take can run. */
-function dropStaleAdditions(clone, target) {
-  const listed = git(tropis, 'ls-tree', '--name-only', target, 'rules/');
-  if (listed.status !== 0) return { error: listed.stderr.trim() };
-  const shipped = new Set(
-    listed.stdout.split('\n').filter((line) => line.endsWith('.md')).map((line) => basename(line, '.md')),
-  );
-  const dir = join(clone, '.claude/rule-additions');
-  if (!existsSync(dir)) return { dropped: [] };
-  const dropped = [];
-  for (const file of readdirSync(dir)) {
-    if (!file.endsWith('.md')) continue;
-    const path = join(dir, file);
-    if (!statSync(path).isFile()) continue;
-    const name = file.slice(0, -'.md'.length);
-    if (shipped.has(name)) continue;
-    unlinkSync(path);
-    dropped.push(name);
-  }
-  if (dropped.length === 0) return { dropped };
-  git(clone, 'add', '-A', '--', '.claude/rule-additions');
-  const commit = run('git', [
-    '-C', clone,
-    '-c', 'user.name=check-version',
-    '-c', 'user.email=check-version@localhost',
-    'commit', '-qm', 'drop additions to rules the release does not ship',
-  ]);
-  if (commit.status !== 0) return { error: (commit.stderr || commit.stdout).trim() };
-  return { dropped };
-}
-
 function dependencyLink(project, clone) {
   const folder = '.tropis';
   if (!existsSync(join(project, folder, 'node_modules'))) return { linked: false };
@@ -155,10 +124,10 @@ function failingNames(parsed, clone) {
   return names;
 }
 
-function settingsThatDoNotFit(clone, dropped, result) {
+function settingsThatDoNotFit(clone, result) {
   const lines = [];
-  for (const name of dropped) {
-    lines.push(`the release no longer ships rule ${name}; move or delete .claude/rule-additions/${name}.md`);
+  for (const name of result.ownRules) {
+    lines.push(`the release no longer ships rule ${name}; the take keeps your text as your own rule in .claude/rules/${name}.md`);
   }
   for (const key of result.areasRemoved) {
     lines.push(`the release no longer ships rule ${key}; the take removes its areas from .claude/rule-areas.json`);
@@ -285,16 +254,6 @@ function checkVersion({ project, from = null }) {
       return { status: 1, text: `check-version: cannot clone ${project}: ${(cloned.stderr || cloned.stdout).trim()}\n` };
     }
 
-    const exact = git(tropis, 'describe', '--tags', '--exact-match', 'HEAD');
-    let dropped = [];
-    if (exact.status === 0) {
-      const cleared = dropStaleAdditions(clone, exact.stdout.trim());
-      if (cleared.error) {
-        return { status: 1, text: `check-version: ${cleared.error}\n` };
-      }
-      dropped = cleared.dropped;
-    }
-
     let applied;
     try {
       applied = takeVersion({ project: clone, from, acceptBreaking: true });
@@ -380,7 +339,7 @@ function checkVersion({ project, from = null }) {
     const failed = results.numFailedTests ?? 0;
     const testsFailed = failed > 0 || names.length > 0;
     const changed = changedLines(result);
-    const settings = settingsThatDoNotFit(clone, dropped, result);
+    const settings = settingsThatDoNotFit(clone, result);
     const steps = stepsFor(held, breaking, changed, settings);
     const verdict = testsFailed ? 'not now' : (steps.length > 0 ? 'safe with these steps' : 'safe');
     const why = testsFailed ? ['the project\'s checks failed against the release'] : [];

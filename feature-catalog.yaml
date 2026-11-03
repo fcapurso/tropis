@@ -2017,9 +2017,14 @@
   modules: []
   refs: []
 # 2026-10-15, found in the review of docs/superpowers/plans/2026-10-15-take-a-framework-version.md.
+# Shipped by docs/superpowers/plans/2026-11-03-update-survives-a-dropped-edited-rule.md.
+# Criterion 1: guards/take-version.test.js, 'keeps a dropped rule the project edited as its own rule'.
+# Criterion 2: guards/take-version.test.js, 'keeps a dropped rule the project added to as its own rule'.
+# Criterion 3: the same two cases (the update's report line) and
+# guards/check-version.test.js, "says a rule the release drops is kept as the project's own".
 - id: update-survives-a-dropped-edited-rule
   title: An update completes when a release drops a shipped rule the project edited
-  status: building
+  status: shipped
   value: When a new version stops shipping a rule whose text the project had edited, the
     update finishes and tells the operator what to do with the edited text. Today the
     rule's area is removed but its edited text is kept, the rule generator then refuses a
@@ -2034,7 +2039,9 @@
       deleted.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/take-version.mjs
+    - scripts/check-version.mjs
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-15-take-a-framework-version.md
