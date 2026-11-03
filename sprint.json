@@ -213,6 +213,9 @@
     },
     "release-notes-cover-a-restaged-commit": {
       "state": "planning"
+    },
+    "a-release-says-what-changed-briefly": {
+      "state": "planning"
     }
   },
   "notes": {}
