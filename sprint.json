@@ -204,6 +204,9 @@
     },
     "update-skips-a-new-file-that-matches": {
       "state": "planning"
+    },
+    "version-check-tells-a-red-baseline": {
+      "state": "planning"
     }
   },
   "notes": {}
