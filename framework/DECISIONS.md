@@ -860,7 +860,7 @@ nothing in a set-up project's suite reads its README.
 
 ## FW-027: Model picks rest only on figures that can be compared
 
-**Date:** 2026-10-21 · **Status:** Accepted; its exclusion of cost now covers placement only (FW-057).
+**Date:** 2026-10-21 · **Status:** Accepted; its exclusion of cost now covers placement only (FW-057), and Large is placed by FW-067.
 
 **Decision:** `/refresh-model-tiers` ranks one model above another only on scores that
 share the benchmark and its version, the harness, the effort setting, and a period in
@@ -2154,3 +2154,43 @@ goes with it). A shorter interval (more turns for an event that takes hours).
 **Consequences:** A long wait in the cloud costs about two turns an hour, and a wake
 may arrive up to a minute late. A session that cannot schedule a wake keeps to the
 background command and its limits.
+
+## FW-067: Large admits only models level with the best selectable pick
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`large-tier-anchors-on-the-best-pick`. Amends FW-027's placement rule for Large.
+
+**Decision:** `/refresh-model-tiers` places a model in Large only when, on every board
+scored from 0 to 100 that scores it, it is within 1 point of the highest score any
+selectable model has there. Each model is read at its best score on the board, with the
+effort setting recorded, and a figure taken below the model's highest supported effort is
+marked. A board on another scale keeps a model out only where it states an uncertainty
+and the two ranges do not overlap. A model no 0-to-100 board scores stays out of Large;
+where the boards disagree on the best, Large holds each model highest on some board,
+marked contested. Every other tier is placed as FW-027 says, and usage still orders
+models inside a tier (FW-057).
+
+**Evidence:** The spike `large-tier-admits-on-judgment-evidence` (its finding of
+2026-11-03) found nothing that tells a Large model from a Medium–large one on the work
+Large is defined by. Every board the picks use grades its tasks mechanically; the boards
+nearer to judgment were unreachable from the session or second-hand; and a pilot review
+with four seeded judgment defects, run eight times, was found in full by Claude Haiku
+5.5, Sonnet 5.5 and Opus 5.5 alike. The rule then in use admitted a model level with one
+already in Large: Gemini 4 Argon joined on 2026-11-02 for being level with Claude Fable
+5.1, which is below Opus 5.5 and Sonnet 5.5 on every board. The developer chose the
+1-point margin on 2026-11-03. Source: none in particular; the finding above.
+
+**Rejected:** Keeping usage order across a tier whose members are not all fit for it
+(FW-057 puts the cheapest first, so the least fit would run every Large plan). Admitting
+on GDPval-AA (unconfirmed from its own page, and second-hand it puts a Medium–large model
+between Opus and Sonnet). A project-owned judgment battery (the cheap version did not
+separate even Large from Small–medium, and one that might costs dozens of runs per model
+at every roster change). A fixed list of flagship models (a vendor's positioning, not
+evidence). A margin judged per pass (the bar would move with whoever ran the pass).
+
+**Consequences:** Applied to the 2026-11-02 figures, Large is Claude Opus 5.5 alone, and
+Sonnet 5.5, Gemini 4 Argon and Fable 5.1 move to Medium–large. Every Large plan, sprint
+team member and fresh reviewer then draws on Opus 5.5, about three times Sonnet 5.5's
+usage per task on CursorBench 4.0 at High; a developer short of allowance lowers a plan's
+tier by reshaping it so a check exists, not by a cheaper model standing in. Every
+subscription that includes a Large pick today includes Opus 5.5.

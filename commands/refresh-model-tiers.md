@@ -35,10 +35,36 @@ that names or counts the supported tools.
 ## What the picks are for
 
 **A model's tier rests on fitness for the tier's work, and on nothing else.** Each model
-sits in the highest tier its evidence supports, and fits every tier below it. A lower
-tier's row names only the models that reach no higher, and ends with
-`or any pick from a higher tier`; a lower tier with no model of its own reads
-`Any pick from a higher tier`.
+sits in the highest tier its evidence supports, Large as the next paragraph says, and
+fits every tier below it. A lower tier's row names only the models that reach no higher,
+and ends with `or any pick from a higher tier`; a lower tier with no model of its own
+reads `Any pick from a higher tier`.
+
+**Large takes only models level with the best selectable pick.** In Large no check
+catches a weaker model's mistake, so the tier holds the best the boards agree on. A model
+is never admitted for being level with another model already in Large: that bar falls
+with each admission. Place Large this way:
+
+1. **On each board scored from 0 to 100**, in percentages or index points, such as
+   Artificial Analysis's Intelligence Index or CursorBench, find the highest score any
+   selectable model has. A model is in Large only when, on every such board that scores
+   it, it is within **1 point** of that highest score.
+2. **Read each model at its best score on the board**, and record the effort setting
+   beside it. Where the board did not score a model at the highest effort the model
+   supports, say so beside the figure: the comparison may understate the model, and a
+   pass that finds the higher setting compares again.
+3. **A board on another scale**, such as LMArena's Elo, keeps a model out of Large only
+   when it states an uncertainty for both scores and the two ranges do not overlap. A
+   board on another scale that states none orders models and does not decide Large.
+4. **A model that no board scored from 0 to 100 scores** stays out of Large, marked
+   unconfirmed.
+5. **Where no model meets step 1** because the boards disagree on which is best, Large
+   holds each model that has the highest score on at least one board, and the picks say
+   the tier is contested.
+
+A model this keeps out of Large goes in the highest tier below it that its evidence
+supports. The 1-point margin is the developer's choice, recorded in FW-067: change it
+there and here together, never within a pass.
 
 **Inside a tier, the models go least usage first.** A developer's subscriptions last
 longer on the model that does the job with the least of their allowance, and `/dispatch`
