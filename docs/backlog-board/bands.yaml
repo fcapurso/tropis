@@ -324,19 +324,6 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
-sprint-record-outlives-its-session:
-  band: B
-  value: 3
-  valueWhy: A sprint session that loses its record cannot report or end the sprint its
-    team is still running.
-  effort: 2
-  effortWhy: Keep the record on a GitHub ref beside the token, read and written by
-    sprint.mjs.
-  verdict: "Needed for any sprint session that can be reset, cloud or not; plan it after
-    the probe, which says whether such a ref can be written from the cloud."
-  seen:
-    status: building
-    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4
