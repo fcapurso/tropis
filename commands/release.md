@@ -358,8 +358,8 @@ commit, so anything merged since is in the release and not yet in its notes.
    the notes, and go to *Step 1* with `<commit>` the head of `origin/main`.
 3. **Otherwise redraft.** Write those changes into the body of `## [Unreleased]` to
    Stage 3's shape, keeping the facts already there and its last line. Work the bump
-   out again over the whole window, from the last release (Stage 2): a `feat:` merged
-   after a draft of fixes raises it. Confirm with the developer as Stage 4 does, with
+   out again over the whole window, `<last-tag>..origin/main` with the last release as
+   Stage 2 finds it: a `feat:` merged after a draft of fixes raises it. Confirm with the developer as Stage 4 does, with
    `Dropped:` covering the new commits too, and wait. Commit it as Stage 5's filled
    slot does, with a fresh `Bump:` line, and go to *Step 1* with `<commit>` the commit
    that landed the redraft on `main`. Where this command gave the merge token back on
