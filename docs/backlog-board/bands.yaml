@@ -10,6 +10,21 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
+a-release-says-what-changed-briefly:
+  band: B
+  value: 3
+  valueWhy: Every reader of every release meets it, and the steps done by hand get
+    lost among feature paragraphs.
+  effort: 2
+  effortWhy: A length rule in /release's drafting step, and a check that the steps
+    done by hand stay whole.
+  verdict: "Worth doing before the next release, or its notes grow again. Best done
+    with the README overview, since /release refreshes the README too."
+  evidence: "2026-11-02 — the 0.8.0 notes are about 1,350 words; 0.5.0 to 0.7.0 are
+    about 700 each."
+  seen:
+    status: idea
+    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
@@ -19,6 +34,19 @@ adopt-into-a-project-with-its-own-framework:
   verdict: "Large, designed from one adoption, and two of its draft criteria
     cannot be tested yet. Decide its shape, likely as several entries, before
     anyone builds."
+  seen:
+    status: idea
+    blockers: []
+capture-at-write-tests-pass-under-load:
+  band: B
+  value: 3
+  valueWhy: A self-check that passes on a rerun with nothing changed teaches people
+    to rerun instead of reading the failure.
+  effort: 2
+  effortWhy: One guard's timing, the same fix already made for the main branch status
+    tests.
+  verdict: "Fix it the way the main branch status tests were fixed in 0.8.0, so a red
+    self-check always means something."
   seen:
     status: idea
     blockers: []
@@ -144,6 +172,19 @@ plan-folder-names-no-plugin:
   seen:
     status: idea
     blockers: []
+probe-keeps-to-its-tools:
+  band: B
+  value: 2
+  valueWhy: Only matters for checks of a hook on one tool, which are rare, but such a
+    check can pass while proving nothing.
+  effort: 2
+  effortWhy: A paragraph in the workflow's fresh-agent section on limiting the probe's
+    tools.
+  verdict: "Small and worth doing when the workflow's fresh-agent section is next
+    touched; until then a probe of a hook can report a pass it did not earn."
+  seen:
+    status: idea
+    blockers: []
 project-chooses-its-repository-host:
   band: B
   value: 3
@@ -174,6 +215,32 @@ project-settings-are-listed-and-held-once:
     and docs/ straight to main; pipeline/prose.txt lists nothing."
   seen:
     status: shaped
+    blockers: []
+readme-gives-an-overview-not-a-feature-list:
+  band: B
+  value: 3
+  valueWhy: The README is the first page anyone deciding on Tropis reads, and a
+    feature list hides what it is for.
+  effort: 2
+  effortWhy: A fixed set of aspects and a bullet limit in /refresh-readme's outline,
+    then one refresh.
+  verdict: "Do it before the next README refresh, which is already due with 20 items
+    shipped since the last; otherwise that refresh lengthens the list again."
+  evidence: "2026-11-02 — What it does for you has 17 bullets, one per capability."
+  seen:
+    status: idea
+    blockers: []
+release-notes-cover-a-restaged-commit:
+  band: B
+  value: 3
+  valueWhy: A release can ship a change its notes never mention, which is the one
+    thing release notes exist to prevent.
+  effort: 2
+  effortWhy: /release offers to redraft when the staged commit moves.
+  verdict: "A real gap in the release flow, small to close. Best done together with
+    the shorter notes, since both change how /release drafts."
+  seen:
+    status: idea
     blockers: []
 release-notes-stay-a-readable-size:
   band: D
