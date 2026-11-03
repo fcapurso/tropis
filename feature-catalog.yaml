@@ -6050,9 +6050,10 @@
 # sprint. No board measures judgment, and a pilot of seeded
 # review defects did not separate the tiers, so Large is anchored on the best pick by
 # policy. Applied to the 2026-11-02 figures it leaves Claude Opus 5.5 alone in Large.
+# Shipped by docs/superpowers/plans/2026-11-03-large-tier-anchors-on-the-best-pick.md.
 - id: large-tier-anchors-on-the-best-pick
   title: Large admits only models level with the best selectable pick
-  status: building
+  status: shipped
   value: A Large plan, a sprint team member and a fresh reviewer run on the best model the
     boards agree on, not on a cheaper one admitted for being level with another model
     already in the tier, because in Large no check catches a weaker model's mistake. The
@@ -6064,18 +6065,25 @@
   # where it states an uncertainty and the ranges do not overlap; each model is read at
   # its best score on a board, a figure below its highest supported effort marked.
   acceptanceCriteria:
+    # Criteria 1 and 2: the test case "tells /refresh-model-tiers to admit to Large only
+    # models within 1 point of the best pick", and the fresh-agent check in the plan's Review record.
     - A model sits in Large only when it is within 1 point of the best selectable pick on
       every board in percentage points that scores both.
+    # Criteria 1 and 2: as above.
     - /refresh-model-tiers states that bar, which boards it applies to, how a board on
       another scale counts, at which effort each model is read, and that the margin
       changes only with its decision.
+    # Criterion 3: Task 3's checks of the picks file, and the same fresh-agent check.
     - The picks file, re-placed on the figures recorded on 2026-11-02, lists Claude Opus
       5.5 alone in Large, and Claude Sonnet 5.5, Gemini 4 Argon and Claude Fable 5.1 in
       Medium-large, least usage first.
+    # Criterion 4: FW-067 in framework/DECISIONS.md.
     - A decision records the bar and amends FW-027's placement rule for Large.
   type: feature
   layer: product
-  modules: []
+  modules:
+    - commands/refresh-model-tiers.md
+    - docs/model-picks.md
   refs:
     - docs/superpowers/specs/2026-11-03-large-tier-evidence-finding.md
     - docs/superpowers/plans/2026-11-03-large-tier-anchors-on-the-best-pick.md
