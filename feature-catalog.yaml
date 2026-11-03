@@ -5934,9 +5934,14 @@
 # as a flat table, with bundles only as a trailing label, and had to ask for it grouped.
 # propose in scripts/sprint.mjs prints one line per backlog item, and step 1 of
 # commands/sprint.md says only "Show the proposal", so nothing makes the session group it.
+# Shipped by docs/superpowers/plans/2026-11-03-sprint-proposal-groups-bundles.md.
+# Criterion 1 (one entry per team member, a bundle's items beneath it): guards/sprint.test.js, propose, "brings a bundle whole, at its first member's place, or not at all".
+# Criterion 2 (the first line counts team members): guards/sprint.test.js, propose, "fills 20 points in the order /next suggests…", "takes the budget from --points…" and "says team member, not team members, for one".
+# Criterion 3 (a bundle stays under one entry with an entry between its members): guards/sprint.test.js, propose, "keeps a bundle under one entry when an entry falls between its members".
+# Criterion 4 (step 1 of /sprint says so): commands/sprint.md, step 1, checked by the specifying session's fresh-agent probe at review.
 - id: sprint-proposal-groups-bundles
   title: The sprint proposal shows one entry per team member, a bundle's items grouped under it
-  status: building
+  status: shipped
   value: The developer agreeing a sprint sees it as the team that will run it, one entry
     per team member with a bundle's items and their points together, so they can judge
     the team's size and each bundle's weight without regrouping a flat list themselves or
@@ -5952,7 +5957,9 @@
       entry per team member.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/sprint.mjs
+    - commands/sprint.md
   refs:
     - docs/superpowers/plans/2026-11-03-sprint-proposal-groups-bundles.md
 # 2026-11-03, from a sprint session in a Claude Code cloud session: `sprint.mjs status`

@@ -706,6 +706,10 @@ function sprintEntry(backlog, id) {
   return { id, points: bandScores(backlog.bandRows)[id]?.effort ?? 0, ...(bundle ? { bundle } : {}) };
 }
 
+/**
+ * Prints the proposal one entry per team member: a backlog item alone, or a bundle at its
+ * first member's place with its members beneath it in sprint order.
+ */
 function propose(ctx, opts) {
   const budget = opts.points === undefined ? DEFAULT_BUDGET : parseBudget(opts.points);
   const backlog = ctx.backlog();
@@ -713,9 +717,30 @@ function propose(ctx, opts) {
   if (!entries.length) {
     return ['Sprint: nothing to propose — no idea or shaped backlog item banded A or B is free to start.'];
   }
+  const members = [];
+  const bundles = new Map();
+  for (const e of entries) {
+    if (!e.bundle) {
+      members.push({ items: [e] });
+    } else if (bundles.has(e.bundle)) {
+      bundles.get(e.bundle).items.push(e);
+    } else {
+      const member = { bundle: e.bundle, items: [e] };
+      bundles.set(e.bundle, member);
+      members.push(member);
+    }
+  }
+  const item = (e) => `${e.id} — ${e.points} pts, band ${e.band} — ${e.title}`;
+  const lines = members.flatMap((m, i) => (m.bundle
+    ? [
+      `  ${i + 1}. bundle ${m.bundle} — ${m.items.reduce((s, e) => s + e.points, 0)} pts, ${m.items.length} backlog items`,
+      ...m.items.map((e) => `       ${item(e)}`),
+    ]
+    : [`  ${i + 1}. ${item(m.items[0])}`]));
+  const n = members.length;
   return [
-    `Sprint: proposed ${total} of ${budget} effort points, from main at ${backlog.sha}.`,
-    ...entries.map((e, i) => `  ${i + 1}. ${e.id} — ${e.points} pts, band ${e.band}${e.bundle ? `, bundle ${e.bundle}` : ''} — ${e.title}`),
+    `Sprint: proposed ${total} of ${budget} effort points for ${n} team member${n === 1 ? '' : 's'}, from main at ${backlog.sha}.`,
+    ...lines,
     ...(nextInLine ? [`Sprint: next in line, over the budget — ${nextInLine.id} (${nextInLine.points} pts).`] : []),
   ];
 }
