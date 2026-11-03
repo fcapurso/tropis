@@ -364,17 +364,3 @@ version-check-lists-ignore-lines:
   seen:
     status: idea
     blockers: []
-version-check-tells-a-red-baseline:
-  band: B
-  value: 3
-  valueWhy: A project already red reads every failure as the release's fault and
-    defers updates.
-  effort: 3
-  effortWhy: Running the checks before and after the take and comparing.
-  bundle: update-fixes
-  verdict: "Without it a project already red reads every failure as the release's
-    fault and defers updates. Worth doing within the framework-updates arc; more
-    than a cheap fix."
-  seen:
-    status: idea
-    blockers: []

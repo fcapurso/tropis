@@ -1317,9 +1317,17 @@
 # copy, with the reason "the project's checks failed against the release", even when the
 # same checks already fail at the version the project holds. This harness's spike
 # reading, not now with 49 of 388 tests red, is that case. In the updates arc.
+# Shipped by docs/superpowers/plans/2026-11-03-version-check-tells-a-red-baseline.md.
+# Criterion 1 (baseline run before the take): both new cases in guards/check-version.test.js
+# need it to tell a failure already present from one the release adds.
+# Criterion 2 (already failing, not not-now): case "does not count a check already failing
+# against the release".
+# Criterion 3 (caused by the release, not now): case "names the failures the release causes
+# apart from those already failing", and "says not now when the release breaks the project
+# checks".
 - id: version-check-tells-a-red-baseline
   title: The version check says which failing checks the release caused
-  status: building
+  status: shipped
   after:
     - project-knows-whether-to-update
   value: Someone deciding whether to take a release can tell the checks the release
@@ -1335,7 +1343,8 @@
       the verdict not now.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/check-version.mjs
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-16-project-knows-whether-to-update.md
