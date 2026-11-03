@@ -267,6 +267,35 @@ describe('take-version.mjs', () => {
     expect(r.stdout).not.toContain('dispatch.md');
   }), SLOW);
 
+  it("writes no .new when the project already made the release's change", () => inWorld({}, (w) => {
+    w.release('v0.2.1', bumpNext);
+    edit(w.project, '.claude/commands/next.md', (t) => `${t}\nA line from the next version.\n`);
+    w.commit('made the release change by hand');
+
+    const r = w.take('v0.2.1');
+    expect(r.status).toBe(0);
+    expect(existsSync(join(w.project, '.claude/commands/next.md.new'))).toBe(false);
+    expect(read(w.project, '.claude/commands/next.md')).toBe(w.at('v0.2.1', 'commands/next.md'));
+    expect(r.stdout).toContain("Already the new version's text");
+    expect(r.stdout).toContain('.claude/commands/next.md');
+    expect(r.stdout).not.toContain('next.md.new');
+    expect(fingerprint(read(w.project, '.claude/commands/next.md')))
+      .toBe(recordOfProject(w.project).files['.claude/commands/next.md']);
+  }), SLOW);
+
+  it('writes no .new for a newly shipped file the project already has with the same text', () => inWorld({}, (w) => {
+    const text = '# A brand new command\n';
+    w.release('v0.2.1', (root) => write(root, 'commands/brand-new.md', text));
+    write(w.project, '.claude/commands/brand-new.md', text);
+    w.commit('wrote the new command by hand');
+
+    const r = w.take('v0.2.1');
+    expect(r.status).toBe(0);
+    expect(existsSync(join(w.project, '.claude/commands/brand-new.md.new'))).toBe(false);
+    expect(read(w.project, '.claude/commands/brand-new.md')).toBe(text);
+    expect(r.stdout).toContain("Already the new version's text");
+  }), SLOW);
+
   it("never touches a project's own README skeleton or settings", () => inWorld({}, (w) => {
     const skeleton = '## Ours\n- **Job:** ours.\n';
     const settings = 'level: suggests\nrefreshedAt: ""\n';
