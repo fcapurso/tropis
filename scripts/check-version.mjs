@@ -8,7 +8,9 @@
  *
  * It runs the project's checks in a scratch clone on the version it holds, takes the release
  * there with `takeVersion`, and runs them again: only failures the release causes make the
- * verdict `not now`. It writes nothing in the project. Exit 0 with a verdict on stdout
+ * verdict `not now`. It lists each line the take adds to the project's `.gitignore` and
+ * `.gitattributes`, so a duplicate the project wrote another way is seen before the take.
+ * It writes nothing in the project. Exit 0 with a verdict on stdout
  * (including nothing to take), or exit 1 with one `check-version:` line on stderr.
  */
 import {
@@ -157,6 +159,28 @@ function settingsThatDoNotFit(clone, result) {
   return lines;
 }
 
+const IGNORE_FILES = ['.gitignore', '.gitattributes'];
+
+function linesOf(path) {
+  return existsSync(path) ? readFileSync(path, 'utf8').split('\n') : [];
+}
+
+/**
+ * The lines the take adds to the ignore files: each non-empty line of the clone's file whose
+ * exact text the project's file does not have.
+ * @returns {{ file: string, line: string }[]}
+ */
+function addedLines(project, clone) {
+  const added = [];
+  for (const file of IGNORE_FILES) {
+    const own = new Set(linesOf(join(project, file)));
+    for (const line of new Set(linesOf(join(clone, file)))) {
+      if (line !== '' && !own.has(line)) added.push({ file, line });
+    }
+  }
+  return added;
+}
+
 function ruleChanges(project, clone, held, target) {
   const projectDir = join(project, '.claude/rules');
   const cloneDir = join(clone, '.claude/rules');
@@ -220,12 +244,15 @@ function releaseLines(result) {
   return lines;
 }
 
-function stepsFor(held, breaking, changed, settings) {
+function stepsFor(held, breaking, changed, settings, ignored) {
   const lines = [];
   if (breaking) {
     lines.push(`this is a breaking release for a project on ${held}: read its section in RELEASES.md, then take it with --accept-breaking`);
   }
   lines.push(...changed, ...settings);
+  for (const { file, line } of ignored) {
+    lines.push(`the take adds ${line} to ${file}; if you already cover that path another way, keep one of the two`);
+  }
   return lines;
 }
 
@@ -325,6 +352,7 @@ function checkVersion({ project, from = null }) {
           release: [],
           changed: [],
           settings: [],
+          ignoreLines: [],
           tests: [],
           rules: [],
         }),
@@ -342,7 +370,7 @@ function checkVersion({ project, from = null }) {
         status: 0,
         text: render({
           project, held, target, verdict: 'not now', why: after.output,
-          steps: [], release: [], changed: [], settings: [], tests: [], rules: [],
+          steps: [], release: [], changed: [], settings: [], ignoreLines: [], tests: [], rules: [],
         }),
       };
     }
@@ -356,7 +384,8 @@ function checkVersion({ project, from = null }) {
     const testsFailed = before === null ? (failed > 0 || names.length > 0) : caused.length > 0;
     const changed = changedLines(result);
     const settings = settingsThatDoNotFit(clone, result);
-    const steps = stepsFor(held, breaking, changed, settings);
+    const ignored = addedLines(project, clone);
+    const steps = stepsFor(held, breaking, changed, settings, ignored);
     const verdict = testsFailed ? 'not now' : (steps.length > 0 ? 'safe with these steps' : 'safe');
     const why = testsFailed ? ['the project\'s checks failed against the release'] : [];
     const testLines = [`${passed} passed, ${failed} failed`];
@@ -376,6 +405,7 @@ function checkVersion({ project, from = null }) {
         release: releaseLines(result),
         changed,
         settings,
+        ignoreLines: ignored.map(({ file, line }) => `${file}: ${line}`),
         tests: testLines,
         rules: ruleChanges(project, clone, held, target),
       }),
@@ -386,7 +416,7 @@ function checkVersion({ project, from = null }) {
 }
 
 function render({
-  project, held, target, verdict, why, steps, release, changed, settings, tests, rules,
+  project, held, target, verdict, why, steps, release, changed, settings, ignoreLines, tests, rules,
 }) {
   const lines = [`check-version: ${project} holds ${held}; taking ${target} is ${verdict}.`];
   section(lines, 'Why not now', why);
@@ -394,6 +424,7 @@ function render({
   section(lines, 'Files the release changes', release);
   section(lines, 'Files you changed', changed);
   section(lines, 'Settings that no longer fit', settings);
+  section(lines, 'Lines the release adds to .gitignore and .gitattributes', ignoreLines);
   section(lines, `Tests against ${target} in a scratch copy`, tests);
   section(lines, 'Rules that change what agents are told', rules);
   return `${lines.join('\n')}\n`;
