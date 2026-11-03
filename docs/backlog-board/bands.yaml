@@ -18,6 +18,7 @@ a-release-says-what-changed-briefly:
   effort: 2
   effortWhy: A length rule in /release's drafting step, and a check that the steps
     done by hand stay whole.
+  bundle: release-writing
   verdict: "Worth doing before the next release, or its notes grow again. Best done
     with the README overview, since /release refreshes the README too."
   evidence: "2026-11-02 — the 0.8.0 notes are about 1,350 words; 0.5.0 to 0.7.0 are
@@ -69,6 +70,7 @@ framework-calls-itself-one-thing:
   valueWhy: A reader has to work out that blueprint, framework and Tropis are one thing.
   effort: 4
   effortWhy: Renames script names and files projects hold, with a migration.
+  bundle: naming
   verdict: "The rename touches script names and files projects hold, so it is a
     decision about names and migration before it is work. Decide the one name
     and whether projects' files move."
@@ -83,6 +85,7 @@ framework-doc-delivery:
   effort: 4
   effortWhy: A delivery mechanism across tools, plus settling how much a kick-off
     prompt may carry.
+  bundle: tool-delivery
   verdict: "Its third criterion asks the kick-off prompt to carry framework
     material, which the dispatch document rules out. Settle that conflict before
     anyone plans it."
@@ -182,6 +185,7 @@ plan-folder-names-no-plugin:
   valueWhy: The folder name suggests a dependency the framework does not have.
   effort: 3
   effortWhy: A folder move in every project.
+  bundle: naming
   verdict: "Moving docs/superpowers/ in every project is a migration; decide the
     name and whether take-version moves it before building."
   seen:
@@ -239,6 +243,7 @@ readme-gives-an-overview-not-a-feature-list:
   effort: 2
   effortWhy: A fixed set of aspects and a bullet limit in /refresh-readme's outline,
     then one refresh.
+  bundle: release-writing
   verdict: "Do it before the next README refresh, which is already due with 20 items
     shipped since the last; otherwise that refresh lengthens the list again."
   evidence: "2026-11-02 — What it does for you has 17 bullets, one per capability."
@@ -252,6 +257,7 @@ release-notes-cover-a-restaged-commit:
     thing release notes exist to prevent.
   effort: 2
   effortWhy: /release offers to redraft when the staged commit moves.
+  bundle: release-writing
   verdict: "A real gap in the release flow, small to close. Best done together with
     the shorter notes, since both change how /release drafts."
   seen:
