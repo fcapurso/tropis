@@ -21,7 +21,6 @@ in; the keel stays. What you keep is a project that holds its shape: rules in fr
 the agent when they apply, documents that cannot quietly go stale, and a record of why
 things are the way they are.
 
-
 ## What it does for you
 
 - **One path from an idea to a merged change.** An idea is captured in the backlog,
