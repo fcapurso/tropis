@@ -19,6 +19,60 @@ For the full development history, see the git log.
 
 _Nothing yet._
 
+## [0.8.1] — 2026-11-03
+
+A sprint can now run in the cloud from start to finish: team members in cloud sessions
+merge their own work, keep waiting for hours if they must, and leave the sprint's record
+where any session can find it. A fresh clone tells you what to install instead of
+failing, and the hooks no longer leave stray files in your checkout.
+
+### What to do by hand
+
+**1. Optional: let a squash merge take its message from the pull request.** A cloud
+session cannot pass a commit message when it sets a pull request to merge itself, so
+the merged commit gets whatever your repository's default is. On GitHub, open Settings →
+General → Pull Requests, and under *Allow squash merging* set the default commit message
+to *Pull request title and description*. Without it, a merge made from a cloud session
+lists the branch's working commits instead of saying what the change made true.
+
+**2. Optional: tell cloud sessions which subscriptions you hold.** A cloud session has no
+record of your subscriptions, so it cannot name the cheapest model they include for a
+team member or a reviewer. In the cloud environment's settings, set the variable
+`TROPIS_SUBSCRIPTIONS` to your subscriptions in the form `Claude Code: Max; Cursor: Pro`.
+A session on your machine keeps using its own record.
+
+### A sprint runs from the cloud
+
+A sprint started from a cloud session, or from your phone, now delivers its items all
+the way to your main branch.
+
+- **Team members in the cloud merge their own work.** They take turns merging exactly as
+  sessions on your machine do, using their own GitHub tools where the `gh` command is
+  refused. The merge token that sets the turns is now the branch `tropis/merge-token`,
+  so you will see it in your branch list; leave it there.
+- **The sprint's record lives on your code host,** in the branch `tropis/sprint`, so a
+  sprint session resumed in a new container or on another machine finds the sprint
+  under way. A record kept locally by an earlier release moves there on the sprint's
+  next change. A project with no `origin` keeps it in a local file as before.
+- **A long wait survives its container.** A team member waiting for a blocked item, the
+  merge token or another plan checks once, then schedules itself to check again, so the
+  wait still ends when its event happens even if the container was reclaimed meanwhile.
+- **A cloud session works on its plan's own branch,** in a worktree of its own like a
+  session on your machine, instead of following two conflicting instructions about
+  branches.
+
+### Smaller corrections
+
+- A framework command run in a fresh clone or a new worktree tells you to run
+  `npm --prefix .tropis ci`, instead of failing with a missing-package error.
+- Running the hooks no longer leaves a Python cache folder in `.tropis/hooks/`, so the
+  clean-tree check before a branch passes.
+- The planning rule says a handover report's check results must come from the commit
+  that is pushed, report included, so the checks are run again after the report is
+  committed.
+
+Checked on staging: no — this project does not deploy to staging
+
 ## [0.8.0] — 2026-11-02
 
 This release lets you run a sprint: `/sprint` proposes a sprint from the top of your
