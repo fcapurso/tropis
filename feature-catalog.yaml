@@ -5596,3 +5596,120 @@
   layer: product
   modules: []
   refs: []
+# 2026-11-03, the cloud-sprint epic, agreed with the developer: a cloud session tried
+# /sprint on this repository and could read GitHub and push branches, but every write
+# through gh was refused by the environment's proxy (HTTP 403), so it could neither take
+# the merge token nor open or merge a pull request. The evidence and the pieces in order
+# are the spec in refs. The probe comes first; the pieces it blocks are not worth
+# building unless it finds a route. Acceptance criteria are written when each is shaped.
+- id: cloud-session-can-write-to-github
+  title: Find out how a cloud session can take the merge token and merge a pull request
+  status: idea
+  value: Before anything is built to run a sprint from the cloud, we know whether a cloud
+    session can take and release the merge token, open a pull request, set it to merge
+    and wake when it has, by a route Tropis can use - a git push of the token's ref, the
+    session's own GitHub tools, or an environment that allows gh writes. Without one, a
+    sprint cannot merge anything from the cloud.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+- id: cloud-team-member-merges-its-work
+  title: A team member in a cloud session takes the token and merges its pull request
+  status: idea
+  value: A sprint started from a phone delivers its backlog items all the way to main,
+    because a team member in a cloud session merges its work the same way as one on the
+    developer's machine, with the token taken and released, rather than stopping at a
+    pushed branch.
+  acceptanceCriteria: []
+  type: feature
+  layer: product
+  blockedBy:
+    - cloud-session-can-write-to-github
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+- id: sprint-record-outlives-its-session
+  title: A sprint's record survives the session that keeps it
+  status: idea
+  value: A sprint session resumed in a new cloud container, or on another machine, finds
+    the sprint that is under way, with its items, points and decisions. Today the record
+    sits under the git directory of one checkout, so a reclaimed container loses it while
+    the team is still working.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  blockedBy:
+    - cloud-session-can-write-to-github
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+- id: cloud-waits-wake-on-a-schedule
+  title: A wait that outlasts a cloud container still ends when its event happens
+  status: idea
+  value: A team member waiting hours for a blocked item, the token or another plan picks
+    up where it left off when that happens, even if its container was reclaimed in the
+    meantime. Today the wait is one background command, which ends with the container.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  blockedBy:
+    - cloud-session-can-write-to-github
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+- id: cloud-session-knows-the-subscriptions
+  title: A cloud session can be told which subscriptions the developer holds
+  status: idea
+  value: Team members and fresh reviewers started from the cloud run on the included
+    model their tier names, as they do on the developer's machine. Today a fresh clone has
+    no subscription record, because it lives under the git directory and is never
+    committed, so no model is named.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  blockedBy:
+    - cloud-session-can-write-to-github
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+- id: fresh-clone-says-to-install
+  title: A fresh clone says to install the framework's packages instead of failing
+  status: idea
+  value: Someone or an agent running a framework command in a fresh clone is told to run
+    npm --prefix .tropis ci, instead of meeting a missing-package error from Node. Every
+    cloud session and every new worktree is a fresh clone.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+- id: hooks-leave-no-untracked-cache
+  title: Running the hooks leaves no untracked files behind
+  status: idea
+  value: A checkout stays clean after the framework's hooks run, so the preflight's
+    clean-tree check passes. Today Python writes a cache folder under .tropis/hooks/ that
+    nothing ignores, and the check fails until someone deletes or ignores it.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+- id: cloud-session-works-on-a-plan-branch
+  title: The workflow says how a cloud session works on a plan's branch
+  status: idea
+  value: A cloud session follows one instruction about branches, not two. Today it starts
+    on a branch assigned to it and is told to push only there, while the workflow wants a
+    branch per plan in a worktree of its own.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  blockedBy:
+    - cloud-session-can-write-to-github
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
