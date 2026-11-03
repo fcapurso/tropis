@@ -5609,7 +5609,7 @@
 # original name because ids never change.
 - id: readme-gives-an-overview-not-a-feature-list
   title: The README is a short overview, and stays short as features ship
-  status: idea
+  status: building
   value: Someone deciding whether Tropis is for them reads the whole README quickly and
     sees what it covers across a handful of aspects, instead of every small thing ever
     added. Detail stays one link away in the documents the README points to. A refresh
@@ -5621,10 +5621,16 @@
     - The whole page has a length limit, and every other section is cut to fit it.
     - A refresh that would take the page over its limit trims or folds existing text to
       stay under it, and says what it cut.
+    - A fresh agent refreshing an invented README after a feature ships folds it into an
+      existing bullet and names what it cut to stay under the limit, recorded with its
+      tool and version.
   type: improvement
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - commands/refresh-readme.md
+    - templates/readme-skeleton.md
+  refs:
+    - docs/superpowers/plans/2026-11-03-readme-gives-an-overview-not-a-feature-list.md
 # 2026-11-03, agreed with the developer. guards/catalog-drift.test.js "no live plan
 # filename is dated after today" reads today in UTC, so a plan written just after local
 # midnight in a zone ahead of UTC fails until UTC catches up; an agent hit it during the
