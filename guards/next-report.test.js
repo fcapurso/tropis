@@ -871,12 +871,22 @@ ${blockedBy ? `  blockedBy:\n    - ${blockedBy}\n` : ''}  refs: ${spec ? `\n    
       writeFileSync(join(dir, 'bin/gh'), `#!/usr/bin/env bash
 case "$1 $2" in
   "api repos/{owner}/{repo}") echo '{"default_branch":"main"}' ;;
-  "api repos/{owner}/{repo}/git/ref/tropis/merge-token") echo '{"message":"Not Found","status":"404"}' >&2; echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
   "run list") echo '[{"status":"completed","conclusion":"failure","headSha":"bad0000aaaa","url":"https://github.com/acme/example/actions/runs/1","createdAt":"2026-10-31T11:00:00Z","displayTitle":"break it"}]' ;;
   *) echo "stub gh: unexpected call: $*" >&2; exit 99 ;;
 esac
 `);
       chmodSync(join(dir, 'bin/gh'), 0o755);
+      // The merge token is read through git alone, so a git shim first on PATH sends
+      // ls-remote to an empty local repository: no token branch, so the token is free.
+      spawnSync('git', ['init', '-q', '--bare', join(dir, 'empty.git')]);
+      const realGit = spawnSync('which', ['git'], { encoding: 'utf8' }).stdout.trim();
+      writeFileSync(join(dir, 'bin/git'), `#!/bin/sh
+if [ "$1" = ls-remote ]; then
+  for a in "$@"; do shift; if [ "$a" = origin ]; then set -- "$@" "${join(dir, 'empty.git')}"; else set -- "$@" "$a"; fi; done
+fi
+exec "${realGit}" "$@"
+`);
+      chmodSync(join(dir, 'bin/git'), 0o755);
       const { stdout, stderr } = spawnSync('node', [join(fw, 'scripts/next.mjs')], {
         cwd: dir,
         env: { ...process.env, PATH: `${join(dir, 'bin')}:${process.env.PATH}` },

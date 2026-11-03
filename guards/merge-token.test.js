@@ -259,7 +259,7 @@ describe('against a local origin', () => {
     const a = makeClone(origin, 'a');
     expect(run(a, ['take', '--holder', 'a', '--ref', 'refs/heads/main']).status).toBe(2);
     expect(run(a, ['take', '--holder', 'a', '--ref', 'refs/tropis/x']).status).toBe(2);
-    expect(run(a, ['status', '--ref', 'refs/heads/main']).stdout).toMatch(/^Merge token: could not tell — /);
+    expect(run(a, ['status', '--ref', 'refs/heads/main']).status).toBe(2);
     expect(spawnSync('git', ['rev-parse', 'main'], { cwd: origin.bare, encoding: 'utf8' }).stdout.trim())
       .toBe(git(a, ['rev-parse', 'origin/main']));
     const ok = run(a, ['take', '--holder', 'a', '--ref', 'refs/heads/probe/x']);
