@@ -251,3 +251,48 @@ the body of Task 3's commit (amend) or a new commit.
    red, fix what it names first.
 5. `git push -u origin plan/cloud-waits-wake-on-a-schedule`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+Tool: Claude Code, model Claude Sonnet 5.5; git 2.49.0, node v22.15.0, macOS (Darwin) on arm64. Source worked from: none in particular; the `--once` flags are written against this repository's own `scripts/sprint.mjs`, `scripts/plan-overlap.mjs` and `scripts/merge-token.mjs`.
+
+### Task completion
+
+- Task 0: done. `npm --prefix .tropis ci`, clean tree, baseline self-check ended `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1: done. Eight † cases added (sprint 2, plan-overlap 2, merge-token 3, and the sprint case covering exit 0 and 5 in one). Run alone before the change: `Tests: 6 failed, 96 passed, 102 total`. Failing: `wait --once` exits 5 then 0; `wait --once` exits 3 PARKED; `--once` exits 5 then 0 (plan-overlap); `--once` with `--timeout` is a usage error; `take --once` exits 5 holding the token as it was; `take --once` takes a free token; `take --once` exits 3 for a stale holder (the last three are in `guards/merge-token.test.js`; Jest counted six failures because the stale-holder and held-holder cases run as `take` with an unknown flag, which both fail as usage errors).
+- Task 2: done. Same three guards after: `Tests: 102 passed, 102 total`.
+- Task 3: done. Workflow section and three pointers, sprint command sentence, spec paragraph and piece 4, decision (heading `FW-NNN`, to be numbered at merge). Self-check passed.
+- Task 4: done, by hand (below).
+- Task 5: done, passed on the first run; outcome is in the body of Task 3's commit.
+- Task 6: done.
+
+### Verification results
+
+- Single guards were run with a scratch script that does what the self-check does for one guard: `git archive HEAD` into a temp dir, write `{"type":"module"}` as `package.json`, copy `templates/framework-jest.config.js` to `jest.config.js`, link `.self-check/node_modules`, then `node --experimental-vm-modules .self-check/node_modules/.bin/jest --config jest.config.js guards/sprint.test.js guards/plan-overlap.test.js guards/merge-token.test.js`.
+- Task 4, by hand, against a scratch bare origin and two clones holding this branch's `merge-token.mjs`:
+  - clone a `take --holder a`: `Merge token: taken by a.`, exit 0
+  - clone b `take --holder b --once`: `Still waiting: the merge token is held by a.`, exit 5
+  - clone a `release --holder a`: `Merge token: released by a.`, exit 0
+  - clone b `take --holder b --once`: `Merge token: taken by b.`, exit 0
+- Task 5, fresh-agent check: Claude Code 2.1.300 on macOS (Darwin) arm64, `claude -p --output-format stream-json --verbose`, `ANTHROPIC_API_KEY` unset, signed in to the developer's plan, Bash, Edit and Write disallowed, in a scratch clone of this branch outside the repository. Its tool calls were a search of and two reads of `framework/workflow.md`. Its answer: run `node .tropis/scripts/merge-token.mjs take --once`; "That shows as exit 5 and a line starting `Still waiting:`"; call `send_later` with `delay_minutes: 30` and a message naming that command; "I end the turn. I don't use cron or a background loop"; on the wake run the same command again. It passed on the first run, so the wording was not changed. The default user instructions on this machine say nothing about waits, so the probe did not follow them in place of the change.
+- Final checks after the last commit: see below.
+
+### Scope
+
+Files changed are the ones in the File Structure table; `docs/backlog-board/index.html` did not change. Worktree used: the sibling `../tropis-cloud-waits` of the `tropis` checkout.
+
+### Judgment calls
+
+- Exit 5 lines: `Still waiting: <id> is blocked by <ids>, which has/have not shipped.` (sprint), `Still waiting: this plan merges after <ids>, which is/are still building.` (plan-overlap), `Still waiting: the merge token is held by <holder>.` (token).
+- `--once` is accepted with `--interval` and ignores it. Only `--once` with `--timeout` is a usage error (plan-overlap and merge-token). `--once` on any merge-token command other than `take` is a usage error. On `sprint.mjs` it is accepted only for `wait`.
+- For `take --once`, a stale branch holder is judged before the exit 5, so it exits 3 as `take` does.
+- The spec cites the decision as "the decision that follows FW-065", since its number is given at merge.
+
+### What the plan got wrong
+
+- Test 1 groups exit 5 and exit 0 in one case, so the eight cases the plan lists are seven functions, and Jest's red count was six, not seven (see Task 1).
+- The fresh-agent probe noticed a gap that is older than this change: the workflow does not say what a session does when its wake lands in a new container where its worktree is gone, so `take` would claim the token under whatever branch is checked out. Not fixed here.
+
+### Outstanding
+
+There is no screen. A cloud session waiting through a container replacement, woken by its own `send_later`, is the developer's live check after a release. The decision's `FW-NNN` heading needs its number at merge.
