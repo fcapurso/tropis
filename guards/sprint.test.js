@@ -200,7 +200,7 @@ describe('propose', () => {
     const r = run(clone, ['propose']);
     expect(r.status).toBe(0);
     expect(lines(r)).toEqual([
-      `Sprint: proposed 17 of 20 effort points, from main at ${sha}.`,
+      `Sprint: proposed 17 of 20 effort points for 5 team members, from main at ${sha}.`,
       '  1. a2 — 2 pts, band A — Title a2',
       '  2. a1 — 5 pts, band A — Title a1',
       '  3. a3 — 4 pts, band A — Title a3',
@@ -216,7 +216,7 @@ describe('propose', () => {
     const sha = git(clone, ['rev-parse', '--short=7', 'origin/main']);
 
     expect(lines(run(clone, ['propose', '--points', '5']))).toEqual([
-      `Sprint: proposed 3 of 5 effort points, from main at ${sha}.`,
+      `Sprint: proposed 3 of 5 effort points for 2 team members, from main at ${sha}.`,
       '  1. a2 — 2 pts, band A — Title a2',
       '  2. b2 — 1 pts, band B — Title b2',
       'Sprint: next in line, over the budget — a1 (5 pts).',
@@ -276,8 +276,41 @@ describe('propose', () => {
     expect(small.stdout).toContain('Sprint: next in line, over the budget — k1 (10 pts).');
 
     const roomy = run(clone, ['propose']);
-    expect(ids(roomy)).toEqual(['f1', 'k1', 'k2', 'm1']);
-    expect(roomy.stdout).toContain('  2. k1 — 5 pts, band A, bundle kiln — Title k1');
+    expect(roomy.status).toBe(0);
+    expect(lines(roomy)[0]).toContain(' for 3 team members, ');
+    expect(lines(roomy).slice(1)).toEqual([
+      '  1. f1 — 5 pts, band A — Title f1',
+      '  2. bundle kiln — 10 pts, 2 backlog items',
+      '       k1 — 5 pts, band A — Title k1',
+      '       k2 — 5 pts, band B — Title k2',
+      '  3. m1 — 5 pts, band B — Title m1',
+    ]);
+  });
+
+  it('† keeps a bundle under one entry when an entry falls between its members', () => {
+    const world = makeWorld([
+      entry('k1'), entry('k2', { after: ['x'] }), entry('x'),
+    ], {
+      k1: row('A', 5, 1, { bundle: 'kiln' }), k2: row('A', 4, 1, { bundle: 'kiln' }), x: row('B', 1, 1),
+    });
+    const clone = makeClone(world);
+    const r = run(clone, ['propose']);
+    expect(r.status).toBe(0);
+    expect(lines(r)[0]).toContain(' for 2 team members, ');
+    expect(lines(r).slice(1)).toEqual([
+      '  1. bundle kiln — 2 pts, 2 backlog items',
+      '       k1 — 1 pts, band A — Title k1',
+      '       k2 — 1 pts, band A — Title k2',
+      '  2. x — 1 pts, band B — Title x',
+    ]);
+  });
+
+  it('† says team member, not team members, for one', () => {
+    const world = makeWorld([entry('solo')], { solo: row('A', 3, 3) });
+    const clone = makeClone(world);
+    const r = run(clone, ['propose']);
+    expect(r.status).toBe(0);
+    expect(lines(r)[0]).toContain(' for 1 team member, ');
   });
 });
 
