@@ -418,6 +418,78 @@ describe('take-version.mjs', () => {
     expect(recordOfProject(w.project).files).not.toHaveProperty(['.claude/framework/gone-b.md']);
   }), SLOW);
 
+  const droppedRuleWorld = () => ({
+    v020: {
+      'rules/extra.md': '# Extra\n\nA rule this release ships.\n',
+      'templates/rule-areas.json': `${JSON.stringify({
+        ...JSON.parse(readFileSync(join(blueprint, 'templates/rule-areas.json'), 'utf8')),
+        extra: ['extra/**'],
+      }, null, 2)}\n`,
+    },
+  });
+  const regenerate = (w) => {
+    const generated = spawnSync('node', ['.tropis/scripts/generate-rules.mjs'], { cwd: w.project, encoding: 'utf8' });
+    if (generated.status !== 0) throw new Error(generated.stderr || generated.stdout);
+  };
+  const dropExtra = (w) => w.release('v0.2.1', (root) => {
+    rmSync(join(root, 'rules/extra.md'));
+    const areas = JSON.parse(read(root, 'templates/rule-areas.json'));
+    delete areas.extra;
+    write(root, 'templates/rule-areas.json', `${JSON.stringify(areas, null, 2)}\n`);
+  });
+  const REPORT_LINE = '.claude/rules/extra.md — rule extra is no longer shipped';
+
+  it('keeps a dropped rule the project edited as its own rule', () => inWorld(droppedRuleWorld(), (w) => {
+    edit(w.project, '.tropis/rules/extra.md', (t) => `${t}\nThe project's own line.\n`);
+    regenerate(w);
+    w.commit('edit extra');
+    dropExtra(w);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(existsSync(join(w.project, '.tropis/rules/extra.md'))).toBe(false);
+    const own = read(w.project, '.claude/rules/extra.md');
+    expect(own.startsWith('---\npaths: ["extra/**"]\n---\n')).toBe(true);
+    expect(own).toContain("The project's own line.");
+    expect(existsSync(join(w.project, '.cursor/rules/extra.mdc'))).toBe(true);
+    expect(JSON.parse(read(w.project, '.claude/rule-areas.json'))).not.toHaveProperty('extra');
+    expect(r.stdout).toContain(REPORT_LINE);
+    expect(r.stdout).not.toContain('.tropis/rules/extra.md — no longer shipped');
+    const again = spawnSync('node', ['.tropis/scripts/generate-rules.mjs', '--check'], { cwd: w.project, encoding: 'utf8' });
+    expect(again.status).toBe(0);
+  }), SLOW);
+
+  it('keeps a dropped rule the project added to as its own rule', () => inWorld(droppedRuleWorld(), (w) => {
+    write(w.project, '.claude/rule-additions/extra.md', 'Remember the extra thing.\n');
+    regenerate(w);
+    w.commit('additions to extra');
+    dropExtra(w);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    const own = read(w.project, '.claude/rules/extra.md');
+    expect(own.startsWith('---\npaths: ["extra/**"]\n---\n')).toBe(true);
+    expect(own).toContain('A rule this release ships.');
+    expect(own).toContain('Remember the extra thing.');
+    expect(existsSync(join(w.project, '.claude/rule-additions/extra.md'))).toBe(false);
+    expect(existsSync(join(w.project, '.tropis/rules/extra.md'))).toBe(false);
+    expect(r.stdout).toContain(REPORT_LINE);
+  }), SLOW);
+
+  it('deletes a dropped rule the project left alone, with its area', () => inWorld(droppedRuleWorld(), (w) => {
+    dropExtra(w);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    for (const rel of ['.tropis/rules/extra.md', '.claude/rules/extra.md', '.cursor/rules/extra.mdc']) {
+      expect(existsSync(join(w.project, rel))).toBe(false);
+    }
+    expect(r.stdout).not.toContain('rule extra is no longer shipped');
+  }), SLOW);
+
   it('does not restore a file the project deleted', () => inWorld({}, (w) => {
     w.release('v0.2.1', (root) => edit(root, 'commands/idea.md', (t) => `${t}\nA line from the next version.\n`));
     rmSync(join(w.project, '.claude/commands/idea.md'));

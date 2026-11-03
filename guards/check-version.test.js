@@ -200,7 +200,7 @@ describe('check-version.mjs', () => {
     expect(r.stdout).toContain('set-up project layout fails on purpose for the version check');
   }), SLOW);
 
-  it('names an additions file and an area for a rule the release drops', () => inWorld({
+  it("says a rule the release drops is kept as the project's own", () => inWorld({
     v020: {
       'rules/extra.md': '# Extra\n\nA rule this release ships.\n',
       'templates/rule-areas.json': `${JSON.stringify({
@@ -223,7 +223,7 @@ describe('check-version.mjs', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('is safe with these steps.');
     expect(r.stdout).toContain('Settings that no longer fit');
-    expect(r.stdout).toContain('move or delete .claude/rule-additions/extra.md');
+    expect(r.stdout).toContain('the take keeps your text as your own rule in .claude/rules/extra.md');
     expect(r.stdout).toContain('the take removes its areas from .claude/rule-areas.json');
     expect(r.stdout).toContain('rule extra');
     expect(passedLine(r.stdout).failed).toBe(0);
