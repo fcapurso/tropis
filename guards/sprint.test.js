@@ -284,6 +284,7 @@ describe('propose', () => {
       '       k1 — 5 pts, band A — Title k1',
       '       k2 — 5 pts, band B — Title k2',
       '  3. m1 — 5 pts, band B — Title m1',
+      'Sprint: next in line, over the budget — s1 (2 pts).',
     ]);
   });
 
