@@ -122,7 +122,9 @@ To take a newer release, check out its tag in your Tropis clone and run
 changes, and the command never commits. A `<path>.new` file means you had changed that
 file: merge it into the file beside it and delete it; until you do, the installed-files
 check fails. Your own hook entries and other settings in `.claude/settings.json` are
-kept. Lines in `.gitignore` and `.gitattributes` are added only when missing, whether you
+kept. When a release stops shipping a rule you had edited or added to, your text is
+kept as your own rule in .claude/rules/, with the area it had; delete it if you no longer
+want it. Lines in `.gitignore` and `.gitattributes` are added only when missing, whether you
 wrote yours with a leading slash or without one. To keep one of the framework's paths in
 exported copies, such as `docs/readme/`, add a line such as
 `/docs/readme/ -export-ignore` to `.gitattributes`, and no update excludes it again. A

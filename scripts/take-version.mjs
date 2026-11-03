@@ -18,6 +18,10 @@
  * ignore files are merged, never replaced. Every refusal comes before any write, and
  * git is the backup: a dirty tree is refused.
  *
+ * A shipped rule text the release stops shipping, which the project edited or added to
+ * with a `.claude/rule-additions/` file, is kept as the project's own rule in
+ * `.claude/rules/`, with the area it had, so the rule generator still finishes.
+ *
  * Exit 0 with a report on stdout, or exit 1 with one `take-version:` line on stderr.
  *
  * Library callers use `takeVersion()`, and `appendMissingLines()`, for the ignore files.
@@ -35,6 +39,7 @@ import { fileURLToPath } from 'node:url';
 import {
   blocks, carryBlocks, fingerprint, recordOf,
 } from './installed-files.js';
+import { joinAdditions } from './rule-areas.js';
 
 const tropis = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -538,6 +543,16 @@ function apply(input) {
   let packageChanged = false;
   let lockfileChanged = false;
 
+  // The project's text of each shipped rule the release drops, read before the loop deletes
+  // any of them: a dropped rule the project edited or added to becomes its own rule below.
+  const ruleTextPath = /^\.tropis\/rules\/[^/]+\.md$/;
+  const droppedRuleText = {};
+  for (const rel of Object.keys(baseline)) {
+    if (ruleTextPath.test(rel) && !(rel in nextFiles)) {
+      droppedRuleText[basename(rel, '.md')] = readText(abs(project, rel));
+    }
+  }
+
   const paths = [...new Set([...Object.keys(baseline), ...Object.keys(nextFiles)])].sort();
   for (const rel of paths) {
     const inB = rel in baseline;
@@ -644,6 +659,27 @@ function apply(input) {
     writeFileSync(join(project, '.claude/rule-areas.json'), areasText(areas));
   }
 
+  const ownRules = [];
+  for (const name of areasRemoved) {
+    const text = droppedRuleText[name] ?? null;
+    if (text === null) continue;
+    const textPath = `.tropis/rules/${name}.md`;
+    const additionsPath = join(project, `.claude/rule-additions/${name}.md`);
+    const additions = readText(additionsPath);
+    if (!keptButGone.includes(textPath) && additions === null) continue;
+    const ruleAreas = projectAreas[name];
+    if (!Array.isArray(ruleAreas) || ruleAreas.length === 0) continue;
+    writeText(
+      join(project, `.claude/rules/${name}.md`),
+      `---\npaths: ${JSON.stringify(ruleAreas)}\n---\n${joinAdditions(text, additions).trimEnd()}\n`,
+    );
+    rmSync(join(project, textPath), { force: true });
+    rmSync(additionsPath, { force: true });
+    const at = keptButGone.indexOf(textPath);
+    if (at >= 0) keptButGone.splice(at, 1);
+    ownRules.push(name);
+  }
+
   const moved = [];
   if (move.settings !== null) {
     writeFileSync(join(project, '.tropis/project.json'), `${JSON.stringify(move.settings, null, 2)}\n`);
@@ -676,6 +712,7 @@ function apply(input) {
     keptButGone,
     areasAdded,
     areasRemoved,
+    ownRules,
     moved,
     packageChanged,
     lockfileChanged,
@@ -713,6 +750,7 @@ function apply(input) {
       ? 'project-owned blocks differ in number'
       : `the new version's text; merge it into ${p}`}`),
     ...keptButGone.map((p) => `${p} — no longer shipped, kept because you changed it`),
+    ...ownRules.map((name) => `.claude/rules/${name}.md — rule ${name} is no longer shipped; your text is kept as your own rule, with the area it had. Delete it if you no longer want it.`),
     ...(entry.decision ? [entry.decision] : []),
   ]);
   if (entry.reports.length > 0) lines.push(...entry.reports, '');
