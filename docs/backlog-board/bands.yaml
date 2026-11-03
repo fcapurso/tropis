@@ -352,19 +352,6 @@ update-skips-a-new-file-that-matches:
   seen:
     status: idea
     blockers: []
-update-survives-a-dropped-edited-rule:
-  band: B
-  value: 4
-  valueWhy: An update that stops part-way is the worst outcome an update can have.
-  effort: 2
-  effortWhy: Handling one case in take-version and telling the operator.
-  bundle: update-fixes
-  verdict: "An update that stops part-way is the worst outcome an update can have.
-    Moved up because it is in the framework-updates arc, where the update must
-    be trustworthy."
-  seen:
-    status: idea
-    blockers: []
 version-check-lists-ignore-lines:
   band: B
   value: 2
