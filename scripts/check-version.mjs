@@ -235,16 +235,16 @@ function reprefix(message, clone, project) {
 
 /**
  * Makes the clone's dependencies available and runs the project's suite there into
- * `resultsPath`. A nested run inherits FRAMEWORK_ROOT and the Jest worker variables, which
+ * `resultsPath`, installing with `command` (`ci` or `install`) when it cannot link the
+ * project's. A nested run inherits FRAMEWORK_ROOT and the Jest worker variables, which
  * would check another tree or skip the suite, so they are removed.
  * @returns {{ results: object|null, output: string[] }}
  */
-function runSuite({ project, clone, resultsPath }) {
+function runSuite({ project, clone, resultsPath, command }) {
   if (!dependencyLink(project, clone).linked) {
     // The project's own install and suite may take as long as they take: only the
     // framework's steps have a limit.
-    const hasLock = existsSync(join(clone, '.tropis/package-lock.json'));
-    const installed = run('npm', ['--prefix', '.tropis', hasLock ? 'ci' : 'install', '--no-audit', '--no-fund'], { cwd: clone, timeout: undefined });
+    const installed = run('npm', ['--prefix', '.tropis', command, '--no-audit', '--no-fund'], { cwd: clone, timeout: undefined });
     if (installed.status !== 0) return { results: null, output: tail(`${installed.stdout}\n${installed.stderr}`) };
   }
   const env = { ...process.env };
@@ -287,7 +287,9 @@ function checkVersion({ project, from = null }) {
     }
 
     // The baseline: the project's checks on the version it holds, before the take.
-    const baseline = runSuite({ project, clone, resultsPath: join(tmp, 'baseline.json') });
+    // The clone is the project's commit, so its lockfile matches its package file.
+    const command = existsSync(join(clone, '.tropis/package-lock.json')) ? 'ci' : 'install';
+    const baseline = runSuite({ project, clone, resultsPath: join(tmp, 'baseline.json'), command });
     const before = baseline.results === null ? null : failingNames(baseline.results, clone);
     // A symlink at .tropis/node_modules is untracked, and the take refuses a dirty tree.
     rmSync(join(clone, '.tropis/node_modules'), { recursive: true, force: true });
@@ -332,7 +334,9 @@ function checkVersion({ project, from = null }) {
     const { held, target, breaking, result } = applied;
     const pointed = acceptNewFiles(clone, result.newFiles);
 
-    const after = runSuite({ project, clone, resultsPath: join(tmp, 'results.json') });
+    // After the take a project that owns its package file may hold a lockfile that no
+    // longer matches it, which ci refuses: install, as the check did before the baseline.
+    const after = runSuite({ project, clone, resultsPath: join(tmp, 'results.json'), command: 'install' });
     if (after.results === null) {
       return {
         status: 0,
