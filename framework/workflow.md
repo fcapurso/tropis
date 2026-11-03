@@ -125,7 +125,8 @@ when the framework half exists to serve the application half. Full rule:
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
   worktree of its own (above), take the merge token, push it, open the pull request,
-  run `gh pr merge <N> --auto --squash` with `--subject` and `--body`, and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  run `gh pr merge <N> --auto --squash` with `--subject` and `--body` (or, where `gh`
+  cannot write, as *Merge and clean up* says), and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
   Release the token once that command has reported (*The merge token*).
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
@@ -277,8 +278,10 @@ items.
 A gated main branch that requires branches to be up to date lets one pull request
 merge at a time, and each merge puts every other open pull request behind, to update
 and run its checks again. So sessions working at the same time take turns, under one
-token on `origin` that any session can take: the ref `refs/tropis/merge-token`, whose
-commit names its holder and when it was taken.
+token on `origin` that any session can take: the branch `tropis/merge-token`, whose
+last commit names its holder and when it was taken. The token is free when no such
+branch exists or when its last commit says `holder: none`; the branch is never deleted.
+It is taken and released by git pushes alone, so it works where `gh` cannot write.
 
 - **Every pull request opens under the token** — a plan's, a claim's, a backlog
   edit's, a release's — whoever opens it: a session started by hand as much as one a
@@ -293,8 +296,8 @@ commit names its holder and when it was taken.
   request straight after, such as a move to `shipped`, and release it after the last
   one. Without `--holder`, a release acts for the branch you are on, so from any
   other branch, `main` after a merge included, name the branch it was taken in:
-  `release --holder <branch>`. A release removes the token only for its holder;
-  otherwise it says who holds it and leaves it.
+  `release --holder <branch>`. A release frees the token only for its holder, by
+  pushing a commit that says `holder: none`; otherwise it says who holds it and leaves it.
 - **Hand it back before a fix that needs judgement.** When the merge criteria fail
   after the rebase in a way that is not mechanical, release the token first, then fix.
   A clean rebase needs no new review; a conflict needs its resolution reviewed, except
@@ -374,9 +377,24 @@ not wait for checks that are still running, so a merge waits until the pull requ
 checks have finished green. In one project a pull request merged with both checks
 pending; they passed afterwards, by luck.
 
-Pass `--subject` and `--body` explicitly. Left to itself the squash inherits the branch
-commits' messages, and the merged commit then lists working history instead of saying
-what the plan made true.
+A squash takes its message from the pull request's title and description where the
+repository is set so (setup asks for it: the default squash message is the pull request
+title and description). Pass `--subject` and `--body` explicitly anyway where `gh` can;
+where it cannot, the title and description are the subject and body. Left to itself,
+a repository set the old way inherits the branch commits' messages, and the merged
+commit then lists working history instead of saying what the plan made true.
+
+**Where `gh` cannot write.** A session whose `gh` writes are refused (a Claude Code cloud
+session's answer HTTP 403) merges the same way, with its own GitHub tools in place of
+`gh pr merge`. It takes and releases the merge token as everyone does. It opens the pull
+request with the subject as its title and the body as its description, sets it to merge
+itself as a squash, and brings its branch up to date when it falls behind. It waits with
+`main-status.mjs --pull-request <N>`, which only reads. When that stops because the
+branch could not be brought up to date, bring it up to date with the tool and run the
+wait again. Where the tool can subscribe to the pull request's activity, that wakes the
+session on each check result. Where a run must be re-run by hand (`gh run rerun`), report
+the line and the run's address to the developer instead. The session cannot delete a
+branch and does not need to: the repository deletes merged head branches.
 
 **The sequence ends by waiting for the run the merge started on the main branch.**
 `main-status.mjs --wait` asks GitHub, through `gh`, for the pipeline's push run on that
