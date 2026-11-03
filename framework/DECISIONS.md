@@ -2124,7 +2124,7 @@ cannot push one).
 costs one fetch and one push, and a sprint command without a reachable origin refuses to
 change the record, and reads the last fetched copy.
 
-## FW-NNN: A wait that may outlast the container is checked once, from a wake the session schedules
+## FW-066: A wait that may outlast the container is checked once, from a wake the session schedules
 
 **Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
 `cloud-waits-wake-on-a-schedule`.

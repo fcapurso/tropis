@@ -298,3 +298,55 @@ Files changed are the ones in the File Structure table; `docs/backlog-board/inde
 ### Outstanding
 
 There is no screen. A cloud session waiting through a container replacement, woken by its own `send_later`, is the developer's live check after a release. The decision's `FW-NNN` heading needs its number at merge.
+
+## Review record
+
+Reviewed by the specifying session, a Claude desktop app session. Tools: Claude Code
+2.1.300, git 2.49.0, node v22.15.0, macOS 26.2 on arm64.
+
+### Checks re-run
+
+- Rebased onto `origin/main` cleanly. Scope: 13 files, all in *File Structure*.
+- The handover's self-check ran after its own commit: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` The reviewer's changes below touch only the decision's number and the spec's
+  reference to it, and the pull request's pipeline runs the checks again.
+- The hand run: `take --once` printed `Still waiting: the merge token is held by a.` and
+  exited 5 while another clone held the token, and exited 0 taking it once released.
+- The fresh-agent check is in the handover: `claude -p` 2.1.300 on macOS arm64, with
+  Bash, Edit and Write disallowed, chose `take --once`, then `send_later` with 30 minutes
+  naming that command, and ended its turn, with no background loop or cron. It found
+  what the change intended.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The three waits take `--once` with exit 5 and a `Still waiting:` line; every other exit
+  keeps its meaning; `--once` with `--timeout` is refused. The workflow's new section and
+  its three pointers say when to use it and how to re-arm.
+- The executor's choices where the plan was silent stand (`--interval` ignored with
+  `--once`; `--once` only on `take`).
+- The decision is numbered FW-066, and the spec's forward reference now names it.
+- **Not fixed here, proposed as a backlog item:** a cloud session whose wake lands after
+  a container replacement may find its worktree gone, and `take` without `--holder` names
+  the holder from the current branch, which in a cloud session's only checkout is the
+  assigned branch. The probe found the disk survived its one restart, so the worktree
+  normally stays; the workflow does not yet say what to do when it does not.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen. A cloud session waiting through a
+  container replacement is the developer's live check after a release.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- The follow-up above, put to the developer as a backlog item.
+
+### Merged because
+
+Each wait can check once and say it is still waiting, the workflow tells a session that
+may not last to re-run it from a wake it schedules, a fresh agent did exactly that, and
+the self-check passes.

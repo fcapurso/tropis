@@ -106,7 +106,7 @@ on the main branch is seen only by checking. The decision that follows FW-065 re
 4. A wait that may outlast the container is kept by a subscription or a scheduled check
    that wakes the session, rather than one long background command. Built this way: each
    of the three waits has `--once`, and the workflow tells such a session to run it from a
-   wake it schedules for 30 minutes later (the decision that follows FW-065).
+   wake it schedules for 30 minutes later (FW-066).
 5. A cloud session can be told which subscriptions the developer holds without anything
    personal being committed, for instance through a variable the cloud environment sets.
 6. A fresh clone says to run `npm --prefix .tropis ci` when the installed packages are
