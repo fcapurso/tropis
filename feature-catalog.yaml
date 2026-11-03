@@ -2048,9 +2048,15 @@
     - docs/superpowers/plans/2026-11-03-update-survives-a-dropped-edited-rule.md
 # 2026-10-15, raised by the executor and confirmed in the review of
 # docs/superpowers/plans/2026-10-15-take-a-framework-version.md.
+# Shipped by docs/superpowers/plans/2026-11-03-update-skips-a-new-file-that-matches.md.
+# Criterion 1 is covered by guards/take-version.test.js: "writes no .new when the project
+# already made the release's change" (a changed shipped file) and "writes no .new for a
+# newly shipped file the project already has with the same text" (a file the project lacked).
+# Criterion 2 is covered by the same two cases, each asserting the "Already the new
+# version's text" heading in the report.
 - id: update-skips-a-new-file-that-matches
   title: An update writes no .new file when the project already has the new text
-  status: building
+  status: shipped
   value: An operator is asked to merge only files that actually differ. Today, when a
     project changed a shipped file in exactly the way the new version does, the update
     still writes a .new identical to the file beside it, and the operator has to notice
@@ -2061,7 +2067,8 @@
     - The update's report names such a file as already holding the new version's text.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/take-version.mjs
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-10-15-take-a-framework-version.md

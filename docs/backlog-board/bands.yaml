@@ -352,18 +352,6 @@ update-check-runs-the-projects-own-checks:
   seen:
     status: idea
     blockers: []
-update-skips-a-new-file-that-matches:
-  band: B
-  value: 2
-  valueWhy: Saves an operator deleting a .new identical to its file.
-  effort: 1
-  effortWhy: A comparison before writing.
-  bundle: update-fixes
-  verdict: "A small comparison before writing a .new file; batch with the other
-    update fixes."
-  seen:
-    status: idea
-    blockers: []
 version-check-lists-ignore-lines:
   band: B
   value: 2
