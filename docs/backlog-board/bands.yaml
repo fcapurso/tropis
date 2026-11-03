@@ -359,7 +359,7 @@ sprint-record-outlives-its-session:
   verdict: "Needed for any sprint session that can be reset, cloud or not; plan it after
     the probe, which says whether such a ref can be written from the cloud."
   seen:
-    status: idea
+    status: building
     blockers: []
 update-check-runs-the-projects-own-checks:
   band: B

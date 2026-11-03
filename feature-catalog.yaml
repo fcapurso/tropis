@@ -5663,19 +5663,26 @@
     - docs/superpowers/plans/2026-11-03-cloud-team-member-merges-its-work.md
 - id: sprint-record-outlives-its-session
   title: A sprint's record survives the session that keeps it
-  status: idea
+  status: building
   value: A sprint session resumed in a new cloud container, or on another machine, finds
     the sprint that is under way, with its items, points and decisions. Today the record
     sits under the git directory of one checkout, so a reclaimed container loses it while
     the team is still working.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The agreed sprint is kept on origin, on the branch tropis/sprint, and a sprint
+      started in one checkout is under way in any other, on any machine.
+    - A mark or note from a team member's checkout reaches the sprint session.
+    - Two changes made at once both land, each pushed with a lease on the commit it read.
+    - An ended sprint leaves the branch with no record and nothing is deleted; a project
+      with no origin keeps the record in a local file.
+    - A sprint under way in a local file when a project takes the release is carried to
+      origin by its next change.
   type: improvement
   layer: product
-  blockedBy:
-    - cloud-session-can-write-to-github
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-03-cloud-sprint-design.md
+    - docs/superpowers/plans/2026-11-03-sprint-record-outlives-its-session.md
 - id: cloud-waits-wake-on-a-schedule
   title: A wait that outlasts a cloud container still ends when its event happens
   status: idea
