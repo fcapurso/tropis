@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // Shared machinery: no part of this file is project-owned.
 /**
- * The merge token: one ref on `origin` that a session takes before it opens a pull
+ * The merge token: one branch on `origin` that a session takes before it opens a pull
  * request, waits for while another session holds it, and releases once the main branch
- * has reported (framework/workflow.md, *The merge token*; decisions FW-049 and the one
- * that follows it).
+ * has reported (framework/workflow.md, *The merge token*; decisions FW-049 and FW-063).
  *
- * The ref is refs/tropis/merge-token, outside refs/heads/ and refs/tags/. It points at a
- * parentless commit whose message names the holder (a branch, or git's user.name for a
- * developer's hold), its kind and when it was taken.
+ * The token is the branch tropis/merge-token. Its last commit sits on the empty tree and
+ * its message names the holder (a branch, or git's user.name for a developer's hold), its
+ * kind and when it was taken. The token is free when the branch does not exist or when its
+ * last commit says `holder: none`; the branch is never deleted. Every command is git
+ * alone (ls-remote, fetch, and a push with a lease), so it works where `gh` cannot write.
+ * Only judging whether a holder went stale asks GitHub through `gh`, which reads.
  *
  *   merge-token.mjs [status]                         who holds it, for how long; exit 0
  *   merge-token.mjs take [--holder <name>] [--hold]  exit 0 taken or already held by this
@@ -19,12 +21,11 @@
  *                                                    another, 2 it could not be released
  *   merge-token.mjs break --holder <name>            as release, for whoever is named
  *
- * Every command also takes --ref <ref> (tests and live checks only). Where `origin` is
- * on GitHub the take is the REST call that creates a reference, which GitHub refuses with
- * HTTP 422 when it exists; anywhere else it is a push in lock form
- * (--force-with-lease=<ref>: with an empty expected value). A release is a push that
- * states the commit it expects; on GitHub, where a push cannot release (a cloud session's
- * git proxy), the holder deletes the ref through the API after reading the marker.
+ * Every command also takes --ref <ref> (tests and live checks only): a branch under
+ * refs/heads/, never the default branch. A take pushes with a lease on exactly the commit
+ * it read (empty when there was no branch), so of two sessions only one succeeds; a
+ * release pushes a free marker with the lease on the holder's commit. `none` is not a
+ * holder name.
  *
  * next.mjs imports tokenStatus. Every line on stdout starts `Merge token:`, except the
  * `STOPPED:` line. Never runs gh unless origin is on GitHub.
@@ -35,10 +36,11 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { originOnGitHub } from './main-status.mjs';
 
-export const TOKEN_REF = 'refs/tropis/merge-token';
+export const TOKEN_REF = 'refs/heads/tropis/merge-token';
 export const STALE_MINUTES = 30;
 const LINE = 'Merge token:';
-const REF_PATTERN = /^refs\/[A-Za-z0-9._/-]+$/;
+const FREE = 'none';
+const REF_PATTERN = /^refs\/heads\/[A-Za-z0-9._/-]+$/;
 const TAKEN_PATTERN = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/;
 
 /** The commit message that names a holder. `taken` is an ISO 8601 UTC string. */
@@ -94,103 +96,83 @@ function namesHttp(r, code) {
   return text.includes(`HTTP ${code}`) || new RegExp(`"status"\\s*:\\s*"?${code}"?`).test(text);
 }
 
-const apiPath = (ref) => ref.replace(/^refs\//, '');
 const segments = (name) => name.split('/').map(encodeURIComponent).join('/');
+
+/** Why a ref may not be the token, or undefined. The default branch is checked in `open`. */
+function refRefusal(ref) {
+  if (!REF_PATTERN.test(ref)) return '--ref must be a branch under refs/heads/';
+  if (ref === 'refs/heads/main' || ref === 'refs/heads/master') return '--ref must not be the default branch';
+  return undefined;
+}
 
 /**
  * The checkout and origin a command works against, or { error }. `github` is true when
- * origin is a GitHub repository; any other origin gets the git-only forms.
+ * origin is a GitHub repository, which only stale judging cares about.
  */
 function open(root, env, ref = TOKEN_REF) {
+  const refused = refRefusal(ref);
+  if (refused) return { error: refused };
   const origin = originOnGitHub(root, env);
   if (origin.error === 'no remote named origin') return { error: origin.error };
+  const head = spawnSync('git', ['symbolic-ref', '--quiet', 'refs/remotes/origin/HEAD'], { cwd: root, env, encoding: 'utf8' });
+  if (head.status === 0 && ref === `refs/heads/${head.stdout.trim().replace(/^refs\/remotes\/origin\//, '')}`) {
+    return { error: '--ref must not be the default branch' };
+  }
   return { root, env, ref, github: origin.error === undefined };
 }
 
-/** { state: 'free' } | { state: 'held', sha, holder, kind, taken } | { error }. */
+/** { state: 'free', sha? } | { state: 'held', sha, holder, kind, taken } | { error }. */
 function readMarker(ctx) {
-  let sha;
-  let message;
-  if (ctx.github) {
-    const ref = gh(ctx, ['api', `repos/{owner}/{repo}/git/ref/${apiPath(ctx.ref)}`]);
-    if (ref.error) return namesHttp(ref, 404) ? { state: 'free' } : { error: noStop(ref.error) };
-    try {
-      sha = JSON.parse(ref.stdout).object.sha;
-    } catch {
-      return { error: 'GitHub answered the ref read with something unexpected' };
-    }
-    const commit = gh(ctx, ['api', `repos/{owner}/{repo}/git/commits/${sha}`]);
-    if (commit.error) return { error: noStop(commit.error) };
-    try {
-      message = JSON.parse(commit.stdout).message;
-    } catch {
-      return { error: 'GitHub answered the commit read with something unexpected' };
-    }
-  } else {
-    const listed = git(ctx, ['ls-remote', '--exit-code', 'origin', ctx.ref]);
-    if (listed.status === 2) return { state: 'free' };
-    if (listed.status !== 0) return { error: noStop(firstLine(listed.stderr) ?? 'git ls-remote failed') };
-    sha = listed.stdout.split(/\s+/)[0];
-    const fetched = git(ctx, ['fetch', '--quiet', '--no-write-fetch-head', 'origin', ctx.ref]);
-    if (fetched.status !== 0) return { error: noStop(firstLine(fetched.stderr) ?? 'git fetch failed') };
-    const logged = git(ctx, ['log', '-1', '--format=%B', sha]);
-    if (logged.status !== 0) return { error: noStop(firstLine(logged.stderr) ?? 'git log failed') };
-    message = logged.stdout;
-  }
-  const marker = parseMarker(message) ?? { holder: '(unknown)', kind: 'branch', taken: null };
+  const listed = git(ctx, ['ls-remote', '--exit-code', 'origin', ctx.ref]);
+  if (listed.status === 2) return { state: 'free' };
+  if (listed.status !== 0) return { error: noStop(firstLine(listed.stderr) ?? 'git ls-remote failed') };
+  const sha = listed.stdout.split(/\s+/)[0];
+  const fetched = git(ctx, ['fetch', '--quiet', '--no-write-fetch-head', 'origin', ctx.ref]);
+  if (fetched.status !== 0) return { error: noStop(firstLine(fetched.stderr) ?? 'git fetch failed') };
+  const logged = git(ctx, ['log', '-1', '--format=%B', sha]);
+  if (logged.status !== 0) return { error: noStop(firstLine(logged.stderr) ?? 'git log failed') };
+  const marker = parseMarker(logged.stdout) ?? { holder: '(unknown)', kind: 'branch', taken: null };
+  if (marker.holder === FREE) return { state: 'free', sha };
   return { state: 'held', sha, ...marker };
 }
 
-/** The tree of origin's main branch as this clone last saw it, or { error }. */
-function markerTree(ctx) {
-  for (const name of ['refs/remotes/origin/HEAD', 'refs/remotes/origin/main']) {
-    const r = git(ctx, ['rev-parse', '--verify', '--quiet', `${name}^{tree}`]);
-    if (r.status === 0) return { tree: r.stdout.trim() };
-  }
-  return { error: 'neither origin/HEAD nor origin/main is known in this clone' };
+/** Writes the empty tree into the local object store; { tree } or { error }. */
+function emptyTree(ctx) {
+  const r = spawnSync('git', ['hash-object', '-t', 'tree', '--stdin', '-w'], {
+    cwd: ctx.root, env: ctx.env, encoding: 'utf8', input: '',
+  });
+  return r.status === 0 ? { tree: r.stdout.trim() } : { error: noStop(firstLine(r.stderr) ?? 'git hash-object failed') };
 }
 
-/** 'taken' | 'held' | { error } for one attempt to create the marker. */
-function tryTake(ctx, holder, kind, now) {
-  const found = markerTree(ctx);
-  if (found.error) return { error: found.error, fatal: true };
-  const message = markerMessage({ holder, kind, taken: isoSeconds(now()) });
-  if (ctx.github) {
-    const made = gh(ctx, ['api', '-X', 'POST', 'repos/{owner}/{repo}/git/commits',
-      '-f', `message=${message}`, '-f', `tree=${found.tree}`]);
-    if (made.error) return { error: noStop(made.error) };
-    let sha;
-    try {
-      sha = JSON.parse(made.stdout).sha;
-    } catch {
-      return { error: 'GitHub answered the commit create with something unexpected' };
-    }
-    const created = gh(ctx, ['api', '-X', 'POST', 'repos/{owner}/{repo}/git/refs',
-      '-f', `ref=${ctx.ref}`, '-f', `sha=${sha}`]);
-    if (!created.error) return 'taken';
-    if (namesHttp(created, 422) && /Reference already exists/i.test(`${created.stderr}${created.stdout}`)) return 'held';
-    return { error: noStop(created.error) };
-  }
+/**
+ * Pushes a new marker commit with the lease on `expected` (the commit that was read, or
+ * empty for no branch). 'pushed' | 'lost' when another session moved the branch first |
+ * { error }.
+ */
+function pushMarker(ctx, message, expected) {
+  const found = emptyTree(ctx);
+  if (found.error) return { error: found.error };
   const commit = git(ctx, ['commit-tree', found.tree, '-m', message]);
   if (commit.status !== 0) return { error: noStop(firstLine(commit.stderr) ?? 'git commit-tree failed') };
   const sha = commit.stdout.trim();
-  const pushed = git(ctx, ['push', '--porcelain', `--force-with-lease=${ctx.ref}:`, 'origin', `${sha}:${ctx.ref}`]);
-  if (pushed.status === 0) return 'taken';
-  if (/stale info|already exists/i.test(`${pushed.stdout}${pushed.stderr}`)) return 'held';
+  const pushed = git(ctx, ['push', '--porcelain', `--force-with-lease=${ctx.ref}:${expected}`, 'origin', `${sha}:${ctx.ref}`]);
+  if (pushed.status === 0) return 'pushed';
+  if (/stale info|already exists|fetch first/i.test(`${pushed.stdout}${pushed.stderr}`)) return 'lost';
   return { error: noStop(firstLine(pushed.stderr) ?? 'git push failed') };
 }
 
-/** 'released' | 'released through the API' | 'stale' | { error } for one release. */
+/** 'taken' | 'held' | { error } for one attempt, leasing on the free marker `read` found. */
+function tryTake(ctx, read, holder, kind, now) {
+  const result = pushMarker(ctx, markerMessage({ holder, kind, taken: isoSeconds(now()) }), read.sha ?? '');
+  if (result === 'pushed') return 'taken';
+  return result === 'lost' ? 'held' : result;
+}
+
+/** 'released' | 'stale' | { error } for one release of the marker at `sha`. */
 function tryRelease(ctx, sha) {
-  const pushed = git(ctx, ['push', '--porcelain', `--force-with-lease=${ctx.ref}:${sha}`, 'origin', `:${ctx.ref}`]);
-  if (pushed.status === 0) return 'released';
-  if (/stale info/i.test(`${pushed.stdout}${pushed.stderr}`)) return 'stale';
-  const failure = { error: noStop(firstLine(pushed.stderr) ?? 'git push failed') };
-  if (!ctx.github) return failure;
-  const again = readMarker(ctx);
-  if (again.state !== 'held' || again.sha !== sha) return failure;
-  const deleted = gh(ctx, ['api', '-X', 'DELETE', `repos/{owner}/{repo}/git/refs/${apiPath(ctx.ref)}`]);
-  return deleted.error ? { error: noStop(deleted.error) } : 'released through the API';
+  const result = pushMarker(ctx, `merge token\n\nholder: ${FREE}\n`, sha);
+  if (result === 'pushed') return 'released';
+  return result === 'lost' ? 'stale' : result;
 }
 
 /**
@@ -198,6 +180,7 @@ function tryRelease(ctx, sha) {
  * git's user.name; otherwise the current branch.
  */
 function holderFor(ctx, { holder, hold }) {
+  if (holder === FREE) return { error: `--holder must not be ${FREE}, which marks a free token` };
   if (holder !== undefined) {
     return holder === '' || /[\r\n]/.test(holder) ? { error: '--holder must be one non-empty line' } : { holder };
   }
@@ -341,13 +324,12 @@ export async function take(root, {
       await pause(intervalMs);
       continue;
     }
-    const attempt = tryTake(ctx, who.holder, kind, now);
+    const attempt = tryTake(ctx, marker, who.holder, kind, now);
     if (attempt === 'taken') return { exit: 0, line: `${LINE} taken by ${who.holder}.` };
     if (attempt === 'held') {
       takeErrors = 0;
       continue;
     }
-    if (attempt.fatal) return failed(attempt.error);
     // The create may have succeeded without telling us: the next read decides.
     takeErrors += 1;
     if (takeErrors >= 3) return failed(attempt.error);
@@ -376,12 +358,11 @@ function relinquish(root, { env, ref, holder, hold }, words) {
     return failed('the token changed while it was being released');
   }
   if (result.error) return failed(result.error);
-  const via = result === 'released' ? '' : ' through the API';
   return {
     exit: 0,
     line: words.verb === 'break'
-      ? `${LINE} broken — it was held by ${who.holder}${via}.`
-      : `${LINE} released by ${who.holder}${via}.`,
+      ? `${LINE} broken — it was held by ${who.holder}.`
+      : `${LINE} released by ${who.holder}.`,
   };
 }
 
@@ -416,7 +397,7 @@ function parseArgs(argv) {
     else if (flag === '--interval' && value !== '' && Number(value) >= 0) opts.intervalMs = Number(value) * 1000;
     else if (flag === '--timeout' && value !== '' && Number(value) >= 0) opts.timeoutMs = Number(value) * 60000;
     else if (flag === '--ref') {
-      if (!REF_PATTERN.test(value) || value.startsWith('refs/heads/') || value.startsWith('refs/tags/')) return null;
+      if (refRefusal(value)) return null;
       opts.ref = value;
     } else return null;
   }
