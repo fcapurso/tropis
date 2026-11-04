@@ -78,17 +78,17 @@ framework-calls-itself-one-thing:
     status: idea
     blockers: []
 framework-doc-delivery:
-  band: C
+  band: B
   value: 4
   valueWhy: A framework document that never reaches the agent it governs has
-    failed three times in the same shape.
-  effort: 4
-  effortWhy: A delivery mechanism across tools, plus settling how much a kick-off
-    prompt may carry.
+    failed three times in the same shape; this says whether that is now closed.
+  effort: 2
+  effortWhy: A written finding over the framework documents and two tools, with
+    no build.
   bundle: tool-delivery
-  verdict: "Its third criterion asks the kick-off prompt to carry framework
-    material, which the dispatch document rules out. Settle that conflict before
-    anyone plans it."
+  verdict: "Turned into an investigation on 2026-11-04: it reports what, if
+    anything, still keeps a framework document from the agent that needs it, and
+    decides whether the delivery map is worth building."
   seen:
     status: shaped
     blockers: []
@@ -127,12 +127,11 @@ instruction-files-have-a-delivery-map:
   effort: 3
   effortWhy: A map every project keeps, and its check.
   bundle: tool-delivery
-  verdict: "Useful, but it adds a map every project must keep current, and the
-    sender calls it not urgent. Decide whether the weight is worth it before
-    building."
+  verdict: "Waits for the framework-doc-delivery investigation, which says whether
+    a map every project keeps, a lighter guard, or nothing is needed."
   seen:
     status: shaped
-    blockers: []
+    blockers: [framework-doc-delivery]
 living-documents-stay-current:
   band: C
   value: 4

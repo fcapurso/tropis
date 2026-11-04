@@ -12,33 +12,40 @@
 # `first-adopter` is a pseudonym for that project.
 
 - id: framework-doc-delivery
-  title: Put a framework document in front of the agent that needs it
+  title: Find out whether anything still keeps a framework document from the agent that needs it
   status: shaped
-  value: "A framework document reaches the agent at the moment it applies,
-    rather than only being findable by one that goes looking. Reachability is
-    now guarded, which is the weaker half: `commit-format.md` is reachable from
-    an always-loaded document, but nothing asserts that an agent writing a
-    commit opens it, and an agent dispatched to another vendor’s tool gets it
-    only if the kick-off prompt names it. This is the residue of a failure that
-    has recurred three times in the same shape, each time fixed by moving
-    content rather than by closing the hole."
+  value: "We know whether the original gap is closed: a framework document that applies
+    to an action reaching the agent when it takes that action, in every supported tool,
+    rather than only being findable by one that goes looking. Since this was raised, area
+    rules load by their paths header (FW-009) and hooks speak at commit and merge, but
+    framework documents such as commit-format.md and dispatch.md carry no paths header and
+    reach an agent only through a link it chooses to follow. This is the residue of a
+    failure that recurred three times in the same shape."
   acceptanceCriteria:
-    - A framework document that applies to an action is delivered when that
-      action is taken, not merely linked from somewhere reachable.
-    - The mechanism does not put the whole framework into context on every edit.
-    - A dispatched agent on a tool with no rule injection receives the same
-      material, because the kick-off prompt carries it.
-  type: improvement
+    - A written finding lists every framework document and command, and for each supported
+      tool says how it reaches an agent (always loaded, loaded by path, at a hook, linked
+      only, never), measured or marked unchecked, with tool, version, operating system and
+      architecture.
+    - For each document reached only by a link, the finding names the action it applies to
+      and whether a rule clause delivered by path, an existing hook, or nothing covers that
+      action.
+    - The finding names each remaining gap with the backlog item that would close it, or
+      says none remains.
+    - The finding says whether a per-file delivery map is worth keeping, a lighter guard is
+      enough, or neither is needed, which settles instruction-files-have-a-delivery-map.
+    - The kick-off prompt stays thin; nothing proposed has it carry a document's text.
+  type: spike
   layer: product
   modules: []
   # Delivering a document at a moment needs a channel the agent hears; measured on
   # 2026-09-15, the hook channel was not one.
   # 2026-10-16, backlog cleanup: the blocker hook-injected-rules-reach-the-agent shipped in
   # the first-adopter-harness catalog and concluded that hooks are not how rules reach an
-  # agent; rules now load by their paths header (FW-008, FW-009). Dropped. The third
-  # criterion has the kick-off prompt carry the material, which framework/dispatch.md
-  # rules out (the prompt carries only what the plan cannot); settle that when shaping
-  # the plan.
+  # agent; rules now load by their paths header (FW-008, FW-009). Dropped.
+  # 2026-11-04, sprint planning: the developer turned this into an investigation of what
+  # is still missing, since paths delivery and the commit and merge hooks cover much of
+  # the original gap. The old third criterion, the kick-off prompt carrying the material,
+  # is dropped, as framework/dispatch.md keeps the prompt thin.
   refs:
     - first-adopter-harness:docs/framework-review-2026-07.md
     - first-adopter-harness:docs/superpowers/plans/2026-07-28-p13-rule-delivery-guard.md
@@ -2758,6 +2765,8 @@
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). Built there in
 # first-adopter-harness bd3ff90 and 11aca02. The sender's view is that it is worth having
 # and not urgent; the weight it adds to every project is the maintainer's to weigh.
+# 2026-11-04, sprint planning: the developer decided to wait for the framework-doc-delivery
+# investigation, whose finding says whether a map, a lighter guard or nothing is needed.
 - id: instruction-files-have-a-delivery-map
   title: Every instruction file says how each tool delivers it, and what that rests on
   status: shaped
@@ -2776,6 +2785,8 @@
     - The check catches a planted missing row in the fixture tree.
   type: feature
   layer: product
+  blockedBy:
+    - framework-doc-delivery
   modules: []
   refs: []
 
