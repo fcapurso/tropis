@@ -342,6 +342,7 @@ describe('start, and the sprint file', () => {
     expect(started.status).toBe(0);
     expect(started.stdout).toBe(
       'Sprint: started with 2 backlog items, 5 of 12 effort points; team members start as session.\n'
+      + "Sprint: each team member's session is left open once its work ships.\n"
       + "Sprint: team members run on the Large tier. **Use:** not chosen — this project has no model picks. Run /refresh-model-tiers. Start them on the tool's default model.\n",
     );
     expect(existsSync(sprintFile(clone))).toBe(false);
@@ -349,6 +350,8 @@ describe('start, and the sprint file', () => {
       started: T0,
       budget: 12,
       way: 'session',
+      archive: false,
+      archived: [],
       entries: [{ id: 'e2', points: 2, bundle: 'kiln' }, { id: 'e1', points: 3 }],
       baseline: ['e1', 'e2', 'e3'],
       marks: {},
@@ -997,11 +1000,11 @@ describe('the team member\'s model', () => {
   it('† a: start for a session sprint names the first included Large pick, as dispatch does', () => {
     const clone = setup(PICKS, RECORD);
     const r = run(clone, ['start', 'e1', '--way', 'session']);
-    expect(lines(r)).toHaveLength(2);
-    expect(lines(r)[1]).toBe(
+    expect(lines(r)).toHaveLength(3);
+    expect(lines(r)[2]).toBe(
       'Sprint: team members run on the Large tier. **Use:** Alder 3, in Claude Code — the first pick for this tier that your subscriptions include.',
     );
-    expect(lines(r)[1].split('tier. ')[1]).toBe(binding.pickToUse(PICKS, 'Large', RECORD));
+    expect(lines(r)[2].split('tier. ')[1]).toBe(binding.pickToUse(PICKS, 'Large', RECORD));
   });
 
   it('† b: add under a session sprint ends with the same line', () => {
@@ -1010,7 +1013,7 @@ describe('the team member\'s model', () => {
     const added = run(clone, ['add', 'e2']);
     expect(lines(added)).toHaveLength(2);
     expect(lines(added)[0].startsWith('Sprint: added e2')).toBe(true);
-    expect(lines(added)[1]).toBe(lines(started)[1]);
+    expect(lines(added)[1]).toBe(lines(started)[2]);
   });
 
   it('† c: with no picks file the line says so and the default model is used', () => {
