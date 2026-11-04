@@ -6288,9 +6288,11 @@
 # a plan of those tiers runs on Fable 5.1, the most expensive pick per task (on Pro and
 # Team Standard, on Opus 5.5). Shaped the same day: cost is the first dollar figure of a
 # pick's usage per task, a pick with none ranks last, and a tie keeps the lower tier (FW-070).
+# Shipped by docs/superpowers/plans/2026-11-04-tier-falls-through-to-the-cheapest-included-pick.md.
+# Criterion 1: guards/dispatch.test.js, "takes a cheaper included pick from a tier above over a dearer one in its own tier" and "keeps the pick in its own tier when it costs less, or the same"; guards/team-member-cli.test.js, "takes the included pick that costs least per task, whatever its place in the tier".
 - id: tier-falls-through-to-the-cheapest-included-pick
   title: A plan runs on the cheapest included model in its tier or any tier above it
-  status: building
+  status: shipped
   value: A plan, team member or reviewer runs on the included model that costs least
     per task among its own tier and every tier above it, since any of them is judged able
     to do the work, so a gap in one tier, or a dearer pick that happens to come first, does
@@ -6303,7 +6305,9 @@
       pick.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/plan-binding.js
+    - scripts/sprint.mjs
   refs:
     - docs/superpowers/plans/2026-11-04-tier-falls-through-to-the-cheapest-included-pick.md
 # 2026-11-04, from the developer after the 2026-11-03 sprint: its six team-member sessions

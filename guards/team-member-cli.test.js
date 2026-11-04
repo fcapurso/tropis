@@ -493,6 +493,19 @@ describe('pickForTool', () => {
     expect(binding.pickForTool(picks, 'Large', GOLD, 'Claude Code'))
       .toEqual({ model: 'birch-2', pick: 'Birch 2', reason: null });
   });
+
+  it('† takes the included pick that costs least per task, whatever its place in the tier', () => {
+    const picks = `${PICK_TIERS}
+| Model | Usage per task | Included on | Command-line name |
+|---|---|---|---|
+| Alder 3 | $9 per task | Claude Code: gold | Claude Code: alder-3 |
+| Birch 2 | $4 per task | Claude Code: gold | Claude Code: birch-2 |
+`;
+    expect(binding.pickForTool(picks, 'Large', GOLD, 'Claude Code'))
+      .toEqual({ model: 'birch-2', pick: 'Birch 2', reason: null });
+    expect(binding.pickForTool(picks, 'Small', GOLD, 'Claude Code'))
+      .toEqual({ model: 'birch-2', pick: 'Birch 2', reason: null });
+  });
 });
 
 describe('launch without --model', () => {
@@ -514,7 +527,7 @@ describe('launch without --model', () => {
     const r = launch(clone, ['e1'], fakes.env);
     expect(r.status).toBe(0);
     expect(lines(r)[2]).toBe(
-      "Sprint: e1 runs on Alder 3 (alder-3), the Large tier's first pick your Claude Code subscription includes.",
+      "Sprint: e1 runs on Alder 3 (alder-3), the pick for the Large tier and above that costs least per task of those your Claude Code subscription includes.",
     );
     expect(readSprint(clone).launched.e1.model).toBe('alder-3');
     expect(await until(() => fakes.records().length > 0)).toBe(true);

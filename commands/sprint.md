@@ -47,9 +47,10 @@ refuse to start a session on such a turn. A backlog item blocked by another star
 its team member waits by itself until that backlog item ships. Pass each team member the
 brief `node .tropis/scripts/sprint.mjs brief <id>` prints, as it stands, and run
 `node .tropis/scripts/sprint.mjs mark <id> planning` for it. For `session`, start each
-team member on the model the last line of `start` names: the first pick of the Large
-tier that a subscription the developer holds includes, since a team member shapes,
-plans and reviews. Where that line names none, start it on the tool's default model.
+team member on the model the last line of `start` names: the Large pick that costs least
+per task of those a subscription the developer holds includes, since a team member
+shapes, plans and reviews. Where that line names none, start it on the tool's default
+model.
 
 | `--way` | How | Where |
 |---|---|---|
@@ -61,11 +62,11 @@ plans and reviews. Where that line names none, start it on the tool's default mo
 For `claude` or `cursor`, start each team member with
 `node .tropis/scripts/sprint.mjs launch <id>` in place of a session and its brief,
 and `--tool <tool>` to start one backlog item in a tool other than the sprint's way.
-`launch` starts each team member on the Large tier's first pick that the developer's
-subscription in that tool includes, by the name that tool's command line takes, or says
-why it starts on the tool's default model; pass `--model <model>` only to choose
-another. Each run starts at once, waits by itself for what its backlog item
-is blocked by, and works with nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
+`launch` starts each team member on the Large pick that costs least per task of those
+the developer's subscription in that tool includes, by the name that tool's command line
+takes, or says why it starts on the tool's default model; pass `--model <model>` only to
+choose another. Each run starts at once, waits by itself for what its backlog item is
+blocked by, and works with nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
 command where this tool runs them; each time it ends, tell the developer the line it
 printed unless it is `SHIPPED`, and run it again until it says none is running.
 

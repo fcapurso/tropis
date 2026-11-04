@@ -102,10 +102,11 @@ there and here together, never within a pass.
 
 **Inside a tier, the models go least usage first.** A developer's subscriptions last
 longer on the model that does the job with the least of their allowance, and `/dispatch`
-names the first one the developer's subscriptions include. Usage is measured as cost per
-task on one shared board, at one effort setting for every model compared, such as the
-cost per task Artificial Analysis shows for its Intelligence Index. Cost per task folds a
-model's price and the tokens it spends into one figure, so a model with a lower price
+names the one that costs least per task of those the developer's subscriptions include,
+from the plan's tier and every tier above it. Usage is measured as cost per task on one
+shared board, at one effort setting for every model compared, such as the cost per task
+Artificial Analysis shows for its Intelligence Index. Cost per task folds a model's
+price and the tokens it spends into one figure, so a model with a lower price
 that spends more tokens is not taken for the cheaper one. It stands in for usage because
 no vendor publishes how fast each model draws a subscription's allowance: Cursor bills a
 third-party model at its API price, and Anthropic says only that some models draw a
@@ -235,8 +236,9 @@ Start a new file like this, then add the notes and sources below the table:
 Which models this project hands each tier to. The tiers are defined in
 `.claude/framework/model-tiers.md`; this file is written by `/refresh-model-tiers`.
 Each model sits in the tier its fitness supports. Inside a tier, models are listed
-least usage per task first, and `/dispatch` names the first one your subscriptions
-include; the second table gives each pick's usage and the subscriptions that include it.
+least usage per task first. `/dispatch` names, of the picks for a plan's tier and every
+tier above it that your subscriptions include, the one that costs least per task; the
+second table gives each pick's usage and the subscriptions that include it.
 
 **Last verified: YYYY-MM-DD.**
 

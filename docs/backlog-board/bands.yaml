@@ -293,20 +293,6 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
-tier-falls-through-to-the-cheapest-included-pick:
-  band: B
-  value: 4
-  valueWhy: Once picks are judged at default effort, Medium and Medium-large plans on
-    Max, Ultra and Team Premium run on Fable 5.1, the dearest pick per task, while a
-    cheaper included model above them could do the work.
-  effort: 2
-  effortWhy: One change to how dispatch chooses among included picks, using the usage
-    per task the picks file already records, plus its tests and the tiers document.
-  verdict: "Do next, ahead of the cost it prevents: it matters as soon as
-    picks-are-judged-at-the-default-effort ships."
-  seen:
-    status: idea
-    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4
