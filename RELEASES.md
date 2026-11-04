@@ -17,13 +17,85 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-- A sprint whose team members run as sessions asks once, at its start, whether to archive
-  each team member's session once its work ships, and archives it then, never a parked or
-  stopped one.
-- A plan, a sprint's team member and a fresh reviewer run on the model your subscriptions
-  include that costs least per task among the picks for their tier and every tier above
-  it, rather than on the first included pick, so a gap in one tier no longer puts work on
-  its most expensive model.
+_Nothing yet._
+
+## [0.8.2] — 2026-11-04
+
+Agents now run on the cheapest model your subscriptions include that is good enough for
+the job, judged at the effort your tool actually starts them at. Cursor gets the
+development workflow from the start of every session, a sprint tidies up after itself,
+and an update tells you more clearly what a release would change and what it would break.
+
+### What to do by hand
+
+**1. Optional: refresh your model picks.** The tiers are now judged differently: Large
+takes only models within a point of the best, and every model is judged at the effort
+your tool starts it at, not its best showing. Run `/refresh-model-tiers` once, and review
+and commit `docs/model-picks.md`.
+
+**2. Optional: update the fallback paragraph in your `AGENTS.md`.** Cursor now receives
+the workflow on its own, so the paragraph under the first line no longer needs to tell
+every agent to read it. Replace that paragraph, which starts **If the line above did not
+expand**, with:
+
+```
+**If the development workflow is not already in your context, read
+`.claude/framework/workflow.md` now.** Claude Code expands the import above; Cursor
+receives the workflow as an always-applied rule the framework generates. A tool that does
+neither reads this file as plain text and would otherwise get every area rule and none of
+the process — no preflight, no branching rule, no merge sequence, no documentation
+closeout.
+```
+
+### Each agent runs on the cheapest model good enough for it
+
+A plan, a sprint team member or a reviewer now runs on the cheapest model your
+subscriptions include in its tier or any tier above it, not the first one listed. On
+Claude Code Max, for example, a Medium plan now runs on Opus 5.5 rather than the dearer
+Fable 5.1.
+
+### Cursor follows the workflow from the start
+
+An agent in Cursor now has the development workflow in front of it from the first
+message, as one in Claude Code does, instead of only if it obeyed a sentence asking it to
+read the file. The update writes the rule that carries it; you do nothing.
+
+### A sprint is easier to agree and tidier to finish
+
+The sprint proposal shows one entry per team member, a bundle's items listed beneath it.
+At the start, the sprint asks once whether to archive each team member's session when
+its work ships, never one that parked or stopped. Its status now works from a Claude Code
+cloud session too.
+
+### Updates say what they would change and what they would break
+
+Before you take a release, `/update` now tells the checks the release would break apart
+from those already failing, and lists every line it would add to `.gitignore` and
+`.gitattributes`. The update no longer asks you to merge a file that already holds the
+release's text, and no longer stops when a release drops a rule you had edited: your text
+is kept as your own rule.
+
+### Your README stays short
+
+`/refresh-readme` now keeps the README under 1,200 words, with *What it does for you* as
+five to seven bullets, each covering one part of the work rather than one feature. A
+refresh folds what shipped into the text that already covers it, and says what it cut.
+
+### Release notes stay brief
+
+`/release` now writes each change in a sentence or two and every step to do by hand in
+full. Going back to staging for a newer commit now redrafts the notes for whatever merged
+since.
+
+### Smaller corrections
+
+- The test rule adds that a test of something that keeps state in a shared folder, such
+  as the temporary folder, gives it a folder of its own, so one run's leftovers cannot
+  fail the next.
+- The workflow says a fresh-agent check of a hook must keep the agent to the tool the hook
+  watches, so the agent cannot pass by going round it.
+
+Checked on staging: no — this project does not deploy to staging
 
 ## [0.8.1] — 2026-11-03
 
