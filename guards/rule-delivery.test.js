@@ -137,7 +137,6 @@ function contextOf(stdout) {
 describe('rule delivery', () => {
   afterAll(() => rmSync(hookTmp, { recursive: true, force: true }));
 
-
   describe('capture-at-merge fires on a plan merge and stays silent otherwise', () => {
     // A text-level check cannot tell whether this hook runs. A script that emits
     // nothing looks exactly like one that works.

@@ -339,3 +339,76 @@ The new case sits before `is wired on Edit and Write, and not on Read`, directly
 ### Outstanding
 
 The change has no screen, so there is no developer check. The fresh-agent check of the `rules/tests.md` clause is the specifying session's, at review.
+
+## Review record
+
+### Checks re-run
+
+Tools: git 2.43.0, node v22.23.4, Claude Code 2.1.318, Linux x86_64, in a Claude Code
+cloud session.
+
+- The reproduction, on the branch's head before the rebase: a stage from `git archive
+  HEAD`, one fresh `TMPDIR`, three runs of
+  `unshare -pf --mount-proc node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js guards/rule-delivery.test.js -t "capture-at-write"`.
+  All three: `Tests: 145 skipped, 13 passed, 158 total`. Afterwards the `TMPDIR` held only
+  jest's cache, no `capture-write-*` marker. Before the change the second run failed six
+  cases. That was the specifying session's own run on `a59bf5a`, and the executor got the
+  same result.
+- After rebasing on `9ffab68`, which brought in `probe-keeps-to-its-tools`: the rebase
+  was clean. All three spawns of the write hook in the file pass `inHookTmp`, counted by
+  grep. The self-check runs in the pull request's pipeline.
+- The handover's diagnosis of the 78 failures in a bare stage holds. The file resolves
+  `root` as `resolve(here, '../../..')` unless `FRAMEWORK_ROOT` is set, and a bare stage
+  has no `.tropis/hooks/` above it. The plan's Task 2 instruction was wrong, not the
+  change.
+- **Fresh-agent check of the `rules/tests.md` clause.** The probe ran in a scratch copy of
+  the branch, with the new `rules/tests.md` installed as `.claude/rules/tests.md` (the
+  rule a test file loads). The plan file and the incident record were removed from the
+  copy. The probe ran `claude -p --model claude-opus-5-5 --output-format stream-json
+  --verbose`, with no user-level instructions present (`~/.claude/CLAUDE.md` absent). Its
+  task was an invented subject, labelled as a probe to be discarded: a hook
+  `greet-once.sh` that remembers a session in `${TMPDIR:-/tmp}/greet-once-<id>`, plus a
+  Jest test for it. The prompt said nothing about isolation.
+  - Its second call read `.claude/rules/tests.md`, and that result carried the clause.
+  - The test it wrote makes `mkdtempSync(join(tmpdir(), 'greet-once-guard-'))`, passes
+    `env: { ...process.env, TMPDIR: hookTmp }` on every spawn, removes the folder in
+    `afterAll`, and draws `` `greet-${randomUUID()}` `` session ids.
+  - Its reply cited the clause: "That's why every run gets `TMPDIR` pointed at its own
+    `mkdtemp` folder, removed in `afterAll`, and every session id is a random UUID, not
+    one built from the process id."
+
+  It found what the change intended it to find.
+
+### Found
+
+Public exposure: the diff was read for private material, and nothing was found. The load
+figure was already public in the backlog.
+
+- One stray blank line after the new `afterAll` in `guards/rule-delivery.test.js`. It
+  was removed on the branch by the reviewer, a mechanical fix.
+- The probe noted, unprompted, that `harness-scripts.md` asks for a per-installation
+  prefix on anything under `TMPDIR`, and that `capture-at-write.sh`'s `capture-write-`
+  marker has none. That predates this plan and is outside it; see *Outstanding
+  disposition*.
+
+### Outstanding disposition
+
+- No screen, so there is no developer check. Recorded as such.
+- The fresh-agent check was done above.
+- The missing per-installation prefix on the capture-at-write marker is put to the
+  developer in the sprint report as a proposed backlog idea. It is not built here,
+  because it changes the hook and this plan changes only its tests.
+
+### Learnings routed
+
+- Shared-folder state that outlives a test run: written in `rules/tests.md`, with its
+  incident in `rules/incidents/tests.md`, by this plan.
+- A plan should not ask for a whole guard file to pass in a bare stage when the file
+  resolves installed hooks. This is not routed as a rule: the plan's own *Traps* gave the
+  stage recipe, and the self-check is the stated whole-file check. A one-off wording slip
+  in this plan.
+
+### Merged because
+
+The six cases now pass at a reused process id, where they failed before. A case pins the
+isolation, and the rule's probe followed the new clause unprompted.
