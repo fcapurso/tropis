@@ -5467,17 +5467,17 @@
   refs:
     - docs/superpowers/specs/2026-11-01-sprint-design.md
     - docs/superpowers/plans/2026-11-02-backlog-speaks-in-epics-stories-and-points.md
-# Seen executing docs/superpowers/plans/2026-11-01-rules-are-retired-on-evidence.md:
-# the self-check on 879cc07, at a load average near 47 from parallel sessions, failed six
-# capture-at-write cases in guards/rule-delivery.test.js with "Unexpected end of JSON
-# input" (the hook's reply was empty), beside the two main-status cases that
-# main-status-tests-pass-under-load covers. Later runs on the same hook script passed. The
-# cause is not known; the rule-delivery cases spawn the hook with no timeout of their own.
-# Shaped 2026-11-04: the cause is markers the hook leaves in the shared temporary folder,
-# keyed by session names built from the process id; reproduced in the plan.
+# Shipped by docs/superpowers/plans/2026-11-04-capture-at-write-tests-pass-under-load.md.
+# The cause was not load: the cases named sessions after the process id, and the hook's
+# markers in the shared temporary folder outlived each run, so a run that drew an
+# earlier run's process id inherited its markers and the hook stayed silent.
+# Criterion 1: guards/rule-delivery.test.js, every spawn of the write hook passes inHookTmp.
+# Criterion 2: guards/rule-delivery.test.js, 'keeps its marker in the test file's own folder, not the machine's'.
+# Criterion 3: the reproduction in the plan's handover report, before and after.
+# Criterion 4: rules/tests.md, and the fresh-agent check in the squash commit's body.
 - id: capture-at-write-tests-pass-under-load
   title: The capture-at-write hook tests give the same answer however busy the machine is
-  status: building
+  status: shipped
   value: A self-check on a busy machine failed six capture-at-write cases because the
     hook replied with nothing, and passed on a later run with the hook unchanged. A check
     that passes on a rerun with nothing changed hides the failures a person needs to see.

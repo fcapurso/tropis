@@ -14,10 +14,12 @@
  * .claude/rules/*.md at session start (FW-008). This file covers the hooks that speak at
  * a moment — writing a rule, committing one, merging a plan.
  *
- * Each case uses a unique session id, because a hook that deduplicates per session would
- * make every case after the first assert on empty output.
+ * Each case uses a random session id, because a hook that deduplicates per session would
+ * make every case after the first assert on empty output. Every spawn of the write hook
+ * also gets this file's own TMPDIR, because the hook's markers outlive the run.
  */
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import {
   mkdtempSync, rmSync, readdirSync, readFileSync, existsSync,
   mkdirSync, writeFileSync, copyFileSync,
@@ -32,8 +34,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = process.env.FRAMEWORK_ROOT ?? resolve(here, '../../..');
 const mergeHook = resolve(root, '.tropis/hooks/capture-at-merge.sh');
 
-let seq = 0;
-const freshSession = () => `p13-${process.pid}-${seq++}`;
+const freshSession = () => `p13-${randomUUID()}`;
 
 /**
  * Run capture-at-merge.sh the way Claude Code does for Bash PreToolUse.
@@ -53,6 +54,12 @@ function runMergeHook(command, env) {
 }
 
 const writeHook = resolve(here, '../scripts/capture-at-write.sh');
+// The hook keeps a once-per-session marker under TMPDIR and nothing removes it, so a
+// run that shared the machine's folder could inherit an earlier run's markers and hear
+// nothing. Every spawn of the hook gets this folder instead.
+const hookTmp = mkdtempSync(join(tmpdir(), 'rule-delivery-hooks-'));
+const inHookTmp = (env = process.env) => ({ ...env, TMPDIR: hookTmp });
+
 const PHASE2 = 'Does it state its mechanism?';
 
 function runWriteHookOn(repoRoot, relPath, opts = {}) {
@@ -65,6 +72,7 @@ function runWriteHookOn(repoRoot, relPath, opts = {}) {
     input: payload,
     cwd: repoRoot,
     encoding: 'utf8',
+    env: inHookTmp(),
   });
   if (result.error) throw result.error;
   return { stdout: result.stdout, status: result.status, session };
@@ -127,6 +135,7 @@ function contextOf(stdout) {
 }
 
 describe('rule delivery', () => {
+  afterAll(() => rmSync(hookTmp, { recursive: true, force: true }));
 
   describe('capture-at-merge fires on a plan merge and stays silent otherwise', () => {
     // A text-level check cannot tell whether this hook runs. A script that emits
@@ -233,7 +242,7 @@ describe('rule delivery', () => {
         tool_input: { file_path: resolve(dir, '.claude/rules/backend.md') },
       });
       const run = (env) => spawnSync('bash', [writeHook], {
-        input: payload(freshSession()), cwd: dir, encoding: 'utf8', env,
+        input: payload(freshSession()), cwd: dir, encoding: 'utf8', env: inHookTmp(env),
       });
       const inClaude = run(asClaudeCode());
       const elsewhere = run(withoutClaudeCode());
@@ -934,6 +943,15 @@ describe('rule delivery', () => {
       expect(second.stdout).toBe('');
     });
 
+    it('keeps its marker in the test file\'s own folder, not the machine\'s', () => {
+      const dir = repoWithCaptureCommand();
+      tmpDirs.push(dir);
+      const { stdout, session } = runWriteHookOn(dir, '.claude/rules/backend.md');
+      expect(contextOf(stdout)).toContain(PHASE2);
+      expect(existsSync(join(hookTmp, `capture-write-${session}`, 'emitted'))).toBe(true);
+      expect(existsSync(join(tmpdir(), `capture-write-${session}`))).toBe(false);
+    });
+
     it('is wired on Edit and Write, and not on Read', () => {
       const settingsPath = resolve(here, '../templates/settings.json');
       if (!existsSync(settingsPath)) return;
@@ -963,6 +981,7 @@ describe('rule delivery', () => {
         input: '{',
         cwd: process.cwd(),
         encoding: 'utf8',
+        env: inHookTmp(),
       });
       expect(result.status).toBe(0);
       expect(result.stdout).toBe('');
