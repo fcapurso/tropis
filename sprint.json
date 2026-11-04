@@ -204,6 +204,9 @@
     },
     "command-slots-spike": {
       "state": "planning"
+    },
+    "framework-reaches-every-tool": {
+      "state": "planning"
     }
   },
   "notes": {}
