@@ -17,7 +17,9 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+- A sprint whose team members run as sessions asks once, at its start, whether to archive
+  each team member's session once its work ships, and archives it then, never a parked or
+  stopped one.
 
 ## [0.8.1] — 2026-11-03
 

@@ -301,3 +301,37 @@ Make the `commands/sprint.md` change. Commit. Run the guard alone: every case pa
 3. `git push -u origin plan/sprint-archives-a-session-once-it-ships`. **Do not open a
    pull request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 5 done in order: tests (red), script, command, release note and backlog, verification. The branch is pushed; no pull request, review record or merge.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, Linux x86_64.
+
+- Guard alone, as the self-check runs it (export of `HEAD` with `git archive`, `{"type":"module"}` package file, the template Jest config, `node --experimental-vm-modules .self-check/node_modules/.bin/jest --config <stage>/jest.config.js guards/sprint.test.js`): after Task 1, 5 failed of 51 (the three archiving cases, the documents case, the no-sprint case); after Task 2, 1 failed (the documents case); after Task 3, `Tests: 51 passed, 51 total`.
+- `npm --prefix .tropis test`: `Tests: 176 passed, 176 total`.
+- `bash scripts/check-blueprint.sh`: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD`: RELEASES.md, commands/sprint.md, docs/backlog-board/bands.yaml, feature-catalog.yaml, guards/sprint.test.js, scripts/sprint.mjs, and this plan.
+
+### Scope
+
+Only files in *File Structure*. The board page was not rebuilt or changed.
+
+### Judgment calls
+
+- Worked from no named source; written against this repository's own names.
+- A bundle's first entry is found by walking sprint entries in order (`teamMembers`).
+- `archive` refusals follow the plan's order.
+
+### What the plan got wrong
+
+- Two existing cases (the `start` record and output in *start, and the sprint file*, and the two model-line cases in *the team member's model*) assert exact output and record of a session `start`, which now gains an archive line and the `archive` and `archived` fields. They are not in the plan and were updated in a separate commit, with the model line now third.
+- The no-sprint case needed `['archive', 'e1']` (as planned) to exit 1; before the script change it exited 2.
+
+### Outstanding
+
+The fresh-agent check, review, pull request and merge belong to the specifying session. The change has no screen, so there is no developer check.

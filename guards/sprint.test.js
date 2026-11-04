@@ -342,6 +342,7 @@ describe('start, and the sprint file', () => {
     expect(started.status).toBe(0);
     expect(started.stdout).toBe(
       'Sprint: started with 2 backlog items, 5 of 12 effort points; team members start as session.\n'
+      + "Sprint: each team member's session is left open once its work ships.\n"
       + "Sprint: team members run on the Large tier. **Use:** not chosen — this project has no model picks. Run /refresh-model-tiers. Start them on the tool's default model.\n",
     );
     expect(existsSync(sprintFile(clone))).toBe(false);
@@ -349,6 +350,8 @@ describe('start, and the sprint file', () => {
       started: T0,
       budget: 12,
       way: 'session',
+      archive: false,
+      archived: [],
       entries: [{ id: 'e2', points: 2, bundle: 'kiln' }, { id: 'e1', points: 3 }],
       baseline: ['e1', 'e2', 'e3'],
       marks: {},
@@ -700,6 +703,99 @@ describe('add, drop, mark and note', () => {
   });
 });
 
+describe('archiving team members\' sessions', () => {
+  const ids = ['a1', 'k1', 'k2', 'p1', 'n1'];
+  const entries = ids.map((id) => entry(id));
+  const bands = {
+    a1: row('A', 3, 3), k1: row('A', 3, 2, { bundle: 'kiln' }), k2: row('A', 3, 2, { bundle: 'kiln' }),
+    p1: row('A', 3, 1), n1: row('A', 3, 1),
+  };
+  const shippedCatalog = (...done) => YAML.stringify(
+    ids.map((id) => entry(id, done.includes(id) ? { status: 'shipped' } : {})),
+  );
+  const READY = 'Sprint: ready to archive, once the decisions each reported are noted — ';
+
+  /** A session sprint over all five entries, p1 parked. */
+  function begin(archive) {
+    const world = makeWorld(entries, bands);
+    const clone = makeClone(world);
+    const started = run(clone, ['start', ...ids, '--way', 'session', '--archive', archive], at(T0));
+    expect(started.status).toBe(0);
+    expect(run(clone, ['mark', 'p1', 'parked', 'waits', 'for', 'you']).status).toBe(0);
+    return { world, clone };
+  }
+
+  it('† start records the answer for a session sprint and refuses it for another way', () => {
+    const world = makeWorld(entries, bands);
+    const clone = makeClone(world);
+    const yes = run(clone, ['start', 'a1', '--way', 'session', '--archive', 'yes'], at(T0));
+    expect(yes.status).toBe(0);
+    expect(lines(yes)[1]).toBe("Sprint: each team member's session is archived once its work ships.");
+    expect(readSprint(clone)).toMatchObject({ archive: true, archived: [] });
+
+    const other = makeClone(makeWorld(entries, bands));
+    const no = run(other, ['start', 'a1', '--way', 'session', '--archive', 'no'], at(T0));
+    expect(no.status).toBe(0);
+    expect(lines(no)[1]).toBe("Sprint: each team member's session is left open once its work ships.");
+    expect(readSprint(other)).toMatchObject({ archive: false, archived: [] });
+
+    const unsaid = makeClone(makeWorld(entries, bands));
+    expect(run(unsaid, ['start', 'a1', '--way', 'session'], at(T0)).status).toBe(0);
+    expect(readSprint(unsaid).archive).toBe(false);
+
+    const elsewhere = makeClone(makeWorld(entries, bands));
+    const refused = run(elsewhere, ['start', 'a1', '--way', 'here', '--archive', 'yes'], at(T0));
+    expect(refused.status).toBe(1);
+    expect(refused.stdout).toBe('Sprint: --archive yes needs --way session; no other way leaves a session of this tool to archive.\n');
+    expect(readSprint(elsewhere)).toBeNull();
+
+    const maybe = makeClone(makeWorld(entries, bands));
+    expect(run(maybe, ['start', 'a1', '--way', 'session', '--archive', 'maybe'], at(T0)).status).toBe(1);
+    expect(readSprint(maybe)).toBeNull();
+  });
+
+  it('† status names a team member ready to archive only once all it carried has shipped and it is not parked or stopped', () => {
+    const { world, clone } = begin('yes');
+    publish(world, { 'feature-catalog.yaml': shippedCatalog('a1', 'k1', 'p1') });
+    expect(run(clone, ['status'], at(T0)).stdout).toContain(`${READY}a1.\n`);
+
+    publish(world, { 'feature-catalog.yaml': shippedCatalog('a1', 'k1', 'k2', 'p1') });
+    expect(run(clone, ['status'], at(T0)).stdout).toContain(`${READY}a1, k1.\n`);
+
+    const archived = run(clone, ['archive', 'a1']);
+    expect(archived.status).toBe(0);
+    expect(archived.stdout).toBe("Sprint: a1's session is recorded as archived; archive it now.\n");
+    expect(run(clone, ['status'], at(T0)).stdout).toContain(`${READY}k1.\n`);
+
+    const { world: w2, clone: c2 } = begin('no');
+    publish(w2, { 'feature-catalog.yaml': shippedCatalog(...ids) });
+    expect(run(c2, ['status'], at(T0)).stdout).not.toContain('ready to archive');
+  });
+
+  it('† archive refuses what it must not record', () => {
+    const { world, clone } = begin('yes');
+    const refusal = (args) => {
+      const r = run(clone, args);
+      expect(r.status).toBe(1);
+      return r.stdout;
+    };
+    expect(refusal(['archive', 'n1'])).toBe("Sprint: n1's team member has work not shipped on main — n1.\n");
+    expect(refusal(['archive', 'k2'])).toBe("Sprint: k2 is carried by k1's team member; name k1.\n");
+    expect(refusal(['archive', 'p1'])).toBe("Sprint: p1's team member is parked; its session stays open.\n");
+    refusal(['archive', 'nope']);
+
+    publish(world, { 'feature-catalog.yaml': shippedCatalog('a1') });
+    expect(run(clone, ['archive', 'a1']).status).toBe(0);
+    expect(refusal(['archive', 'a1'])).toContain("a1's session is already recorded as archived.");
+    expect(readSprint(clone).archived).toEqual(['a1']);
+
+    const { clone: c2 } = begin('no');
+    const left = run(c2, ['archive', 'a1']);
+    expect(left.status).toBe(1);
+    expect(left.stdout).toBe('Sprint: this sprint leaves sessions open; archiving was not agreed at its start.\n');
+  });
+});
+
 describe('brief', () => {
   const BRIEF = (id, title, design) => `Take the backlog item \`${id}\` (${title}) in \`feature-catalog.yaml\` to shipped.
 ${design ? `Its design: ${design}.\n` : ''}
@@ -812,7 +908,7 @@ describe('with no sprint under way', () => {
     const clone = makeClone(world);
     for (const args of [
       ['status'], ['report'], ['end'], ['add', 'e1'], ['drop', 'e1'],
-      ['mark', 'e1', 'planning'], ['note', 'e1', 'x'], ['brief', 'e1'],
+      ['mark', 'e1', 'planning'], ['note', 'e1', 'x'], ['brief', 'e1'], ['archive', 'e1'],
     ]) {
       const r = run(clone, args);
       expect(r.status).toBe(1);
@@ -839,10 +935,12 @@ describe('the documents', () => {
 
   it('the command names every script command it runs, starts the team in that same turn, and has the two ways', () => {
     const text = read('commands/sprint.md');
-    for (const verb of ['propose', 'start', 'brief', 'mark', 'note', 'status', 'add', 'drop', 'end']) {
+    for (const verb of ['propose', 'start', 'brief', 'mark', 'note', 'status', 'add', 'drop', 'end', 'archive']) {
       expect(text).toContain(`sprint.mjs ${verb}`);
     }
     expect(text).toContain('in that same turn');
+    expect(text).toContain('--archive yes');
+    expect(text).toContain('--archive no');
     expect(text).toContain('--way');
     const ways = text.split('\n').map((l) => l.match(/^\| `([a-z]+)` \|/)?.[1]).filter(Boolean);
     expect(ways).toEqual(['session', 'here', 'claude', 'cursor']);
@@ -902,11 +1000,11 @@ describe('the team member\'s model', () => {
   it('† a: start for a session sprint names the first included Large pick, as dispatch does', () => {
     const clone = setup(PICKS, RECORD);
     const r = run(clone, ['start', 'e1', '--way', 'session']);
-    expect(lines(r)).toHaveLength(2);
-    expect(lines(r)[1]).toBe(
+    expect(lines(r)).toHaveLength(3);
+    expect(lines(r)[2]).toBe(
       'Sprint: team members run on the Large tier. **Use:** Alder 3, in Claude Code — the first pick for this tier that your subscriptions include.',
     );
-    expect(lines(r)[1].split('tier. ')[1]).toBe(binding.pickToUse(PICKS, 'Large', RECORD));
+    expect(lines(r)[2].split('tier. ')[1]).toBe(binding.pickToUse(PICKS, 'Large', RECORD));
   });
 
   it('† b: add under a session sprint ends with the same line', () => {
@@ -915,7 +1013,7 @@ describe('the team member\'s model', () => {
     const added = run(clone, ['add', 'e2']);
     expect(lines(added)).toHaveLength(2);
     expect(lines(added)[0].startsWith('Sprint: added e2')).toBe(true);
-    expect(lines(added)[1]).toBe(lines(started)[1]);
+    expect(lines(added)[1]).toBe(lines(started)[2]);
   });
 
   it('† c: with no picks file the line says so and the default model is used', () => {
