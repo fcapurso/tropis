@@ -36,3 +36,10 @@ The format of an entry:
 - What the agent did: it read `.claude/rules/planning.md`, delivered without the clause, searched for the script with Grep, `git grep -n -F` and `git log`, checked the installed-scripts list, and wrote every search, its result and a control showing the search works into the plan, with the same searches for the executor to re-run. That is what the clause asks for. But before reading the rule it loaded a plan-writing skill from a plugin installed on the machine, outside the repository, which may ask for the same thing, so the run cannot say whether the repository's rules were what it followed. The clause stays.
 - Outcome: inconclusive
 - Ran on: Claude Code 2.1.300 on Claude Sonnet 5.5, macOS (Darwin) arm64
+
+## Since v0.8.1
+
+- Rule file: `rules/tests.md`
+- Clause: "A test of something that keeps state in a shared folder gives it a folder of its own."
+- Outcome: skipped
+- Why: the trial is under review. Its replacement, a word budget per rule file with a tidy-up pass over the whole file (`rule-pruning-keeps-pace`), waits on the experiments recorded on `rule-is-measured-with-and-without`, and a one-clause run in the meantime would add little.
