@@ -58,9 +58,7 @@ Measured in the project this framework came from, in fresh sessions, with a real
   docs/superpowers/specs/2026-11-04-rules-after-compaction-finding.md. Cursor after a
   chat is summarized is not yet measured.
 - **Cursor** (3.24.12, measured 2026-10-15) receives an always-applied rule and the
-  root `CLAUDE.md`. The generator writes each file `AGENTS.md` imports, the
-  workflow included, as `.cursor/rules/imported-<name>.mdc` with `alwaysApply: true`, so
-  Cursor has it from the start. It does not receive a glob rule whose `globs` value is a JSON array,
+  root `CLAUDE.md`. It does not receive a glob rule whose `globs` value is a JSON array,
   which is what the generator writes. An unquoted glob and a comma-separated glob list,
   the two forms Cursor's own rules docs show, attached when the agent read a file in the
   area, and so did a nested `AGENTS.md`, a nested `CLAUDE.md`, and the same unquoted glob
@@ -70,6 +68,10 @@ Measured in the project this framework came from, in fresh sessions, with a real
   did. The body of a description-only rule did not attach; its description was listed
   from the start of the chat. Tables and versions are in the framework repository,
   docs/superpowers/specs/2026-10-15-cursor-area-rules-finding.md.
+  Because Cursor receives an always-applied rule and does not expand an `@` import, the
+  generator writes each file `AGENTS.md` imports, the workflow included, as
+  `.cursor/rules/imported-<name>.mdc` with `alwaysApply: true`, so a Cursor agent has it
+  from the start (FW-068).
   The command-line agent (`cursor-agent` 2025.09.18-7ae6800, measured 2026-10-27) receives
   the root `AGENTS.md` at session start, with no tool call, and does not expand an `@`
   import inside it — which is why the entry instructions live there (FW-031). Run it with
