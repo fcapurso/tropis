@@ -102,10 +102,11 @@ there and here together, never within a pass.
 
 **Inside a tier, the models go least usage first.** A developer's subscriptions last
 longer on the model that does the job with the least of their allowance, and `/dispatch`
-names the one that costs least per task of those the developer's subscriptions include, from the plan's tier and every tier above it. Usage is measured as cost per
-task on one shared board, at one effort setting for every model compared, such as the
-cost per task Artificial Analysis shows for its Intelligence Index. Cost per task folds a
-model's price and the tokens it spends into one figure, so a model with a lower price
+names the one that costs least per task of those the developer's subscriptions include,
+from the plan's tier and every tier above it. Usage is measured as cost per task on one
+shared board, at one effort setting for every model compared, such as the cost per task
+Artificial Analysis shows for its Intelligence Index. Cost per task folds a model's
+price and the tokens it spends into one figure, so a model with a lower price
 that spends more tokens is not taken for the cheaper one. It stands in for usage because
 no vendor publishes how fast each model draws a subscription's allowance: Cursor bills a
 third-party model at its API price, and Anthropic says only that some models draw a

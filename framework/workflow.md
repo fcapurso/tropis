@@ -655,9 +655,9 @@ repository, whether a change reaches the agent it was written for, which is the 
 tier's kind of work (`.claude/framework/model-tiers.md`).
 `node .tropis/scripts/dispatch.mjs --tier Large` names the model: the Large pick that
 costs least per task of those a subscription the developer holds includes, as
-`/dispatch` would choose for a Large plan. Pass it as the probe's model, such as `claude -p --model <model>`; where it
-names none, run the probe on the tool's default model and say why in the record. Record
-the model with the tool and its version.
+`/dispatch` would choose for a Large plan. Pass it as the probe's model, such as `claude
+-p --model <model>`; where it names none, run the probe on the tool's default model and
+say why in the record. Record the model with the tool and its version.
 
 **Judge the check by what the agent did, not by what it says it did.** A run that prints
 only the agent's final reply hides the commands it ran and what answered them, so a check
