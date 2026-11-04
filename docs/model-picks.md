@@ -8,51 +8,79 @@ include; the second table gives each pick's usage and the subscriptions that inc
 
 **Last verified: 2026-11-02.**
 
-Placement was re-applied on 2026-11-03 to the figures below, under FW-067's bar for
-Large: within 1 point of the best selectable pick on every board scored from 0 to 100.
-No figure was read again.
+Placement was re-done on 2026-11-04 under FW-069: each pick is judged at the lowest
+effort a supported tool starts it at, given in the third table, on CursorBench 4.0,
+Artificial Analysis Intelligence Index v5.0.1 and Terminal-Bench 4.0 as read that day,
+and under FW-067's bar for Large. The subscriptions, the command-line names, Arena WebDev
+and the departures were not read again and stand as of 2026-11-02. Every High-effort
+CursorBench 4.0 figure in the second table matched Cursor's page on 2026-11-04.
 
 | Tier | Models |
 |---|---|
 | **Large** | Claude Opus 5.5 *(all)* |
-| **Medium–large** | Claude Sonnet 5.5 *(all)*; Muse Wonder *(Cursor)*; Gemini 4 Argon *(Cursor)*; Claude Fable 5.1 *(all)*; or any pick from a higher tier |
-| **Medium** | DeepSeek V4.1 Flash 1017 *(Cursor)*; GPT-5.6 Sol *(Cursor)*; Grok 4.7 *(Cursor)*; or any pick from a higher tier |
-| **Small–medium** | Claude Haiku 5.5 *(all)*; GPT-5.6 Terra *(Cursor)*; Gemini 3.8 Flash *(Cursor)*; or any pick from a higher tier |
-| **Small** | GPT-5.6 Luna *(Cursor)*; Composer 2.5 *(Cursor)*; or any pick from a higher tier |
+| **Medium–large** | Gemini 4 Argon *(Cursor)*; Claude Fable 5.1 *(all)*; or any pick from a higher tier |
+| **Medium** | DeepSeek V4.1 Flash 1017 *(Cursor)*; Muse Wonder *(Cursor)*; Grok 4.7 *(Cursor)*; or any pick from a higher tier |
+| **Small–medium** | Claude Haiku 5.5 *(all)*; Claude Sonnet 5.5 *(all)*; GPT-5.6 Sol *(Cursor)*; Gemini 3.8 Flash *(Cursor)*; or any pick from a higher tier |
+| **Small** | GPT-5.6 Luna *(Cursor)*; Composer 2.5 *(Cursor)*; GPT-5.6 Terra *(Cursor)*; or any pick from a higher tier |
 
 | Model | Usage per task | Included on | Command-line name |
 |---|---|---|---|
 | Claude Opus 5.5 | $3.97 per task (CursorBench 4.0, High effort; 53,078 tokens per task) | Claude Code: Pro, Max, Ultra, Team Standard, Team Premium; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-opus-5-5; Cursor: claude-opus-5-5-high |
-| Claude Sonnet 5.5 | $1.20 per task (CursorBench 4.0, High effort; 37,391 tokens per task) | Claude Code: Pro, Max, Ultra, Team Standard, Team Premium; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-sonnet-5-5; Cursor: claude-sonnet-5-5-high |
-| Muse Wonder | $3.51 per task (CursorBench 4.0, High effort; 33,612 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: muse-wonder-1.0-high |
 | Gemini 4 Argon | $4.57 per task (CursorBench 4.0, High effort; 109,500 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gemini-4-argon-high |
 | Claude Fable 5.1 | $9.08 per task (CursorBench 4.0, High effort; 58,438 tokens per task) | Claude Code: Max (up to 50% of the weekly limit), Ultra (up to 50% of the weekly limit), Team Premium (up to 50% of the weekly limit); Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-fable-5-1; Cursor: claude-fable-5-1-high |
 | DeepSeek V4.1 Flash 1017 | $0.77 per task (CursorBench 4.0, High effort; 385,196 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: deepseek-v41-flash-1017-high |
-| GPT-5.6 Sol | $2.85 per task (CursorBench 4.0, High effort; 16,174 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gpt-5.6-sol-high |
+| Muse Wonder | $3.51 per task (CursorBench 4.0, High effort; 33,612 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: muse-wonder-1.0-high |
 | Grok 4.7 | $4.69 per task (CursorBench 4.0, High effort; 56,382 tokens per task) | Claude Code: none; Cursor: Free, Plus, Premium, Super, Ultra, Teams, Enterprise, Hobby, Start, Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: grok-4.7-high |
 | Claude Haiku 5.5 | $0.32 per task (CursorBench 4.0, High effort; 77,057 tokens per task) | Claude Code: Pro, Max, Ultra, Team Standard, Team Premium; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-haiku-5-5; Cursor: claude-haiku-5-5-thinking-high |
-| GPT-5.6 Terra | $1.11 per task (CursorBench 4.0, High effort; 13,162 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gpt-5.6-terra-high |
+| Claude Sonnet 5.5 | $1.20 per task (CursorBench 4.0, High effort; 37,391 tokens per task) | Claude Code: Pro, Max, Ultra, Team Standard, Team Premium; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: claude-sonnet-5-5; Cursor: claude-sonnet-5-5-high |
+| GPT-5.6 Sol | $2.85 per task (CursorBench 4.0, High effort; 16,174 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gpt-5.6-sol-high |
 | Gemini 3.8 Flash | $4.70 per task (CursorBench 4.0, High effort; 162,565 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gemini-3.8-flash-high |
 | GPT-5.6 Luna | $0.25 per task (CursorBench 4.0, High effort; 23,368 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gpt-5.6-luna-high |
 | Composer 2.5 | $0.68 per task (CursorBench 4.0, its only setting; 17,347 tokens per task) | Claude Code: none; Cursor: Free, Plus, Premium, Super, Ultra, Teams, Enterprise, Hobby, Start, Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: composer-2.5 |
+| GPT-5.6 Terra | $1.11 per task (CursorBench 4.0, High effort; 13,162 tokens per task) | Claude Code: none; Cursor: Pro, Pro+, legacy Ultra, legacy Teams | Claude Code: none; Cursor: gpt-5.6-terra-high |
+
+| Model | Judged at | Starts at | Sources |
+|---|---|---|---|
+| Claude Opus 5.5 | medium | Claude Code: medium; Cursor: high, by its command-line name (Cursor states no default) | code.claude.com/docs/en/model-config; cursor.com/docs/models/claude-opus-5-5 |
+| Gemini 4 Argon | medium | Claude Code: none; Cursor: medium | cursor.com/docs/models/gemini-4-argon |
+| Claude Fable 5.1 | high | Claude Code: high; Cursor: high, by its command-line name (Cursor states no default) | code.claude.com/docs/en/model-config; cursor.com/docs/models/claude-fable-5-1 |
+| DeepSeek V4.1 Flash 1017 | high | Claude Code: none; Cursor: high, by its command-line name (Cursor states no default) | `cursor-agent --list-models` (version 2026.10.22); Cursor's documentation has no page for it |
+| Muse Wonder | high | Claude Code: none; Cursor: high | cursor.com/docs/models/muse-wonder |
+| Grok 4.7 | medium | Claude Code: none; Cursor: high, and medium, fixed, on Plus | cursor.com/docs/models/grok-4-7; cursor.com/docs/models-and-pricing |
+| Claude Haiku 5.5 | medium | Claude Code: medium; Cursor: high, by its command-line name (Cursor states no default) | code.claude.com/docs/en/model-config; cursor.com/docs/models/claude-haiku-5-5 |
+| Claude Sonnet 5.5 | medium | Claude Code: medium; Cursor: high | code.claude.com/docs/en/model-config; cursor.com/docs/models/claude-sonnet-5-5 |
+| GPT-5.6 Sol | high | Claude Code: none; Cursor: high, by its command-line name (Cursor states no default) | cursor.com/docs/models/gpt-5-6-sol |
+| Gemini 3.8 Flash | high | Claude Code: none; Cursor: high | cursor.com/docs/models/gemini-3-8-flash |
+| GPT-5.6 Luna | high | Claude Code: none; Cursor: high, by its command-line name (Cursor states no default) | cursor.com/docs/models/gpt-5-6-luna |
+| Composer 2.5 | no effort setting | Claude Code: none; Cursor: no effort setting | cursor.com/docs/models/cursor-composer-2-5 |
+| GPT-5.6 Terra | high | Claude Code: none; Cursor: high, by its command-line name (Cursor states no default) | cursor.com/docs/models/gpt-5-6-terra |
 
 ## Reading the tables
 
 - *(all)* means both supported tools, Claude Code and Cursor, offer the model. Claude
   Code offers only Anthropic models; Cursor offers those and the others tagged
   *(Cursor)*.
+- **Judged at**, in the third table, is the lowest effort a supported tool starts the
+  pick at (FW-069), and every figure that places a pick below is read at it. **Starts
+  at** gives each tool's: Claude Code's documented default for the model, since
+  `/dispatch` and `sprint.mjs launch` set no effort; Cursor's documented default, and
+  any plan that fixes it; and where Cursor states no default, the effort its
+  command-line name selects. Where a board has no row at the judged effort, the nearest
+  row is given with its effort and the placement is marked **inferred**: a row above may
+  overstate the model, and never lifts it into a higher tier or sets Large's highest
+  score; a row below may understate it, and never keeps it out of one.
 - **Usage per task** is CursorBench 4.0's average cost per task at **High** effort, the
   one setting every pick except Composer 2.5 has a row for. Cursor computes it by
   applying each model's published per-token API prices to the tokens it spent. It is
   the only board that covers every pick: Artificial Analysis's Intelligence Index
-  (v5.0) has no score for the GPT-5.6 models or Composer 2.5. Composer 2.5 has one row,
-  with no effort setting, and its figure is not strictly like-for-like with the others.
-  Usage orders models inside a tier and never moved a model between tiers.
+  (v5.0.1) has no score for the GPT-5.6 models or Composer 2.5. Composer 2.5 has one
+  row, with no effort setting, and its figure is not strictly like-for-like with the
+  others. Usage orders models inside a tier, at one effort for every model (FW-057),
+  and never moved a model between tiers.
 - **The Cursor command-line names are the High-effort variants**, to match the usage
   figure; `cursor-agent --list-models` lists the other efforts. The Claude Code names
-  run each model at Claude Code's own default effort (medium on Opus 5.5, Sonnet 5.5
-  and Haiku 5.5, per the model-config page), which is lower than the effort the usage
-  figures are measured at.
+  run each model at Claude Code's own default effort: medium on Opus 5.5, Sonnet 5.5 and
+  Haiku 5.5, and high on Fable 5.1, per the model-config page.
 - **Cursor's plan names overlap.** Cursor's current plans are Free, Plus, Premium,
   Super, Ultra, Teams and Enterprise; its legacy plans are Hobby, Start, Pro, Pro+,
   Ultra and Teams (Standard and Premium seats). Current and legacy Ultra and Teams share
@@ -66,7 +94,8 @@ No figure was read again.
   pool, and Cursor's page does not say whether Hobby has one; both are left out.
 - **Cursor's own models (Grok 4.7, Composer 2.5)** are in the Cursor Models pool of
   every paid current plan and every legacy plan. Free has "limited" usage of them. On
-  Plus they run "at fixed settings", so the High-effort name may not apply there.
+  Plus they run "at fixed settings", effort medium, so the High-effort name does not
+  apply there, and Grok 4.7 is judged at medium.
 - **Claude Code:** Pro, Max, Ultra and both Team seat types include Opus, Sonnet and
   Haiku. Fable 5.1 is included only on Max, Ultra and Team Premium seats, up to half
   the weekly limit; on Pro and Team Standard it runs on usage credits. Enterprise is left
@@ -75,68 +104,88 @@ No figure was read again.
   seat-based Enterprise plans include Fable like Team Premium; a developer on one should
   say so when the subscriptions record is written. Anthropic's pricing page lists Max at
   5x Pro and Ultra at 10x Pro and no longer names Max 5x or Max 20x.
+- **In Claude Code, Medium and Medium–large have no pick of their own but Fable 5.1.**
+  `/dispatch` falls through to the next tier up, so a Medium or Medium–large plan runs
+  on Fable 5.1 where Max, Ultra or Team Premium includes it, the most expensive pick per
+  task, and on Opus 5.5 on Pro and Team Standard.
 
 ## Why each pick sits where it does
 
 Boards used for placement, each compared only with itself:
 
-- **AA v5.0**: Artificial Analysis Intelligence Index v5.0 (nine evaluations including
-  FrontierCode 2.0 and Terminal-Bench 4.0). Each model is scored at the variant AA
-  lists; the setting is given beside each figure.
-- **CursorBench 4.0**: Cursor's benchmark, introduced 2026-09-10, best score per model
-  and its effort.
-- **TB 4.0**: the Terminal-Bench 4.0 leaderboard on tbench.ai. Each row runs in its
-  model vendor's own agent (Claude Code, Codex, Grok Build, Muse Code) or
-  mini-SWE-agent, so its harnesses differ: use it as an ordering hint only.
-- **Arena WebDev**: LMArena's WebDev board, 2026-10-27 snapshot.
+- **AA v5.0.1**: Artificial Analysis Intelligence Index v5.0.1, read 2026-11-04. Its
+  leaderboard lists each Claude model once per effort setting, labelled as in "Claude
+  Opus 5.5 (Medium, Default Fallback)", and other models at one or more settings. The
+  pass of 2026-11-02 read v5.0, which is not compared with it.
+- **CursorBench 4.0**: Cursor's benchmark, introduced 2026-09-10, with one row per model
+  and effort, read 2026-11-04.
+- **TB 4.0**: the Terminal-Bench 4.0 leaderboard on tbench.ai, read 2026-11-04. Each row
+  runs in its model vendor's own agent (Claude Code, Codex, Grok Build, Muse Code) or
+  mini-SWE-agent, so its harnesses differ: use it as an ordering hint only. Only Fable
+  5.1 has rows at more than one effort.
+- **Arena WebDev**: LMArena's WebDev board, 2026-10-27 snapshot, not read again: arena.ai
+  refused this pass's request. Its rows name no effort, so it orders models and decides
+  nothing.
 
-- **Claude Opus 5.5**: AA v5.0 58 (max), the highest selectable; CursorBench 4.0 57.8%
-  (Max), first; TB 4.0 64.85% (max, Claude Code); Arena WebDev 1810, first. **Alone in
-  Large**: it sets the best score on every board (FW-067). Launched 2026-09-22.
-- **Claude Sonnet 5.5**: AA v5.0 54 (max); CursorBench 4.0 55.5% (Max); TB 4.0 61.82%
-  (max); Arena WebDev 1770. Second to Opus 5.5 on every board. **Moved down from
-  Large**: 4 points below Opus 5.5 on AA v5.0, 2.3 on CursorBench 4.0 and 3.03 on TB 4.0,
-  each more than FW-067's 1-point margin. Launched 2026-09-28.
-- **Muse Wonder**: AA v5.0 43 (max), well below the other Medium–large picks' 50 and
-  above; CursorBench 4.0 50.4% (Max); Arena WebDev 1652. No TB 4.0 entry. Released
-  2026-10-12.
-- **Gemini 4 Argon**: AA v5.0 50 (high); CursorBench 4.0 52.9% (High); Arena WebDev 1679.
-  No TB 4.0 entry. **Moved down from Large**: 8 points below Opus 5.5 on AA v5.0 and 4.9
-  on CursorBench 4.0. Level with Fable 5.1 on both boards that score them together (AA
-  50 against 50 at xhigh, CursorBench 52.9% against 51.8% at Max), and below it on Arena
-  WebDev (1746). Released 2026-09-30.
-- **Claude Fable 5.1**: AA v5.0 50 (xhigh); CursorBench 4.0 51.8% (Max); TB 4.0 57.88%
-  (max), third among selectable models; Arena WebDev 1746. **Moved down from Large**:
-  below Opus 5.5 and Sonnet 5.5 on every board. AA scores it at xhigh, below the max
-  effort Fable 5.1 supports, while Opus 5.5 is scored at max, so AA may understate it;
-  CursorBench 4.0 and TB 4.0 score both at max, and there it is 6.0 and 6.97 points below
-  Opus 5.5. The most expensive pick per task. Launched 2026-09-01.
-- **DeepSeek V4.1 Flash 1017**: CursorBench 4.0 47.7% (Max), above Grok 4.7's 46.3%;
-  Arena WebDev 1665, above Grok 4.7's 1637; but AA v5.0 32 (max), below Grok 4.7's 34
-  (xhigh) and level with Gemini 3.8 Flash. **New; placement contested**: two boards put
-  it level with or above Grok 4.7, one puts it a tier lower. Open weights (MIT).
-  Released 2026-10-17. Hidden by default in Cursor.
-- **GPT-5.6 Sol**: CursorBench 4.0 41.7% (Max); TB 4.0 37.27% (max, Codex), level with
-  Grok 4.7's 37.58%; Arena WebDev 1616. No AA v5.0 score (see *Departures*). Launched
+- **Claude Opus 5.5** (judged at medium, Claude Code's default): CursorBench 4.0 52.5%
+  (Medium), 0.3 below Gemini 4 Argon's 52.8%, the highest score at a judged effort; AA
+  v5.0.1 48 (medium), the highest at a judged effort; TB 4.0 64.85% (max, Claude Code)
+  only, which may overstate it; Arena WebDev 1810, first. **Alone in Large**: within 1
+  point of the highest score on both boards that score it at its judged effort. At max
+  it scores 57.8% and 59. Launched 2026-09-22.
+- **Gemini 4 Argon** (judged at medium, Cursor's default): CursorBench 4.0 52.8%
+  (Medium), the highest of any pick at its judged effort; AA v5.0.1 50 (high) only,
+  which may overstate it; Arena WebDev 1679. No TB 4.0 entry. **Large unconfirmed**: AA
+  scores it only above the medium Cursor starts it at, and a figure that may overstate
+  does not confirm Large (FW-069). Released 2026-09-30.
+- **Claude Fable 5.1** (judged at high, Claude Code's default; Cursor states none):
+  CursorBench 4.0 49.2% (High), 3.6 below Argon; AA v5.0.1 47 (high); TB 4.0 54.55%
+  (high, Claude Code), the highest TB 4.0 row at a judged effort; Arena WebDev 1746.
+  Kept out of Large by CursorBench. The most expensive pick per task. Launched
+  2026-09-01.
+- **DeepSeek V4.1 Flash 1017** (judged at high, its command-line name's; Cursor states
+  no default): CursorBench 4.0 45.6% (High), level with Muse Wonder's 46.1%; but AA
+  v5.0.1 29 (high), below the Small–medium picks' 31. **Placement contested**: one board
+  puts it with the Medium picks, one a tier lower. Arena WebDev 1665. Open weights
+  (MIT). Released 2026-10-17. Hidden by default in Cursor.
+- **Muse Wonder** (judged at high, Cursor's default): CursorBench 4.0 46.1% (High),
+  level with DeepSeek V4.1 Flash and 3.1 below Fable 5.1; AA v5.0.1 44 (max) only, which
+  may overstate it; Arena WebDev 1652. No TB 4.0 entry. **Moved down from
+  Medium–large**: its one figure at its judged effort puts it with the Medium picks.
+  Released 2026-10-12.
+- **Grok 4.7** (judged at medium, which Cursor fixes on Plus; its default elsewhere is
+  high): CursorBench 4.0 41.6% (Medium), 2.0 above Gemini 3.8 Flash and 2.4 above Sonnet
+  5.5; AA v5.0.1 has no medium row: 35 (high), which may overstate it, and 31 (low),
+  which may understate it; TB 4.0 37.58% (xhigh, Grok Build), which may overstate it;
+  Arena WebDev 1637. **Inferred** on AA. Released 2026-09-21.
+- **Claude Haiku 5.5** (judged at medium, Claude Code's default; Cursor states none):
+  CursorBench 4.0 36.9% (Medium); AA v5.0.1 25 (medium); Arena WebDev 1589. No TB 4.0
+  entry. At max it scores 48.4% and 36. Released 2026-10-07.
+- **Claude Sonnet 5.5** (judged at medium, Claude Code's default; Cursor's is high):
+  CursorBench 4.0 39.2% (Medium), level with Gemini 3.8 Flash's 39.6%; AA v5.0.1 31
+  (medium), level with Gemini 3.8 Flash; TB 4.0 61.82% (max, Claude Code) only, which may
+  overstate it; Arena WebDev 1770. **Moved down from Medium–large**: at max it scores
+  55.5% and 54, second only to Opus 5.5, and at the high Cursor starts it at, 47.8%;
+  Claude Code starts it at medium, and a pick is judged at the lowest effort a tool
+  starts it at. Launched 2026-09-28.
+- **GPT-5.6 Sol** (judged at high, its command-line name's; Cursor states no default):
+  CursorBench 4.0 35.7% (High), level with Haiku 5.5's 36.9%; TB 4.0 37.27% (max, Codex)
+  only, which may overstate it; Arena WebDev 1616. No AA v5.0.1 score (see
+  *Departures*). **Moved down from Medium**: at max it scores 41.7%. Launched
   2026-07-09.
-- **Grok 4.7**: AA v5.0 34 (xhigh), 35 (high); CursorBench 4.0 46.3% (Extra High); TB
-  4.0 37.58% (xhigh, Grok Build); Arena WebDev 1637. Released 2026-09-21.
-- **Claude Haiku 5.5**: AA v5.0 36 (max); CursorBench 4.0 48.4% (Max), 42.3% (High),
-  36.9% (Medium); Arena WebDev 1589. **At max effort it scores level with or above the
-  Medium picks on AA and CursorBench, but Claude Code runs it at medium by default**,
-  where it scores with the Small–medium picks; it stays here. No TB 4.0 entry. Released
-  2026-10-07.
-- **GPT-5.6 Terra**: CursorBench 4.0 41.3% (Max), level with Sol; but TB 4.0 21.52%
-  (max) against Sol's 37.27%, and Arena WebDev 1520 against Sol's 1616. No AA v5.0
-  score. Launched 2026-07-09.
-- **Gemini 3.8 Flash**: AA v5.0 31 (high); CursorBench 4.0 39.6% (High); TB 4.0 19.09%
-  (high, mini-SWE-agent); Arena WebDev 1583 (preliminary). Released 2026-09-02.
-- **GPT-5.6 Luna**: CursorBench 4.0 35.9% (Max); TB 4.0 17.27% (max); Arena WebDev
-  1519. No AA v5.0 score. Launched 2026-07-09.
-- **Composer 2.5**: CursorBench 4.0 27.7%, the lowest of any pick and below GPT-5.6
-  Luna at High (29.4%). **Moved down from Small–medium**: that is the only board that
-  scores it with the others. On no other board found. **Unconfirmed**, and the figure is
-  Cursor's own for its own model. Released 2026-05-18, the oldest pick here.
+- **Gemini 3.8 Flash** (judged at high, Cursor's default): CursorBench 4.0 39.6% (High);
+  AA v5.0.1 31 (high); TB 4.0 19.09% (high, mini-SWE-agent); Arena WebDev 1583
+  (preliminary). Released 2026-09-02.
+- **GPT-5.6 Luna** (judged at high, its command-line name's; Cursor states no default):
+  CursorBench 4.0 29.4% (High); TB 4.0 17.27% (max) only, which may overstate it; Arena
+  WebDev 1519. No AA v5.0.1 score. Launched 2026-07-09.
+- **Composer 2.5** (no effort setting): CursorBench 4.0 27.7%, its one row, the lowest of
+  any pick. On no other board found. **Unconfirmed**, and the figure is Cursor's own for
+  its own model. Released 2026-05-18, the oldest pick here.
+- **GPT-5.6 Terra** (judged at high, its command-line name's; Cursor states no default):
+  CursorBench 4.0 30.7% (High), level with GPT-5.6 Luna's 29.4%; TB 4.0 21.52% (max)
+  only, which may overstate it; Arena WebDev 1520. No AA v5.0.1 score. **Moved down
+  from Small–medium**: at max it scores 41.3%. Launched 2026-07-09.
 
 ## How much to trust the scores
 
@@ -144,21 +193,21 @@ Boards used for placement, each compared only with itself:
   Composer 2.5 is Cursor's own model, and Grok 4.7 is sold as one of "Cursor's models"
   in its own pool; their CursorBench figures are a tool's scores for models it offers as
   its own. The cost-per-task figures are arithmetic on published prices, not a claim
-  about quality, and are used here only for ordering.
+  about quality, and are used here only for ordering. Cursor's page says small
+  differences in scores may not be statistically meaningful.
 - **Terminal-Bench 4.0 rows are run in each vendor's own agent**: Anthropic's Claude
   Code for Claude models, OpenAI's Codex, xAI's Grok Build. They are not one harness.
   No TB 4.0 row exists for Gemini 4 Argon, Muse Wonder, Haiku 5.5, DeepSeek V4.1 Flash
   or Composer 2.5.
-- **Artificial Analysis moved to Intelligence Index v5.0** since the last pass (it was
-  v4.3.2); GDPval-AA was removed. Every v5.0 figure is lower than its v4.3.2
-  counterpart, and the two cannot be compared.
-- **SWE-bench Pro is not used.** Scale's public board has no model newer than the
-  previous generation; the newest figures circulating are vendor-published.
-- **Corroboration**: every placing figure above comes from the board's own page.
-  Opus 5.5, Grok 4.7, Gemini 4 Argon, Gemini 3.8 Flash, Muse Wonder and DeepSeek V4.1
-  Flash were checked on both AA's leaderboard and the model's own AA page. CursorBench
-  4.0's Grok 4.7, Fable 5.1 and GPT-5.6 Sol figures also appear on Cursor's Grok 4.7
-  page; its Composer 2.5 figure also appears on Cursor's Composer page. Both are Cursor's.
+- **Artificial Analysis now publishes Intelligence Index v5.0.1.** Every AA figure here
+  was read from it on 2026-11-04; Opus 5.5 at max reads 59 there, against 58 on v5.0.
+  The two versions are not compared.
+- **SWE-bench Pro is not used.** Scale's public board had no model newer than the
+  previous generation on 2026-11-02; the newest figures circulating are vendor-published.
+- **Corroboration**: every placing figure above comes from the board's own page, read
+  2026-11-04; this pass did not check each AA figure again on the model's own AA page.
+  CursorBench 4.0's Haiku 5.5 and Sonnet 5.5 figures at low and max effort also appear
+  on those models' pages in Cursor's documentation; both are Cursor's.
 - **Not found:** a current LiveCodeBench board.
 
 ## Departures
@@ -186,11 +235,33 @@ neither Claude Code nor Cursor, so they cannot be picks.
   found; Artificial Analysis lists only Kimi K3.1 Pro, which Cursor does not offer.
 - **GLM 5.3** is on Cursor's models page but not in `cursor-agent --list-models`
   (version 2026.10.22), which lists only GLM 5.2, so it has no command-line name.
-  CursorBench 4.0 42.6% (Max); AA v5.0 32 (max).
+  CursorBench 4.0 42.6% (Max); AA v5.0.1 32 (max).
 
 ### Sources used this pass
 
+Read on 2026-11-04, for the efforts and the placement:
+
 - https://code.claude.com/docs/en/model-config
+- https://cursor.com/docs/models/claude-opus-5-5
+- https://cursor.com/docs/models/claude-sonnet-5-5
+- https://cursor.com/docs/models/claude-haiku-5-5
+- https://cursor.com/docs/models/claude-fable-5-1
+- https://cursor.com/docs/models/gemini-4-argon
+- https://cursor.com/docs/models/gemini-3-8-flash
+- https://cursor.com/docs/models/muse-wonder
+- https://cursor.com/docs/models/gpt-5-6-sol
+- https://cursor.com/docs/models/gpt-5-6-terra
+- https://cursor.com/docs/models/gpt-5-6-luna
+- https://cursor.com/docs/models/grok-4-7
+- https://cursor.com/docs/models/cursor-composer-2-5
+- https://cursor.com/docs/models-and-pricing
+- https://cursor.com/cursorbench
+- https://artificialanalysis.ai/leaderboards/models
+- https://www.tbench.ai/leaderboard/terminal-bench/4.0
+
+Read on 2026-11-02, for what was not read again (the subscriptions, the command-line
+names, Arena WebDev, SWE-bench Pro and the departures):
+
 - https://cursor.com/docs/models
 - `cursor-agent --list-models` (version 2026.10.22)
 - https://cursor.com/docs/account/pricing
@@ -199,21 +270,8 @@ neither Claude Code nor Cursor, so they cannot be picks.
 - https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan
 - https://platform.claude.com/docs/en/about-claude/models/overview
 - https://platform.claude.com/docs/en/about-claude/model-deprecations
-- https://cursor.com/cursorbench
-- https://cursor.com/grok
-- https://cursor.com/composer
-- https://artificialanalysis.ai/leaderboards/models
-- https://artificialanalysis.ai/methodology/intelligence-benchmarking
-- https://artificialanalysis.ai/models/claude-opus-5-5
-- https://artificialanalysis.ai/models/grok-4-7
-- https://artificialanalysis.ai/models/gemini-4-argon
-- https://artificialanalysis.ai/models/gemini-3-8-flash
-- https://artificialanalysis.ai/models/muse-wonder
-- https://artificialanalysis.ai/models/deepseek-v4-1-flash-1017
 - https://artificialanalysis.ai/models/gpt-5-6-sol
 - https://artificialanalysis.ai/models/gpt-5-6-terra
 - https://artificialanalysis.ai/models/gpt-5-6-luna
-- https://www.tbench.ai/leaderboard
 - https://arena.ai/leaderboard/webdev
 - https://labs.scale.com/leaderboard/swe_bench_pro_public
-- https://platform.claude.com/docs/en/build-with-claude/effort
