@@ -28,6 +28,13 @@ whole workflow to its own merge.
 
 ## 2. Start the whole team, on the developer's word
 
+For `--way session`, ask the developer once, before running `start` and in that same
+turn, whether to archive each team member's session once its work ships — with the
+tool's question prompt where it has one, so the team still starts in this turn — and
+pass the answer as `--archive yes` or `--archive no`. The answer holds for this
+sprint only: ask again at the next one. Do not ask for another way; `start` refuses
+`--archive yes` there, since no other way leaves a session of this tool to archive.
+
 When the developer says to start, in that same turn run
 `node .tropis/scripts/sprint.mjs start <id> ... --points <n> --way <way>`, with the ids
 in the agreed order, and then start every team member at once: one per backlog item, or
@@ -85,6 +92,24 @@ naming the backlog item and its reason. A `SHIPPED` line needs nothing: `status`
 shipped from the main branch, and a backlog item the main branch does not show as shipped
 is not shipped. Record each decision a team member reports with
 `node .tropis/scripts/sprint.mjs note <id> <decision>`.
+
+## 3a. Archive a finished team member's session
+
+When `status` lists team members as ready to archive, for each one, in this order:
+
+1. Read its session's last message and record each decision it reported with
+   `node .tropis/scripts/sprint.mjs note <id> <decision>`, if not already recorded.
+2. Run `node .tropis/scripts/sprint.mjs archive <id>`. It refuses a team member whose
+   work has not all shipped on the main branch, or that is parked or stopped, and the
+   session then stays open.
+3. Archive that team member's session with the tool — in a Claude Code cloud
+   session, its archive session tool. Where the tool has no way to archive a session,
+   or the archive fails, tell the developer which session it is and that
+   it stays open.
+
+Never archive a parked or stopped team member's session: it waits for the
+developer. A bundle's session is archived once every backlog item in it has
+shipped, named by the bundle's first.
 
 ## 4. New backlog items
 
