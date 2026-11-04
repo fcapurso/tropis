@@ -213,6 +213,9 @@
     },
     "probe-keeps-to-its-tools": {
       "state": "planning"
+    },
+    "rules-return-after-compaction": {
+      "state": "planning"
     }
   },
   "notes": {
