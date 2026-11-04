@@ -200,7 +200,8 @@
   ],
   "marks": {
     "picks-are-judged-at-the-default-effort": {
-      "state": "planning"
+      "state": "parked",
+      "reason": "network policy refuses artificialanalysis.ai, www.tbench.ai, arena.ai and labs.scale.com, the boards placement reads; cursor.com now answers"
     },
     "command-slots-spike": {
       "state": "planning"
