@@ -201,6 +201,9 @@
   "marks": {
     "picks-are-judged-at-the-default-effort": {
       "state": "planning"
+    },
+    "command-slots-spike": {
+      "state": "planning"
     }
   },
   "notes": {}
