@@ -69,3 +69,12 @@ someone is writing a test.
   with nothing changed. Slow every call of the fake in one test, so a deadline tightened
   later is caught. (Incident:
   `.tropis/rules/incidents/tests.md#two-polling-cases-that-lost-to-a-busy-machine`)
+- **A test of something that keeps state in a shared folder gives it a folder of its
+  own.** A script or hook that writes a marker into the machine's temporary folder, keyed
+  by a name the test chose, leaves it there after the run. A name built from the process
+  id comes round again — process ids are reused, sooner the busier the machine — and a
+  later run then starts from the earlier run's state: the case fails, and passes on the
+  rerun with nothing changed, which reads as load. Point the shared folder (`TMPDIR`, a
+  home or cache directory) at one the test creates and removes, and draw names at
+  random. (Incident:
+  `.tropis/rules/incidents/tests.md#six-hook-cases-that-inherited-an-earlier-runs-markers`)

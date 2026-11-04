@@ -38,19 +38,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-capture-at-write-tests-pass-under-load:
-  band: B
-  value: 3
-  valueWhy: A self-check that passes on a rerun with nothing changed teaches people
-    to rerun instead of reading the failure.
-  effort: 2
-  effortWhy: One guard's timing, the same fix already made for the main branch status
-    tests.
-  verdict: "Fix it the way the main branch status tests were fixed in 0.8.0, so a red
-    self-check always means something."
-  seen:
-    status: idea
-    blockers: []
 command-slots-spike:
   band: A
   value: 5
