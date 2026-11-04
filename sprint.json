@@ -216,6 +216,9 @@
     },
     "rules-return-after-compaction": {
       "state": "planning"
+    },
+    "framework-doc-delivery": {
+      "state": "planning"
     }
   },
   "notes": {
