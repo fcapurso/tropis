@@ -6253,17 +6253,18 @@
 # a plan of those tiers runs on Fable 5.1, the most expensive pick per task (on Pro and
 # Team Standard, on Opus 5.5).
 - id: tier-falls-through-to-the-cheapest-included-pick
-  title: A tier with no included pick is given the cheapest included model above it
+  title: A plan runs on the cheapest included model in its tier or any tier above it
   status: idea
-  value: A plan, team member or reviewer whose tier has no pick the developer's
-    subscription includes runs on the included model that costs least per task among
-    the higher tiers, rather than on the first one found going up, so a gap in one tier
-    does not quietly put work on the most expensive model.
-  # Stated by the developer on 2026-11-04: skip past the first included model only if it
-  # is cheaper.
+  value: A plan, team member or reviewer runs on the included model that costs least
+    per task among its own tier and every tier above it, since any of them is judged able
+    to do the work, so a gap in one tier, or a dearer pick that happens to come first, does
+    not put work on a more expensive model than it needs.
+  # Stated by the developer on 2026-11-04: do not look only at the plan's tier, include
+  # every tier above it, and pick the cheapest model among them.
   acceptanceCriteria:
-    - The fall-through moves past the first included model found going up only to one
-      that costs less per task; otherwise it stays on the first one found.
+    - The model chosen is the included one that costs least per task among the plan's own
+      tier and every tier above it, whether or not the plan's own tier has an included
+      pick.
   type: improvement
   layer: product
   modules: []
