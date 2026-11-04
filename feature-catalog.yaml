@@ -13,7 +13,7 @@
 
 - id: framework-doc-delivery
   title: Find out whether anything still keeps a framework document from the agent that needs it
-  status: shaped
+  status: shipped
   value: "We know whether the original gap is closed: a framework document that applies
     to an action reaching the agent when it takes that action, in every supported tool,
     rather than only being findable by one that goes looking. Since this was raised, area
@@ -37,6 +37,10 @@
   type: spike
   layer: product
   modules: []
+  # Shipped 2026-11-04 by the spike itself, in a Claude Code cloud session: the answer is
+  # the finding in refs. Criteria to the finding: 1, How each reaches an agent; 2, The
+  # documents reached only by a link; 3, The answer and Recommendations; 4, The delivery
+  # map; 5, The answer, last paragraph. A spike, so no modules.
   # Delivering a document at a moment needs a channel the agent hears; measured on
   # 2026-09-15, the hook channel was not one.
   # 2026-10-16, backlog cleanup: the blocker hook-injected-rules-reach-the-agent shipped in
@@ -49,6 +53,7 @@
   refs:
     - first-adopter-harness:docs/framework-review-2026-07.md
     - first-adopter-harness:docs/superpowers/plans/2026-07-28-p13-rule-delivery-guard.md
+    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
 # Shipped by docs/superpowers/plans/2026-11-01-a-plan-states-its-result-as-checks.md
 # (FW-041). Criteria are covered by the rule text in rules/planning.md and by the
 # fresh-agent probe A in that plan's handover report and probe B as rerun in its
@@ -2833,14 +2838,18 @@
 # and not urgent; the weight it adds to every project is the maintainer's to weigh.
 # 2026-11-04, sprint planning: the developer decided to wait for the framework-doc-delivery
 # investigation, whose finding says whether a map, a lighter guard or nothing is needed.
+# 2026-11-04: dropped on the framework-doc-delivery finding, which shows delivery is decided
+# by five channels by category, not per file; the one missing guard is narrowed into
+# framework-reaches-every-tool.
 - id: instruction-files-have-a-delivery-map
   title: Every instruction file says how each tool delivers it, and what that rests on
-  status: shaped
-  value: Someone adding or changing an instruction file can see, for that file, how each
-    agent tool puts it in front of an agent and whether that was measured. Today
-    rule-delivery.md explains delivery per tool but cannot answer what a given file
-    reaches and whether that was measured, and a new file no tool delivers looks exactly
-    like one that works.
+  status: dropped
+  value: Dropped 2026-11-04 - the framework-doc-delivery finding shows that how a file
+    reaches an agent is decided by the channel its folder belongs to (the entry file and
+    its import, area rules from one generator, hooks from one settings file, commands
+    from one folder, everything else by link), so a per-file map would repeat five facts
+    thirty times and drift. The guard worth having, that what Claude Code loads at start
+    Cursor also gets, belongs in framework-reaches-every-tool.
   acceptanceCriteria:
     - A map has one row per instruction file - entry files, rules, framework documents,
       commands - with a delivery value per tool from a closed set, and an evidence value
@@ -2851,10 +2860,9 @@
     - The check catches a planted missing row in the fixture tree.
   type: feature
   layer: product
-  blockedBy:
-    - framework-doc-delivery
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
 
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). first-adopter keeps its
@@ -6260,3 +6268,49 @@
   refs:
     - commands/sprint.md
     - docs/superpowers/plans/2026-11-04-sprint-archives-a-session-once-it-ships.md
+# 2026-11-04, from the framework-doc-delivery finding, gap 2: the session choosing a plan's
+# tier is told to choose one but not given the five definitions, and /dispatch passes a
+# tier name outside them with only "(no row for this tier)".
+- id: plan-tier-is-chosen-against-the-tiers
+  title: A plan's tier is chosen against the five tier definitions
+  status: idea
+  value: The session writing a plan chooses its model tier knowing what each tier can be
+    trusted with, and a plan naming a tier that does not exist is refused at dispatch
+    instead of being handed over with no picks.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
+# 2026-11-04, from the framework-doc-delivery finding, gap 3: doc-architecture.md's rule is
+# reached only through the entry file's load map; no area rule or hook marks the moment a
+# document is written.
+- id: document-rule-reaches-a-new-document
+  title: An agent writing a document is told what a document may contain
+  status: idea
+  value: An agent adding or changing a document in a project's documentation folders gets,
+    at that moment, the rule that a document either states timeless rules or is
+    generated from code and guarded, so a hand-written description of the current state
+    is not written in the first place.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
+# 2026-11-04, from the framework-doc-delivery finding, its open question: no measurement
+# says whether Cursor offers the commands in .claude/commands/, and Cursor's documentation
+# was out of reach from the session that wrote the finding.
+- id: commands-reach-cursor
+  title: The framework's commands can be run in Cursor
+  status: idea
+  value: A developer in Cursor, in the editor or on the command line, can run /dispatch,
+    /next, /sprint and the other commands as one in Claude Code can, or is told by the
+    framework that they cannot and what to run instead.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
