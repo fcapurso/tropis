@@ -3,15 +3,17 @@
      A project may copy this file to docs/readme/skeleton.md and change it;
      /refresh-readme then uses that copy. -->
 
+**Page length:** at most 1,200 words, counted as `wc -w` counts them, title and fixed text included.
+
 ## What it is
 - **Job:** one paragraph a newcomer can read in ten seconds: what this is and what problem it solves.
 - **Facts from:** the project brief (Problem, Solution), the shipped backlog items.
 - **Length:** one paragraph.
 
 ## What it does for you
-- **Job:** the outcomes someone gets, as outcomes, not a list of files.
+- **Job:** an overview of what someone gets, across a fixed set of five to seven aspects of the work, one bullet per aspect, each saying in a sentence or two what they get there. No bullet describes a single feature: a feature that ships joins the aspect it belongs to, in that bullet's existing words where they still hold, and its detail is left to the documents the page links to.
 - **Facts from:** the shipped backlog items of layer product, type feature or improvement.
-- **Length:** a short list.
+- **Length:** five to seven bullets.
 
 ## Who it is for
 - **Job:** who it fits and who it does not, so a reader can rule themselves in or out. What it needs to work goes under What it needs, not here.

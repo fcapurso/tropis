@@ -18,14 +18,25 @@ says none is under way, plan one.
 ## 1. Plan
 
 Run `node .tropis/scripts/sprint.mjs propose`, or `propose --points <n>` when the
-developer names a budget; 20 effort points is where it starts. Show the proposal and say
-how team members will start (below). The developer adds, drops, reorders and resizes it;
-run `propose` again for a new budget. A backlog item you find missing a `blockedBy` while
-looking is proposed to the developer like any backlog edit. What the developer agrees is
+developer names a budget; 20 effort points is where it starts. Show the proposal as
+`propose` prints it, one entry per team member with a bundle's backlog items beneath it,
+and say how team members will start (below). The developer adds, drops, reorders and
+resizes it; run `propose` again for a new budget. A backlog item you find missing a
+`blockedBy` while looking is proposed to the developer like any backlog edit. What the developer agrees is
 what the team is approved to do: each backlog item, in that order, carried through the
 whole workflow to its own merge.
 
 ## 2. Start the whole team, on the developer's word
+
+For `--way session`, ask the developer once, before running `start` and in that same
+turn, whether to archive each team member's session once its work ships — with the
+tool's question prompt where it has one, so the team still starts in this turn — and
+pass the answer as `--archive yes` or `--archive no`. Where the tool has no question
+prompt, ask it with the proposal instead, so the answer is in hand when the developer
+says to start. Where the tool has no way to archive a session, do not ask: say so and
+pass `--archive no`. The answer holds for this sprint only: ask again at the next one.
+Do not ask for another way; `start` refuses `--archive yes` there, since no other way
+leaves a session of this tool to archive.
 
 When the developer says to start, in that same turn run
 `node .tropis/scripts/sprint.mjs start <id> ... --points <n> --way <way>`, with the ids
@@ -36,9 +47,10 @@ refuse to start a session on such a turn. A backlog item blocked by another star
 its team member waits by itself until that backlog item ships. Pass each team member the
 brief `node .tropis/scripts/sprint.mjs brief <id>` prints, as it stands, and run
 `node .tropis/scripts/sprint.mjs mark <id> planning` for it. For `session`, start each
-team member on the model the last line of `start` names: the first pick of the Large
-tier that a subscription the developer holds includes, since a team member shapes,
-plans and reviews. Where that line names none, start it on the tool's default model.
+team member on the model the last line of `start` names: the Large pick that costs least
+per task of those a subscription the developer holds includes, since a team member
+shapes, plans and reviews. Where that line names none, start it on the tool's default
+model.
 
 | `--way` | How | Where |
 |---|---|---|
@@ -50,11 +62,11 @@ plans and reviews. Where that line names none, start it on the tool's default mo
 For `claude` or `cursor`, start each team member with
 `node .tropis/scripts/sprint.mjs launch <id>` in place of a session and its brief,
 and `--tool <tool>` to start one backlog item in a tool other than the sprint's way.
-`launch` starts each team member on the Large tier's first pick that the developer's
-subscription in that tool includes, by the name that tool's command line takes, or says
-why it starts on the tool's default model; pass `--model <model>` only to choose
-another. Each run starts at once, waits by itself for what its backlog item
-is blocked by, and works with nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
+`launch` starts each team member on the Large pick that costs least per task of those
+the developer's subscription in that tool includes, by the name that tool's command line
+takes, or says why it starts on the tool's default model; pass `--model <model>` only to
+choose another. Each run starts at once, waits by itself for what its backlog item is
+blocked by, and works with nobody watching. Then run `node .tropis/scripts/sprint.mjs watch` as a background
 command where this tool runs them; each time it ends, tell the developer the line it
 printed unless it is `SHIPPED`, and run it again until it says none is running.
 
@@ -83,7 +95,28 @@ one, tell the developer the tool's way, with a notification where the tool has o
 naming the backlog item and its reason. A `SHIPPED` line needs nothing: `status` reads
 shipped from the main branch, and a backlog item the main branch does not show as shipped
 is not shipped. Record each decision a team member reports with
-`node .tropis/scripts/sprint.mjs note <id> <decision>`.
+`node .tropis/scripts/sprint.mjs note <id> <decision>`. When `status` lists team members
+as ready to archive, archive them as 3a says.
+
+## 3a. Archive a finished team member's session
+
+When `status` lists team members as ready to archive, for each one, in this order:
+
+1. Read its session's last message and record each decision it reported with
+   `node .tropis/scripts/sprint.mjs note <id> <decision>`, unless
+   `node .tropis/scripts/sprint.mjs report` already lists it under the decisions team
+   members reported.
+2. Run `node .tropis/scripts/sprint.mjs archive <id>`. It refuses a team member whose
+   work has not all shipped on the main branch, or that is parked or stopped, and the
+   session then stays open.
+3. Archive that team member's session with the tool — in a Claude Code cloud
+   session, its archive session tool. Where the tool has no way to archive a session,
+   or the archive fails, tell the developer which session it is and that
+   it stays open.
+
+Never archive a parked or stopped team member's session: it waits for the
+developer. A bundle's session is archived once every backlog item in it has
+shipped, named by the bundle's first.
 
 ## 4. New backlog items
 

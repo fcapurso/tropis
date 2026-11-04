@@ -424,9 +424,79 @@ export function inclusionTable(picksText) {
 }
 
 /**
- * The prompt line naming the pick to run a plan on: the first model in the plan's tier,
- * then each tier above it, that one of the developer's recorded subscriptions includes
- * without a charge on top (FW-053). Null when the tier is not one of the five.
+ * Each model the tier table lists for the tier at `from` in the tier order and every
+ * tier above it — tier by tier, each in the table's own order — with the tier it is
+ * listed in. A model listed in two tiers keeps the first.
+ * @param {string} picksText
+ * @param {number} from
+ * @returns {{model: string, tier: string}[]}
+ */
+function picksFrom(picksText, from) {
+  const seen = new Set();
+  const out = [];
+  for (let i = from; i < TIER_ORDER.length; i++) {
+    const models = picksForTier(picksText, TIER_ORDER[i])
+      .split(';')
+      .map((part) => part.trim())
+      .filter((part) => part !== '' && !/^(or\s+)?any pick from a higher tier\.?$/i.test(part))
+      .map((part) => part.replace(/\s*\*\([^)]*\)\*\s*$/, ''));
+    for (const model of models) {
+      if (seen.has(model)) continue;
+      seen.add(model);
+      out.push({ model, tier: TIER_ORDER[i] });
+    }
+  }
+  return out;
+}
+
+/**
+ * Each model's usage per task, from the first dollar figure in its `Usage per task`
+ * cell of the picks file's inclusion table; null where the cell has none, such as
+ * `unmeasured`. Empty when the file has no such table.
+ * @param {string} picksText
+ * @returns {Map<string, number|null>}
+ */
+export function usagePerTask(picksText) {
+  const all = picksText.split('\n');
+  const start = all.findIndex((l) => l.startsWith(INCLUSION_HEADER));
+  const usage = new Map();
+  if (start === -1) return usage;
+  for (const line of all.slice(start + 1)) {
+    if (!line.startsWith('|')) break;
+    if (/^\|\s*-{3}/.test(line)) continue;
+    const cells = line.split('|').slice(1, -1).map((c) => c.trim());
+    if (cells.length < 2) continue;
+    const m = cells[1].match(/\$\s*(\d[\d,]*(?:\.\d+)?)/);
+    usage.set(cells[0], m ? Number(m[1].replace(/,/g, '')) : null);
+  }
+  return usage;
+}
+
+/**
+ * The candidate whose usage per task is least. One with no figure ranks after every one
+ * with a figure; on a tie the earlier candidate wins, so the plan's own tier comes before
+ * a tier above it. Null when there is no candidate.
+ * @template {{model: string}} T
+ * @param {T[]} candidates in the order `picksFrom` gives
+ * @param {Map<string, number|null>} usage
+ * @returns {(T & {cost: number|null})|null}
+ */
+function cheapest(candidates, usage) {
+  let best = null;
+  for (const candidate of candidates) {
+    const cost = usage.get(candidate.model) ?? null;
+    if (best === null || (cost !== null && (best.cost === null || cost < best.cost))) {
+      best = { ...candidate, cost };
+    }
+  }
+  return best;
+}
+
+/**
+ * The prompt line naming the pick to run a plan on: of the picks for the plan's tier and
+ * every tier above it that one of the developer's recorded subscriptions includes
+ * without a charge on top (FW-053), the one whose usage per task is least (FW-070).
+ * Null when the tier is not one of the five.
  * @param {string} picksText
  * @param {string} tier
  * @param {string|null} subscriptionsText the local record, or null when there is none
@@ -443,26 +513,23 @@ export function pickToUse(picksText, tier, subscriptionsText) {
   if (held.size === 0) {
     return '**Use:** not chosen — which subscriptions you have is not recorded on this machine. Run /refresh-model-tiers, or set TROPIS_SUBSCRIPTIONS.';
   }
-  for (let i = from; i < TIER_ORDER.length; i++) {
-    const models = picksForTier(picksText, TIER_ORDER[i])
-      .split(';')
-      .map((part) => part.trim())
-      .filter((part) => part !== '' && !/^(or\s+)?any pick from a higher tier\.?$/i.test(part))
-      .map((part) => part.replace(/\s*\*\([^)]*\)\*\s*$/, ''));
-    for (const model of models) {
-      const tools = included.get(model);
-      if (!tools) continue;
-      for (const [key, { name, subscriptions }] of tools) {
-        const mine = held.get(key);
-        if (mine && [...mine].some((sub) => subscriptions.has(sub))) {
-          return i === from
-            ? `**Use:** ${model}, in ${name} — the first pick for this tier that your subscriptions include.`
-            : `**Use:** ${model}, in ${name} — no pick for this tier is included in your subscriptions; this is the first included pick from the ${TIER_ORDER[i]} tier.`;
-        }
+  const candidates = [];
+  for (const { model, tier: listedIn } of picksFrom(picksText, from)) {
+    for (const [key, { name, subscriptions }] of included.get(model) ?? []) {
+      const mine = held.get(key);
+      if (mine && [...mine].some((sub) => subscriptions.has(sub))) {
+        candidates.push({ model, tier: listedIn, name });
+        break;
       }
     }
   }
-  return '**Use:** none — no pick for this tier or above is included in your subscriptions, and a model that costs extra is not used (FW-053).';
+  const best = cheapest(candidates, usagePerTask(picksText));
+  if (best === null) {
+    return '**Use:** none — no pick for this tier or above is included in your subscriptions, and a model that costs extra is not used (FW-053).';
+  }
+  return best.cost === null
+    ? `**Use:** ${best.model}, in ${best.name} — no included pick for this tier or above has a usage figure, so this is the first one, from the ${best.tier} tier.`
+    : `**Use:** ${best.model}, in ${best.name} — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the ${best.tier} tier.`;
 }
 
 /**
@@ -492,10 +559,10 @@ function commandLineNames(picksText) {
 }
 
 /**
- * The model a tool's command line should start a run of this tier on: the first pick of
- * the tier, then each tier above it, that the recorded subscription *in that tool*
- * includes and that has a command-line name for that tool. `model` is that name, or null
- * with `reason` saying why none could be named.
+ * The model a tool's command line should start a run of this tier on: of the picks for
+ * the tier and every tier above it that the recorded subscription *in that tool*
+ * includes, the one whose usage per task is least (FW-070), by its command-line name for
+ * that tool. `model` is that name, or null with `reason` saying why none could be named.
  * @param {string|null} picksText the picks file, or null when there is none
  * @param {string} tier
  * @param {string|null} subscriptionsText the local record, or null when there is none
@@ -514,23 +581,19 @@ export function pickForTool(picksText, tier, subscriptionsText, toolName) {
     return fail(`which ${toolName} subscription you have is not recorded on this machine.${refresh}`);
   }
   const from = TIER_ORDER.findIndex((t) => normalizeTier(t) === normalizeTier(tier || ''));
-  for (let i = Math.max(from, 0); i < TIER_ORDER.length; i++) {
-    const models = picksForTier(picksText, TIER_ORDER[i])
-      .split(';')
-      .map((part) => part.trim())
-      .filter((part) => part !== '' && !/^(or\s+)?any pick from a higher tier\.?$/i.test(part))
-      .map((part) => part.replace(/\s*\*\([^)]*\)\*\s*$/, ''));
-    for (const model of models) {
-      const entry = included.get(model)?.get(key);
-      if (!entry || ![...mine].some((sub) => entry.subscriptions.has(sub))) continue;
-      const name = commandLineNames(picksText).get(model)?.get(key);
-      if (!name || name.toLowerCase() === 'none') {
-        return fail(`the picks do not give ${toolName}'s name for ${model}.${refresh}`, model);
-      }
-      return { model: name, pick: model, reason: null };
-    }
+  const candidates = picksFrom(picksText, Math.max(from, 0)).filter(({ model }) => {
+    const entry = included.get(model)?.get(key);
+    return entry !== undefined && [...mine].some((sub) => entry.subscriptions.has(sub));
+  });
+  const best = cheapest(candidates, usagePerTask(picksText));
+  if (best === null) {
+    return fail(`no ${tier} pick or above is included in your ${toolName} subscription, and a model that costs extra is not used (FW-053).`);
   }
-  return fail(`no ${tier} pick or above is included in your ${toolName} subscription, and a model that costs extra is not used (FW-053).`);
+  const name = commandLineNames(picksText).get(best.model)?.get(key);
+  if (!name || name.toLowerCase() === 'none') {
+    return fail(`the picks do not give ${toolName}'s name for ${best.model}.${refresh}`, best.model);
+  }
+  return { model: name, pick: best.model, reason: null };
 }
 
 /** A checkout's own worktree setup, read by the dispatch command. */

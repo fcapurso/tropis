@@ -653,11 +653,11 @@ a reason to require a version.
 **Run the probe on the Large tier's included pick.** A probe judges, with only the
 repository, whether a change reaches the agent it was written for, which is the Large
 tier's kind of work (`.claude/framework/model-tiers.md`).
-`node .tropis/scripts/dispatch.mjs --tier Large` names the model: the first Large pick
-that a subscription the developer holds includes, as `/dispatch` would choose for a
-Large plan. Pass it as the probe's model, such as `claude -p --model <model>`; where it
-names none, run the probe on the tool's default model and say why in the record. Record
-the model with the tool and its version.
+`node .tropis/scripts/dispatch.mjs --tier Large` names the model: the Large pick that
+costs least per task of those a subscription the developer holds includes, as
+`/dispatch` would choose for a Large plan. Pass it as the probe's model, such as `claude
+-p --model <model>`; where it names none, run the probe on the tool's default model and
+say why in the record. Record the model with the tool and its version.
 
 **Judge the check by what the agent did, not by what it says it did.** A run that prints
 only the agent's final reply hides the commands it ran and what answered them, so a check
@@ -667,6 +667,19 @@ never ran it. Run the probe so its tool calls show — in Claude Code,
 hook's included — and quote the call and its answer in the record. Found reviewing the
 hook FW-040 added: the executor's probe passed but could not say whether the hook had
 fired, and a second run with the calls visible showed the refusal reaching the agent.
+
+**Keep the probe to the route the clause watches.** A clause that acts on one tool — a
+hook on file writes, say — is tested only by a probe that does the work through that
+tool. Give it the shell as well and it can write the same file with a heredoc, the hook
+never fires, and a run that met every content criterion proves nothing about the clause.
+So take away from the probe every route to the same effect that the clause does not
+watch. A list of allowed tools does not do it: it spares the probe a permission prompt
+and takes nothing away. In Claude Code, deny the others with `--disallowedTools` (the
+shell among them), or name the whole set with `--tools`. Then check the calls: a run
+that did the work through a route the clause does not watch is inconclusive, never a
+pass, and is run again with that route removed. Found in a probe of a hook on file
+writes, whose agent was given the file tools as allowed and wrote both files through
+the shell.
 
 **A probe on someone's own machine is not given only the repository.** The agent tool
 also loads that person's own instructions, the ones that apply to every project. When
