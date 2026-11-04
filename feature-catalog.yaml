@@ -6410,3 +6410,23 @@
   modules:
     - guards/team-member-cli.test.js
   refs: []
+
+# Found on 2026-11-04 taking v0.8.2 into this repository: the helper returned no steps
+# although the notes held two optional ones. The notes have headed the by-hand steps
+# "What to do by hand" since 0.7.2, and the helper still reads only "After updating", so
+# 0.7.2, 0.8.0, 0.8.1 and 0.8.2 all reached /update with no steps, required ones included.
+# Fails silently, so it is a backlog item by the backlog rule.
+- id: update-lists-the-release-steps
+  title: An update lists every step the release notes ask for
+  status: idea
+  value: Someone taking a release through /update is shown each step the notes say to do
+    by hand, required or optional, and /update does the required ones or asks about them.
+    Today the update helper reads steps only from a section headed After updating, which
+    the notes stopped using in 0.7.2, so every release since has reached projects with no
+    steps shown and nothing saying any were missed, among them 0.8.0's required step to
+    gate the main branch.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
