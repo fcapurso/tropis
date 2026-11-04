@@ -140,7 +140,7 @@ describe('imported rules', () => {
     expect(importsOf(text)).toEqual(['a/one.md']);
   });
   it('ignores a line with a space in its path', () => {
-    expect(importsOf('@foo bar\n@ok.md\n')).toEqual(['ok.md']);
+    expect(importsOf(['@foo bar', '@ok.md'].join('\n'))).toEqual(['ok.md']);
   });
   it('names the rule after the file', () => {
     expect(importedRuleName('.claude/framework/workflow.md')).toBe('imported-workflow');
