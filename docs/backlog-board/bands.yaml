@@ -322,7 +322,6 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
-    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4
