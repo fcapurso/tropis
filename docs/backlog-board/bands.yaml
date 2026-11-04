@@ -76,6 +76,32 @@ cursor-rules-return-after-summarize:
   seen:
     status: idea
     blockers: []
+commands-reach-cursor:
+  band: B
+  value: 3
+  valueWhy: Cursor is a supported tool, and nobody knows whether /dispatch, /next and
+    /sprint exist there.
+  effort: 2
+  effortWhy: A measurement in Cursor on the developer's machine, then a projection of
+    the commands if they are missing.
+  verdict: Measure next; it needs the developer's Cursor, so pair it with the Cursor
+    check framework-reaches-every-tool ends with.
+  seen:
+    status: idea
+    blockers: []
+document-rule-reaches-a-new-document:
+  band: D
+  value: 3
+  valueWhy: Hand-written current-state documents are the rot the framework exists to
+    prevent, and the rule against them reaches no agent writing one.
+  effort: 2
+  effortWhy: A shipped area rule whose area each project names, generated for both
+    tools like the others.
+  verdict: Decide first whether a shipped rule should name folders that each project
+    chooses for itself, before building it.
+  seen:
+    status: idea
+    blockers: []
 framework-calls-itself-one-thing:
   band: C
   value: 2
@@ -88,21 +114,6 @@ framework-calls-itself-one-thing:
     and whether projects' files move."
   seen:
     status: idea
-    blockers: []
-framework-doc-delivery:
-  band: B
-  value: 4
-  valueWhy: A framework document that never reaches the agent it governs has
-    failed three times in the same shape; this says whether that is now closed.
-  effort: 2
-  effortWhy: A written finding over the framework documents and two tools, with
-    no build.
-  bundle: tool-delivery
-  verdict: "Turned into an investigation on 2026-11-04: it reports what, if
-    anything, still keeps a framework document from the agent that needs it, and
-    decides whether the delivery map is worth building."
-  seen:
-    status: shaped
     blockers: []
 framework-installs-as-a-package:
   band: C
@@ -121,29 +132,16 @@ framework-reaches-every-tool:
   valueWhy: Cursor is a supported target and its agents get no workflow at all.
   effort: 3
   effortWhy: A projection of framework documents for Cursor and a guard comparing tools.
-  bundle: tool-delivery
   verdict: "Cursor is a supported target and still gets no workflow beyond the
-    entry file's fallback line. Waits for the framework-doc-delivery finding, which
-    says whether the Cursor projection and the guard are still needed."
+    entry file's fallback line. The framework-doc-delivery finding says project the
+    workflow as an always-applied Cursor rule, with a guard that what Claude Code loads
+    at start Cursor gets too; re-shape to that before planning."
   evidence: "2026-10-17 — templates/CLAUDE.md opens with a plain-text instruction
     to read workflow.md if the import did not expand; scripts/projections.js
     projects no framework document."
   seen:
     status: shaped
-    blockers: [framework-doc-delivery]
-instruction-files-have-a-delivery-map:
-  band: C
-  value: 3
-  valueWhy: Shows which instruction files reach which tool, and whether that was
-    measured.
-  effort: 3
-  effortWhy: A map every project keeps, and its check.
-  bundle: tool-delivery
-  verdict: "Waits for the framework-doc-delivery investigation, which says whether
-    a map every project keeps, a lighter guard, or nothing is needed."
-  seen:
-    status: shaped
-    blockers: [framework-doc-delivery]
+    blockers: []
 living-documents-stay-current:
   band: C
   value: 4
@@ -211,6 +209,18 @@ plan-folder-names-no-plugin:
   bundle: naming
   verdict: "Moving docs/superpowers/ in every project is a migration; decide the
     name and whether take-version moves it before building."
+  seen:
+    status: idea
+    blockers: []
+plan-tier-is-chosen-against-the-tiers:
+  band: C
+  value: 2
+  valueWhy: A wrong tier sends a plan to a model that is too weak or too costly, and
+    the author chooses it without the definitions in front of them.
+  effort: 1
+  effortWhy: A refusal in plan-binding.js beside the one --tier already has, and a
+    pointer in planning.md.
+  verdict: A cheap win from the doc-delivery finding; batch it with other dispatch work.
   seen:
     status: idea
     blockers: []
