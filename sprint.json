@@ -204,7 +204,8 @@
       "reason": "cursor.com is blocked by the cloud environment's network policy; needs the developer to allow it or run the item elsewhere"
     },
     "command-slots-spike": {
-      "state": "planning"
+      "state": "stopped",
+      "reason": "the cloud session could not attach the two adopter repositories the spike reads; needs the developer to grant access or run it where they are reachable"
     },
     "framework-reaches-every-tool": {
       "state": "planning"
