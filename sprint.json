@@ -215,5 +215,9 @@
       "state": "planning"
     }
   },
-  "notes": {}
+  "notes": {
+    "framework-doc-delivery": [
+      "Developer decided 2026-11-04: turned into an investigation of what is still missing; instruction-files-have-a-delivery-map and framework-reaches-every-tool wait for its finding."
+    ]
+  }
 }
