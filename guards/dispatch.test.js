@@ -604,17 +604,17 @@ describe('dispatch names the pick to use', () => {
   }
   const dispatch = (p) => run(p.root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
 
-  it('names the first included pick of the tier, with its tool, skipping a model missing from the inclusion table', () => {
+  it('names the included pick that costs least per task from the tier and above, ranking an unmeasured pick after a measured one', () => {
     const p = withPicks(PICKS, 'Cursor: Premium\n');
     try {
-      expect(dispatch(p).stdout).toContain('**Use:** Dogwood 1, in Cursor — the first pick for this tier that your subscriptions include.');
+      expect(dispatch(p).stdout).toContain('**Use:** Cedar 1, in Cursor — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Medium tier.');
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
   });
 
   it("goes up a tier when none of this tier's picks is included", () => {
     const p = withPicks(PICKS, 'Cursor: Plus\n');
     try {
-      expect(dispatch(p).stdout).toContain('**Use:** Cedar 1, in Cursor — no pick for this tier is included in your subscriptions; this is the first included pick from the Medium tier.');
+      expect(dispatch(p).stdout).toContain('**Use:** Cedar 1, in Cursor — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Medium tier.');
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
   });
 
@@ -622,7 +622,7 @@ describe('dispatch names the pick to use', () => {
     const p = withPicks(PICKS, '# mine\nclaude code: max\nCursor: none\n');
     try {
       const out = dispatch(p).stdout;
-      expect(out).toContain('**Use:** Alder 3, in Claude Code — no pick for this tier is included in your subscriptions; this is the first included pick from the Large tier.');
+      expect(out).toContain('**Use:** Alder 3, in Claude Code — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Large tier.');
       expect(out).not.toContain('**Use:** Birch 2');
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
   });
@@ -648,7 +648,7 @@ describe('dispatch names the pick to use', () => {
     try {
       const r = tierRun(p, 'Large');
       expect(r.status).toBe(0);
-      expect(r.stdout).toBe('**Use:** Alder 3, in Claude Code — the first pick for this tier that your subscriptions include.\n');
+      expect(r.stdout).toBe('**Use:** Alder 3, in Claude Code — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Large tier.\n');
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
     const q = withPicks(PICKS, 'Cursor: Premium\n');
     try {
@@ -708,7 +708,7 @@ describe('dispatch names the pick to use', () => {
       expect(w.stdout).toBe('Subscriptions recorded for 2 tools, on this machine only.\n');
       const file = readFileSync(join(p.root, '.git/tropis/subscriptions.txt'), 'utf8');
       expect(file.startsWith('# Written by /refresh-model-tiers. Never committed.\n')).toBe(true);
-      expect(dispatch(p).stdout).toContain('**Use:** Dogwood 1, in Cursor — the first pick for this tier that your subscriptions include.');
+      expect(dispatch(p).stdout).toContain('**Use:** Cedar 1, in Cursor — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Medium tier.');
     } finally { rmSync(p.parent, { recursive: true, force: true }); }
   });
 
@@ -734,6 +734,52 @@ describe('dispatch names the pick to use', () => {
     expect(binding.pickToUse(PICKS, 'Huge', 'Cursor: Premium')).toBeNull();
     // The tier's own order, not the inclusion table's.
     expect(binding.pickToUse(PICKS, 'Large', 'Claude Code: Max\nCursor: Premium'))
-      .toBe('**Use:** Birch 2, in Cursor — the first pick for this tier that your subscriptions include.');
+      .toBe('**Use:** Birch 2, in Cursor — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Large tier.');
+    const usage = binding.usagePerTask(PICKS);
+    expect(usage.get('Alder 3')).toBe(9);
+    expect(usage.get('Cedar 1')).toBe(1);
+    expect(usage.get('Dogwood 1')).toBeNull();
+    expect(binding.usagePerTask('| Tier | Models |\n|---|---|\n').size).toBe(0);
+    expect(binding.usagePerTask('| Model | Usage per task | Included on |\n|---|---|---|\n| X | $1,234.50 per task | Cursor: Pro |\n').get('X')).toBe(1234.5);
+  });
+
+  // A dearer pick in the plan's own tier and a cheaper one above it, both included.
+  const dearerBelow = (fig) => `**Last verified: ${today()}.**
+
+| Tier | Models |
+|---|---|
+| **Large** | Alder 3 *(all)* |
+| **Medium–large** | Fig 5 *(all)*; or any pick from a higher tier |
+| **Medium** | Any pick from a higher tier |
+| **Small–medium** | Any pick from a higher tier |
+| **Small** | Any pick from a higher tier |
+
+| Model | Usage per task | Included on | Command-line name |
+|---|---|---|---|
+| Alder 3 | $3.97 per task (Example Index v1, high) | Claude Code: Max | Claude Code: alder-3 |
+| Fig 5 | ${fig} per task (Example Index v1, high) | Claude Code: Max | Claude Code: fig-5 |
+`;
+
+  it('† takes a cheaper included pick from a tier above over a dearer one in its own tier', () => {
+    const p = withPicks(dearerBelow('$9.08'), 'Claude Code: Max\n');
+    try {
+      const line = '**Use:** Alder 3, in Claude Code — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Large tier.\n';
+      expect(tierRun(p, 'Medium–large').stdout).toBe(line);
+      expect(tierRun(p, 'Medium').stdout).toBe(line);
+      expect(tierRun(p, 'Small').stdout).toBe(line);
+    } finally { rmSync(p.parent, { recursive: true, force: true }); }
+  });
+
+  it('† keeps the pick in its own tier when it costs less, or the same', () => {
+    for (const fig of ['$2.50', '$3.97']) {
+      expect(binding.pickToUse(dearerBelow(fig), 'Medium–large', 'Claude Code: Max'))
+        .toBe('**Use:** Fig 5, in Claude Code — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Medium–large tier.');
+    }
+  });
+
+  it('† names the first included pick going up when no included pick has a usage figure', () => {
+    const unmeasured = PICKS.replace('$1 per task', 'unmeasured').replace('$4 per task', 'unmeasured');
+    expect(binding.pickToUse(unmeasured, 'Small', 'Cursor: Premium'))
+      .toBe('**Use:** Dogwood 1, in Cursor — no included pick for this tier or above has a usage figure, so this is the first one, from the Small tier.');
   });
 });

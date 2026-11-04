@@ -997,12 +997,12 @@ describe('the team member\'s model', () => {
   }
   const modelLine = (r) => lines(r).find((l) => l.includes('Large tier'));
 
-  it('† a: start for a session sprint names the first included Large pick, as dispatch does', () => {
+  it('† a: start for a session sprint names the included Large pick that costs least per task, as dispatch does', () => {
     const clone = setup(PICKS, RECORD);
     const r = run(clone, ['start', 'e1', '--way', 'session']);
     expect(lines(r)).toHaveLength(3);
     expect(lines(r)[2]).toBe(
-      'Sprint: team members run on the Large tier. **Use:** Alder 3, in Claude Code — the first pick for this tier that your subscriptions include.',
+      'Sprint: team members run on the Large tier. **Use:** Alder 3, in Claude Code — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Large tier.',
     );
     expect(lines(r)[2].split('tier. ')[1]).toBe(binding.pickToUse(PICKS, 'Large', RECORD));
   });
