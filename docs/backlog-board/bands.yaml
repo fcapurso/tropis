@@ -213,7 +213,7 @@ probe-keeps-to-its-tools:
   verdict: "Small and worth doing when the workflow's fresh-agent section is next
     touched; until then a probe of a hook can report a pass it did not earn."
   seen:
-    status: idea
+    status: building
     blockers: []
 project-chooses-its-repository-host:
   band: B

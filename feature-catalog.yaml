@@ -5516,18 +5516,26 @@
 # Write hook the probe was testing never fired, and only --disallowedTools Bash made it.
 - id: probe-keeps-to-its-tools
   title: A fresh-agent check keeps the probe to the tools it names
-  status: idea
+  status: building
   value: A fresh-agent check that tests a hook on one tool passes or fails on whether the
     agent used that tool. When the probe can reach the shell anyway, it can do the work
     through a route the hook never sees, and the check then proves nothing about the
     clause it was written for. The workflow's fresh-agent section says how to run a probe
     with its calls visible, and nothing about keeping it to its tools.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The workflow's fresh-agent section tells whoever runs a probe of a clause that
+      watches one route to take every other route away from the probe, and says that a
+      list of allowed tools does not do that.
+    - It says a run that did the work through a route the clause does not watch is
+      inconclusive and is run again with that route removed, never recorded as a pass.
+    - A fresh agent asked to set up the check for an invented hook on one tool removes the
+      shell from its probe, recorded in the commit body.
   type: bug
   layer: product
   modules: []
   refs:
     - docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md
+    - docs/superpowers/plans/2026-11-04-probe-keeps-to-its-tools.md
 # Shipped by docs/superpowers/plans/2026-11-02-waits-end-when-something-happens.md.
 # Criterion 1 - merge-token.test.js, takes the token after two hours of waiting on a
 # holder that keeps pushing. Criterion 2 - merge-token.test.js, stops naming a holder with
