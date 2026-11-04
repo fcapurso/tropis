@@ -207,6 +207,9 @@
     },
     "framework-reaches-every-tool": {
       "state": "planning"
+    },
+    "capture-at-write-tests-pass-under-load": {
+      "state": "planning"
     }
   },
   "notes": {}
