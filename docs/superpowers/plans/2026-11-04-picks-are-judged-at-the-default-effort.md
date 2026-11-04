@@ -668,3 +668,89 @@ Commit.
 3. `git push -u origin plan/picks-are-judged-at-the-default-effort`. **Do not open a
    pull request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+### Task completion
+
+- **Task 0, setup.** Done. `npm --prefix .tropis ci` completed with an npm audit notice
+  and no failure. The worktree was clean. `git --version`: git 2.43.0; `node --version`:
+  v22.23.4; `uname -sm`: Linux x86_64. The self-check passed before any change.
+- **Task 1, the test, red.** Done, commit `cbc829f`. The dispatch guard, run alone,
+  failed the two expected cases: `dispatch command › tells /refresh-model-tiers to admit
+  to Large only models within 1 point of the best pick` and `dispatch command › tells
+  /refresh-model-tiers to judge each pick at the effort a tool starts it at`.
+- **Task 2, the command and the decision.** Done, commit `a4a782c`. The guard, run alone,
+  passes: `Tests: 42 passed, 42 total`.
+- **Task 3, the picks.** Done, commit `8d5c84c`. The picks file is the plan block copied
+  with the plan's own awk command; the diff against it is empty. The tier table gives
+  the five cells in order (Large: Claude Opus 5.5 *(all)*; Medium–large: Gemini 4 Argon
+  and Fable 5.1; Medium: DeepSeek V4.1 Flash 1017, Muse Wonder and Grok 4.7; Small–medium:
+  Haiku 5.5, Sonnet 5.5, GPT-5.6 Sol and Gemini 3.8 Flash; Small: GPT-5.6 Luna, Composer
+  2.5 and GPT-5.6 Terra). The inclusion table has 13 rows.
+- **Task 4, the backlog.** Done, commit `93b8800`. Status set to `shipped`, modules set,
+  the Shipped comment placed above the item's id line, and the item's 12 lines removed
+  from `docs/backlog-board/bands.yaml`. `docs/backlog-board/index.html` was not changed.
+- **Task 5, verification and handover.** Steps 1 and 2 done (this section, and its
+  commit). Step 3, the push, follows this report.
+
+### Verification results
+
+Tool and platform for every result: git 2.43.0, Node v22.23.4, Linux x86_64.
+
+- `npm --prefix .tropis test`, after Task 4: `Test Suites: 13 passed, 13 total` and
+  `Tests: 180 passed, 180 total`.
+- `bash scripts/check-blueprint.sh` on HEAD `93b8800` (the commit before this report):
+  the last line of the run is `Self-check passed: every guard caught its defect, the
+  clean baseline passed, and the framework repository's own guards passed.` It exited 0.
+  It was run twice on that HEAD; the second run finished in the background and its
+  output has the same last line.
+- The scope check, `git diff --stat origin/main...HEAD` before this report: six files,
+  each in *File Structure*: `commands/refresh-model-tiers.md`, `docs/backlog-board/bands.yaml`,
+  `docs/model-picks.md`, `feature-catalog.yaml`, `framework/DECISIONS.md`,
+  `guards/dispatch.test.js`. Totals: 262 insertions, 120 deletions.
+- The fresh-agent check was not run in any commit (see *Judgment calls*).
+
+### Scope
+
+Only the six files above, plus this report in the plan file. `docs/backlog-board/index.html`
+was not touched. No file under `.claude/`, `.cursor/`, `.tropis/`, `CLAUDE.md` or
+`AGENTS.md` changed. No dependency added, and no guard or test removed or lowered: the
+one changed guard line is the plan's replacement, and one case was added.
+
+### Judgment calls
+
+- **Criterion-to-cover comments in the catalog.** *File Structure* says the catalog
+  change carries comments mapping each acceptance criterion to its cover; Task 4 step 1
+  does not list them. I added them as comments inside the item's `acceptanceCriteria`
+  block, above `type:`. The criteria text is unchanged.
+- **Commit bodies.** Each commit body names the plan and the backlog item and, for the
+  command commit, says the fresh-agent check was not run in that commit, as the plan
+  directs.
+- **Scratch files.** The awk extraction for Task 3 wrote to a `mktemp` directory under
+  `/tmp`, not the session scratchpad. The file is outside the repository and was not
+  committed.
+- **Hook reminders.** Writing `framework/DECISIONS.md` and `commands/` triggered the hook's
+  reminder about capturing learnings and the fresh-agent check. Per *Traps*, it is noted
+  here and left for the specifying session's review.
+
+### What the plan got wrong
+
+- *File Structure* asks for criterion-to-cover comments in the catalog; Task 4 step 1 does
+  not. The plan is internally inconsistent on this point; the comments were added (above).
+- The Task 1 guard run was first attempted before the test edit applied (the first
+  `Edit` was refused because the file had not been read in this session). The guard run
+  in that attempt covered the unedited file, so its `41 passed` result was discarded; the
+  red run was taken after the edit was committed.
+- A no-op `Edit` was sent by mistake during Task 4; it changed nothing.
+
+### Outstanding
+
+- **No screen, so no developer check.** The change has no user-visible surface; the
+  review record should say so and skip the manual check (per the workflow's handover rules).
+- **Fresh-agent check.** Not run. `commands/refresh-model-tiers.md` changes what an agent
+  is told to do, so the specifying session runs the check in review, as the plan says.
+- **Not re-read this pass:** the Cursor subscriptions, the command-line names, Arena
+  WebDev and the departures, as the plan's Global Constraints and the picks file record.
+- **Release note.** A release-note line is the developer's, at `/release`.
+- **Pull request.** Not opened, reviewed or merged; the specifying session does those.
