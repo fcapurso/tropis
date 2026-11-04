@@ -160,3 +160,63 @@ this plan, all in *File Structure*. Worktree: the sibling `../tropis-probe-tools
 ### Outstanding
 
 - No screen. Nothing else.
+
+## Review record
+
+Reviewed by a fresh reviewer: Claude Code 2.1.318, model claude-opus-5-5, on Linux
+x86_64; git 2.43.0, node v22.23.4. It had only this repository and the branch
+`plan/probe-keeps-to-its-tools`, and did not write the change.
+
+### Checks re-run
+
+- `git diff origin/main...HEAD --stat`: four files, all in the plan's File Structure.
+- `claude --help` in 2.1.318: `--allowedTools` is a "list of tool names to allow",
+  `--disallowedTools` a "list of tool names to deny", and `--tools` specifies "the list
+  of available tools from the built-in set". The paragraph's account of the three flags
+  agrees; that an allowed-tools list takes nothing away rests on the two 2026-11-01 runs
+  the backlog item's comment records, which is the evidence the paragraph cites.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 175 passed,
+  175 total`.
+- `bash scripts/check-blueprint.sh` on the branch's `HEAD`: "Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed." `private-material` passed on the full copy of `HEAD`.
+- A search of the added lines for home paths, hostnames, email-like strings, session ids
+  and Atlassian sites found nothing; no personal or computer names appear.
+- Read the body of `6d551d8`: it records the probe's tool and version (Claude Code
+  2.1.318), model (claude-opus-5-5), OS and architecture (Linux x86_64), the command
+  with its calls visible, what the probe did and said, and the doc closeout.
+
+### Found
+
+- **The paragraph is true and sits where it belongs.** It follows *Judge the check by
+  what the agent did* and builds on it ("Then check the calls"), and ends with one
+  sentence of provenance, as its neighbours do. It names no path under `docs/`,
+  `scripts/` or `.claude/`, so `framework-integrity` has nothing to resolve.
+- **Each backlog criterion is met.** Criterion 1: "take away from the probe every route
+  to the same effect that the clause does not watch" and "A list of allowed tools does
+  not do it". Criterion 2: "inconclusive, never a pass, and is run again with that route
+  removed". Criterion 3: the probe's command named `--tools "Read,Glob,Grep,Write"`,
+  which leaves out the shell, and it named the heredoc route; recorded in the commit
+  body.
+- **One judgment point, not a defect:** the probe ran with read tools only and described
+  the check rather than running one, so it tests the wording, not a hook firing. That is
+  what criterion 3 asks, and the handover says so.
+- Mechanical defects needing a fix before merge: none.
+
+### Outstanding disposition
+
+- No screen. Nothing outstanding.
+
+### Learnings routed
+
+- No rule, decision or architecture change; the workflow paragraph is the durable place.
+  Nothing for the upstream queue: this repository is the upstream, and the lesson is the
+  paragraph itself.
+
+### Merged because
+
+The paragraph does what the backlog item's three criteria ask and agrees with what
+`claude --help` says the flags do, the fresh-agent check is recorded in the commit body
+with tool, version, model, OS and architecture, the installed release's checks and the
+self-check are green, the diff stays inside the plan's files and holds no private
+material. The plan's merge authority is self-merge after this review: it should merge.
