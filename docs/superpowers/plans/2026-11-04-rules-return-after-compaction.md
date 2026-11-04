@@ -114,3 +114,79 @@ quotes, which are kept outside the repository, from the excerpts committed in th
 
 **Model tier: Large** (the author builds it). **Merge authority: self-merge after the
 fresh reviewer's record,** by the delivering session.
+
+## Handover report
+
+### Task completion
+
+1. **Probe and runs: done.** Seven sessions in a throwaway repository in the session's
+   scratchpad: A, B, D (control), E (automatic compaction), F (short rule, edit without
+   a read), G (60-clause rule) headless, and one interactive session through `tmux` for
+   `/clear` and a second `/compact`. Runs F and G were added beyond the plan's four, to
+   test what the summary keeps and whether an edit without a read brings the rule back.
+2. **Finding: done**, `docs/superpowers/specs/2026-11-04-rules-after-compaction-finding.md`.
+3. **`framework/rule-delivery.md` and FW-009's consequence: done.** The result changed
+   FW-009's consequence, which named this backlog item as the open question.
+4. **Fresh-agent check: done**, outcome below.
+5. **Backlog: done.** `rules-return-after-compaction` shipped, its band removed;
+   `cursor-rules-return-after-summarize` added as an idea, band C.
+6. This report; the fresh reviewer writes the review record.
+
+### Verification results
+
+All on Claude Code 2.1.318, node v22.23.4, git on Ubuntu 24.04.5 LTS, Linux x86_64.
+
+- `bash scripts/check-blueprint.sh` on the branch's committed content: `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`, exit 0.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 175 passed,
+  175 total`.
+- `node .tropis/scripts/plan-overlap.mjs --claim` on this plan: `No overlap: … shares no
+  file with a plan in building.`
+- `node .tropis/scripts/dispatch.mjs` on this plan validates (the plan check passes).
+- Measurements: the finding's *Results* table, read from each session's transcript.
+- **Fresh-agent check** on the `rule-delivery.md` and FW-009 change: `claude -p
+  --model claude-opus-5-5 --output-format stream-json --verbose`, Claude Code 2.1.318,
+  from this worktree, no user-level instructions present (`~/.claude/CLAUDE.md` absent).
+  Task: an invented proposal for a SessionStart hook that re-prints every area rule
+  after `/compact` or `/clear`; decide from `framework/` and `rules/` whether to build
+  it. Its calls: a grep for `compact|/clear|SessionStart` in `framework/` and `rules/`,
+  reads of `framework/rule-delivery.md` lines 35–70 and FW-008/FW-009 in
+  `framework/DECISIONS.md`. Its answer: "do not build the compact/clear SessionStart
+  hook. After `/compact`, automatic compaction or `/clear`, Claude Code puts an area rule
+  back by itself", naming the one-edit gap, FW-008, and Cursor as unmeasured. It found
+  what the change intended.
+
+### Scope
+
+`git diff --stat origin/main...HEAD`: `docs/backlog-board/bands.yaml`, this plan, the
+finding, `feature-catalog.yaml`, `framework/DECISIONS.md`, `framework/rule-delivery.md`
+— every one in the File Structure table. Worktrees: `../tropis-rules-compaction` for the
+claim, `../tropis-rules-after-compact` for this branch, stacked on the claim commit and
+rebased onto `main` once the claim lands.
+
+### Judgment calls
+
+- The Cursor half is split into its own backlog item (see *Shape*).
+- `/clear` was measured interactively only: headless `/clear` starts a new session id
+  and resuming the old one restores the cleared conversation, so it measures nothing.
+- Automatic compaction was forced with `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=1`, an
+  environment variable this cloud session already sets (to 80); the transcript's
+  `"trigger":"auto"` confirms it ran as automatic compaction.
+- The recommendation leaves the first-edit gap alone rather than proposing a backlog
+  item; it is recorded in `rule-delivery.md` so it can be reopened with evidence.
+- The `claude` banner reads "Claude API" in this cloud session; no API key was set, and
+  the child processes used the session's own sign-in, which is the developer's plan.
+
+### What the plan got wrong
+
+- It listed `docs/backlog-board/index.html`; the board is not committed here, and the
+  row was removed before the claim.
+- Its four runs could not show the first-edit gap; runs F and G were needed.
+
+### Outstanding
+
+- Why the interactive `/compact` restored the rule file itself and the headless ones did
+  not was not established; either way the rule was back before the agent's next action
+  in the area had a result.
+- Cursor: `cursor-rules-return-after-summarize`, needing the developer at Cursor.
