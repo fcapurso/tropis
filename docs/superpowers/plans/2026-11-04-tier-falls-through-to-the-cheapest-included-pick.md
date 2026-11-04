@@ -710,3 +710,74 @@ Commit. Run `bash scripts/check-blueprint.sh` and paste its last line.
 3. `git push -u origin plan/tier-falls-through-to-the-cheapest-included-pick`. **Do not
    open a pull request**, write a review record, set auto-merge or merge. Leave the
    worktree in place.
+
+## Handover report
+
+### Task completion
+
+- Task 0, setup in the worktree: done. `npm --prefix .tropis ci` ran; `git status` was clean; `scripts/check-blueprint.sh` passed on the untouched base (`e2b6461`).
+- Task 1, the tests, red: done, commit `d76e44c`. The three guard files were run alone, on a staged copy of HEAD (method below). 12 cases failed as the plan expects: 9 in `guards/dispatch.test.js` (six changed, three added), the renamed case in `guards/sprint.test.js`, and two in `guards/team-member-cli.test.js` (the launch case and the added `pickForTool` case).
+- Task 2, the code: done, commit `3fb2042`. The three guard files: 124 passed, 0 failed.
+- Task 3, the documents: done, commit `f360d84`. Every quoted before-text matched the file, with one addition below.
+- Task 4, backlog and board: done, commit `02de16a`. The item is `shipped`, `modules` names the two scripts, `refs` keeps the plan, and the criterion comment is added. The item's block in `docs/backlog-board/bands.yaml` was removed, since the item had one. `docs/backlog-board/index.html` was not touched: nothing rebuilt it.
+- Task 5, verification and handover: this section, plus the push. No pull request was opened, and no review record, auto-merge or merge was done, as the plan says.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, on Linux x86_64.
+
+- `npm --prefix .tropis test` after Task 4 (on `02de16a`):
+  `Test Suites: 13 passed, 13 total` / `Tests: 181 passed, 181 total`
+- Three changed guard files, run alone on a staged copy of HEAD at `02de16a`, with the framework jest config and the worktree's installed jest:
+  `Test Suites: 3 passed, 3 total` / `Tests: 124 passed, 124 total`
+- Red run after Task 1 (staged `d76e44c`): `Tests: 12 failed, 112 passed, 124 total`. Failing names: the nine dispatch cases above, the sprint case `† a: start for a session sprint names the included Large pick that costs least per task, as dispatch does`, the team-member launch case `† starts the tool on the pick its picks name, and says so`, and `pickForTool › † takes the included pick that costs least per task, whatever its place in the tier`. A tenth name, `launch › † for cursor, writes the grants into a worktree that has none and leaves an existing file alone`, failed once in that red run and passed when run alone and in every later run. It is not in the plan's expected list. It looks like a timing failure under load from the self-check running at the same time, but I did not confirm that.
+- Self-check, baseline before any change (`e2b6461`, run in the worktree): last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Self-check on committed HEAD `02de16a`, run in the worktree: last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Self-check on the code commit `3fb2042` was started but not completed, and its output was not kept. It was killed and then rerun on `02de16a`.
+
+The self-check is run on the committed HEAD. The report commit added below is a new HEAD, so the self-check is run again on it before the push, and its last line is reported in the final message.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (at `02de16a`, base `e2b6461`):
+
+```
+RELEASES.md                     |   4 ++
+commands/refresh-model-tiers.md |   7 +-
+commands/sprint.md              |  11 ++--
+docs/backlog-board/bands.yaml   |  14 ----
+docs/model-picks.md             |   5 +-
+feature-catalog.yaml            |   8 ++-
+framework/DECISIONS.md          |  36 ++++++++++
+framework/model-tiers.md        |  13 ++--
+framework/workflow.md           |   6 +-
+guards/dispatch.test.js         |  60 +++++++++++++++--
+guards/sprint.test.js           |   4 +-
+guards/team-member-cli.test.js  |  15 ++++-
+scripts/plan-binding.js         | 143 +++++++++++++++++++++++++++++-----------
+scripts/sprint.mjs              |   2 +-
+templates/README.md             |   4 +-
+15 files changed, 245 insertions(+), 87 deletions(-)
+```
+
+Every file is in the plan's File Structure table. The worktree actually used is the sibling worktree `../tropis-cheapest-pick`, on branch `plan/tier-falls-through-to-the-cheapest-included-pick`, created from `origin/main` by `isolate-for-plan.sh`. The main checkout was not edited.
+
+### Judgment calls
+
+- `commands/refresh-model-tiers.md` has a second sentence saying `/dispatch` names "the first one the developer's subscriptions include" (in the prose about inside-a-tier ordering, around line 105). It is not in the plan's before-text list, but the change makes it false, and the file is already in the table. I changed it to name the cheapest included pick from the plan's tier and every tier above it.
+- The guard-run method for Task 1 onward: the staged copy needed a `package.json` with `"type": "module"` at its root, which the plan's method does not mention. I added it to the staged copy only, not to the repository.
+- The FW-070 entry, the RELEASES bullet and every document edit were applied exactly as the plan wrote them. Nothing was re-wrapped beyond what the plan allowed.
+
+### What the plan got wrong
+
+- It names `07b3996` as the base it verified against. `origin/main` was `e2b6461` when the work started, one commit later. The plan's claims were still true on that base: the code, tests and documents it quotes matched.
+- The "before" text for `commands/refresh-model-tiers.md` covers only the picks template's header sentence. The same file's prose at line 105 also says "the first one", which the plan's Traps and file list do not mention. See Judgment calls.
+- The Task 1 red-run list omits the Cursor grants launch case shown above. It passed on rerun, and it is not caused by this change.
+- The method for running the three guards alone says "run them the way the self-check runs them" but does not say that the staged tree needs a root `package.json` with `"type": "module"`. Without it every suite fails to load with `Cannot use import statement outside a module`.
+
+### Outstanding
+
+- No developer check: the change has no screen, so there is no `/manual-check` step.
+- The fresh-agent check for `framework/workflow.md`, `framework/model-tiers.md` and `commands/sprint.md` is owed, and the specifying session runs it, as the plan says. The executor did not run it.
+- The review record, the pull request and the merge are the specifying session's.
+- The timing-looking failure of the Cursor grants case in the red run is unexplained. It did not recur in the three later runs, and no rerun was used to hide it.
