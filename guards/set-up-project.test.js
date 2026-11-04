@@ -218,7 +218,9 @@ describe('set-up-project.sh', () => {
       const rules = readdirSync(join(dir, '.claude/rules')).map((f) => basename(f, '.md')).sort();
       const projections = readdirSync(join(dir, '.cursor/rules')).map((f) => basename(f, '.mdc')).sort();
       expect(rules).toEqual(shipped);
-      expect(projections).toEqual(shipped);
+      // Each file AGENTS.md imports also gets an always-applied Cursor rule, imported-<name>.
+      expect(projections.filter((n) => !n.startsWith('imported-'))).toEqual(shipped);
+      expect(projections).toContain('imported-workflow');
       // No shipped file carries the project's paths; the shipped text has no header.
       for (const f of mdIn('rules')) {
         expect(readFileSync(join(dir, '.tropis/rules', f), 'utf8').startsWith('---')).toBe(false);
