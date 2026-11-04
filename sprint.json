@@ -203,8 +203,7 @@
       "state": "planning"
     },
     "command-slots-spike": {
-      "state": "stopped",
-      "reason": "the cloud session could not attach the two adopter repositories the spike reads; needs the developer to grant access or run it where they are reachable"
+      "state": "planning"
     },
     "framework-reaches-every-tool": {
       "state": "planning"
