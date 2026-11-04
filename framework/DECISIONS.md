@@ -2197,3 +2197,32 @@ team member and fresh reviewer then draws on Opus 5.5, about three times Sonnet 
 usage per task on CursorBench 4.0 at High; a developer short of allowance lowers a plan's
 tier by reshaping it so a check exists, not by a cheaper model standing in. Every
 subscription that includes a Large pick today includes Opus 5.5.
+
+## FW-068: Cursor receives what AGENTS.md imports as an always-applied rule
+
+**Date:** 2026-11-04 · **Status:** Accepted; built by the backlog item
+`framework-reaches-every-tool`.
+
+**Decision:** The rule generator reads the import lines of the root `AGENTS.md` and
+writes each imported file as `.cursor/rules/imported-<basename>.mdc` with
+`alwaysApply: true`. Its `--check` fails when one is missing, stale, edited by hand or
+extra, and when an import names a file that does not exist; the self-check plants a
+missing one. The entry file's fallback paragraph stays, reworded to read the workflow only
+when it is not already in context.
+
+**Evidence:** The framework-doc-delivery finding (2026-11-04) shows Claude Code loads the
+workflow before any tool call through the import, and that Cursor does not expand the
+import, so it has the workflow only if its agent obeys the fallback sentence, which
+nobody has measured. The rule-delivery measurement (Cursor 3.24.12, 2026-10-15) shows an
+always-applied rule reaches a Cursor agent. Source: none in particular.
+
+**Rejected:** Keeping only the fallback sentence (unmeasured, and a delivery that depends
+on the agent choosing to follow an instruction is what the first requirement of
+rule-delivery rules out). Measuring in Cursor first (needs the developer's machine, and
+the projection makes the answer moot). Projecting the workflow by name (a project that
+imports a second document would not get it).
+
+**Consequences:** A project gets the file at its next update, and it follows each
+release's workflow. Cursor spends on the workflow the context Claude Code already spends
+on it. The fallback paragraph stays for projects not yet updated. A project rule named
+`imported-<x>` is refused.

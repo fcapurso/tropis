@@ -14,6 +14,7 @@
  * Pure — text in, values out. No I/O.
  */
 import { createHash } from 'node:crypto';
+import { basename } from 'node:path';
 
 /**
  * A rule file's area and its body without the header.
@@ -143,4 +144,46 @@ export function checkStamp(text) {
   const m = HASH_LINE.exec(`${last}\n`);
   if (!m) return { generated: false, intact: false };
   return { generated: true, intact: sha256(`${lines.join('\n')}\n`) === m[1] };
+}
+
+/**
+ * The repository-relative paths `AGENTS.md` imports: every line that is exactly `@<path>`,
+ * with no space in the path. Fenced code blocks and HTML comments do not count, because a
+ * tool that expands imports skips them too. In order, each path once.
+ * @param {string} agentsText
+ * @returns {string[]}
+ */
+export function importsOf(agentsText) {
+  const found = [];
+  let fenced = false;
+  for (const line of agentsText.replace(/<!--[\s\S]*?-->/g, '').split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; continue; }
+    if (fenced) continue;
+    const m = /^@(\S+)$/.exec(line);
+    if (m && !found.includes(m[1])) found.push(m[1]);
+  }
+  return found;
+}
+
+/** The name of the Cursor rule written for an imported file: `imported-<basename>`. */
+export function importedRuleName(path) {
+  return `imported-${basename(path, '.md')}`;
+}
+
+/**
+ * The Cursor file for a document `AGENTS.md` imports: always applied, because Cursor does
+ * not expand the import and an always-applied rule is what it measurably receives
+ * (framework/rule-delivery.md).
+ * @param {string} name The rule name, `importedRuleName`'s. @param {string} body The document.
+ */
+export function renderCursorAlways(name, body) {
+  return stamped([
+    '---',
+    `description: ${name} (generated from an AGENTS.md import — do not edit)`,
+    'alwaysApply: true',
+    '---',
+    '',
+    body.trimEnd(),
+    '',
+  ].join('\n'));
 }

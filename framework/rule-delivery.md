@@ -68,6 +68,10 @@ Measured in the project this framework came from, in fresh sessions, with a real
   did. The body of a description-only rule did not attach; its description was listed
   from the start of the chat. Tables and versions are in the framework repository,
   docs/superpowers/specs/2026-10-15-cursor-area-rules-finding.md.
+  Because Cursor receives an always-applied rule and does not expand an `@` import, the
+  generator writes each file `AGENTS.md` imports, the workflow included, as
+  `.cursor/rules/imported-<name>.mdc` with `alwaysApply: true`, so a Cursor agent has it
+  from the start (FW-068).
   The command-line agent (`cursor-agent` 2025.09.18-7ae6800, measured 2026-10-27) receives
   the root `AGENTS.md` at session start, with no tool call, and does not expand an `@`
   import inside it — which is why the entry instructions live there (FW-031). Run it with

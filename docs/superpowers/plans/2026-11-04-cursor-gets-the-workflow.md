@@ -224,6 +224,7 @@ Source: none in particular.
 | `scripts/generate-rules.mjs` | writes and checks the imported rules |
 | `guards/rules-generated.test.js` | front-matter case widened; new unit cases |
 | `scripts/check-conformance.sh` | one `CASES` line |
+| `guards/set-up-project.test.js` | the `.cursor/rules/` expectation: area-rule projections equal the shipped rules, plus `imported-workflow` (added at review, 2026-11-04) |
 | `fixtures/defects/missing-imported-rule/AGENTS.md` | new defect fixture |
 | `fixtures/defects/missing-imported-rule/.claude/framework/second.md` | new defect fixture |
 | `templates/AGENTS.md` | the fallback paragraph |
@@ -299,3 +300,145 @@ operating system's temporary directory) and paste the first six lines of
    is the reviewer's). Commit.
 3. `git push -u origin plan/cursor-gets-the-workflow`. **Do not open a pull request**,
    write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+All tasks done. Tasks 2 to 4 were committed before Task 1's red run was captured; that
+evidence was captured afterwards (below). The executor stopped once at the first
+self-check because `guards/set-up-project.test.js` was not in the File Structure; the
+specifying session added it (aa79de2) and the executor made the change.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, jest from `.self-check/`, Linux x86_64.
+
+- Red (Task 1): the new `rules-generated.test.js` run against `scripts/rule-areas.js` and
+  `scripts/generate-rules.mjs` from a990b6d, in a scratch export of the branch. The suite
+  fails to load, so every case is red: `SyntaxError: The requested module
+  '../scripts/rule-areas.js' does not provide an export named 'importedRuleName'`, `Tests: 0 total`.
+- Generated file (Task 2), in a scratch project composed from `fixtures/base` and the source
+  scripts, framework documents, rules and template `AGENTS.md`:
+  ```
+  ---
+  description: imported-workflow (generated from an AGENTS.md import — do not edit)
+  alwaysApply: true
+  ---
+
+  # Development workflow
+  ```
+  `generate-rules.mjs --check`: `rules up to date`, exit 0.
+- Defect (Task 3), with the `missing-imported-rule` overlay copied over that project:
+  ```
+  rules out of date — run: npm --prefix .tropis run rules
+    .cursor/rules/imported-second.mdc: missing
+  ```
+  exit 1. Self-check line: `caught      missing-imported-rule  rules-generated`.
+- `npm --prefix .tropis test`: `Tests:       179 passed, 179 total`.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, the
+  clean baseline passed, and the framework repository's own guards passed.` (the final run
+  of the self-check is stated in Scope below).
+- Guard command: the self-check's own, `node --experimental-vm-modules
+  .self-check/node_modules/.bin/jest --config <stage>/jest.config.js guards/<name>.test.js`
+  in an export of `HEAD` with `FRAMEWORK_ROOT` set to a composed project.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` lists only files in the File Structure table
+(including `guards/set-up-project.test.js` and the plan file). Worktree used:
+`../tropis-cursor-workflow` of the `tropis` checkout. `projectionOf` in
+`scripts/projections.js` is unchanged, as decided.
+
+### Judgment calls
+
+- A project rule named like an imported-rule name gets the message `.claude/rules/<name>.md:
+  a project rule named like the Cursor rule written for the import <path> — rename it`.
+- Imports are read after comment stripping across lines, and a line fence of ``` or ~~~ toggles.
+- `blockedBy: framework-doc-delivery` removed from the shipped item, which
+  `guards/catalog-entries.test.js` requires.
+- The test string for a line with a space is built with `join` so `private-material` does
+  not read the line break before an import line as the end of an email address.
+- Named source: none in particular.
+
+### What the plan got wrong
+
+- `guards/set-up-project.test.js` expects the Cursor rules to equal the shipped rules and
+  was not in the File Structure.
+- The proposed test text for a line with a space, written as one string with an import line after a line break, trips `private-material`'s email check.
+- Task 5 did not say to drop the shipped item's `blockedBy`; the catalog guard needs it.
+
+### Outstanding
+
+A run in Cursor confirming the rule arrives is not part of this plan. The fresh-agent
+check is the reviewer's.
+
+## Review record
+
+### Checks re-run
+
+The specifying session reviewed the diff against `origin/main` at `a990b6d` and re-ran the
+checks after its own fix at `b0e6a1d`. The tool was Claude Code 2.1.318 on Linux x86_64.
+Results are below, under *Merged because*, after the rebase.
+
+### Found
+
+- **The plan omitted `guards/set-up-project.test.js`,** which counts the generated Cursor
+  rules. The executor stopped, as the plan said to. The plan's File Structure now lists
+  the guard (`aa79de2`), and the executor changed one expectation in it.
+- **The proposed test string tripped `private-material`.** The executor built it with
+  `join` instead.
+- **Task 5 did not say to drop `blockedBy`** from the shipped item. `catalog-entries`
+  requires that, and the executor did it.
+- **`framework/rule-delivery.md` placed the new sentence inside the 3.24.12 measured
+  passage.** The next "It does not receive…" then read as being about the generator. The
+  reviewer moved the sentence after the passage (`b0e6a1d`). This was a mechanical wording
+  fix, made by the reviewer and declared here.
+
+### Fresh-agent check
+
+The check ran on Claude Code 2.1.318 (`claude -p`, stream-json with every call visible),
+on Linux x86_64, as `claude-opus-5-5`. That is the Large tier's included pick that
+`dispatch.mjs --tier Large` names with the recorded subscriptions. It ran in this
+worktree with no user-level instructions.
+
+The task used an invented subject: a project, Ferry, wants `docs/house-style.md` in every
+agent's context at start in both tools. The prompt said the run was a probe and its
+output would be discarded. Using only the source folders, the agent:
+
+- found the `@docs/house-style.md` import line and the `npm --prefix .tropis run rules`
+  command;
+- found the file `.cursor/rules/imported-house-style.mdc` and its front matter
+  (`alwaysApply: true`, no globs);
+- quoted the `--check` failure,
+  `rules out of date — run: npm --prefix .tropis run rules` /
+  `.cursor/rules/imported-house-style.mdc: missing`;
+- found the reserved `imported-` names.
+
+It cited `scripts/rule-areas.js`, `scripts/generate-rules.mjs`,
+`framework/rule-delivery.md`, FW-068 and `guards/rules-generated.test.js`. The change
+intended exactly this to be found. Proposal: none beyond `commands-reach-cursor`, which
+already holds the Cursor-side measurement.
+
+### Outstanding disposition
+
+A run in Cursor confirming the imported rule arrives is not part of this plan. It pairs
+with the measurement in `commands-reach-cursor`, which needs the developer's machine.
+
+### Learnings routed
+
+The decision is FW-068, and the delivery fact is in `framework/rule-delivery.md`. The
+miss of a guard that counts generated files is now in this record. No rule change is
+needed, because the plan's stop condition caught it as intended. No upstream queue
+applies: this repository is the upstream.
+
+### Merged because
+
+Every criterion is covered:
+
+- the generator, its unit cases and the set-up guard cover criterion 1;
+- `--check` and the planted `missing-imported-rule` defect cover criterion 2;
+- the fallback paragraph in both entry files covers criterion 3;
+- `rule-delivery.md` and FW-068 cover criterion 4.
+
+The fresh-agent check found what the change intended.

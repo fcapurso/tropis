@@ -134,9 +134,17 @@
     - framework/workflow.md
   refs:
     - first-adopter-harness:docs/superpowers/plans/2026-08-01-self-merge-writes-its-own-record.md
+# Shipped by docs/superpowers/plans/2026-11-04-cursor-gets-the-workflow.md.
+# Criterion 1 (generator writes imported-<name>.mdc, always applied): scripts/generate-rules.mjs,
+# guards/rules-generated.test.js "imported rules" cases and the front-matter case; the
+# set-up guard asserts imported-workflow in a set-up project (guards/set-up-project.test.js).
+# Criterion 2 (checks fail on missing, stale or hand-edited): rules-generated runs --check;
+# the self-check plants fixtures/defects/missing-imported-rule.
+# Criterion 3 (fallback paragraph conditional): templates/AGENTS.md and AGENTS.md.
+# Criterion 4 (what Cursor receives, and the decision): framework/rule-delivery.md, FW-068.
 - id: framework-reaches-every-tool
   title: An agent gets the workflow whichever tool it runs in
-  status: building
+  status: shipped
   value: "An agent in Cursor has the development workflow from the start of its
     session, as one in Claude Code does. Today Cursor does not expand the entry
     file's import, so it gets the workflow only if its agent obeys the sentence
@@ -155,8 +163,6 @@
       records projecting the workflow over relying on the fallback paragraph.
   type: bug
   layer: product
-  blockedBy:
-    - framework-doc-delivery
   # 2026-10-16, backlog cleanup: after instruction-layer-means-what-it-says, shipped in the
   # first-adopter-harness catalog; dropped. The first criterion already holds: AGENTS.md and
   # templates/CLAUDE.md tell a tool that does not expand the import to read the workflow.
@@ -174,7 +180,9 @@
   # lighter one the finding names. A run in Cursor confirming arrival is left to the
   # measurement in commands-reach-cursor, since Cursor's always-applied rules are already
   # measured to arrive.
-  modules: []
+  modules:
+    - scripts/generate-rules.mjs
+    - scripts/rule-areas.js
   refs:
     - first-adopter-harness:docs/framework-review-2026-07.md
     - docs/superpowers/plans/2026-11-04-cursor-gets-the-workflow.md

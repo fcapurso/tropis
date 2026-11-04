@@ -113,21 +113,6 @@ framework-installs-as-a-package:
   seen:
     status: idea
     blockers: []
-framework-reaches-every-tool:
-  band: B
-  value: 4
-  valueWhy: Cursor is a supported target and its agents get no workflow at all.
-  effort: 3
-  effortWhy: A projection of framework documents for Cursor and a guard comparing tools.
-  verdict: "Cursor is a supported target and still gets no workflow beyond the
-    entry file's fallback line. Re-shaped and building: the generator writes each file
-    AGENTS.md imports as an always-applied Cursor rule, and the check fails without it."
-  evidence: "2026-10-17 — templates/CLAUDE.md opens with a plain-text instruction
-    to read workflow.md if the import did not expand; scripts/projections.js
-    projects no framework document."
-  seen:
-    status: building
-    blockers: []
 living-documents-stay-current:
   band: C
   value: 4
