@@ -6117,3 +6117,29 @@
   refs:
     - docs/model-picks.md
     - commands/refresh-model-tiers.md
+# 2026-11-04, from the developer after the 2026-11-03 sprint: its six team-member sessions
+# stayed open after they shipped, and the developer archived them by hand. /sprint says
+# nothing about closing them. A shipped session looks the same as one waiting on the
+# developer, and one of them kept repeating its report while a background task ran.
+# Agreed with the developer: archive at ship, not at the sprint's end, on one agreement
+# given when the sprint starts.
+- id: sprint-archives-a-session-once-it-ships
+  title: A sprint archives each team member's session once its work ships
+  status: idea
+  value: The developer running a sprint sees open only the sessions still working or
+    waiting for them, so a parked or stopped team member stands out instead of sitting
+    among finished ones, and a finished session stops running.
+  # Stated by the developer on 2026-11-04.
+  acceptanceCriteria:
+    - When the developer says to start, /sprint asks once whether to archive each team
+      member's session once its work ships, and the answer holds for that sprint only.
+    - A session is archived only once every backlog item it carried shows as shipped on
+      the main branch, and only after the decisions it reported are recorded with
+      sprint.mjs note.
+    - A parked or stopped team member's session is never archived.
+    - Where the tool cannot archive a session, /sprint says so and leaves it open.
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - commands/sprint.md
