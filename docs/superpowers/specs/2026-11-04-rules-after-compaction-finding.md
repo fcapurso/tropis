@@ -50,7 +50,7 @@ A throwaway git repository in the session's scratchpad, deleted with the contain
 CLAUDE.md                 "A throwaway project for measuring rule delivery."
 .claude/rules/alpha.md    paths: ["areas/alpha/**"]; marker: end every reply with ALPHA-RULE-PRESENT
 .claude/rules/beta.md     paths: ["areas/beta/**"];  marker: the beta codeword, given only when asked
-.claude/rules/gamma.md    paths: ["areas/gamma/**"]; 60 clauses, 9,589 bytes; clause 37 holds the gamma codeword
+.claude/rules/gamma.md    paths: ["areas/gamma/**"]; 60 clauses, 9,589 bytes; clause 37 begins "Marker:" and holds the gamma codeword
 areas/alpha/one.js, areas/alpha/two.js, areas/beta/b.js, areas/gamma/g.js   one export each
 ```
 

@@ -338,7 +338,8 @@ the session's own folder, which is why it takes effect with FW-010. A project's 
 in shipped rule files until `rule-areas-are-project-data`. Cursor is
 `cursor-agents-receive-area-rules`'s. After `/compact` or `/clear` Claude Code attaches
 a rule again on the next touch of its area, measured 2026-11-04
-(`rules-return-after-compaction`); so nothing re-delivers rules after compaction.
+(`rules-return-after-compaction`), so the framework builds nothing to re-deliver rules
+after compaction.
 
 ## FW-010: A project is set up inside its own repository
 
