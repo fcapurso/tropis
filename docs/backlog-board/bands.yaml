@@ -64,6 +64,18 @@ command-slots-spike:
   seen:
     status: shaped
     blockers: []
+cursor-rules-return-after-summarize:
+  band: C
+  value: 3
+  valueWhy: Long Cursor chats may lose their area rules once summarized, with nothing
+    saying so.
+  effort: 1
+  effortWhy: One measurement, with the developer at Cursor.
+  verdict: "Batch it with the next check run at Cursor. The Claude Code half is in
+    rules-return-after-compaction's finding."
+  seen:
+    status: idea
+    blockers: []
 framework-calls-itself-one-thing:
   band: C
   value: 2
@@ -306,9 +318,10 @@ rules-return-after-compaction:
   effort: 2
   effortWhy: A measurement in two tools, recorded.
   verdict: "A cheap measurement that decides whether long sessions silently lose
-    their rules. In the framework-updates arc, which is part of why it is B."
+    their rules. In the framework-updates arc, which is part of why it is B. Its
+    Cursor half is split into cursor-rules-return-after-summarize."
   seen:
-    status: idea
+    status: building
     blockers: []
 setup-offers-to-create-the-repository:
   band: C
