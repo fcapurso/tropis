@@ -36,8 +36,10 @@ belongs with the parent session. It is never a constraint on the executor.
   line. A plan's `Merges after` field is read and refused the same way; the prompt does
   not carry it, since the executor does not merge. A project with no picks file is told
   to run `/refresh-model-tiers`; the prompt never invents picks. Beneath the picks, the
-  pick to use: the first in the tier's order, then the next tier up, that a subscription
-  recorded on this machine includes, with the tool to run it in. Where no subscription is
+  pick to use: of the picks for the plan's tier and every tier above it that a
+  subscription recorded on this machine includes, the one that costs least per task
+  (FW-070), with the tool to run it in. Where no included pick has a usage figure, the
+  first included one going up, and the line says so. Where no subscription is
   recorded, the picks do not say which subscriptions include each model, or none is
   included, the line says so and names no pick.
 - **The plan and its checkouts:** which plan, and which checkouts it may edit.

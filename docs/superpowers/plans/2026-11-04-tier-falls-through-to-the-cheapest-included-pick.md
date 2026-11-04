@@ -642,6 +642,7 @@ Under `## [Unreleased]`, add as the last bullet:
 | `commands/refresh-model-tiers.md` | the picks file template's header sentence |
 | `docs/model-picks.md` | its header sentence |
 | `templates/README.md` | one sentence |
+| `framework/dispatch.md` | one sentence: the pick to use (added at review, found by the fresh-agent check) |
 | `RELEASES.md` | one bullet |
 | `feature-catalog.yaml` | the item to `shipped`, with comments mapping the criterion to its cases (Task 4) |
 | `docs/backlog-board/bands.yaml` | the item's row removed, only if it has one (Task 4) |
@@ -781,3 +782,37 @@ Every file is in the plan's File Structure table. The worktree actually used is 
 - The fresh-agent check for `framework/workflow.md`, `framework/model-tiers.md` and `commands/sprint.md` is owed, and the specifying session runs it, as the plan says. The executor did not run it.
 - The review record, the pull request and the merge are the specifying session's.
 - The timing-looking failure of the Cursor grants case in the red run is unexplained. It did not recur in the three later runs, and no rerun was used to hide it.
+
+## Review record
+
+Reviewed by the specifying session on 2026-11-04 (node v22, Linux x86_64).
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` on the re-wrap commit: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 181 passed, 181 total`.
+- `git diff --stat origin/main...HEAD`: every file in *File Structure*, with `framework/dispatch.md` added at review (below).
+- Read the code against the plan: `picksFrom`, `usagePerTask`, `cheapest`, `pickToUse` and `pickForTool` are as specified, and the tests are as specified.
+
+### Found
+
+- **Four paragraphs left with lines past the files' width** (`commands/refresh-model-tiers.md`, `commands/sprint.md`, `framework/workflow.md`, `templates/README.md`): mechanical, re-wrapped by the reviewer on the branch, wording unchanged.
+- **`framework/dispatch.md` still said the first included pick going up** (*Beneath the picks, the pick to use*). The plan's file list missed it; the fresh-agent check found it. Understood and mechanical: the reviewer reworded that sentence to FW-070's rule, including the no-usage-figure case, on the branch. Fixed by the reviewer, declared here.
+- The executor's extra change to `commands/refresh-model-tiers.md`'s prose (around line 105) is right: the plan made it false and missed it.
+
+### Fresh-agent check
+
+A fresh agent (Claude Code cloud session subagent, on Claude Opus 5.5, the Large pick `dispatch.mjs --tier Large` names; Linux x86_64) was given only the repository's source folders and an invented picks file — a Medium–large pick at $8.75 and a Large pick at $4.10, both on Claude Code Max — and asked which model the executor of a Medium–large plan, of a Medium plan, a sprint's session team member and a fresh-agent probe each start on, quoting the documents, then to check by calling `pickToUse` and `pickForTool` from `scripts/plan-binding.js`. It answered the Large pick for all four from `framework/model-tiers.md`, `framework/workflow.md` and `commands/sprint.md`, and the code printed the same (`**Use:** Quill 4, in Claude Code — of the picks for this tier and above that your subscriptions include, the one that costs least per task, from the Large tier.`; `pickForTool` gave `quill-4`). It found `framework/dispatch.md` still describing the old rule, fixed above.
+
+### Outstanding disposition
+
+- The executor's red run once failed `launch › † for cursor, writes the grants into a worktree that has none and leaves an existing file alone`, which then passed alone and in every later run with nothing changed. The workflow counts that as a defect: recorded in the backlog as its own idea, in a pull request after this one.
+- No screen: no developer check.
+
+### Learnings routed
+
+- A plan that rewrites a rule's wording should grep for the rule's meaning, not one phrase: `framework/dispatch.md` said "the first in the tier's order", which a search for "first pick" missed. No durable change: the fresh-agent check is the mechanism that caught it, and it did.
+
+### Merged because
+
+The criterion is covered by the † cases in `guards/dispatch.test.js` and `guards/team-member-cli.test.js`, which fail on the old code; the self-check and the installed checks pass; and the fresh-agent check found the documents and the code agree after the review's fix.
