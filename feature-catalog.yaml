@@ -6243,6 +6243,23 @@
   refs:
     - docs/model-picks.md
     - commands/refresh-model-tiers.md
+# Raised 2026-11-04 by the picks-are-judged-at-the-default-effort team member and taken
+# up by the developer: once picks are judged at their default effort, Claude Code has no
+# included pick in Medium or Medium-large but Fable 5.1, so on Max, Ultra and Team Premium
+# a plan of those tiers runs on Fable 5.1, the most expensive pick per task (on Pro and
+# Team Standard, on Opus 5.5).
+- id: tier-falls-through-to-the-cheapest-included-pick
+  title: A tier with no included pick is given the cheapest included model above it
+  status: idea
+  value: A plan, team member or reviewer whose tier has no pick the developer's
+    subscription includes runs on the included model that costs least per task among
+    the higher tiers, rather than on the first one found going up, so a gap in one tier
+    does not quietly put work on the most expensive model.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
 # 2026-11-04, from the developer after the 2026-11-03 sprint: its six team-member sessions
 # stayed open after they shipped, and the developer archived them by hand. /sprint says
 # nothing about closing them. A shipped session looks the same as one waiting on the
