@@ -200,7 +200,8 @@
   ],
   "marks": {
     "picks-are-judged-at-the-default-effort": {
-      "state": "planning"
+      "state": "parked",
+      "reason": "cursor.com is blocked by the cloud environment's network policy; needs the developer to allow it or run the item elsewhere"
     },
     "command-slots-spike": {
       "state": "planning"
