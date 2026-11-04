@@ -6430,3 +6430,24 @@
   layer: product
   modules: []
   refs: []
+
+# Raised by the developer on 2026-11-04, after noticing the README gives sprints half a
+# sentence in two places while the day-to-day section still lists the step commands of a
+# few weeks ago. Follows readme-gives-an-overview-not-a-feature-list, which set the page's
+# length and its aspects but kept the old day-to-day job in the outline.
+- id: readme-follows-the-developers-role
+  title: The README describes how the framework is used today, around what the developer does
+  status: idea
+  value: Someone reading the README learns how a project actually runs with Tropis now. The
+    developer captures ideas, agrees a sprint, answers when a session asks for a decision,
+    checks by hand and releases, while sessions take each backlog item from shaping to
+    merged on their own. Sprints are shown as the main way to work, and a single item as
+    the same path taken one at a time. Today the page, and the outline every refresh
+    follows, describe a developer who runs each step command themselves, which was the
+    routine a few weeks ago. The change starts in the outline, above all the job of Using
+    it day to day, so later refreshes keep the new shape.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
