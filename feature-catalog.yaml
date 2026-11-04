@@ -6255,7 +6255,11 @@
     subscription includes runs on the included model that costs least per task among
     the higher tiers, rather than on the first one found going up, so a gap in one tier
     does not quietly put work on the most expensive model.
-  acceptanceCriteria: []
+  # Stated by the developer on 2026-11-04: skip past the first included model only if it
+  # is cheaper.
+  acceptanceCriteria:
+    - The fall-through moves past the first included model found going up only to one
+      that costs less per task; otherwise it stays on the first one found.
   type: improvement
   layer: product
   modules: []
