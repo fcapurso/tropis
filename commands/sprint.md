@@ -31,9 +31,12 @@ whole workflow to its own merge.
 For `--way session`, ask the developer once, before running `start` and in that same
 turn, whether to archive each team member's session once its work ships — with the
 tool's question prompt where it has one, so the team still starts in this turn — and
-pass the answer as `--archive yes` or `--archive no`. The answer holds for this
-sprint only: ask again at the next one. Do not ask for another way; `start` refuses
-`--archive yes` there, since no other way leaves a session of this tool to archive.
+pass the answer as `--archive yes` or `--archive no`. Where the tool has no question
+prompt, ask it with the proposal instead, so the answer is in hand when the developer
+says to start. Where the tool has no way to archive a session, do not ask: say so and
+pass `--archive no`. The answer holds for this sprint only: ask again at the next one.
+Do not ask for another way; `start` refuses `--archive yes` there, since no other way
+leaves a session of this tool to archive.
 
 When the developer says to start, in that same turn run
 `node .tropis/scripts/sprint.mjs start <id> ... --points <n> --way <way>`, with the ids
@@ -91,14 +94,17 @@ one, tell the developer the tool's way, with a notification where the tool has o
 naming the backlog item and its reason. A `SHIPPED` line needs nothing: `status` reads
 shipped from the main branch, and a backlog item the main branch does not show as shipped
 is not shipped. Record each decision a team member reports with
-`node .tropis/scripts/sprint.mjs note <id> <decision>`.
+`node .tropis/scripts/sprint.mjs note <id> <decision>`. When `status` lists team members
+as ready to archive, archive them as 3a says.
 
 ## 3a. Archive a finished team member's session
 
 When `status` lists team members as ready to archive, for each one, in this order:
 
 1. Read its session's last message and record each decision it reported with
-   `node .tropis/scripts/sprint.mjs note <id> <decision>`, if not already recorded.
+   `node .tropis/scripts/sprint.mjs note <id> <decision>`, unless
+   `node .tropis/scripts/sprint.mjs report` already lists it under the decisions team
+   members reported.
 2. Run `node .tropis/scripts/sprint.mjs archive <id>`. It refuses a team member whose
    work has not all shipped on the main branch, or that is parked or stopped, and the
    session then stays open.
