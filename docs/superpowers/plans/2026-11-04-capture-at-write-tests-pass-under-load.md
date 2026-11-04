@@ -300,3 +300,42 @@ scratch copy.
 3. `git push -u origin plan/capture-at-write-tests-pass-under-load`. **Do not open a
    pull request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 5 done in order. No developer-only step in this plan.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, Linux x86_64 (Claude Code cloud session, root).
+
+- Task 0: `bash scripts/check-blueprint.sh` on the untouched worktree: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- Task 1, before the change, reproduction twice in a new process-id namespace with a fresh `TMPDIR`:
+  `Tests:       145 skipped, 12 passed, 157 total` then
+  `Tests:       6 failed, 145 skipped, 6 passed, 157 total`.
+- Task 2, after the change, reproduction twice with a fresh `TMPDIR`:
+  `Tests:       145 skipped, 13 passed, 158 total` and
+  `Tests:       145 skipped, 13 passed, 158 total`.
+- Task 3, scratch stage with `env: inHookTmp(),` deleted from `runWriteHookOn`, `-t "own folder"`: `Expected: true` / `Received: false` at `expect(existsSync(join(hookTmp, \`capture-write-${session}\`, 'emitted'))).toBe(true);`, `Tests: 1 failed, 157 skipped, 158 total`.
+- Task 4: `npm --prefix .tropis test`: `Tests:       177 passed, 177 total`.
+- Final: `bash scripts/check-blueprint.sh` last line `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` (re-run after this report's commit, see below).
+
+### Scope
+
+Worktree: `../tropis-capture-load` (tropis). Diff files are all in File Structure; `docs/backlog-board/index.html` was not changed (nothing rebuilt it).
+
+### Judgment calls
+
+None beyond the plan. Source worked from: none in particular; written against this repository's own names.
+The new case sits before `is wired on Edit and Write, and not on Read`, directly after `emits the check at most once per session`'s neighbour order as in the plan.
+
+### What the plan got wrong
+
+- Task 2 says to run the guard alone, whole file, in the stage and expect every case to pass. In a bare stage 78 cases fail both before (`78 failed, 79 passed`) and after (`78 failed, 80 passed`) the change, because the file resolves `.tropis/hooks/...` from `FRAMEWORK_ROOT` or the installed layout and the stage has none (exit 127). The whole-file check only means something inside the self-check, which passed. The capture-at-write subset is unaffected.
+- The `feature-catalog.yaml` item already had `modules` and `refs` set as Task 4 asks, and was `status: building`.
+
+### Outstanding
+
+The change has no screen, so there is no developer check. The fresh-agent check of the `rules/tests.md` clause is the specifying session's, at review.
