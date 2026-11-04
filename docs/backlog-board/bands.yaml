@@ -133,14 +133,13 @@ framework-reaches-every-tool:
   effort: 3
   effortWhy: A projection of framework documents for Cursor and a guard comparing tools.
   verdict: "Cursor is a supported target and still gets no workflow beyond the
-    entry file's fallback line. The framework-doc-delivery finding says project the
-    workflow as an always-applied Cursor rule, with a guard that what Claude Code loads
-    at start Cursor gets too; re-shape to that before planning."
+    entry file's fallback line. Re-shaped and building: the generator writes each file
+    AGENTS.md imports as an always-applied Cursor rule, and the check fails without it."
   evidence: "2026-10-17 — templates/CLAUDE.md opens with a plain-text instruction
     to read workflow.md if the import did not expand; scripts/projections.js
     projects no framework document."
   seen:
-    status: shaped
+    status: building
     blockers: []
 living-documents-stay-current:
   band: C

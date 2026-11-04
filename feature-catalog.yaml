@@ -136,25 +136,23 @@
     - first-adopter-harness:docs/superpowers/plans/2026-08-01-self-merge-writes-its-own-record.md
 - id: framework-reaches-every-tool
   title: An agent gets the workflow whichever tool it runs in
-  status: shaped
-  value: "A plan dispatched to Cursor or Codex arrives with the same process an
-    agent gets here. Today it does not: the entry file points at the workflow
-    in a notation only Claude Code and Gemini expand, and the projection built
-    for Cursor carries the area rules and nothing from the framework folder. So
-    an agent in Cursor receives every area rule and no preflight, no worktree
-    convention, no merge sequence and no documentation closeout — while the
-    framework treats Cursor as a supported target and names it in the roster
-    agents are dispatched from."
+  status: building
+  value: "An agent in Cursor has the development workflow from the start of its
+    session, as one in Claude Code does. Today Cursor does not expand the entry
+    file's import, so it gets the workflow only if its agent obeys the sentence
+    telling it to read the file, which nobody has measured; the projection built
+    for Cursor carries the area rules and nothing from the framework folder."
   acceptanceCriteria:
-    - An agent reading only `AGENTS.md` in a tool that does not expand imports
-      can still reach the workflow.
-    - The workflow is delivered to Cursor by the same projection that already
-      delivers the area rules.
-    - A guard fails when a framework document is delivered to one tool and not
-      another.
-    - Before planning, the framework-doc-delivery finding is read and this entry is
-      re-shaped to what it shows is still missing; a criterion it shows is not needed is
-      removed, and if none remains the entry is dropped, with the finding as the reason.
+    - In a set-up project, the rule generator writes every file AGENTS.md imports as an
+      always-applied Cursor rule, .cursor/rules/imported-<name>.mdc, so a Cursor agent has
+      the workflow from the start of its session without following a link; setup, an
+      update and npm --prefix .tropis run rules all write it.
+    - The project's checks fail when a file AGENTS.md imports has no such rule, or the
+      rule is stale or edited by hand, and the self-check plants that defect.
+    - The entry file's fallback paragraph tells an agent to read the workflow only when it
+      is not already in its context.
+    - framework/rule-delivery.md says what Cursor receives at start, and a decision
+      records projecting the workflow over relying on the fallback paragraph.
   type: bug
   layer: product
   blockedBy:
@@ -170,9 +168,16 @@
   # the workflow projected, or the fallback line suffices, is the question the
   # framework-doc-delivery finding answers, and its "lighter guard" may be the third
   # criterion's guard. So this waits for it.
+  # 2026-11-04, re-shaped from the framework-doc-delivery finding, Recommendations: the old
+  # first criterion already held and is removed; the projection is made specific (every
+  # file AGENTS.md imports, as an always-applied rule); the guard is narrowed to the
+  # lighter one the finding names. A run in Cursor confirming arrival is left to the
+  # measurement in commands-reach-cursor, since Cursor's always-applied rules are already
+  # measured to arrive.
   modules: []
   refs:
     - first-adopter-harness:docs/framework-review-2026-07.md
+    - docs/superpowers/plans/2026-11-04-cursor-gets-the-workflow.md
 # After bootstrap has copied a working Node sidecar. Spec and plan then, not now.
 # Revises the required-tool list in FW-005 (git, bash, python3, node) down to the
 # three the hooks already use. Does not reopen "reimplement in any language".
