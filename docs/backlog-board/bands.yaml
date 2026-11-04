@@ -44,11 +44,11 @@ commands-have-named-fill-ins:
   valueWhy: Every project that fills in a command meets it on every update, and today a
     renamed field is carried under its old name with nothing said.
   effort: 3
-  effortWhy: Named fill-ins in five commands, carrying by name in the update, and a
+  effortWhy: Named fill-ins in six commands, carrying by name in the update, and a
     one-time move of each project's existing blocks.
   verdict: "The command-slots finding's recommendation. Worth building next in the
     updates arc; the prototype already shows the carry works."
-  evidence: "2026-11-04 — 25 of 40 real changes are fill-ins; a prototype carried one
+  evidence: "2026-11-04 — 23 of 40 real changes are fill-ins; a prototype carried one
     project's release command from v0.5.2 to v0.8.1 by name, see the finding."
   seen:
     status: idea
@@ -75,18 +75,6 @@ commands-reach-cursor:
     the commands if they are missing.
   verdict: Measure next; it needs the developer's Cursor, so pair it with the Cursor
     check framework-reaches-every-tool ends with.
-  seen:
-    status: idea
-    blockers: []
-dispatch-attaches-the-plan-repositories:
-  band: C
-  value: 2
-  valueWhy: Only multi-repository plans dispatched from a cloud session need it, and
-    without it the executor starts without a checkout it must read.
-  effort: 1
-  effortWhy: A sentence where /dispatch or its script speaks about a cloud session.
-  verdict: A cheap win taken from one project's own instructions; batch it with other
-    dispatch work.
   seen:
     status: idea
     blockers: []

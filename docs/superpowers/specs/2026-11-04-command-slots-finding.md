@@ -6,13 +6,16 @@
 ## The answer
 
 Yes. A fixed procedure with named slots holds every customisation a real project made to a
-shipped command that is the project's own to make: 25 of the 40 changes found. Of the
-other 15, 7 were stale copies, 5 were fixes the framework has taken or should take, and 3
-changed the procedure itself. All 3 of those had a better home outside the command. An
+shipped command that is the project's own to make: 23 of the 40 changes found, and a
+24th already lives in a data file a script reads. Two of the 23 are transitional (A1,
+A3). Of the other 16, 8 were stale copies, 5 were fixes the framework has since taken,
+and 3 changed the procedure itself. All 3 of those had a better home outside the
+command. An
 update can carry slots by name across versions without a hand merge. The prototype took
 `first-adopter`'s release command from v0.5.2 to v0.8.1 and carried every fill-in. It
 listed the one slot that went away, the one that was renamed and the two whose purpose
-changed, and the seven sections added upstream came through. A fresh agent following the
+changed. Seven new headings came through, three of them replacing headings that went. A
+fresh agent following the
 slotted command did what `first-adopter`'s own command makes it do (*The fresh agent*).
 
 What slots add over today is not room. Today's one free-text block per command already
@@ -21,7 +24,9 @@ holds everything. They add **names an update can reason about**:
 - **A changed meaning gets listed.** Today a block is carried as one lump. v0.8.1 renamed
   two of `/release`'s fields and added two more. The update carried `first-adopter`'s
   block silently, still under the old names. The command itself has to tell the agent, at
-  run time, to read the old names as the new ones and to ask about any missing field.
+  run time, to read the old names as the new ones and to ask about any missing field. Even
+  that misses: the note names the old field "Trigger", and `first-adopter` called it
+  "Release trigger".
 - **A change in the number of blocks is not a hand merge.** Today, when a release adds or
   removes a block, the update writes the whole command beside the project's as `.new`
   and leaves the merge to a person (`scripts/take-version.mjs`, "project-owned blocks
@@ -40,8 +45,8 @@ outside the slots forks the command, and the update writes `.new` as it does tod
 
 **Recommendation:** build it, under the name *fill-ins* rather than *slots*. "Slot"
 already means the staging slot of `pipeline.mjs`, and `/release` uses both. Give the
-five commands that have a block today named fill-ins at the points the evidence found,
-and leave the other ten with none. Two backlog items follow (*Recommendations*).
+six commands that have a block today named fill-ins at the points the evidence found,
+and leave the other nine with none. One backlog item follows (*Recommendations*).
 
 ## The evidence
 
@@ -54,8 +59,8 @@ outside them.
 | Source | Installed | Commands compared | Changed outside a block | Blocks filled |
 |---|---|---|---|---|
 | `first-adopter`, today | v0.5.2 | 14 shipped | 0 | 5: feature, idea, manual-check, refresh-board, release |
-| this repository's installed copy, today | v0.8.1 | 15 shipped | 0; `flush-upstream.md` deleted | 4 differ from the shipped default: idea, manual-check, release, and feature equal to it |
-| `first-adopter`, before it took Tropis | its own copies, from the harness | 12 | the whole file: they were copies | — |
+| this repository's installed copy, today | v0.8.1 | 15 shipped | 0; `flush-upstream.md` deleted | 3 differ from the shipped default: idea, manual-check, release; feature, next and refresh-board carry it |
+| `first-adopter`, before it took Tropis | its own copies, from `first-adopter-harness` | 12 | the whole file: they were copies | — |
 | `embryo-project` | never took Tropis | 9 forerunners | n/a | n/a |
 
 The comparison was run with the installed `fingerprint()` and `blocks()` on each project's
@@ -92,9 +97,9 @@ commit named.
 
 | # | Command | Change | Class | Diff |
 |---|---|---|---|---|
-| A1 | feature | Before shipping, rebuild a document the project generates from its backlog and commit it with the backlog item | behaviour at a point | v0.5.2 against today, block |
+| A1 | feature | Before shipping, rebuild a document the project generates from its backlog and commit it with the backlog item | behaviour at a point; transitional, since the backlog board replaces such documents (FW-043) | v0.5.2 against today, block |
 | A2 | feature | Before shipping, run the project's second suite of process checks as well as Tropis's | value | v0.5.2 against today, block |
-| A3 | idea | Rebuild that generated document and commit it with the backlog | behaviour at a point | v0.5.2 against today, block |
+| A3 | idea | Rebuild that generated document and commit it with the backlog | behaviour at a point; transitional, as A1 | v0.5.2 against today, block |
 | A4 | idea | Run three suites, not one, before committing | value | v0.5.2 against today, block |
 | A5 | manual-check | The project's two kinds of check, what triggers each, and where its procedure is | value | v0.5.2 against today, block |
 | A6 | refresh-board | Publish the built page to the board's hosted address before committing | behaviour at a point | v0.5.2 against today, block |
@@ -109,17 +114,17 @@ commit named.
 | A15 | release | The release trigger | value | same |
 | A16 | release | "Print the trigger, never run it; the developer runs it" | stale: restates the shipped Stage 6 | same |
 | A17 | release | Where the runs are watched | value | same |
-| A18 | refresh-model-tiers | Which tools and model lists count, and writing the picks to a project file rather than the shipped tier document | fix, taken: picks now live in `docs/model-picks.md` | ledger; harness `d1ca1ca` |
-| A19 | capture-learning | Branch 6 opens with the scope its own test implies: the shell, git, the hook contract | fix, taken | ledger; harness `9a31fa5` |
+| A18 | refresh-model-tiers | Which tools and model lists count, and writing the picks to a project file rather than the shipped tier document | fix, taken: picks now live in `docs/model-picks.md` | ledger; `first-adopter-harness@d1ca1ca` |
+| A19 | capture-learning | Branch 6 opens with the scope its own test implies: the shell, git, the hook contract | fix, taken | ledger; `first-adopter-harness@9a31fa5` |
 | A20 | feature | How to shelve and un-shelve a backlog item | fix, taken in v0.4.1 | ledger; `first-adopter@d0ec7c2` |
-| A21 | next | A report in two streams, with a flush suggestion and a framework section | procedure: belongs to the report script, queued there | ledger; harness `53f969c`, `590b379` |
+| A21 | next | A report in two streams, with a flush suggestion and a framework section | procedure: belongs to the report script, queued there | ledger; `first-adopter-harness@53f969c`, `@590b379` |
 | A22 | next | "Do not start /dispatch or anything else from here" | procedure: moot once the shipped report suggested nothing to run | ledger |
 | A23 | flush-upstream | The retired route to the framework | stale | ledger |
 | A24 | dispatch | The old framework folder's path | stale | ledger; `first-adopter@a1e0003` |
 | A25 | idea | Long type and layer lists, including a retired layer, and a paragraph the backlog rule now holds | stale | ledger |
 | A26 | release, manual-check | The wording of the two-checkout layout | stale | ledger; `first-adopter@a1e0003` |
 | A27 | capture-learning | An old address, a size cap Tropis rejected, "commit `.claude/` separately" | stale | ledger |
-| A28 | dispatch | In a cloud session, attach every other repository the plan's Repositories table names before isolating. Kept in its `AGENTS.md`, because `/dispatch` has no block | fix, not taken | its `AGENTS.md`, *Dispatching a plan* |
+| A28 | dispatch | In a cloud session, attach every other repository the plan's Repositories table names before isolating, kept in its own `AGENTS.md` | fix, taken after v0.5.2: the prompt `/dispatch` prints says it since `4060054` (`scripts/plan-binding.js`) | its `AGENTS.md` |
 | A29 | dispatch | The worktree setup commands `/dispatch` prints | value, already a data file (`.claude/worktree-setup.txt`) | `first-adopter@379760e` |
 
 ### This repository's installed copy
@@ -130,7 +135,7 @@ commit named.
 | T2 | idea | The block still says "catalog" and "entry", the words from before the rename to "backlog" and "backlog item" | stale | v0.8.1 against today, block |
 | T3 | manual-check | One kind, *Setup*, with its procedure | value | same |
 | T4 | release | Where it runs from | value | same |
-| T5 | release | At Stage 5, work out the version and promote the notes before committing, so the release job only tags | behaviour at a point; stale since v0.8.1's promotion pull request | same |
+| T5 | release | At Stage 5, work out the version and promote the notes before committing, so the release job only tags | stale: a behaviour at Stage 5 that v0.8.1's promotion pull request replaced | same |
 | T6 | release | Where the main branch is gated, Stages 1b and 5 commit through a pull request | fix, taken: v0.8.1's Stage 5 says it; now stale | same |
 | T7 | release | Before Stage 1, run `/rule-trial`; name a removed clause in the notes | behaviour at a point | same |
 | T8 | release | Who reads the notes | value | same |
@@ -145,15 +150,16 @@ command, and are not counted. A project adding a command is already free to do s
 
 | Class | `first-adopter` | this repository | Total | Held by a fill-in |
 |---|---|---|---|---|
-| value | 12 | 6 | 18 | 18. A29 is held by its data file, as today. |
-| behaviour at a point | 5 | 2 | 7 | 7 |
+| value | 12 | 6 | 18 | 17. A29 is held by its data file, as today. |
+| behaviour at a point | 5 | 1 | 6 | 6, two of them transitional (A1, A3) |
 | procedure | 2 | 1 | 3 | 0, and none needs one (*Does a fixed procedure limit adopters*) |
-| fix | 4 | 1 | 5 | 0. Four are taken; A28 becomes a backlog item. |
-| stale | 6 | 1 | 7 | 0. Nothing to hold. |
-| **Total** | **29** | **11** | **40** | **25** |
+| fix | 4 | 1 | 5 | 0. All five are taken. |
+| stale | 6 | 2 | 8 | 0. Nothing to hold. |
+| **Total** | **29** | **11** | **40** | **23**, and A29 by its file |
 
-Today's single block also holds all 25, as free text. The difference is what an update
-can do with them (*The answer*). Three of the stale rows (A16, T2, T6) sit inside a block
+Today's single block also holds all 23, as free text. The difference is what an update
+can do with them (*The answer*). Four stale rows (A16, T2, T5, and T6, a fix whose text
+is now stale) sit inside a block
 today, where nothing will ever point at them. A fill-in whose purpose changes gets
 listed, but text that goes stale under an unchanged purpose does not. Neither design
 catches T2: it needs a person reading.
@@ -185,28 +191,39 @@ today. Where a value is only for the agent to read, it is a fill-in.
 |---|---|---|---|
 | bootstrap | all of it | none: it runs once, and no project changed it | 0 |
 | capture-learning | all of it | none: the destinations come from the project's own files (`AGENTS.md`, the rule areas) | 0; A19 taken, A27 stale |
-| dispatch | all of it | none: the picks and setup commands are data files the script reads | A29, by its file; A28 is a fix |
-| feature | the transitions and the shipping refusal | `ship-requires`: what else must hold before an item ships, beyond the shipped default (the verification log, the project's checks) · `before-ship-commit`: what to rebuild and commit with the promotion | A1, A2 |
+| dispatch | all of it | none: the picks and setup commands are data files the script reads | A29, by its file; A28 taken |
+| feature | the transitions and the shipping refusal | `ship-requires`: what else must hold before an item ships, beyond the shipped default (the verification log, the project's checks) · `before-ship-commit`: what to rebuild and commit with the promotion, transitional (A1) | A1, A2 |
 | flush-upstream | all of it | none: a project it does not apply to deletes it | T1, by deletion |
-| idea | steps 1 to 6 | `checks`: the commands that check a new backlog item · `before-commit`: what to rebuild and commit with it | A3, A4 |
+| idea | steps 1 to 6 | `checks`: the commands that check a new backlog item · `before-commit`: what to rebuild and commit with it, transitional (A3) | A3, A4 |
 | manual-check | steps 2 to 6 | `kinds`: each kind of check, what in a change triggers it, and where its procedure is | A5, T3 |
 | next | the report and what to say about it | `report-command`: the command that prints the report | 0; the shipped default is the only use |
 | refresh-board | steps 1 to 3 and 5 | `publish`: a step after the build and before the commit that puts the page somewhere | A6 |
 | refresh-model-tiers | all of it | none: picks and subscriptions are data files | 0; A18 taken |
 | refresh-readme | all of it | none: the level is `docs/readme/readme.yaml` | 0 |
-| release | every stage and step | values: `run-from`, `notes-file`, `readers`, `breaking`, `version-files`, `first-release`, `promote-trigger`, `staging-trigger`, `staging-workflow`, `runs-url` · behaviour: `before-preflight` (top of Stage 1), `breaking-notes` (Stage 3's by-hand section), `notes-also` (end of Stage 3), `before-notes-commit` (Stage 5), `published` (Step 2) | A7–A15, A17, T4, T5, T7–T11 |
+| release | every stage and step | values: `run-from`, `notes-file`, `readers`, `breaking`, `version-files`, `first-release`, `promote-trigger`, `staging-trigger`, `staging-workflow`, `runs-url` · behaviour: `before-preflight` (top of Stage 1), `breaking-notes` (Stage 3's by-hand section), `notes-also` (end of Stage 3), `published` (Step 2) | A7–A15, A17, T4, T7–T11 |
 | scope | all of it | none | 0 |
 | sprint | all of it | none | 0 |
 | update | all of it | none. It is the command that moves fill-ins, so it is the last that should have any. | 0 |
 
-Ten commands need none. The five that get fill-ins are exactly the five with a block
-today. `/next` is the sixth with a block, but only the shipped default fills it.
+Nine commands need none. The six that get fill-ins are exactly the six with a block
+today; `/next`'s holds only the shipped default, but it is a value a project may need
+to change.
+
+**The two transitional fill-ins.** `before-ship-commit` and `idea`'s `before-commit` rest
+only on A1 and A3: rebuilding a document the project generates from its backlog. FW-043
+retires such documents in favour of the backlog board, and the backlog rule tells a
+project to replace its own through a backlog item. Build them only if another project
+needs them; otherwise `ship-requires` and `checks` are enough.
+
+**A behaviour slot the evidence no longer supports.** The prototype also carried a
+`before-notes-commit` slot in Stage 5, from T5. T5 is stale since v0.8.1, so it is not
+proposed. It stayed empty in the run and changed nothing there.
 
 ## The prototype
 
 Throwaway, not committed as code. It ran in this session's scratch folder, on Node
-v22.23.4, Linux x86_64. The script is reproduced in *Appendix: the prototype* so the
-run can be repeated.
+v22.23.4, Linux x86_64. *Appendix: the prototype* shows the carrying logic as run. Its
+inputs were throwaway files, described below, and are not committed.
 
 **The fill-in format it used.** A slot is two comment lines with the fill-in between them:
 
@@ -223,10 +240,14 @@ run can be repeated.
 1. The v0.5.2 and v0.8.1 `/release` texts, rewritten into skeletons. A script replaced
    each version's block with the value slots it lists, then put the five behaviour slots
    after fixed anchors. Outside the slots, the text is the shipped text. Between the two
-   versions, three things changed, all following what v0.8.1 itself did:
-   `candidate-trigger` became `staging-trigger (was candidate-trigger)`, with a new
-   purpose; `release-trigger` went, because v0.8.1's promote pipeline takes commits, not
-   a bump; and `version-files`, `promote-trigger` and `staging-workflow` were added.
+   versions, three things changed: `candidate-trigger` became `staging-trigger (was
+   candidate-trigger)`, with a new purpose; `release-trigger` went; and `version-files`,
+   `promote-trigger` and `staging-workflow` were added. v0.8.1 itself treated the old
+   trigger as renamed to the promote trigger. The skeleton models it as a removal on
+   purpose: the old trigger took a bump, and the promote trigger takes commits, so a
+   fill-in for the one is no answer for the other. Modelled as a rename with a new
+   purpose, it would have been listed as `renamed` and `purpose changed`, as
+   `staging-trigger` was.
    `published` moved from Stage 6 to Step 2, with "promote" added to its purpose.
 2. `first-adopter`'s own `/release` as v0.5.2 plus its block. Its 21 block lines were put
    into the v0.5.2 skeleton's slots by name: 20 lines into 10 slots. One sentence was
@@ -274,7 +295,8 @@ result: 13 sections, the same as the new version; skeleton outside slots identic
 Each of the four things the criterion asks for is shown: fill-ins carried by name (eight
 carried, one through a rename); a removed slot listed, with its fill-in kept aside rather
 than lost; two slots whose purpose changed listed, old and new side by side; and seven
-sections added upstream, which survive because the skeleton is replaced whole.
+new headings, three of them replacing headings that went, all of which survive because
+the skeleton is replaced whole.
 
 **A fork is still caught.** Changing one word outside the slots (the first sentence of
 Stage 3) made the same run print
@@ -316,7 +338,7 @@ with no API key in the environment.
 `/release` (v0.5.2 plus its block). `slotted` has the same command rewritten into the
 v0.5.2 skeleton's slots, the file the prototype started from. Each copy pushes only to a
 local bare repository. One commit was planted on top, the same in both, adding a
-permission to the product's manifest. That is the project's own reason for a major
+permission the product asks for. That is the project's own reason for a major
 version, so the run would reach the `breaking` and `breaking-notes` fill-ins. `gh` was
 replaced by a stub that only logs calls. The probes could use only reading tools and
 read-only git commands.
@@ -397,20 +419,15 @@ the procedure shared, and make the part that differs a named hole.
 
 ## Recommendations
 
-1. **`commands-have-named-fill-ins`** (new, idea). The five commands with a block today
+1. **`commands-have-named-fill-ins`** (new, idea). The six commands with a block today
    get named fill-ins at the points this finding lists. `/update` carries them by name,
    lists a fill-in that is new, renamed, re-purposed or removed, keeps a removed one's
    text in its report, and writes `.new` only for a change outside the fill-ins. A
    project's existing blocks are moved into the named fill-ins once, by the take that
    introduces them, with anything it cannot place listed. The criteria should include
    the prototype's four cases, on the real `/release` and the real update.
-2. **`dispatch-attaches-the-plan-repositories`** (new, idea). A28. In a cloud session,
-   `/dispatch` tells the dispatching session to attach every repository the plan's
-   Repositories table names, and clone it beside this one, before isolating. Today one
-   project carries this in its own `AGENTS.md`, and every other multi-repository plan
-   dispatched from a cloud session needs it too.
 
-Nothing else from the classification needs work: the four fixes the framework took are
+Nothing else from the classification needs work: the five fixes the framework took are
 shipped, and the stale rows go when each project next takes a release or re-reads its
 block. T2, this repository's own stale wording, is the one an agent working on `/idea`
 would correct on the spot, so it gets no backlog item (`.claude/rules/catalogs.md`, *What
