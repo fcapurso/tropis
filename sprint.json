@@ -219,6 +219,9 @@
     },
     "framework-doc-delivery": {
       "state": "planning"
+    },
+    "sprint-archives-a-session-once-it-ships": {
+      "state": "planning"
     }
   },
   "notes": {
