@@ -2263,9 +2263,15 @@
 # 2026-11-04: a private repository's name was replaced by the pseudonym embryo-project,
 # the repository where Tropis's embryo was first developed; it never adopted Tropis, so
 # its commands are forerunners rather than an adopter's changes.
+# Shipped 2026-11-04 by the spike itself, in a Claude Code cloud session: the answer is
+# the finding in refs. Criteria to the finding: 1, Every change, classified; 2, The
+# proposed procedure and fill-ins, per command; 3, The prototype; 4, The fresh agent
+# (Claude Code 2.1.318, Linux x86_64); 5, Does a fixed procedure limit adopters, and
+# Recommendations. embryo-project never took Tropis, so its commands are read as
+# forerunners (Where the changes came from) rather than classified. A spike, so no modules.
 - id: command-slots-spike
   title: Find out whether commands can be extended through fixed slots and still update mechanically
-  status: shaped
+  status: shipped
   value: Before changing how projects customise the framework's commands, we know from
     what real projects changed whether a fixed skeleton with named slots holds those
     changes, whether an update can then carry them across versions without a hand merge,
@@ -2288,6 +2294,27 @@
       procedure found and what a project would do instead, and recommends the balance
       between stability and customisation, with the entries to build.
   type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
+    - docs/superpowers/specs/2026-11-04-command-slots-finding.md
+# 2026-11-04, the recommendation of command-slots-spike: a fixed procedure with named
+# fill-ins held 23 of 40 real changes, and a data file one more; the rest were stale
+# copies, fixes already taken and three procedure changes with a better home. A
+# prototype carried them by name from v0.5.2 to v0.8.1. Called fill-ins because "slot"
+# already names the pipeline's staging slot.
+- id: commands-have-named-fill-ins
+  title: A command's fill-ins are carried by name when a project takes a new release
+  status: idea
+  value: A project that filled in a command keeps its fill-ins through every update
+    without merging by hand, and is told when a fill-in is new, renamed, means something
+    different or has gone. Today each command has one free-text block, carried as one
+    lump, so a renamed field stays under its old name with nothing said, and a release
+    that adds or removes a block writes the whole command beside the project's as a .new
+    file to merge by hand.
+  acceptanceCriteria: []
+  type: improvement
   layer: product
   modules: []
   refs:

@@ -38,18 +38,20 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-command-slots-spike:
-  band: A
-  value: 5
-  valueWhy: Every command a project touches is a hand merge on every update until
-    this is answered.
-  effort: 4
-  effortWhy: A finding across three projects' changes and a throwaway prototype.
-  verdict: "The open design question of the framework-updates arc: until it is
-    answered, every command a project touches is a hand merge on each update. It
-    is also what the backlog report names as the next step."
+commands-have-named-fill-ins:
+  band: B
+  value: 4
+  valueWhy: Every project that fills in a command meets it on every update, and today a
+    renamed field is carried under its old name with nothing said.
+  effort: 3
+  effortWhy: Named fill-ins in six commands, carrying by name in the update, and a
+    one-time move of each project's existing blocks.
+  verdict: "The command-slots finding's recommendation. Worth building next in the
+    updates arc; the prototype already shows the carry works."
+  evidence: "2026-11-04 — 23 of 40 real changes are fill-ins; a prototype carried one
+    project's release command from v0.5.2 to v0.8.1 by name, see the finding."
   seen:
-    status: shaped
+    status: idea
     blockers: []
 cursor-rules-return-after-summarize:
   band: C
