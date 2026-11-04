@@ -6224,12 +6224,15 @@
 # so a penalty borrowed from one model cannot stand in for another's missing row.
 - id: picks-are-judged-at-the-default-effort
   title: The model picks are judged at the effort each tool starts a model at
-  status: idea
+  status: building
   value: The model a plan, a team member or a reviewer is handed sits in the tier its
     evidence supports at the effort it will actually run at, so a model that scores in
     one tier at max effort and in a lower one at its tool's default is not handed work
     that only its max-effort self can hold.
-  # Stated by the developer on 2026-11-04.
+  # Stated by the developer on 2026-11-04. Shaped the same day: a pick is judged at the
+  # lowest effort a supported tool starts it at; where Cursor states no default, at the
+  # effort its command-line name selects; a board with no row there is read at its
+  # nearest row, marked inferred (FW-069).
   acceptanceCriteria:
     - The default effort each supported tool starts each pick at is verified against that
       tool's own documentation and recorded in the picks file, with its source.
@@ -6243,6 +6246,7 @@
   refs:
     - docs/model-picks.md
     - commands/refresh-model-tiers.md
+    - docs/superpowers/plans/2026-11-04-picks-are-judged-at-the-default-effort.md
 # Raised 2026-11-04 by the picks-are-judged-at-the-default-effort team member and taken
 # up by the developer: once picks are judged at their default effort, Claude Code has no
 # included pick in Medium or Medium-large but Fable 5.1, so on Max, Ultra and Team Premium
