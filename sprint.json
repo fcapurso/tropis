@@ -36,6 +36,10 @@
     {
       "id": "probe-keeps-to-its-tools",
       "points": 2
+    },
+    {
+      "id": "tier-falls-through-to-the-cheapest-included-pick",
+      "points": 0
     }
   ],
   "baseline": [
