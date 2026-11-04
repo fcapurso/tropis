@@ -106,3 +106,57 @@ probe-keeps-to-its-tools
    tool calls visible; amend the commit body with the outcome.
 3. Move the item to `shipped`, write the handover report.
 4. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.318 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the wording is written
+against this repository's own `framework/workflow.md` and the evidence the plan cites.
+
+### Task completion
+
+- Task 1: done. The paragraph "**Keep the probe to the route the clause watches.**"
+  follows *Judge the check by what the agent did*.
+- Task 2: done, on the first run (below); the commit body records it.
+- Task 3: done.
+- Task 4: the fresh reviewer's record follows.
+
+### Verification results
+
+- Fresh-agent check: Claude Code 2.1.318 on Linux x86_64, `claude -p --model
+  claude-opus-5-5 --output-format stream-json --verbose --tools "Read,Grep,Glob"`,
+  signed in to the developer's plan with no API key, in a scratch clone of the branch.
+  `dispatch.mjs --tier Large` names no model in this cloud session, which records no
+  subscription; Claude Opus 5.5 is the Large tier's pick every subscription includes
+  (`docs/model-picks.md`). No user-level instructions exist in this container. The task:
+  set up the fresh-agent check for an invented PreToolUse hook that answers a Write under
+  `docs/adr/` with a checklist, without running it; the prompt named no tool and no
+  flag. Calls: one `Grep` for the section's paragraph leads, one `Read` of
+  `framework/workflow.md` lines 600–710. The answer's command carried
+  `--tools "Read,Glob,Grep,Write"`, with "Without it, the agent could create the file
+  through Bash (a heredoc), Edit or NotebookEdit, and the hook would never fire. Listing
+  tools under `--allowedTools` would only skip permission prompts; it wouldn't take
+  those routes away.", and under "Inconclusive, never a pass": "The ADR was created by
+  any route other than Write." **Pass.**
+- `npm --prefix .tropis test` and `bash scripts/check-blueprint.sh`: run by the reviewer
+  and the pull request's pipeline.
+
+### Scope
+
+`framework/workflow.md`, `feature-catalog.yaml`, `docs/backlog-board/bands.yaml` and
+this plan, all in *File Structure*. Worktree: the sibling `../tropis-probe-tools-build`.
+
+### Judgment calls
+
+- The paragraph names both Claude Code ways (`--disallowedTools` and `--tools`); the
+  probe chose `--tools`, which names what stays rather than guessing what to remove.
+- The probe was given read tools only, since its task was to describe a check, not run
+  one; it therefore tests the wording, not a hook.
+
+### What the plan got wrong
+
+- Nothing found.
+
+### Outstanding
+
+- No screen. Nothing else.
