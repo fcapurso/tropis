@@ -40,6 +40,7 @@ unrouted-learnings:review-record
 projection-drift:rules-generated
 hand-edited-rule:rules-generated
 orphan-addition:rules-generated
+missing-imported-rule:rules-generated
 stale-addition:rules-generated
 edited-framework-file:installed-files
 plain-reply:rule-delivery
