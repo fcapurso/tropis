@@ -10,22 +10,6 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
-a-release-says-what-changed-briefly:
-  band: B
-  value: 3
-  valueWhy: Every reader of every release meets it, and the steps done by hand get
-    lost among feature paragraphs.
-  effort: 2
-  effortWhy: A length rule in /release's drafting step, and a check that the steps
-    done by hand stay whole.
-  bundle: release-writing
-  verdict: "Worth doing before the next release, or its notes grow again. Best done
-    with the README overview, since /release refreshes the README too."
-  evidence: "2026-11-02 — the 0.8.0 notes are about 1,350 words; 0.5.0 to 0.7.0 are
-    about 700 each."
-  seen:
-    status: shipped
-    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
@@ -35,6 +19,22 @@ adopt-into-a-project-with-its-own-framework:
   verdict: "Large, designed from one adoption, and two of its draft criteria
     cannot be tested yet. Decide its shape, likely as several entries, before
     anyone builds."
+  seen:
+    status: idea
+    blockers: []
+author-built-evidence-reaches-the-reviewer:
+  band: B
+  value: 3
+  valueWhy: The build-it-and-send-it-to-a-fresh-reviewer shape is new, and its first use
+    left the reviewer unable to re-check part of the measurement it was reviewing.
+  effort: 2
+  effortWhy: Saying in the planning rule and the dispatch prompt where an author-built
+    plan's evidence and re-run commands go, so the reviewer finds them.
+  verdict: "Worth doing next, before the shape is used again: a review that cannot
+    reach the evidence reports that it could not, and the measurement goes unchecked."
+  evidence: "2026-11-04 — the review record of the rules-return-after-compaction plan
+    routes 'Evidence outside the reviewer's reach' here; that review could not re-run
+    the fresh-agent check or confirm the handover's test counts."
   seen:
     status: idea
     blockers: []
@@ -53,18 +53,6 @@ commands-have-named-fill-ins:
   seen:
     status: idea
     blockers: []
-cursor-rules-return-after-summarize:
-  band: C
-  value: 3
-  valueWhy: Long Cursor chats may lose their area rules once summarized, with nothing
-    saying so.
-  effort: 1
-  effortWhy: One measurement, with the developer at Cursor.
-  verdict: "Batch it with the next check run at Cursor. The Claude Code half is in
-    rules-return-after-compaction's finding."
-  seen:
-    status: idea
-    blockers: []
 commands-reach-cursor:
   band: B
   value: 3
@@ -75,6 +63,18 @@ commands-reach-cursor:
     the commands if they are missing.
   verdict: Measure next; it needs the developer's Cursor, so pair it with the Cursor
     check framework-reaches-every-tool ends with.
+  seen:
+    status: idea
+    blockers: []
+cursor-rules-return-after-summarize:
+  band: C
+  value: 3
+  valueWhy: Long Cursor chats may lose their area rules once summarized, with nothing
+    saying so.
+  effort: 1
+  effortWhy: One measurement, with the developer at Cursor.
+  verdict: "Batch it with the next check run at Cursor. The Claude Code half is in
+    rules-return-after-compaction's finding."
   seen:
     status: idea
     blockers: []
@@ -112,6 +112,22 @@ framework-installs-as-a-package:
   effortWhy: A change to how the framework is distributed, in every tool.
   verdict: "A large change to how the framework is distributed. Decide whether a
     machine-wide package is wanted at all before building toward it."
+  seen:
+    status: idea
+    blockers: []
+launch-grants-case-passes-on-rerun:
+  band: B
+  value: 3
+  valueWhy: A self-check that goes red under load and green on a rerun teaches every
+    executor to rerun a red result instead of believing it.
+  effort: 2
+  effortWhy: One test case, fixed the way the main-status and capture-at-write cases
+    were made to pass under load.
+  verdict: "A defect by the workflow's own rule, with two shipped precedents for the
+    fix. Do it next; it is small."
+  evidence: "2026-11-04 — the case is '† for cursor, writes the grants into a worktree
+    that has none and leaves an existing file alone' in guards/team-member-cli.test.js;
+    it failed once under load in the review of #227 and passed on reruns."
   seen:
     status: idea
     blockers: []
@@ -185,19 +201,6 @@ plan-tier-is-chosen-against-the-tiers:
   seen:
     status: idea
     blockers: []
-probe-keeps-to-its-tools:
-  band: B
-  value: 2
-  valueWhy: Only matters for checks of a hook on one tool, which are rare, but such a
-    check can pass while proving nothing.
-  effort: 2
-  effortWhy: A paragraph in the workflow's fresh-agent section on limiting the probe's
-    tools.
-  verdict: "Small and worth doing when the workflow's fresh-agent section is next
-    touched; until then a probe of a hook can report a pass it did not earn."
-  seen:
-    status: shipped
-    blockers: []
 project-chooses-its-repository-host:
   band: B
   value: 3
@@ -229,34 +232,6 @@ project-settings-are-listed-and-held-once:
   seen:
     status: shaped
     blockers: []
-readme-gives-an-overview-not-a-feature-list:
-  band: B
-  value: 3
-  valueWhy: The README is the first page anyone deciding on Tropis reads, and a
-    feature list hides what it is for.
-  effort: 2
-  effortWhy: A fixed set of aspects and a bullet limit in /refresh-readme's outline,
-    then one refresh.
-  bundle: release-writing
-  verdict: "Do it before the next README refresh, which is already due with 20 items
-    shipped since the last; otherwise that refresh lengthens the list again."
-  evidence: "2026-11-02 — What it does for you has 17 bullets, one per capability."
-  seen:
-    status: shipped
-    blockers: []
-release-notes-cover-a-restaged-commit:
-  band: B
-  value: 3
-  valueWhy: A release can ship a change its notes never mention, which is the one
-    thing release notes exist to prevent.
-  effort: 2
-  effortWhy: /release offers to redraft when the staged commit moves.
-  bundle: release-writing
-  verdict: "A real gap in the release flow, small to close. Best done together with
-    the shorter notes, since both change how /release drafts."
-  seen:
-    status: shipped
-    blockers: []
 release-notes-stay-a-readable-size:
   band: D
   value: 1
@@ -281,6 +256,20 @@ rule-is-measured-with-and-without:
   seen:
     status: idea
     blockers: []
+rule-pruning-keeps-pace:
+  band: B
+  value: 4
+  valueWhy: Every session in an area reads its whole rule file, the files only grow, and
+    the trial before a release removes at most one sentence.
+  effort: 4
+  effortWhy: A word budget per rule file, a fresh-agent pass proposing deletions across
+    a file, and three runs per deletion that changes what an agent is told.
+  verdict: "Worth doing once rule-is-measured-with-and-without says measuring a rule
+    is reliable and cheap enough; its three-run test is that spike's method. The board
+    marks the wait."
+  seen:
+    status: idea
+    blockers: [rule-is-measured-with-and-without]
 setup-offers-to-create-the-repository:
   band: C
   value: 2
