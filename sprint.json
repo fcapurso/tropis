@@ -226,6 +226,9 @@
     },
     "sprint-archives-a-session-once-it-ships": {
       "state": "planning"
+    },
+    "tier-falls-through-to-the-cheapest-included-pick": {
+      "state": "planning"
     }
   },
   "notes": {
