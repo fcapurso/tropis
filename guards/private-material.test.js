@@ -31,13 +31,15 @@ function isBlueprintTree(dir) {
 
 /**
  * SHA-256 of lower-cased private names (letters and digits only). Hashes, never names:
- * publishing this list publishes nothing. To add one:
+ * publishing this list publishes nothing. A name written in parts joined by `-`, `_` or
+ * `.` is hashed with the joins removed, so one entry covers every spelling. To add one:
  *   printf '%s' <word> | shasum -a 256
  * A name nobody has hashed passes this guard; read your own diff for names.
  */
 export const HASHED_NAMES = [
   '9c3bb2dc2d5961ecd4a1e8112b15da950ca6bb225dc10c34504bce040fe1311c',
   '0eb2b6cff49729f68d65231514874eb08810e19ae5c5e595ec2ea34c5976c969',
+  '535d7adf40339c2a1609cbdd4f3113a586db93374b7eba7b810016ced099d035',
 ];
 
 const EXACT_ADDRESSES = new Set([
@@ -99,6 +101,9 @@ export function scanLine(line, hashes = HASHED_NAMES) {
   }
   for (const m of line.toLowerCase().matchAll(/[a-z0-9]+/g)) {
     if (hashes.includes(hashOf(m[0]))) add('hashed name', m[0].replace(/./g, '*'));
+  }
+  for (const m of line.toLowerCase().matchAll(/[a-z0-9]+(?:[-_.][a-z0-9]+)+/g)) {
+    if (hashes.includes(hashOf(m[0].replace(/[-_.]/g, '')))) add('hashed name', m[0].replace(/./g, '*'));
   }
   return found;
 }
@@ -167,6 +172,12 @@ describe('scanner: each kind is reported', () => {
     const hits = scanLine(`the ${word.toUpperCase()}-thing`, [sha(word)]);
     expect(hits).toEqual([{ kind: 'hashed name', text: '*'.repeat(word.length) }]);
   });
+  it('a name in parts whose joined hash is on the list, however it is joined', () => {
+    for (const written of ['zorb-lax', 'Zorb_Lax', 'zorb.lax']) {
+      const hits = scanLine(`see ${written} here`, [sha('zorblax')]);
+      expect(hits).toEqual([{ kind: 'hashed name', text: '*'.repeat(written.length) }]);
+    }
+  });
 });
 
 describe('scanner: allowlisted text is silent', () => {
@@ -206,6 +217,9 @@ describe('the hash list', () => {
     const own = readFileSync(fileURLToPath(import.meta.url), 'utf8').toLowerCase();
     for (const m of own.matchAll(/[a-z0-9]+/g)) {
       expect(HASHED_NAMES).not.toContain(sha(m[0]));
+    }
+    for (const m of own.matchAll(/[a-z0-9]+(?:[-_.][a-z0-9]+)+/g)) {
+      expect(HASHED_NAMES).not.toContain(sha(m[0].replace(/[-_.]/g, '')));
     }
   });
 });

@@ -2260,6 +2260,9 @@
 # building anything from it.
 # 2026-10-16, backlog cleanup: added to the updates arc, whose goal is that a project's own changes
 # live where an update never has to merge them; commands are the part not yet there.
+# 2026-11-04: a private repository's name was replaced by the pseudonym embryo-project,
+# the repository where Tropis's embryo was first developed; it never adopted Tropis, so
+# its commands are forerunners rather than an adopter's changes.
 - id: command-slots-spike
   title: Find out whether commands can be extended through fixed slots and still update mechanically
   status: shaped
@@ -2270,7 +2273,7 @@
     block forks it, and every later improvement to that command reaches the project only
     as a .new file to merge by hand.
   acceptanceCriteria:
-    - A written finding classifies every change that first-adopter, expense-tracker and this
+    - A written finding classifies every change that first-adopter, embryo-project and this
       repository's installed copy made to the framework's commands as a value, behaviour at
       a point in the procedure, a change to the procedure itself, a fix the framework
       should take, or a stale copy, each with the diff it came from.
