@@ -635,18 +635,50 @@
 # catalog; dropped. Nothing here replaces it.
 - id: rules-return-after-compaction
   title: Find out whether an area rule comes back after the conversation is compacted or cleared
-  status: idea
+  status: building
   value: Before anything is built to re-deliver rules, we know whether an agent that
-    touches a file in an area after /compact or /clear gets that area's rule again —
-    whether Claude Code re-attaches a rule loaded by its paths header, and whether
-    Cursor re-attaches its projected rule — measured, with tool and version. A long
-    session would otherwise lose its rules exactly when it has run longest.
+    touches a file in an area after /compact or /clear gets that area's rule again in
+    Claude Code, where a rule is loaded by its paths header — measured, with tool and
+    version. A long session would otherwise lose its rules exactly when it has run
+    longest.
+  # Shaped 2026-11-04 by the session delivering it in the developer's sprint. The Cursor
+  # half is split into cursor-rules-return-after-summarize, because the cloud session that
+  # measured this has no Cursor and that half needs the developer at Cursor.
+  acceptanceCriteria:
+    - A written finding records, for a rule loaded by its paths header, whether it was
+      given again when the agent touched a file in its area after /compact and after
+      /clear — the file it had touched before and one it had not — with the Claude Code
+      version and the operating system and architecture it ran on.
+    - Each run first repeats the baseline, a fresh session reading a file in the area,
+      and a control session that never touched the area before compaction, so a rule
+      that does not come back is told apart from a rule that never arrived.
+    - Every run is in a throwaway project with an invented area, and the rule's arrival
+      is read from the session's transcript as well as from a marker sentence in the
+      agent's reply.
+    - The finding ends with a recommendation, and framework/rule-delivery.md says what
+      was measured.
+  type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
+    - docs/superpowers/plans/2026-11-04-rules-return-after-compaction.md
+# 2026-11-04, split from rules-return-after-compaction while shaping it, because the cloud
+# session that measured the Claude Code half has no Cursor.
+- id: cursor-rules-return-after-summarize
+  title: Find out whether a Cursor area rule comes back after the chat is summarized
+  status: idea
+  value: We know whether a Cursor agent that touches a file in an area after its chat is
+    summarized, or after a new chat replaces it, gets that area's generated rule again —
+    measured from inside Cursor, with its version. A long Cursor chat would otherwise
+    lose its rules exactly when it has run longest.
   acceptanceCriteria: []
   type: spike
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
+    - docs/superpowers/plans/2026-11-04-rules-return-after-compaction.md
 # Prototyped in the update-model spike: 18 of 18 paths and 11 of 11 Cursor projections
 # came out identical with the ladder read from data.
 # 2026-10-09, audit proposal 8, accepted: framework-integrity.test.js and
