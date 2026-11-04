@@ -335,3 +335,55 @@ Only files in *File Structure*. The board page was not rebuilt or changed.
 ### Outstanding
 
 The fresh-agent check, review, pull request and merge belong to the specifying session. The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code 2.1.318 cloud session. Tools: git
+2.43.0, node v22.23.4, Linux x86_64. Written after the merge: the pull request merged
+without it and the main branch went red on this guard, so it lands as its own repair.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` after the rebase on `origin/main`: `Self-check passed`.
+- `npm --prefix .tropis test` after the rebase: `Tests: 178 passed, 178 total`.
+- Scope: `git diff --stat origin/main...HEAD` listed seven files, all in *File Structure*.
+
+### Found
+
+Public exposure: the diff was read for home paths, hostnames, email addresses and names;
+nothing found.
+
+- The code matches the plan. The executor also updated three existing cases that assert
+  a session start's exact output, which the plan's file list covered but its tests
+  section missed.
+- Fixed on the branch, mechanical: the release note wrapped to the file's width.
+- The fresh-agent check (recorded in the merge commit) found what the change intended:
+  one question at start, notes before `archive`, a parked team member and an unfinished
+  bundle left open, the developer told where the tool cannot archive. Its unclear points
+  led to a second fix on the branch: no question prompt means asking with the proposal,
+  no archive tool means not asking and passing `--archive no`, `report` shows notes
+  already recorded, and step 3 points at step 3a.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The probe noted that a team member marked parked whose item later shipped reads as
+  plain shipped in `status`, so nobody is told and its session stays open. That
+  predates this change, and nothing has hit it in a sprint; noted here, not made a
+  backlog item.
+- `archive` records before the tool archives, so a session the tool could not archive
+  still reads as archived. Decided in the plan; `/sprint` tells the developer.
+
+### Learnings routed
+
+- No durable change. In this cloud session `merge-token.mjs release` failed with
+  `fatal: expected 'acknowledgments', received 'packfile'` from git's push negotiation
+  through the session's proxy; it released with protocol version 0 set in the
+  environment. Seen once, in one environment; noted here.
+- This record was missed before merge, which turned the main branch red: the guard
+  checks it only on `main`, so no check on the branch said so.
+
+### Merged because
+
+The sprint records the developer's one answer, `status` and `archive` gate on shipped
+and not parked or stopped, the three new cases cover that, and the self-check passed.
