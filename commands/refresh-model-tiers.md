@@ -80,8 +80,7 @@ with each admission. Place Large this way:
 1. **On each board scored from 0 to 100**, in percentages or index points, such as
    Artificial Analysis's Intelligence Index or CursorBench, find the highest score any
    selectable model has at the effort it is judged at. A model is in Large only when, on
-   every such board that scores
-   it, it is within **1 point** of that highest score.
+   every such board that scores it, it is within **1 point** of that highest score.
 2. **Read each model at the effort it is judged at**, as *Read each board at the effort
    a pick is judged at* says. A board that scores a model only above its judged effort
    does not confirm it for Large: the model stays out of Large, marked `Large

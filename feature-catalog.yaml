@@ -6250,6 +6250,11 @@
 # (55.5%); the picks file already has Haiku 5.5 at 36.9% (48.4%). Drops differ by model,
 # so a penalty borrowed from one model cannot stand in for another's missing row.
 # Shipped by docs/superpowers/plans/2026-11-04-picks-are-judged-at-the-default-effort.md.
+# Criteria 1 and 2: the case "tells /refresh-model-tiers to judge each pick at the effort a
+# tool starts it at" in guards/dispatch.test.js, the third table and the inferred marks of
+# docs/model-picks.md, and the fresh-agent check recorded in the merge commit.
+# Criterion 3: the medium-effort CursorBench 4.0 figures read from cursor.com/cursorbench on
+# 2026-11-04, listed in the plan's verification notes and the picks file's sources.
 - id: picks-are-judged-at-the-default-effort
   title: The model picks are judged at the effort each tool starts a model at
   status: shipped
@@ -6268,11 +6273,6 @@
       publishes one, and marks a placement inferred where it does not.
     - The medium-effort CursorBench 4.0 figures are checked against Cursor's own page
       before any pick moves on them.
-    # Criterion 1 is covered by the effort section of commands/refresh-model-tiers.md and
-    # by the third table of docs/model-picks.md, sources included. Criterion 2 by the
-    # "Read each board at the effort a pick is judged at" paragraph of that command, and
-    # by the inferred marks in docs/model-picks.md. Criterion 3 by the cursor.com/cursorbench
-    # source read on 2026-11-04 in docs/model-picks.md.
   type: improvement
   layer: product
   modules:
