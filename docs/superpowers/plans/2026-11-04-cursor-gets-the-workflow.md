@@ -358,14 +358,14 @@ Tools: git 2.43.0, node v22.23.4, jest from `.self-check/`, Linux x86_64.
 - `blockedBy: framework-doc-delivery` removed from the shipped item, which
   `guards/catalog-entries.test.js` requires.
 - The test string for a line with a space is built with `join` so `private-material` does
-  not read `n@ok.md` as an email.
+  not read the line break before an import line as the end of an email address.
 - Named source: none in particular.
 
 ### What the plan got wrong
 
 - `guards/set-up-project.test.js` expects the Cursor rules to equal the shipped rules and
   was not in the File Structure.
-- The proposed `@foo bar\n@ok.md` test text trips `private-material`'s email check.
+- The proposed test text for a line with a space, written as one string with an import line after a line break, trips `private-material`'s email check.
 - Task 5 did not say to drop the shipped item's `blockedBy`; the catalog guard needs it.
 
 ### Outstanding
