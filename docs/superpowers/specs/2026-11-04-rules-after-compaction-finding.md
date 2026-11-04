@@ -12,7 +12,8 @@ One gap is specific to compaction. Compaction re-attaches the files the agent ha
 so the agent may edit one of them without reading it first, and the rule is attached
 after that edit's result: **the first edit in an area after compaction is made before
 the rule is back**, carrying only what the summary kept of it. The summary kept a short
-rule verbatim and, of a 60-clause rule, only its marker clause. In a fresh session the
+rule verbatim and, of a 60-clause rule, its marker clause and a one-sentence gist of the
+other 59. In a fresh session the
 same edit would have needed a read first, which brings the rule in before the edit.
 
 Cursor was not measured: this session had no Cursor. That half is its own backlog item,
@@ -60,7 +61,7 @@ areas/alpha/one.js, areas/alpha/two.js, areas/beta/b.js, areas/gamma/g.js   one 
 |---|---|---|---|
 | A, headless | asked before any tool | none | "No." |
 | | read `alpha/one.js` | after the read | `ALPHA-RULE-PRESENT` |
-| | `/compact` (manual, 36,982 tokens before) | — | — |
+| | `/compact` (manual, 37,110 tokens before) | — | — |
 | | asked before any tool | none | quoted from the summary: "Yes, but only as a quote inside the compaction summary" |
 | | read `alpha/one.js` again | **after the read** | `ALPHA-RULE-PRESENT` |
 | | read `alpha/two.js` | none: already attached since the compaction | `ALPHA-RULE-PRESENT` |
@@ -124,7 +125,9 @@ Run F, the edit without a read after compaction:
    action in the area that had a result, so the difference changes nothing here. Why the
    two differed was not established.
 4. **Until the next touch, the rule is what the summary kept.** A short rule and a
-   clause marked "Marker" were quoted; 59 of the long rule's 60 clauses were not.
+   clause beginning "Marker:" were quoted; 59 of the long rule's 60 clauses were not,
+   only a one-sentence gist of them. Those 59 are near-identical, so the probe does not
+   show how much a rule of distinct clauses would lose.
 5. **The first edit after compaction can precede the rule.** Compaction restores the
    files the agent had read, and the Edit tool then accepts an edit without a fresh read.
    The rule is attached after that edit's result. In a fresh session or after `/clear`

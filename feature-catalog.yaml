@@ -668,6 +668,23 @@
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-11-04-rules-return-after-compaction.md
     - docs/superpowers/specs/2026-11-04-rules-after-compaction-finding.md
+# 2026-11-04, found reviewing rules-return-after-compaction: its fresh reviewer, started
+# with claude -p from the plan's worktree, was refused reads of the scratchpad holding the
+# transcripts and refused npm and node, and could approve only once copies sat in the
+# worktree and those commands were allowed.
+- id: author-built-evidence-reaches-the-reviewer
+  title: Evidence for a plan its author built reaches the fresh reviewer
+  status: idea
+  value: When a plan's author builds the work and sends it to a fresh reviewer, the
+    evidence the work rests on and the commands the review re-runs are within the
+    reviewer's reach, so the review checks the measurement rather than reporting that it
+    could not.
+  acceptanceCriteria: []
+  type: feature
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/plans/2026-11-04-rules-return-after-compaction.md
 # 2026-11-04, split from rules-return-after-compaction while shaping it, because the cloud
 # session that measured the Claude Code half has no Cursor.
 - id: cursor-rules-return-after-summarize
