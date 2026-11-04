@@ -163,8 +163,6 @@
       records projecting the workflow over relying on the fallback paragraph.
   type: bug
   layer: product
-  blockedBy:
-    - framework-doc-delivery
   # 2026-10-16, backlog cleanup: after instruction-layer-means-what-it-says, shipped in the
   # first-adopter-harness catalog; dropped. The first criterion already holds: AGENTS.md and
   # templates/CLAUDE.md tell a tool that does not expand the import to read the workflow.
