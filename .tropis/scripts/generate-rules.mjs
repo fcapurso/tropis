@@ -6,7 +6,9 @@
  * .claude/rule-areas.json, the project's additions to a shipped rule in
  * .claude/rule-additions/, and the project's own rules in .claude/rules/ (hand-written,
  * with a `paths:` header). Output: .claude/rules/<name>.md for each shipped rule, and
- * .cursor/rules/<name>.mdc for every rule. Each file ends in a hash line, so `--check`
+ * .cursor/rules/<name>.mdc for every rule, and .cursor/rules/imported-<name>.mdc, always
+ * applied, for each file the root AGENTS.md imports with an `@` line (Cursor does not
+ * expand imports). Each file ends in a hash line, so `--check`
  * can tell a hand edit from a source that moved on. Running twice writes identical bytes.
  *
  * Run: `npm --prefix .tropis run rules` — and `rules -- --check` to only report.
@@ -14,7 +16,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, basename } from 'node:path';
-import { parseRule, areaProblems, renderClaude, renderCursor, checkStamp, joinAdditions, additionsProblem } from './rule-areas.js';
+import { parseRule, areaProblems, renderClaude, renderCursor, renderCursorAlways, importsOf, importedRuleName, checkStamp, joinAdditions, additionsProblem } from './rule-areas.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 // Installed at .tropis/scripts/, two levels below the project root.
@@ -82,6 +84,19 @@ if (problems.length === 0) {
     const text = joinAdditions(read(`.tropis/rules/${name}.md`), additions.get(name) ?? null);
     expected.set(`.claude/rules/${name}.md`, renderClaude(areas[name], text));
     expected.set(`.cursor/rules/${name}.mdc`, renderCursor(name, areas[name], text));
+  }
+}
+
+// Every file AGENTS.md imports, for Cursor, which does not expand the import.
+if (problems.length === 0) {
+  const entry = readIfThere('AGENTS.md');
+  for (const path of entry === null ? [] : importsOf(entry)) {
+    const name = importedRuleName(path);
+    const text = readIfThere(path);
+    if (text === null) problems.push(`AGENTS.md imports ${path}, which does not exist`);
+    else if (own.includes(name) || shipped.includes(name)) {
+      problems.push(`.claude/rules/${name}.md: a project rule named like the Cursor rule written for the import ${path} — rename it`);
+    } else expected.set(`.cursor/rules/${name}.mdc`, renderCursorAlways(name, text));
   }
 }
 if (problems.length > 0) fail(problems);

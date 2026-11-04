@@ -335,8 +335,11 @@ can disagree.
 
 **Consequences:** A session starts with no area rule. A header only works for files inside
 the session's own folder, which is why it takes effect with FW-010. A project's areas live
-in shipped rule files until `rule-areas-are-project-data`; rules after `/compact` are
-`rules-return-after-compaction`'s; Cursor is `cursor-agents-receive-area-rules`'s.
+in shipped rule files until `rule-areas-are-project-data`. Cursor is
+`cursor-agents-receive-area-rules`'s. After `/compact` or `/clear` Claude Code attaches
+a rule again on the next touch of its area, measured 2026-11-04
+(`rules-return-after-compaction`), so the framework builds nothing to re-deliver rules
+after compaction.
 
 ## FW-010: A project is set up inside its own repository
 
@@ -860,7 +863,7 @@ nothing in a set-up project's suite reads its README.
 
 ## FW-027: Model picks rest only on figures that can be compared
 
-**Date:** 2026-10-21 · **Status:** Accepted; its exclusion of cost now covers placement only (FW-057).
+**Date:** 2026-10-21 · **Status:** Accepted; its exclusion of cost now covers placement only (FW-057), and Large is placed by FW-067.
 
 **Decision:** `/refresh-model-tiers` ranks one model above another only on scores that
 share the benchmark and its version, the harness, the effort setting, and a period in
@@ -2154,3 +2157,150 @@ goes with it). A shorter interval (more turns for an event that takes hours).
 **Consequences:** A long wait in the cloud costs about two turns an hour, and a wake
 may arrive up to a minute late. A session that cannot schedule a wake keeps to the
 background command and its limits.
+
+## FW-067: Large admits only models level with the best selectable pick
+
+**Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
+`large-tier-anchors-on-the-best-pick`. Amends FW-027's placement rule for Large. Its
+reading of each model at its best score is replaced by FW-069.
+
+**Decision:** `/refresh-model-tiers` places a model in Large only when, on every board
+scored from 0 to 100 that scores it, it is within 1 point of the highest score any
+selectable model has there. Each model is read at its best score on the board, with the
+effort setting recorded, and a figure taken below the model's highest supported effort is
+marked. A board on another scale keeps a model out only where it states an uncertainty
+and the two ranges do not overlap. A model no 0-to-100 board scores stays out of Large;
+where the boards disagree on the best, Large holds each model highest on some board,
+marked contested. Every other tier is placed as FW-027 says, and usage still orders
+models inside a tier (FW-057).
+
+**Evidence:** The spike `large-tier-admits-on-judgment-evidence` (its finding of
+2026-11-03) found nothing that tells a Large model from a Medium–large one on the work
+Large is defined by. Every board the picks use grades its tasks mechanically; the boards
+nearer to judgment were unreachable from the session or second-hand; and a pilot review
+with four seeded judgment defects, run eight times, was found in full by Claude Haiku
+5.5, Sonnet 5.5 and Opus 5.5 alike. The rule then in use admitted a model level with one
+already in Large: Gemini 4 Argon joined on 2026-11-02 for being level with Claude Fable
+5.1, which is below Opus 5.5 and Sonnet 5.5 on every board. The developer chose the
+1-point margin on 2026-11-03. Source: none in particular; the finding above.
+
+**Rejected:** Keeping usage order across a tier whose members are not all fit for it
+(FW-057 puts the cheapest first, so the least fit would run every Large plan). Admitting
+on GDPval-AA (unconfirmed from its own page, and second-hand it puts a Medium–large model
+between Opus and Sonnet). A project-owned judgment battery (the cheap version did not
+separate even Large from Small–medium, and one that might costs dozens of runs per model
+at every roster change). A fixed list of flagship models (a vendor's positioning, not
+evidence). A margin judged per pass (the bar would move with whoever ran the pass).
+
+**Consequences:** Applied to the 2026-11-02 figures, Large is Claude Opus 5.5 alone, and
+Sonnet 5.5, Gemini 4 Argon and Fable 5.1 move to Medium–large. Every Large plan, sprint
+team member and fresh reviewer then draws on Opus 5.5, about three times Sonnet 5.5's
+usage per task on CursorBench 4.0 at High; a developer short of allowance lowers a plan's
+tier by reshaping it so a check exists, not by a cheaper model standing in. Every
+subscription that includes a Large pick today includes Opus 5.5.
+
+## FW-068: Cursor receives what AGENTS.md imports as an always-applied rule
+
+**Date:** 2026-11-04 · **Status:** Accepted; built by the backlog item
+`framework-reaches-every-tool`.
+
+**Decision:** The rule generator reads the import lines of the root `AGENTS.md` and
+writes each imported file as `.cursor/rules/imported-<basename>.mdc` with
+`alwaysApply: true`. Its `--check` fails when one is missing, stale, edited by hand or
+extra, and when an import names a file that does not exist; the self-check plants a
+missing one. The entry file's fallback paragraph stays, reworded to read the workflow only
+when it is not already in context.
+
+**Evidence:** The framework-doc-delivery finding (2026-11-04) shows Claude Code loads the
+workflow before any tool call through the import, and that Cursor does not expand the
+import, so it has the workflow only if its agent obeys the fallback sentence, which
+nobody has measured. The rule-delivery measurement (Cursor 3.24.12, 2026-10-15) shows an
+always-applied rule reaches a Cursor agent. Source: none in particular.
+
+**Rejected:** Keeping only the fallback sentence (unmeasured, and a delivery that depends
+on the agent choosing to follow an instruction is what the first requirement of
+rule-delivery rules out). Measuring in Cursor first (needs the developer's machine, and
+the projection makes the answer moot). Projecting the workflow by name (a project that
+imports a second document would not get it).
+
+**Consequences:** A project gets the file at its next update, and it follows each
+release's workflow. Cursor spends on the workflow the context Claude Code already spends
+on it. The fallback paragraph stays for projects not yet updated. A project rule named
+`imported-<x>` is refused.
+
+## FW-069: The picks are judged at the effort each tool starts a model at
+
+**Date:** 2026-11-04 · **Status:** Accepted; built by the backlog item
+`picks-are-judged-at-the-default-effort`. Replaces FW-067's reading of each model at its
+best score.
+
+**Decision:** `/refresh-model-tiers` judges each pick at the lowest effort a supported
+tool starts it at: Claude Code's documented default for the model; Cursor's documented
+default, or the effort a Cursor plan fixes; and, where Cursor states no default, the
+effort the pick's Cursor command-line name selects. The picks file records those efforts
+and the pages they came from. Each board is read at its row for that effort. Where a
+board has none, its nearest row is read and the placement marked inferred: a figure that
+may overstate a model never lifts it into a higher tier or sets Large's highest score,
+one that may understate it never keeps it out, and a board that scores a model only
+above its judged effort does not confirm it for Large. Usage per task is still read at
+one effort for every model (FW-057).
+
+**Evidence:** Claude Code's model-configuration page, read 2026-11-04: Opus 5.5, Sonnet
+5.5 and Haiku 5.5 default to medium, and every other model that supports effort to high.
+Neither `/dispatch` nor `sprint.mjs launch` sets an effort. The picks of 2026-11-03 read
+each model at its best row, mostly max: Sonnet 5.5 sat in Medium–large on CursorBench
+4.0's 55.5% at Max, and scores 39.2% at Medium, level with Gemini 3.8 Flash and below
+Grok 4.7; Artificial Analysis's Intelligence Index v5.0.1 shows the same fall, 54 at max
+against 31 at medium. Source: none in particular; the pages above.
+
+**Rejected:** Starting each model at the effort the boards scored it at (the developer
+chose the tools' defaults on 2026-11-04: a default is the vendor's own trade-off, and a
+higher setting draws on the subscription faster). Judging a pick once per tool, so one
+model sits in two tiers (the tier table has one row per model, and `/dispatch` reads it
+by name). Reading every model at its best and marking it (that is the reading this
+replaces).
+
+**Consequences:** On the figures read 2026-11-04, Opus 5.5 at medium stays alone in
+Large. Gemini 4 Argon, highest on CursorBench 4.0 at its medium default, stays out:
+Artificial Analysis scores it only at high. Sonnet 5.5 moves from Medium–large to
+Small–medium, Muse Wonder from Medium–large to Medium, GPT-5.6 Sol from Medium to
+Small–medium and GPT-5.6 Terra from Small–medium to Small. Claude Code then has no pick of
+its own in Medium or Medium–large but Fable 5.1, so a plan of either tier runs on Fable
+5.1 where Max, Ultra or Team Premium includes it, the most expensive pick per task, and
+on Opus 5.5 on Pro and Team Standard.
+
+## FW-070: A plan runs on the included pick that costs least per task in its tier or any tier above
+
+**Date:** 2026-11-04 · **Status:** Accepted; built by the backlog item
+`tier-falls-through-to-the-cheapest-included-pick`.
+
+**Decision:** `/dispatch`, `dispatch.mjs --tier`, and `sprint.mjs start`, `add` and
+`launch` name, of the picks for the tier and every tier above it that a subscription the
+developer holds includes, the one whose usage per task is least. Usage is the first
+dollar figure in the pick's `Usage per task` cell. A pick with no figure ranks after
+every pick with one; on a tie, the pick met first going up wins, so the plan's own tier
+keeps it. Where no included pick has a figure, the first included pick going up is named,
+as before, and the line says why.
+
+**Evidence:** Stated by the developer on 2026-11-04. Once the picks are judged at the
+effort each tool starts a model at (FW-069), Claude Code has no included pick in Medium
+or Medium–large but Claude Fable 5.1, so on Max, Ultra and Team Premium a plan of those
+tiers ran on Fable 5.1, $9.08 per task on CursorBench 4.0 at High, while Opus 5.5, a
+Large pick included on the same subscriptions, costs $3.97. FW-057 places on fitness
+alone, so every pick in a tier above is judged able to do a lower tier's work. Source:
+none in particular.
+
+**Rejected:** The plan's own tier first, going up only when it has no included pick
+(FW-053's and FW-057's rule: it put Medium work on the most expensive pick per task).
+Going past the first included pick only to a cheaper one and stopping at the first tier
+that has one (the developer's first statement of the item, replaced the same day: it
+still misses a cheaper pick two tiers up). Ranking an unmeasured pick by its place in the
+table (a pick with no figure cannot be shown to cost less). Letting usage move a model
+between tiers (FW-057 still rejects it: this changes which tier's pick runs, never where
+a pick sits).
+
+**Consequences:** Amends the "first included pick" of FW-053, FW-057 and FW-060. Inside
+a tier the picks are still listed least usage first, so a Large plan, a team member and a
+fresh reviewer get the pick they got before unless the table's order and its figures
+disagree. A plan of a lower tier may run on a more capable model than it needs when that
+model costs less per task.

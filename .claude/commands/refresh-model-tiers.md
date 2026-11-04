@@ -32,20 +32,81 @@ where each pick can run.
 every pick by the tools that actually offer it, and reword every sentence in the picks
 that names or counts the supported tools.
 
+## The effort each pick is judged at
+
+**Judge every pick at the effort a supported tool starts it at, never at its best.** A
+model's score climbs with its effort setting, and each tool starts a model at a default
+of its own, which `/dispatch` and `sprint.mjs launch` do not change: on 2026-11-04 Claude
+Code started Opus 5.5, Sonnet 5.5 and Haiku 5.5 at medium, while every board's best row
+for them was at max. A model judged at its best is handed work only its best setting can
+hold. The developer chose the tools' defaults over starting each model at the boards'
+effort, in FW-069.
+
+1. **For each pick, and each supported tool that offers it, find the effort the tool
+   starts it at, from that tool's own documentation, read this pass.** For Claude Code,
+   the model's default effort on its model-configuration page. For Cursor, the default
+   the model's own page in Cursor's documentation states, and the effort any Cursor plan
+   fixes it at. Where Cursor's documentation states no default, the pick starts at the
+   effort its Cursor command-line name selects: record that, marked `Cursor states no
+   default`.
+2. **A pick is judged at the lowest of those efforts.** Its tier must hold wherever it
+   runs, so it rests on the weakest setting a supported tool starts it at.
+3. **Record each pick's efforts in the picks file**, in a table whose header row begins
+   `| Model | Judged at |`, one row per pick: the effort it is judged at, each supported
+   tool's start effort written `<tool>: <effort>`, and the page each came from.
+
+**Read each board at the effort a pick is judged at.** Take the board's row for the
+model at that effort, and record the effort beside the figure. Where the board has no
+such row, take the nearest it has, record its effort, and mark the placement `inferred`:
+a row above the judged effort may overstate the model, and a row below may understate
+it. **A figure that may overstate never lifts a model into a higher tier and never sets
+the highest score Large is measured against; a figure that may understate never keeps a
+model out of one.** A model with no effort setting is read at its one row. A board that
+does not say at which effort it scored a model orders models and decides nothing.
+
 ## What the picks are for
 
 **A model's tier rests on fitness for the tier's work, and on nothing else.** Each model
-sits in the highest tier its evidence supports, and fits every tier below it. A lower
-tier's row names only the models that reach no higher, and ends with
-`or any pick from a higher tier`; a lower tier with no model of its own reads
-`Any pick from a higher tier`.
+sits in the highest tier its evidence supports, Large as the next paragraph says, and
+fits every tier below it. A lower tier's row names only the models that reach no higher,
+and ends with `or any pick from a higher tier`; a lower tier with no model of its own
+reads `Any pick from a higher tier`.
+
+**Large takes only models level with the best selectable pick.** In Large no check
+catches a weaker model's mistake, so the tier holds the best the boards agree on. A model
+is never admitted for being level with another model already in Large: that bar falls
+with each admission. Place Large this way:
+
+1. **On each board scored from 0 to 100**, in percentages or index points, such as
+   Artificial Analysis's Intelligence Index or CursorBench, find the highest score any
+   selectable model has at the effort it is judged at. A model is in Large only when, on
+   every such board that scores it, it is within **1 point** of that highest score.
+2. **Read each model at the effort it is judged at**, as *Read each board at the effort
+   a pick is judged at* says. A board that scores a model only above its judged effort
+   does not confirm it for Large: the model stays out of Large, marked `Large
+   unconfirmed`, and a pass that finds the board's row at the judged effort compares
+   again. Where another board's row at the judged effort already keeps it out, it is
+   not marked.
+3. **A board on another scale**, such as LMArena's Elo, keeps a model out of Large only
+   when it states an uncertainty for both scores and the two ranges do not overlap. A
+   board on another scale that states none orders models and does not decide Large.
+4. **A model that no board scored from 0 to 100 scores** stays out of Large, marked
+   unconfirmed.
+5. **Where no model meets step 1** because the boards disagree on which is best, Large
+   holds each model that has the highest score on at least one board, and the picks say
+   the tier is contested.
+
+A model this keeps out of Large goes in the highest tier below it that its evidence
+supports. The 1-point margin is the developer's choice, recorded in FW-067: change it
+there and here together, never within a pass.
 
 **Inside a tier, the models go least usage first.** A developer's subscriptions last
 longer on the model that does the job with the least of their allowance, and `/dispatch`
-names the first one the developer's subscriptions include. Usage is measured as cost per
-task on one shared board, at one effort setting for every model compared, such as the
-cost per task Artificial Analysis shows for its Intelligence Index. Cost per task folds a
-model's price and the tokens it spends into one figure, so a model with a lower price
+names the one that costs least per task of those the developer's subscriptions include,
+from the plan's tier and every tier above it. Usage is measured as cost per task on one
+shared board, at one effort setting for every model compared, such as the cost per task
+Artificial Analysis shows for its Intelligence Index. Cost per task folds a model's
+price and the tokens it spends into one figure, so a model with a lower price
 that spends more tokens is not taken for the cheaper one. It stands in for usage because
 no vendor publishes how fast each model draws a subscription's allowance: Cursor bills a
 third-party model at its API price, and Anthropic says only that some models draw a
@@ -175,8 +236,9 @@ Start a new file like this, then add the notes and sources below the table:
 Which models this project hands each tier to. The tiers are defined in
 `.claude/framework/model-tiers.md`; this file is written by `/refresh-model-tiers`.
 Each model sits in the tier its fitness supports. Inside a tier, models are listed
-least usage per task first, and `/dispatch` names the first one your subscriptions
-include; the second table gives each pick's usage and the subscriptions that include it.
+least usage per task first. `/dispatch` names, of the picks for a plan's tier and every
+tier above it that your subscriptions include, the one that costs least per task; the
+second table gives each pick's usage and the subscriptions that include it.
 
 **Last verified: YYYY-MM-DD.**
 

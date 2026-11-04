@@ -21,13 +21,16 @@
  * origin/main, so a team member in a worktree and the sprint session see one backlog.
  *
  *   sprint.mjs propose [--points <n>]            the proposal; exit 0
- *   sprint.mjs start <id> ... [--points <n>] [--way session|here|claude|cursor]
+ *   sprint.mjs start <id> ... [--points <n>] [--way session|here|claude|cursor] [--archive yes|no]
  *                                                writes the record; exit 1 when
  *                                                one exists or an id is unknown
  *   sprint.mjs add <id> | drop <id>              change the sprint; exit 1 on a bad id
  *       (for a `session` sprint, start and add also name the team member's model)
  *   sprint.mjs mark <id> planning|parked|stopped|clear [<reason> ...]
  *   sprint.mjs note <id> <text> ...              a decision a team member reports
+ *   sprint.mjs archive <id>   records that the team member carrying <id> (a backlog item
+ *       alone, or a bundle's first) is archived; exit 1 unless the sprint archives, all it
+ *       carried shipped on main and none is parked or stopped
  *   sprint.mjs wait <id> [--interval <seconds>] | [--once]  exit 0 when what the entry is
  *       blocked by has shipped, 3 (`PARKED: depends on <id>`) when a blocker was dropped,
  *       parked or stopped, 1 for an id not in the backlog. No time limit; works with no
@@ -81,11 +84,11 @@ import {
 const DEFAULT_BUDGET = 20;
 const WAYS = ['session', 'here', 'claude', 'cursor'];
 const TEAM_TIER = 'Large';
-const COMMANDS = ['propose', 'start', 'add', 'drop', 'mark', 'note', 'wait', 'brief', 'launch', 'run', 'watch',
+const COMMANDS = ['propose', 'start', 'add', 'drop', 'mark', 'note', 'archive', 'wait', 'brief', 'launch', 'run', 'watch',
   'status', 'report', 'end'];
 const PLANS_DIR = 'docs/superpowers/plans/';
-const USAGE = 'usage: sprint.mjs propose [--points <n>] | start <id> ... [--points <n>] [--way session|here|claude|cursor] | '
-  + 'add <id> | drop <id> | mark <id> planning|parked|stopped|clear [<reason>] | note <id> <text> | '
+const USAGE = 'usage: sprint.mjs propose [--points <n>] | start <id> ... [--points <n>] [--way session|here|claude|cursor] [--archive yes|no] | '
+  + 'add <id> | drop <id> | mark <id> planning|parked|stopped|clear [<reason>] | note <id> <text> | archive <id> | '
   + 'wait <id> [--interval <seconds> | --once] | brief <id> | launch <id> [--tool claude|cursor] [--model <m>] | '
   + 'run <id> --tool <t> (started by launch) | watch | status | report | end';
 const NONE_UNDER_WAY = 'Sprint: none under way; run propose, then start.';
@@ -145,12 +148,16 @@ export function readBacklog(root, env = process.env) {
   };
 }
 
-/** { value: [{ number, headRefName }] }, or { error } saying why the list is unknown. */
+/**
+ * { value: [{ number, headRefName }] }, or { error } saying why the list is unknown.
+ * It asks the REST API: `gh pr list` goes through GraphQL, which a Claude Code cloud
+ * session refuses with HTTP 403.
+ */
 function openPullRequests(root, env) {
   const origin = originOnGitHub(root, env);
   if (origin.error) return { error: origin.error };
-  const r = spawnSync('gh', ['pr', 'list', '--state', 'open', '--limit', '100', '--json',
-    'number,headRefName'], { cwd: root, env, encoding: 'utf8', timeout: 20000 });
+  const r = spawnSync('gh', ['api', 'repos/{owner}/{repo}/pulls?state=open&per_page=100'],
+    { cwd: root, env, encoding: 'utf8', timeout: 20000 });
   if (r.error?.code === 'ENOENT') return { error: 'gh is not installed' };
   if (r.error?.code === 'ETIMEDOUT') return { error: 'gh did not answer within 20 seconds' };
   if (r.error) return { error: `gh could not run: ${r.error.message}` };
@@ -158,7 +165,7 @@ function openPullRequests(root, env) {
   try {
     const list = JSON.parse(r.stdout);
     if (!Array.isArray(list)) throw new Error('not a list');
-    return { value: list };
+    return { value: list.map((p) => ({ number: p.number, headRefName: p.head?.ref })) };
   } catch {
     return { error: 'gh answered with something unexpected' };
   }
@@ -537,7 +544,7 @@ function launch(ctx, opts) {
     `Sprint: ${id} started in ${name}'s command line (pid ${child.pid}), in ${worktree}.`,
     `Sprint: its log is ${log}; status names the command that opens its session.`,
     ...(found === null ? [] : [found.model
-      ? `Sprint: ${id} runs on ${found.pick} (${found.model}), the ${TEAM_TIER} tier's first pick your ${name} subscription includes.`
+      ? `Sprint: ${id} runs on ${found.pick} (${found.model}), the pick for the ${TEAM_TIER} tier and above that costs least per task of those your ${name} subscription includes.`
       : `Sprint: ${id} starts on ${name}'s default model — ${found.reason}`]),
   ];
 }
@@ -706,6 +713,10 @@ function sprintEntry(backlog, id) {
   return { id, points: bandScores(backlog.bandRows)[id]?.effort ?? 0, ...(bundle ? { bundle } : {}) };
 }
 
+/**
+ * Prints the proposal one entry per team member: a backlog item alone, or a bundle at its
+ * first member's place with its members beneath it in sprint order.
+ */
 function propose(ctx, opts) {
   const budget = opts.points === undefined ? DEFAULT_BUDGET : parseBudget(opts.points);
   const backlog = ctx.backlog();
@@ -713,9 +724,30 @@ function propose(ctx, opts) {
   if (!entries.length) {
     return ['Sprint: nothing to propose — no idea or shaped backlog item banded A or B is free to start.'];
   }
+  const members = [];
+  const bundles = new Map();
+  for (const e of entries) {
+    if (!e.bundle) {
+      members.push({ items: [e] });
+    } else if (bundles.has(e.bundle)) {
+      bundles.get(e.bundle).items.push(e);
+    } else {
+      const member = { bundle: e.bundle, items: [e] };
+      bundles.set(e.bundle, member);
+      members.push(member);
+    }
+  }
+  const item = (e) => `${e.id} — ${e.points} pts, band ${e.band} — ${e.title}`;
+  const lines = members.flatMap((m, i) => (m.bundle
+    ? [
+      `  ${i + 1}. bundle ${m.bundle} — ${m.items.reduce((s, e) => s + e.points, 0)} pts, ${m.items.length} backlog items`,
+      ...m.items.map((e) => `       ${item(e)}`),
+    ]
+    : [`  ${i + 1}. ${item(m.items[0])}`]));
+  const n = members.length;
   return [
-    `Sprint: proposed ${total} of ${budget} effort points, from main at ${backlog.sha}.`,
-    ...entries.map((e, i) => `  ${i + 1}. ${e.id} — ${e.points} pts, band ${e.band}${e.bundle ? `, bundle ${e.bundle}` : ''} — ${e.title}`),
+    `Sprint: proposed ${total} of ${budget} effort points for ${n} team member${n === 1 ? '' : 's'}, from main at ${backlog.sha}.`,
+    ...lines,
     ...(nextInLine ? [`Sprint: next in line, over the budget — ${nextInLine.id} (${nextInLine.points} pts).`] : []),
   ];
 }
@@ -730,6 +762,13 @@ function start(ctx, opts) {
     if (opts.way !== undefined && !WAYS.includes(opts.way)) {
       throw new Refusal(`Sprint: --way takes ${WAYS.join(' or ')}.`);
     }
+    if (opts.archive !== undefined && opts.archive !== 'yes' && opts.archive !== 'no') {
+      throw new Refusal('Sprint: --archive takes yes or no.');
+    }
+    way = opts.way ?? 'here';
+    if (opts.archive === 'yes' && way !== 'session') {
+      throw new Refusal('Sprint: --archive yes needs --way session; no other way leaves a session of this tool to archive.');
+    }
     budget = opts.points === undefined ? DEFAULT_BUDGET : parseBudget(opts.points);
     const backlog = ctx.backlog();
     entries = opts.ids.map((id) => {
@@ -738,11 +777,12 @@ function start(ctx, opts) {
     });
     const twice = opts.ids.find((id, i) => opts.ids.indexOf(id) !== i);
     if (twice) throw new Refusal(`Sprint: ${twice} is listed twice.`);
-    way = opts.way ?? 'here';
     return {
       started: isoSeconds(ctx.now()),
       budget,
       way,
+      archive: opts.archive === 'yes',
+      archived: [],
       entries,
       baseline: backlog.catalog.map((e) => e.id),
       marks: {},
@@ -750,7 +790,12 @@ function start(ctx, opts) {
     };
   });
   const out = [`Sprint: started with ${entries.length} backlog items, ${entries.reduce((s, e) => s + e.points, 0)} of ${budget} effort points; team members start as ${way}.`];
-  if (way === 'session') out.push(teamModelLine(ctx.root, ctx.env));
+  if (way === 'session') {
+    out.push(opts.archive === 'yes'
+      ? "Sprint: each team member's session is archived once its work ships."
+      : "Sprint: each team member's session is left open once its work ships.");
+    out.push(teamModelLine(ctx.root, ctx.env));
+  }
   return out;
 }
 
@@ -831,6 +876,58 @@ function note(ctx, opts) {
   return [`Sprint: noted for ${id}.`];
 }
 
+/**
+ * The team members in sprint order: an entry alone, or a bundle at its first entry.
+ * `carried` is the ids the team member's session is responsible for.
+ */
+function teamMembers(sprint) {
+  const members = [];
+  for (const e of sprint.entries) {
+    const first = e.bundle ? members.find((m) => m.bundle === e.bundle) : null;
+    if (first) first.carried.push(e.id);
+    else members.push({ id: e.id, bundle: e.bundle, carried: [e.id] });
+  }
+  return members.map(({ id, carried }) => ({ id, carried }));
+}
+
+/** The team members whose session should now be archived: all carried shipped, none parked or stopped. */
+function readyToArchive(ctx, sprint, backlog) {
+  if (!sprint.archive) return [];
+  const marks = teamMarks(ctx.root, ctx.env, sprint);
+  const shipped = (id) => backlog.catalog.find((e) => e.id === id)?.status === 'shipped';
+  const held = (id) => marks[id]?.state === 'parked' || marks[id]?.state === 'stopped';
+  return teamMembers(sprint)
+    .filter((m) => !(sprint.archived ?? []).includes(m.id)
+      && m.carried.every(shipped) && !m.carried.some(held))
+    .map((m) => m.id);
+}
+
+function archive(ctx, opts) {
+  const id = opts.ids[0];
+  updateSprint(ctx.root, ctx.env, (current) => {
+    if (!current) throw new Refusal(NONE_UNDER_WAY);
+    requireEntry(current, id);
+    if (!current.archive) {
+      throw new Refusal('Sprint: this sprint leaves sessions open; archiving was not agreed at its start.');
+    }
+    const member = teamMembers(current).find((m) => m.carried.includes(id));
+    if (member.id !== id) throw new Refusal(`Sprint: ${id} is carried by ${member.id}'s team member; name ${member.id}.`);
+    if ((current.archived ?? []).includes(id)) {
+      throw new Refusal(`Sprint: ${id}'s session is already recorded as archived.`);
+    }
+    const marks = teamMarks(ctx.root, ctx.env, current);
+    const held = member.carried.find((c) => marks[c]?.state === 'parked' || marks[c]?.state === 'stopped');
+    if (held) throw new Refusal(`Sprint: ${id}'s team member is ${marks[held].state}; its session stays open.`);
+    const { catalog } = ctx.backlog();
+    const open = member.carried.filter((c) => catalog.find((e) => e.id === c)?.status !== 'shipped');
+    if (open.length) {
+      throw new Refusal(`Sprint: ${id}'s team member has work not shipped on main — ${open.join(', ')}.`);
+    }
+    return { ...current, archived: [...(current.archived ?? []), id] };
+  });
+  return [`Sprint: ${id}'s session is recorded as archived; archive it now.`];
+}
+
 function brief(ctx, opts) {
   const sprint = requireSprint(ctx);
   const id = opts.ids[0];
@@ -871,6 +968,10 @@ function status(ctx) {
   }
   out.push(...sprint.entries.filter((e) => !needsYou(byId[e.id]))
     .map((e) => `  ${e.id} — ${byId[e.id]}${teamNote(ctx.root, ctx.env, sprint, e.id)}`));
+  const ready = readyToArchive(ctx, sprint, backlog);
+  if (ready.length) {
+    out.push(`Sprint: ready to archive, once the decisions each reported are noted — ${ready.join(', ')}.`);
+  }
   if (pulls.error) {
     out.push(`Sprint: open pull requests unknown — ${pulls.error}.`);
   } else {
@@ -974,11 +1075,12 @@ function parseArgs(argv) {
       opts.ids.push(word);
     } else if (word === '--once' && command === 'wait') {
       opts.once = true;
-    } else if (['--points', '--way', '--interval', '--tool', '--model'].includes(word) && rest[i + 1] !== undefined) {
+    } else if (['--points', '--way', '--archive', '--interval', '--tool', '--model'].includes(word) && rest[i + 1] !== undefined) {
       const value = rest[i + 1];
       i += 1;
       if (word === '--points') opts.points = value;
       else if (word === '--way') opts.way = value;
+      else if (word === '--archive') opts.archive = value;
       else if (word === '--tool') opts.tool = value;
       else if (word === '--model') opts.model = value;
       else if (/^\d+(\.\d+)?$/.test(value)) {
@@ -990,7 +1092,7 @@ function parseArgs(argv) {
       return null;
     }
   }
-  if (['add', 'drop', 'wait', 'brief', 'launch', 'run'].includes(command) && opts.ids.length !== 1) return null;
+  if (['add', 'drop', 'archive', 'wait', 'brief', 'launch', 'run'].includes(command) && opts.ids.length !== 1) return null;
   if (command === 'watch' && opts.ids.length) return null;
   if (command === 'run' && !opts.tool) return null;
   if (command === 'mark' && opts.ids.length < 2) return null;
@@ -1031,7 +1133,7 @@ export async function main(argv, { root, env = process.env, print = () => {} } =
       return await runMember(ctx, opts, print);
     }
     if (opts.command === 'watch') return await watch(ctx, opts);
-    const commands = { propose, start, add, drop, mark, note, brief, launch, status, report, end };
+    const commands = { propose, start, add, drop, mark, note, archive, brief, launch, status, report, end };
     const lines = commands[opts.command](ctx, opts);
     return { exit: 0, lines: [...first, ...lines] };
   } catch (error) {

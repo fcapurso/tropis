@@ -47,6 +47,16 @@ Measured in the project this framework came from, in fresh sessions, with a real
   2026-10-13 (2.1.260). A header only works for files inside the session's own folder,
   which is why the framework is set up inside the project's own repository (FW-010).
   Before the headers, on 2026-10-09 (2.1.293), every rule loaded at session start.
+  **After `/compact`, automatic compaction or `/clear`, the rule comes back by itself**:
+  the first touch of a file in the area attaches it again, whether the agent had touched
+  that file before or not. Until that touch the agent has only what the compaction
+  summary kept of the rule, and compaction restores the files the agent had read, so it
+  can edit one without reading it first: that first edit in an area is made before the
+  rule is back, which arrives with the edit's result. Nothing re-delivers it sooner, on
+  purpose — the exposure is one edit, and a hook on every edit would cost more (FW-008).
+  Measured 2026-11-04 (Claude Code 2.1.318, Linux x86_64), in the framework repository's
+  docs/superpowers/specs/2026-11-04-rules-after-compaction-finding.md. Cursor after a
+  chat is summarized is not yet measured.
 - **Cursor** (3.24.12, measured 2026-10-15) receives an always-applied rule and the
   root `CLAUDE.md`. It does not receive a glob rule whose `globs` value is a JSON array,
   which is what the generator writes. An unquoted glob and a comma-separated glob list,
@@ -58,6 +68,10 @@ Measured in the project this framework came from, in fresh sessions, with a real
   did. The body of a description-only rule did not attach; its description was listed
   from the start of the chat. Tables and versions are in the framework repository,
   docs/superpowers/specs/2026-10-15-cursor-area-rules-finding.md.
+  Because Cursor receives an always-applied rule and does not expand an `@` import, the
+  generator writes each file `AGENTS.md` imports, the workflow included, as
+  `.cursor/rules/imported-<name>.mdc` with `alwaysApply: true`, so a Cursor agent has it
+  from the start (FW-068).
   The command-line agent (`cursor-agent` 2025.09.18-7ae6800, measured 2026-10-27) receives
   the root `AGENTS.md` at session start, with no tool call, and does not expand an `@`
   import inside it — which is why the entry instructions live there (FW-031). Run it with

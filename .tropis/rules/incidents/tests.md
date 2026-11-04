@@ -21,3 +21,14 @@ table.
 In this framework two test cases polled a stub three times under a three-second
 deadline. During busy runs they exited "still waiting", and passed on the rerun with
 nothing changed.
+
+## Six hook cases that inherited an earlier run's markers
+
+In this framework a self-check on a machine at a load average near 47 failed six cases
+of the capture-at-write hook, the hook replying with nothing, and passed on the rerun
+with nothing changed. It was filed as load, beside two polling cases that were. The
+cases named each session after the process id and a counter, and the hook's
+once-per-session markers in the shared temporary folder were never removed; a run that
+drew an earlier run's process id found its markers, and the hook stayed silent. Run
+twice in a new process-id namespace, so jest had the same process id both times, the
+second run failed the same six cases.
