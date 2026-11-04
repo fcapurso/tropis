@@ -544,7 +544,7 @@ function launch(ctx, opts) {
     `Sprint: ${id} started in ${name}'s command line (pid ${child.pid}), in ${worktree}.`,
     `Sprint: its log is ${log}; status names the command that opens its session.`,
     ...(found === null ? [] : [found.model
-      ? `Sprint: ${id} runs on ${found.pick} (${found.model}), the ${TEAM_TIER} tier's first pick your ${name} subscription includes.`
+      ? `Sprint: ${id} runs on ${found.pick} (${found.model}), the pick for the ${TEAM_TIER} tier and above that costs least per task of those your ${name} subscription includes.`
       : `Sprint: ${id} starts on ${name}'s default model — ${found.reason}`]),
   ];
 }
