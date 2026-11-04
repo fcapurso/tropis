@@ -85,7 +85,8 @@ with each admission. Place Large this way:
    a pick is judged at* says. A board that scores a model only above its judged effort
    does not confirm it for Large: the model stays out of Large, marked `Large
    unconfirmed`, and a pass that finds the board's row at the judged effort compares
-   again.
+   again. Where another board's row at the judged effort already keeps it out, it is
+   not marked.
 3. **A board on another scale**, such as LMArena's Elo, keeps a model out of Large only
    when it states an uncertainty for both scores and the two ranges do not overlap. A
    board on another scale that states none orders models and does not decide Large.
