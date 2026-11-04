@@ -90,15 +90,15 @@ commands-reach-cursor:
     status: idea
     blockers: []
 document-rule-reaches-a-new-document:
-  band: C
+  band: D
   value: 3
   valueWhy: Hand-written current-state documents are the rot the framework exists to
     prevent, and the rule against them reaches no agent writing one.
   effort: 2
   effortWhy: A shipped area rule whose area each project names, generated for both
     tools like the others.
-  verdict: Worth doing; shape it first, since which folders count as documentation is
-    each project's own.
+  verdict: Decide first whether a shipped rule should name folders that each project
+    chooses for itself, before building it.
   seen:
     status: idea
     blockers: []
@@ -132,16 +132,16 @@ framework-reaches-every-tool:
   valueWhy: Cursor is a supported target and its agents get no workflow at all.
   effort: 3
   effortWhy: A projection of framework documents for Cursor and a guard comparing tools.
-  bundle: tool-delivery
   verdict: "Cursor is a supported target and still gets no workflow beyond the
-    entry file's fallback line. Waits for the framework-doc-delivery finding, which
-    says whether the Cursor projection and the guard are still needed."
+    entry file's fallback line. The framework-doc-delivery finding says project the
+    workflow as an always-applied Cursor rule, with a guard that what Claude Code loads
+    at start Cursor gets too; re-shape to that before planning."
   evidence: "2026-10-17 — templates/CLAUDE.md opens with a plain-text instruction
     to read workflow.md if the import did not expand; scripts/projections.js
     projects no framework document."
   seen:
     status: shaped
-    blockers: [framework-doc-delivery]
+    blockers: []
 living-documents-stay-current:
   band: C
   value: 4

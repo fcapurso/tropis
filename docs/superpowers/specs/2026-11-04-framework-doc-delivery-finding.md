@@ -99,7 +99,7 @@ What happened:
 
 | Document | Claude Code | Cursor (IDE) | `cursor-agent` |
 |---|---|---|---|
-| `workflow.md` | always: through the `@` import in `AGENTS.md` — measured above | linked only: `AGENTS.md` (or `CLAUDE.md`) is received, the import is not expanded, and its fallback line tells the agent to read the workflow — earlier (Cursor 3.24.12, `rule-delivery.md`); whether the agent then reads it: unchecked | linked only, the same way: root `AGENTS.md` received at start, import not expanded — earlier (2025.09.18-7ae6800, FW-031); whether it reads the workflow: unchecked |
+| `workflow.md` | always: through the `@` import in `AGENTS.md` — measured above | linked only, by inference: the root `CLAUDE.md` is received — earlier (Cursor 3.24.12, `rule-delivery.md`). That it reaches `AGENTS.md` through `CLAUDE.md`'s import, that it does not expand the workflow's import, and that the agent then follows the fallback line and reads the workflow: all unchecked | linked only: root `AGENTS.md` received at start, `@` import not expanded — earlier (2025.09.18-7ae6800, `rule-delivery.md`); whether it then reads the workflow: unchecked |
 | `commit-format.md` | linked only — measured above | linked only — unchecked (nothing projects it) | linked only — unchecked |
 | `dispatch.md` | linked only — measured above | linked only — unchecked | linked only — unchecked |
 | `model-tiers.md` | linked only — measured above | linked only — unchecked | linked only — unchecked |
@@ -107,8 +107,12 @@ What happened:
 | `rule-delivery.md` | linked only — measured above | linked only — unchecked | linked only — unchecked |
 | `DECISIONS.md` | linked only — measured above | linked only — unchecked | linked only — unchecked |
 
-"Linked only — unchecked" in Cursor is not a guess. Nothing in `.cursor/` names or
-carries these documents, and Cursor has received nothing outside `.cursor/rules/`, the
+The earlier Cursor measurements record the tool's version only. Their sources do not
+record the operating system or architecture, so neither can be given here.
+
+"Linked only — unchecked" in Cursor is not a guess. `.cursor/rules/planning.mdc` names
+`commit-format.md`, `dispatch.md` and `workflow.md`, which are the links. Nothing in
+`.cursor/` carries any of these documents, and Cursor has received nothing outside `.cursor/rules/`, the
 entry files and hooks in any measurement made so far. It is marked unchecked because no
 Cursor run in this finding confirmed it.
 
@@ -116,7 +120,7 @@ Cursor run in this finding confirmed it.
 
 | Channel | Claude Code | Cursor (IDE) | `cursor-agent` |
 |---|---|---|---|
-| Area rules (`.claude/rules/`, `.cursor/rules/`) | by path: on a read or write in the area — measured above, and earlier (2.1.295, `rule-delivery.md`) | by path: on a read in the area, not on a create without a read — earlier (3.24.12, `rule-delivery.md`) | unchecked |
+| Area rules (`.claude/rules/`, `.cursor/rules/`) | by path: on a read in the area — measured above; on a write — earlier (2.1.295, `rule-delivery.md`) | by path: on a read in the area, not on a create without a read — earlier (3.24.12, `rule-delivery.md`) | unchecked |
 | Hooks in `.claude/settings.json` | at a hook — earlier (2.1.260–2.1.295, `rules/harness-scripts.md`) | at a hook: heard on Read and Shell; `if` ignored — earlier (3.23.12, same table) | unchecked |
 
 ### Commands
@@ -126,11 +130,11 @@ agent can see that the command exists.
 
 | Command | Action it governs | Claude Code | Cursor (IDE) and `cursor-agent` |
 |---|---|---|---|
-| `bootstrap` | setting the framework up in a project | listed, when run — measured above (start only) | unchecked |
+| `bootstrap` | setting the framework up in a project | listed, when run — measured above | unchecked |
 | `capture-learning` | routing a lesson to its layer | listed, when run — measured above | unchecked |
 | `dispatch` | handing a plan to an executor | listed, when run — measured above | unchecked |
 | `feature` | moving a backlog item's status | listed, when run — measured above | unchecked |
-| `flush-upstream` | sending a project's lessons to the framework | listed, when run, in a project; absent in this repository by design (CLAUDE.md, *A lesson goes straight into the source*) | unchecked |
+| `flush-upstream` | sending a project's lessons to the framework | listed, when run, in a project — unchecked: not installed in this repository, by design (CLAUDE.md, *A lesson goes straight into the source*) | unchecked |
 | `idea` | capturing an idea | listed, when run — measured above | unchecked |
 | `manual-check` | a check only a person can make | listed, when run — measured above | unchecked |
 | `next` | the backlog report | listed, when run — measured above | unchecked |
@@ -153,13 +157,15 @@ For each one: the action it applies to, and what already reaches the agent at th
 - **`commit-format.md`** — writing a commit message, above all the squash message that
   survives. **Covered, except a closed list.** The workflow is always loaded. Its
   *Merging* section carries the message template: `<type>(<scope>): <what is now true>`,
-  a body of intent rather than inventory, `Implements:` and `Plan:`. The project's
-  scopes are in its `AGENTS.md`, also always loaded. `planning.md` points here when a
-  plan is written. Three things reach no one: the closed list of types; "every commit
+  a body of intent rather than inventory, `Implements:` and `Plan:`. `planning.md` points here when a plan is written. Four
+  things reach no one. The first is the closed list of scopes: this document asks a
+  project to write it in its `AGENTS.md`, which is always loaded, but neither
+  `templates/AGENTS.md` nor this repository's `AGENTS.md` has a place for it. The
+  others are the closed list of types; "every commit
   has a body", which matters only for working commits a squash discards; and "scope the
   message against the diff". No hook checks a message (`framework-commit-check.sh`
   speaks only about where a commit belongs). **No backlog item.** At worst a squash
-  subject gets an unlisted type, and review sees it. By FW-022 the normal flow handles
+  subject gets an unlisted type or scope, and review sees it. By FW-022 the normal flow handles
   that.
 - **`dispatch.md`** — handing a plan over, and writing a plan so it can be handed over.
   **Covered by a command's script and by a rule by path.** The hand-over is `/dispatch`,
@@ -187,8 +193,10 @@ For each one: the action it applies to, and what already reaches the agent at th
   says which artifact to update. It does not carry the rule that decides how such an
   artifact may be written. **Gap 3.**
 - **`rule-delivery.md`** — adding or changing a rule, its area, or the tool that delivers
-  it. **Covered by a rule by path and a hook.** Writing under `.claude/rules/` or
-  `.claude/rule-additions/` loads `learnings.md`. That rule carries the mechanics: the
+  it. **Covered by a rule by path and a hook.** Writing under `.claude/rules/` loads
+  `learnings.md`. Writing under `.claude/rule-additions/` does not, because the learnings
+  area does not name that folder; there, only the write hook speaks. The rule carries the
+  mechanics: the
   `paths:` header, `.claude/rule-areas.json`, the additions file, running
   `npm --prefix .tropis run rules`. The write itself fires `capture-at-write.sh`, and
   committing it fires `framework-commit-check.sh`. The document's remaining content is the

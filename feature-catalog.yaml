@@ -2861,8 +2861,7 @@
   type: feature
   layer: product
   modules: []
-  refs:
-    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
+  refs: []
 
 # Raised 2026-10-17 in first-adopter and submitted by its upstream flush of 2026-10-19
 # (first-adopter:docs/superpowers/plans/2026-10-19-flush-upstream.md). first-adopter keeps its
@@ -6281,8 +6280,7 @@
   type: improvement
   layer: product
   modules: []
-  refs:
-    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
+  refs: []
 # 2026-11-04, from the framework-doc-delivery finding, gap 3: doc-architecture.md's rule is
 # reached only through the entry file's load map; no area rule or hook marks the moment a
 # document is written.
@@ -6297,8 +6295,7 @@
   type: improvement
   layer: product
   modules: []
-  refs:
-    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
+  refs: []
 # 2026-11-04, from the framework-doc-delivery finding, its open question: no measurement
 # says whether Cursor offers the commands in .claude/commands/, and Cursor's documentation
 # was out of reach from the session that wrote the finding.
@@ -6312,5 +6309,4 @@
   type: spike
   layer: product
   modules: []
-  refs:
-    - docs/superpowers/specs/2026-11-04-framework-doc-delivery-finding.md
+  refs: []
