@@ -147,12 +147,24 @@
       delivers the area rules.
     - A guard fails when a framework document is delivered to one tool and not
       another.
+    - Before planning, the framework-doc-delivery finding is read and this entry is
+      re-shaped to what it shows is still missing; a criterion it shows is not needed is
+      removed, and if none remains the entry is dropped, with the finding as the reason.
   type: bug
   layer: product
+  blockedBy:
+    - framework-doc-delivery
   # 2026-10-16, backlog cleanup: after instruction-layer-means-what-it-says, shipped in the
   # first-adopter-harness catalog; dropped. The first criterion already holds: AGENTS.md and
   # templates/CLAUDE.md tell a tool that does not expand the import to read the workflow.
   # The other two remain — no .cursor/rules/ file carries the workflow, and nothing checks.
+  # 2026-11-04, sprint planning: checked on main, the first criterion still holds (the
+  # fallback line opens AGENTS.md; cursor-agent receives AGENTS.md at start, measured
+  # 2026-10-27) and the other two are still missing (.cursor/rules/ holds only the area
+  # rules; scripts/projections.js projects no framework document). Whether Cursor needs
+  # the workflow projected, or the fallback line suffices, is the question the
+  # framework-doc-delivery finding answers, and its "lighter guard" may be the third
+  # criterion's guard. So this waits for it.
   modules: []
   refs:
     - first-adopter-harness:docs/framework-review-2026-07.md

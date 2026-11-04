@@ -110,15 +110,15 @@ framework-reaches-every-tool:
   effort: 3
   effortWhy: A projection of framework documents for Cursor and a guard comparing tools.
   bundle: tool-delivery
-  verdict: "Cursor is a supported target and still gets no workflow. The entry
-    file's fallback line now covers the first criterion; the Cursor projection
-    and the guard remain."
+  verdict: "Cursor is a supported target and still gets no workflow beyond the
+    entry file's fallback line. Waits for the framework-doc-delivery finding, which
+    says whether the Cursor projection and the guard are still needed."
   evidence: "2026-10-17 — templates/CLAUDE.md opens with a plain-text instruction
     to read workflow.md if the import did not expand; scripts/projections.js
     projects no framework document."
   seen:
     status: shaped
-    blockers: []
+    blockers: [framework-doc-delivery]
 instruction-files-have-a-delivery-map:
   band: C
   value: 3
