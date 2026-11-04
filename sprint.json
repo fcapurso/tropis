@@ -198,6 +198,10 @@
     "picks-are-judged-at-the-default-effort",
     "sprint-archives-a-session-once-it-ships"
   ],
-  "marks": {},
+  "marks": {
+    "picks-are-judged-at-the-default-effort": {
+      "state": "planning"
+    }
+  },
   "notes": {}
 }
