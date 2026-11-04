@@ -6393,3 +6393,20 @@
   layer: product
   modules: []
   refs: []
+# 2026-11-04, from the review of tier-falls-through-to-the-cheapest-included-pick: in the
+# executor's red run, with the self-check running at the same time, this case failed once,
+# then passed alone and in three later runs with nothing changed. The failure output was
+# not kept. The workflow counts a check that passes on a rerun with nothing changed as a
+# defect; the case waits on fakes with until(), which the tests rule says must not race a
+# busy machine.
+- id: launch-grants-case-passes-on-rerun
+  title: The Cursor grants launch case fails only when the machine is busy
+  status: idea
+  value: The launch guard fails only when launch is broken, so a red run is believed and
+    not rerun until it passes.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules:
+    - guards/team-member-cli.test.js
+  refs: []
