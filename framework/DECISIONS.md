@@ -2161,7 +2161,8 @@ background command and its limits.
 ## FW-067: Large admits only models level with the best selectable pick
 
 **Date:** 2026-11-03 · **Status:** Accepted; built by the backlog item
-`large-tier-anchors-on-the-best-pick`. Amends FW-027's placement rule for Large.
+`large-tier-anchors-on-the-best-pick`. Amends FW-027's placement rule for Large. Its
+reading of each model at its best score is replaced by FW-069.
 
 **Decision:** `/refresh-model-tiers` places a model in Large only when, on every board
 scored from 0 to 100 that scores it, it is within 1 point of the highest score any
@@ -2226,3 +2227,44 @@ imports a second document would not get it).
 release's workflow. Cursor spends on the workflow the context Claude Code already spends
 on it. The fallback paragraph stays for projects not yet updated. A project rule named
 `imported-<x>` is refused.
+
+## FW-069: The picks are judged at the effort each tool starts a model at
+
+**Date:** 2026-11-04 · **Status:** Accepted; built by the backlog item
+`picks-are-judged-at-the-default-effort`. Replaces FW-067's reading of each model at its
+best score.
+
+**Decision:** `/refresh-model-tiers` judges each pick at the lowest effort a supported
+tool starts it at: Claude Code's documented default for the model; Cursor's documented
+default, or the effort a Cursor plan fixes; and, where Cursor states no default, the
+effort the pick's Cursor command-line name selects. The picks file records those efforts
+and the pages they came from. Each board is read at its row for that effort. Where a
+board has none, its nearest row is read and the placement marked inferred: a figure that
+may overstate a model never lifts it into a higher tier or sets Large's highest score,
+one that may understate it never keeps it out, and a board that scores a model only
+above its judged effort does not confirm it for Large. Usage per task is still read at
+one effort for every model (FW-057).
+
+**Evidence:** Claude Code's model-configuration page, read 2026-11-04: Opus 5.5, Sonnet
+5.5 and Haiku 5.5 default to medium, and every other model that supports effort to high.
+Neither `/dispatch` nor `sprint.mjs launch` sets an effort. The picks of 2026-11-03 read
+each model at its best row, mostly max: Sonnet 5.5 sat in Medium–large on CursorBench
+4.0's 55.5% at Max, and scores 39.2% at Medium, level with Gemini 3.8 Flash and below
+Grok 4.7; Artificial Analysis's Intelligence Index v5.0.1 shows the same fall, 54 at max
+against 31 at medium. Source: none in particular; the pages above.
+
+**Rejected:** Starting each model at the effort the boards scored it at (the developer
+chose the tools' defaults on 2026-11-04: a default is the vendor's own trade-off, and a
+higher setting draws on the subscription faster). Judging a pick once per tool, so one
+model sits in two tiers (the tier table has one row per model, and `/dispatch` reads it
+by name). Reading every model at its best and marking it (that is the reading this
+replaces).
+
+**Consequences:** On the figures read 2026-11-04, Opus 5.5 at medium stays alone in
+Large. Gemini 4 Argon, highest on CursorBench 4.0 at its medium default, stays out:
+Artificial Analysis scores it only at high. Sonnet 5.5 moves from Medium–large to
+Small–medium, Muse Wonder from Medium–large to Medium, GPT-5.6 Sol from Medium to
+Small–medium and GPT-5.6 Terra from Small–medium to Small. Claude Code then has no pick of
+its own in Medium or Medium–large but Fable 5.1, so a plan of either tier runs on Fable
+5.1 where Max, Ultra or Team Premium includes it, the most expensive pick per task, and
+on Opus 5.5 on Pro and Team Standard.

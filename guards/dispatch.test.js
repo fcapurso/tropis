@@ -188,10 +188,22 @@ describe('dispatch command', () => {
       .replace(/\s+/g, ' ');
     expect(command).toContain('**Large takes only models level with the best selectable pick.**');
     expect(command).toContain('it is within **1 point** of that highest score.');
-    expect(command).toContain('**Read each model at its best score on the board**');
+    expect(command).toContain('**Read each model at the effort it is judged at**');
     expect(command).toContain('that states none orders models and does not decide Large.');
     expect(command).toContain('Large holds each model that has the highest score on at least one board');
     expect(command).toContain('recorded in FW-067');
+  });
+
+  it('tells /refresh-model-tiers to judge each pick at the effort a tool starts it at', () => {
+    const command = readFileSync(join(blueprint, 'commands/refresh-model-tiers.md'), 'utf8')
+      .replace(/\s+/g, ' ');
+    expect(command).toContain('**Judge every pick at the effort a supported tool starts it at, never at its best.**');
+    expect(command).toContain('**A pick is judged at the lowest of those efforts.**');
+    expect(command).toContain('in a table whose header row begins `| Model | Judged at |`');
+    expect(command).toContain('marked `Cursor states no default`');
+    expect(command).toContain('**A figure that may overstate never lifts a model into a higher tier and never sets the highest score Large is measured against; a figure that may understate never keeps a model out of one.**');
+    expect(command).toContain('marked `Large unconfirmed`');
+    expect(command).toContain('in FW-069');
   });
 
   it('ships no picks: the framework tier file has no pick table and no date', () => {
