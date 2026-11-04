@@ -20,6 +20,10 @@ For the full development history, see the git log.
 - A sprint whose team members run as sessions asks once, at its start, whether to archive
   each team member's session once its work ships, and archives it then, never a parked or
   stopped one.
+- A plan, a sprint's team member and a fresh reviewer run on the model your subscriptions
+  include that costs least per task among the picks for their tier and every tier above
+  it, rather than on the first included pick, so a gap in one tier no longer puts work on
+  its most expensive model.
 
 ## [0.8.1] — 2026-11-03
 

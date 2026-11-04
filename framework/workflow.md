@@ -653,9 +653,9 @@ a reason to require a version.
 **Run the probe on the Large tier's included pick.** A probe judges, with only the
 repository, whether a change reaches the agent it was written for, which is the Large
 tier's kind of work (`.claude/framework/model-tiers.md`).
-`node .tropis/scripts/dispatch.mjs --tier Large` names the model: the first Large pick
-that a subscription the developer holds includes, as `/dispatch` would choose for a
-Large plan. Pass it as the probe's model, such as `claude -p --model <model>`; where it
+`node .tropis/scripts/dispatch.mjs --tier Large` names the model: the Large pick that
+costs least per task of those a subscription the developer holds includes, as
+`/dispatch` would choose for a Large plan. Pass it as the probe's model, such as `claude -p --model <model>`; where it
 names none, run the probe on the tool's default model and say why in the record. Record
 the model with the tool and its version.
 

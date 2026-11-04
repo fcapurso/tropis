@@ -2268,3 +2268,39 @@ Small–medium and GPT-5.6 Terra from Small–medium to Small. Claude Code then 
 its own in Medium or Medium–large but Fable 5.1, so a plan of either tier runs on Fable
 5.1 where Max, Ultra or Team Premium includes it, the most expensive pick per task, and
 on Opus 5.5 on Pro and Team Standard.
+
+## FW-070: A plan runs on the included pick that costs least per task in its tier or any tier above
+
+**Date:** 2026-11-04 · **Status:** Accepted; built by the backlog item
+`tier-falls-through-to-the-cheapest-included-pick`.
+
+**Decision:** `/dispatch`, `dispatch.mjs --tier`, and `sprint.mjs start`, `add` and
+`launch` name, of the picks for the tier and every tier above it that a subscription the
+developer holds includes, the one whose usage per task is least. Usage is the first
+dollar figure in the pick's `Usage per task` cell. A pick with no figure ranks after
+every pick with one; on a tie, the pick met first going up wins, so the plan's own tier
+keeps it. Where no included pick has a figure, the first included pick going up is named,
+as before, and the line says why.
+
+**Evidence:** Stated by the developer on 2026-11-04. Once the picks are judged at the
+effort each tool starts a model at (FW-069), Claude Code has no included pick in Medium
+or Medium–large but Claude Fable 5.1, so on Max, Ultra and Team Premium a plan of those
+tiers ran on Fable 5.1, $9.08 per task on CursorBench 4.0 at High, while Opus 5.5, a
+Large pick included on the same subscriptions, costs $3.97. FW-057 places on fitness
+alone, so every pick in a tier above is judged able to do a lower tier's work. Source:
+none in particular.
+
+**Rejected:** The plan's own tier first, going up only when it has no included pick
+(FW-053's and FW-057's rule: it put Medium work on the most expensive pick per task).
+Going past the first included pick only to a cheaper one and stopping at the first tier
+that has one (the developer's first statement of the item, replaced the same day: it
+still misses a cheaper pick two tiers up). Ranking an unmeasured pick by its place in the
+table (a pick with no figure cannot be shown to cost less). Letting usage move a model
+between tiers (FW-057 still rejects it: this changes which tier's pick runs, never where
+a pick sits).
+
+**Consequences:** Amends the "first included pick" of FW-053, FW-057 and FW-060. Inside
+a tier the picks are still listed least usage first, so a Large plan, a team member and a
+fresh reviewer get the pick they got before unless the table's order and its figures
+disagree. A plan of a lower tier may run on a more capable model than it needs when that
+model costs less per task.

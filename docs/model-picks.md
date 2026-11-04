@@ -3,8 +3,9 @@
 Which models this project hands each tier to. The tiers are defined in
 `.claude/framework/model-tiers.md`; this file is written by `/refresh-model-tiers`.
 Each model sits in the tier its fitness supports. Inside a tier, models are listed
-least usage per task first, and `/dispatch` names the first one your subscriptions
-include; the second table gives each pick's usage and the subscriptions that include it.
+least usage per task first. `/dispatch` names, of the picks for a plan's tier and every
+tier above it that your subscriptions include, the one that costs least per task; the
+second table gives each pick's usage and the subscriptions that include it.
 
 **Last verified: 2026-11-02.**
 

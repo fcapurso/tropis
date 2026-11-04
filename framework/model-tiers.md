@@ -9,8 +9,11 @@ The framework ships no picks, and an update never touches that file. Until it ex
 
 Inside a tier, the picks list models least usage per task first, and say which
 subscriptions of each supported tool include each one. Which subscriptions the developer
-holds is kept on their machine, never committed; `/dispatch` names the first pick for a
-plan's tier that one of them includes, and never one that would cost extra (FW-053).
+holds is kept on their machine, never committed. `/dispatch` names, of the picks for a
+plan's tier and every tier above it that one of them includes, the one that costs least
+per task (FW-070), and never one that would cost extra (FW-053). Any pick above a tier
+can do that tier's work, so a gap in a tier, or a dearer pick listed first, does not
+put a plan on a more expensive model than it needs.
 
 **Listed: only models an executor can select in a tool this framework supports.** A
 model in none of them is not a pick however well it scores; the picks file's notes say
@@ -44,6 +47,6 @@ judgement with no mechanical check:
 | A sprint's team member | shapes a backlog item, writes its plan, reviews the executor's branch | the last line of `sprint.mjs start`, `sprint.mjs add` and `sprint.mjs launch` |
 | A fresh reviewer: a fresh-agent check's probe, or the reviewer of work its author built | judges, with only the repository, whether the work says and does what it should | `node .tropis/scripts/dispatch.mjs --tier Large` |
 
-Each runs on the first Large pick that a subscription the developer holds includes,
-the pick `/dispatch` names for a Large plan; where none is named, on the tool's
-default model (FW-053).
+Each runs on the Large pick that costs least per task of those a subscription the
+developer holds includes, the pick `/dispatch` names for a Large plan; where none is
+named, on the tool's default model (FW-053).
