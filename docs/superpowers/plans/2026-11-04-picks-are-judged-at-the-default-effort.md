@@ -754,3 +754,65 @@ one changed guard line is the plan's replacement, and one case was added.
   WebDev and the departures, as the plan's Global Constraints and the picks file record.
 - **Release note.** A release-note line is the developer's, at `/release`.
 - **Pull request.** Not opened, reviewed or merged; the specifying session does those.
+
+## Review record
+
+Written after the merge, in its own pull request: the plan merged as `3d70dfe` without
+this section, and `review-record` turned the main branch red. The review below was done
+before that merge; only its record came late.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` on the branch's last commit, after each rebase:
+  `Self-check passed`. `npm --prefix .tropis test`: 180 passed, 180 total. node v22.23.4,
+  git 2.43.0, Linux x86_64.
+- `git diff --stat origin/main...HEAD`: the seven files in *File Structure* and this plan;
+  `docs/backlog-board/index.html` untouched.
+- **Fresh-agent check**, on the Large tier's pick, Claude Opus 5.5 (`claude-opus-5-5`,
+  named by `dispatch.mjs --tier Large`). Run as `claude -p --model claude-opus-5-5
+  --output-format stream-json --verbose`, Claude Code 2.1.318, Linux x86_64, in a cloud
+  session where no personal instructions load, in the plan's worktree. The task, said to
+  be a probe whose output is discarded: place two invented models, Zephyr 2 (Claude Code
+  default low, Cursor default high, AA only at max) and Quill 1 (Cursor only, no stated
+  default, High command-line name), with `commands/refresh-model-tiers.md`. Its tool
+  calls show it reading the command, `docs/model-picks.md` and `framework/model-tiers.md`.
+  Expected before the run: Zephyr 2 judged at low, read at CursorBench's Low row, its AA
+  max figure inferred and kept from setting AA's highest, out of Large; Quill 1 judged at
+  high from its command-line name, in Large. **It answered exactly that**, quoting the
+  clauses for each step.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found.
+
+- Large's step 1 wrapped mid-sentence after the plan's edit: re-flowed in review.
+- The criterion comments the executor added named prose rather than the guard case and
+  checks: rewritten in review, in the form the previous picks item used.
+- The probe found that step 2's `Large unconfirmed` mark could be read onto a model that
+  another board, at its judged effort, already keeps out of Large: one sentence added in
+  review saying it is not marked then.
+- The reviewing session merged without writing this record; the guard caught it on the
+  main branch.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- The release-note line is the developer's at `/release`.
+- The subscriptions, Cursor command-line names, Arena WebDev and departures were not read
+  again; the next full `/refresh-model-tiers` pass reads them, which is its ordinary work.
+- Claude Code now falls through to Fable 5.1 for Medium and Medium–large plans on Max,
+  Ultra and Team Premium; the backlog item `tier-falls-through-to-the-cheapest-included-pick`,
+  added by the developer the same day, covers it.
+
+### Learnings routed
+
+The lesson is the change itself, in the command and in FW-069. The late record is not a
+new lesson: the workflow already requires the record before the squash-merge, and the
+guard that caught it is the mechanism; no durable change.
+
+### Merged because
+
+The command, the decision and the re-placed picks say what the developer asked for, the
+new case goes red without the command change, every medium-effort figure the placement
+moves on was read from Cursor's own page, and a fresh agent with only the repository
+applied the rule correctly to invented models built to exercise it.
