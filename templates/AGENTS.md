@@ -1,10 +1,11 @@
 @.claude/framework/workflow.md
 
-**If the line above did not expand into the development workflow, read
-`.claude/framework/workflow.md` now.** `@` imports are a feature of some agent tools and
-not others; a tool that does not expand them reads this file as plain text and would
-otherwise get every area rule and none of the process — no preflight, no branching rule,
-no merge sequence, no documentation closeout.
+**If the development workflow is not already in your context, read
+`.claude/framework/workflow.md` now.** Claude Code expands the import above; Cursor
+receives the workflow as an always-applied rule the framework generates. A tool that does
+neither reads this file as plain text and would otherwise get every area rule and none of
+the process — no preflight, no branching rule, no merge sequence, no documentation
+closeout.
 
 <!-- The import above is the only thing loaded unconditionally besides this file.
      Add a second import only for a platform layer every session genuinely needs.

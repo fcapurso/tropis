@@ -58,7 +58,9 @@ Measured in the project this framework came from, in fresh sessions, with a real
   docs/superpowers/specs/2026-11-04-rules-after-compaction-finding.md. Cursor after a
   chat is summarized is not yet measured.
 - **Cursor** (3.24.12, measured 2026-10-15) receives an always-applied rule and the
-  root `CLAUDE.md`. It does not receive a glob rule whose `globs` value is a JSON array,
+  root `CLAUDE.md`. The generator writes each file `AGENTS.md` imports, the
+  workflow included, as `.cursor/rules/imported-<name>.mdc` with `alwaysApply: true`, so
+  Cursor has it from the start. It does not receive a glob rule whose `globs` value is a JSON array,
   which is what the generator writes. An unquoted glob and a comma-separated glob list,
   the two forms Cursor's own rules docs show, attached when the agent read a file in the
   area, and so did a nested `AGENTS.md`, a nested `CLAUDE.md`, and the same unquoted glob
