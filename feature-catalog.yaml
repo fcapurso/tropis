@@ -6087,3 +6087,33 @@
   refs:
     - docs/superpowers/specs/2026-11-03-large-tier-evidence-finding.md
     - docs/superpowers/plans/2026-11-03-large-tier-anchors-on-the-best-pick.md
+# 2026-11-04, from the developer in a sprint session. Step 2 of /refresh-model-tiers reads
+# each model at its best score, and nothing asks what effort a tool starts it at; Claude
+# Code starts Opus, Sonnet and Haiku at medium, and docs/model-picks.md names Cursor's
+# -high variants. The developer chose to judge the picks at each tool's default rather
+# than start models at the boards' effort: the default is the vendor's own trade-off.
+# Aggregators that copy CursorBench 4.0 (not yet checked against cursor.com/cursorbench)
+# give at medium: Opus 5.5 52.5% (57.8% at max), Fable 5.1 46.8% (51.8%), Sonnet 5.5 39.2%
+# (55.5%); the picks file already has Haiku 5.5 at 36.9% (48.4%). Drops differ by model,
+# so a penalty borrowed from one model cannot stand in for another's missing row.
+- id: picks-are-judged-at-the-default-effort
+  title: The model picks are judged at the effort each tool starts a model at
+  status: idea
+  value: The model a plan, a team member or a reviewer is handed sits in the tier its
+    evidence supports at the effort it will actually run at, so a model that scores in
+    one tier at max effort and in a lower one at its tool's default is not handed work
+    that only its max-effort self can hold.
+  # Stated by the developer on 2026-11-04.
+  acceptanceCriteria:
+    - The default effort each supported tool starts each pick at is verified against that
+      tool's own documentation and recorded in the picks file, with its source.
+    - Placement reads each board's row at the tool's default effort where the board
+      publishes one, and marks a placement inferred where it does not.
+    - The medium-effort CursorBench 4.0 figures are checked against Cursor's own page
+      before any pick moves on them.
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - docs/model-picks.md
+    - commands/refresh-model-tiers.md

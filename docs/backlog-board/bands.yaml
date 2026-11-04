@@ -146,6 +146,18 @@ living-documents-stay-current:
   seen:
     status: idea
     blockers: []
+picks-are-judged-at-the-default-effort:
+  band: A
+  value: 4
+  valueWhy: Every dispatch, team member and probe is handed a pick judged at an effort
+    it does not run at; on aggregator figures Sonnet 5.5 at its default scores near Haiku.
+  effort: 3
+  effortWhy: Verify each tool's defaults, change step 2 of /refresh-model-tiers, and run
+    a refresh pass that may move several picks.
+  verdict: Do next; the developer asked for it after the Large-tier change.
+  seen:
+    status: idea
+    blockers: []
 pipeline-bills-no-job-that-decides-nothing:
   band: C
   value: 2
