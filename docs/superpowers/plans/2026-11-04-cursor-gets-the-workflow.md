@@ -300,3 +300,75 @@ operating system's temporary directory) and paste the first six lines of
    is the reviewer's). Commit.
 3. `git push -u origin plan/cursor-gets-the-workflow`. **Do not open a pull request**,
    write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+All tasks done. Tasks 2 to 4 were committed before Task 1's red run was captured; that
+evidence was captured afterwards (below). The executor stopped once at the first
+self-check because `guards/set-up-project.test.js` was not in the File Structure; the
+specifying session added it (aa79de2) and the executor made the change.
+
+### Verification results
+
+Tools: git 2.43.0, node v22.23.4, jest from `.self-check/`, Linux x86_64.
+
+- Red (Task 1): the new `rules-generated.test.js` run against `scripts/rule-areas.js` and
+  `scripts/generate-rules.mjs` from a990b6d, in a scratch export of the branch. The suite
+  fails to load, so every case is red: `SyntaxError: The requested module
+  '../scripts/rule-areas.js' does not provide an export named 'importedRuleName'`, `Tests: 0 total`.
+- Generated file (Task 2), in a scratch project composed from `fixtures/base` and the source
+  scripts, framework documents, rules and template `AGENTS.md`:
+  ```
+  ---
+  description: imported-workflow (generated from an AGENTS.md import — do not edit)
+  alwaysApply: true
+  ---
+
+  # Development workflow
+  ```
+  `generate-rules.mjs --check`: `rules up to date`, exit 0.
+- Defect (Task 3), with the `missing-imported-rule` overlay copied over that project:
+  ```
+  rules out of date — run: npm --prefix .tropis run rules
+    .cursor/rules/imported-second.mdc: missing
+  ```
+  exit 1. Self-check line: `caught      missing-imported-rule  rules-generated`.
+- `npm --prefix .tropis test`: `Tests:       179 passed, 179 total`.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, the
+  clean baseline passed, and the framework repository's own guards passed.` (the final run
+  of the self-check is stated in Scope below).
+- Guard command: the self-check's own, `node --experimental-vm-modules
+  .self-check/node_modules/.bin/jest --config <stage>/jest.config.js guards/<name>.test.js`
+  in an export of `HEAD` with `FRAMEWORK_ROOT` set to a composed project.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` lists only files in the File Structure table
+(including `guards/set-up-project.test.js` and the plan file). Worktree used:
+`../tropis-cursor-workflow` of the `tropis` checkout. `projectionOf` in
+`scripts/projections.js` is unchanged, as decided.
+
+### Judgment calls
+
+- A project rule named like an imported-rule name gets the message `.claude/rules/<name>.md:
+  a project rule named like the Cursor rule written for the import <path> — rename it`.
+- Imports are read after comment stripping across lines, and a line fence of ``` or ~~~ toggles.
+- `blockedBy: framework-doc-delivery` removed from the shipped item, which
+  `guards/catalog-entries.test.js` requires.
+- The test string for a line with a space is built with `join` so `private-material` does
+  not read `n@ok.md` as an email.
+- Named source: none in particular.
+
+### What the plan got wrong
+
+- `guards/set-up-project.test.js` expects the Cursor rules to equal the shipped rules and
+  was not in the File Structure.
+- The proposed `@foo bar\n@ok.md` test text trips `private-material`'s email check.
+- Task 5 did not say to drop the shipped item's `blockedBy`; the catalog guard needs it.
+
+### Outstanding
+
+A run in Cursor confirming the rule arrives is not part of this plan. The fresh-agent
+check is the reviewer's.
