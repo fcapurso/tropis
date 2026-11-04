@@ -322,17 +322,6 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
-sprint-archives-a-session-once-it-ships:
-  band: B
-  value: 2
-  valueWhy: Every sprint with session team members leaves finished sessions open among
-    the ones waiting for the developer.
-  effort: 1
-  effortWhy: A question at start and an archive step in /sprint, and a record of the
-    answer in the sprint.
-  verdict: Do next; the developer asked for it after archiving a sprint's sessions by hand.
-  seen:
-    status: idea
     blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
