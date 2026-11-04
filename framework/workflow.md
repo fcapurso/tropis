@@ -668,6 +668,19 @@ hook's included — and quote the call and its answer in the record. Found revie
 hook FW-040 added: the executor's probe passed but could not say whether the hook had
 fired, and a second run with the calls visible showed the refusal reaching the agent.
 
+**Keep the probe to the route the clause watches.** A clause that acts on one tool — a
+hook on file writes, say — is tested only by a probe that does the work through that
+tool. Give it the shell as well and it can write the same file with a heredoc, the hook
+never fires, and a run that met every content criterion proves nothing about the clause.
+So take away from the probe every route to the same effect that the clause does not
+watch. A list of allowed tools does not do it: it spares the probe a permission prompt
+and takes nothing away. In Claude Code, deny the others with `--disallowedTools` (the
+shell among them), or name the whole set with `--tools`. Then check the calls: a run
+that did the work through a route the clause does not watch is inconclusive, never a
+pass, and is run again with that route removed. Found in a probe of a hook on file
+writes, whose agent was given the file tools as allowed and wrote both files through
+the shell.
+
 **A probe on someone's own machine is not given only the repository.** The agent tool
 also loads that person's own instructions, the ones that apply to every project. When
 the change repeats something already in them, the probe follows those and passes

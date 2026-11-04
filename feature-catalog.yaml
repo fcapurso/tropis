@@ -5527,9 +5527,13 @@
 # still ran Bash. In the rules-are-retired-on-evidence probe it read through cat; in the
 # rules-carry-mechanism-not-provenance probe it wrote through a heredoc, so the Edit and
 # Write hook the probe was testing never fired, and only --disallowedTools Bash made it.
+# Shipped by docs/superpowers/plans/2026-11-04-probe-keeps-to-its-tools.md.
+# Criteria 1 and 2 - framework/workflow.md, the paragraph "Keep the probe to the route the
+# clause watches". Criterion 3 - the fresh-agent check in the commit body and the plan's
+# handover report.
 - id: probe-keeps-to-its-tools
   title: A fresh-agent check keeps the probe to the tools it names
-  status: building
+  status: shipped
   value: A fresh-agent check that tests a hook on one tool passes or fails on whether the
     agent used that tool. When the probe can reach the shell anyway, it can do the work
     through a route the hook never sees, and the check then proves nothing about the
@@ -5545,7 +5549,8 @@
       shell from its probe, recorded in the commit body.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - framework/workflow.md
   refs:
     - docs/superpowers/plans/2026-11-01-rules-carry-mechanism-not-provenance.md
     - docs/superpowers/plans/2026-11-04-probe-keeps-to-its-tools.md
