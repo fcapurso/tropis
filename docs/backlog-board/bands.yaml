@@ -310,19 +310,6 @@ rule-is-measured-with-and-without:
   seen:
     status: idea
     blockers: []
-rules-return-after-compaction:
-  band: B
-  value: 4
-  valueWhy: If rules do not come back after compaction, long sessions lose them
-    exactly when they have run longest.
-  effort: 2
-  effortWhy: A measurement in two tools, recorded.
-  verdict: "A cheap measurement that decides whether long sessions silently lose
-    their rules. In the framework-updates arc, which is part of why it is B. Its
-    Cursor half is split into cursor-rules-return-after-summarize."
-  seen:
-    status: building
-    blockers: []
 setup-offers-to-create-the-repository:
   band: C
   value: 2
