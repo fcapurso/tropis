@@ -32,6 +32,38 @@ where each pick can run.
 every pick by the tools that actually offer it, and reword every sentence in the picks
 that names or counts the supported tools.
 
+## The effort each pick is judged at
+
+**Judge every pick at the effort a supported tool starts it at, never at its best.** A
+model's score climbs with its effort setting, and each tool starts a model at a default
+of its own, which `/dispatch` and `sprint.mjs launch` do not change: on 2026-11-04 Claude
+Code started Opus 5.5, Sonnet 5.5 and Haiku 5.5 at medium, while every board's best row
+for them was at max. A model judged at its best is handed work only its best setting can
+hold. The developer chose the tools' defaults over starting each model at the boards'
+effort, in FW-069.
+
+1. **For each pick, and each supported tool that offers it, find the effort the tool
+   starts it at, from that tool's own documentation, read this pass.** For Claude Code,
+   the model's default effort on its model-configuration page. For Cursor, the default
+   the model's own page in Cursor's documentation states, and the effort any Cursor plan
+   fixes it at. Where Cursor's documentation states no default, the pick starts at the
+   effort its Cursor command-line name selects: record that, marked `Cursor states no
+   default`.
+2. **A pick is judged at the lowest of those efforts.** Its tier must hold wherever it
+   runs, so it rests on the weakest setting a supported tool starts it at.
+3. **Record each pick's efforts in the picks file**, in a table whose header row begins
+   `| Model | Judged at |`, one row per pick: the effort it is judged at, each supported
+   tool's start effort written `<tool>: <effort>`, and the page each came from.
+
+**Read each board at the effort a pick is judged at.** Take the board's row for the
+model at that effort, and record the effort beside the figure. Where the board has no
+such row, take the nearest it has, record its effort, and mark the placement `inferred`:
+a row above the judged effort may overstate the model, and a row below may understate
+it. **A figure that may overstate never lifts a model into a higher tier and never sets
+the highest score Large is measured against; a figure that may understate never keeps a
+model out of one.** A model with no effort setting is read at its one row. A board that
+does not say at which effort it scored a model orders models and decides nothing.
+
 ## What the picks are for
 
 **A model's tier rests on fitness for the tier's work, and on nothing else.** Each model
@@ -47,12 +79,14 @@ with each admission. Place Large this way:
 
 1. **On each board scored from 0 to 100**, in percentages or index points, such as
    Artificial Analysis's Intelligence Index or CursorBench, find the highest score any
-   selectable model has. A model is in Large only when, on every such board that scores
+   selectable model has at the effort it is judged at. A model is in Large only when, on
+   every such board that scores
    it, it is within **1 point** of that highest score.
-2. **Read each model at its best score on the board**, and record the effort setting
-   beside it. Where the board did not score a model at the highest effort the model
-   supports, say so beside the figure: the comparison may understate the model, and a
-   pass that finds the higher setting compares again.
+2. **Read each model at the effort it is judged at**, as *Read each board at the effort
+   a pick is judged at* says. A board that scores a model only above its judged effort
+   does not confirm it for Large: the model stays out of Large, marked `Large
+   unconfirmed`, and a pass that finds the board's row at the judged effort compares
+   again.
 3. **A board on another scale**, such as LMArena's Elo, keeps a model out of Large only
    when it states an uncertainty for both scores and the two ranges do not overlap. A
    board on another scale that states none orders models and does not decide Large.
