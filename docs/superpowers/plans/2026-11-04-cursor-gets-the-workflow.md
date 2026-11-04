@@ -224,6 +224,7 @@ Source: none in particular.
 | `scripts/generate-rules.mjs` | writes and checks the imported rules |
 | `guards/rules-generated.test.js` | front-matter case widened; new unit cases |
 | `scripts/check-conformance.sh` | one `CASES` line |
+| `guards/set-up-project.test.js` | the `.cursor/rules/` expectation: area-rule projections equal the shipped rules, plus `imported-workflow` (added at review, 2026-11-04) |
 | `fixtures/defects/missing-imported-rule/AGENTS.md` | new defect fixture |
 | `fixtures/defects/missing-imported-rule/.claude/framework/second.md` | new defect fixture |
 | `templates/AGENTS.md` | the fallback paragraph |
