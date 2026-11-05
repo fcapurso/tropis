@@ -5,7 +5,8 @@
   "archive": true,
   "archived": [
     "executor-never-interrupts-its-dispatcher",
-    "bundle-brief-names-every-item"
+    "bundle-brief-names-every-item",
+    "test-tools-take-patched-glob"
   ],
   "entries": [
     {
