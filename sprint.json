@@ -3,7 +3,9 @@
   "budget": 20,
   "way": "session",
   "archive": true,
-  "archived": [],
+  "archived": [
+    "cloud-session-gh-routes"
+  ],
   "entries": [
     {
       "id": "update-lists-the-release-steps",
