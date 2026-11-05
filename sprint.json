@@ -225,6 +225,10 @@
     "cloud-session-gh-routes",
     "dependabot-alerts-are-assessed"
   ],
-  "marks": {},
+  "marks": {
+    "update-lists-the-release-steps": {
+      "state": "planning"
+    }
+  },
   "notes": {}
 }
