@@ -417,9 +417,10 @@ pending; they passed afterwards, by luck.
 
 A squash takes its message from the pull request's title and description where the
 repository is set so (setup asks for it: the default squash message is the pull request
-title and description). Pass `--subject` and `--body` explicitly anyway where `gh` can;
-where it cannot, the title and description are the subject and body. Left to itself,
-a repository set the old way inherits the branch commits' messages, and the merged
+title and description). Pass `--subject` and `--body` explicitly anyway, to
+`gh pr merge` or, where `gh pr` is refused, to `auto-merge.mjs`, which passes them on
+either route; where neither can run, the title and description are the subject and
+body. Left to itself, a repository set the old way inherits the branch commits' messages, and the merged
 commit then lists working history instead of saying what the plan made true.
 
 **Where `gh pr` is refused.** A Claude Code cloud session refuses `gh` GitHub's GraphQL

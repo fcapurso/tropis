@@ -22,8 +22,8 @@ const GRAPHQL_403 = 'non-200 OK status code: 403 Forbidden body: "{\\"message\\"
 
 // Logs every call with each argument on its own line, then a line `--`. `pr merge` answers
 // with the file merge-answer: its first line is the exit code, the rest goes to stderr;
-// without the file it succeeds. `api` answers with route-answer the same way, or
-// {"enabled":true,"merge_method":"squash"} without it.
+// without the file it succeeds. `api` answers with route-answer the same way, or prints
+// route-stdout and succeeds, or {"enabled":true,"merge_method":"squash"} without either.
 const STUB_GH = `#!/usr/bin/env bash
 for a in "$@"; do printf '%s\\n' "$a" >> "$STUB_DIR/gh.log"; done
 echo -- >> "$STUB_DIR/gh.log"
@@ -37,6 +37,7 @@ case "$1 $2" in
 esac
 if [ "$1" = api ]; then
   answer route-answer
+  if [ -f "$STUB_DIR/route-stdout" ]; then cat "$STUB_DIR/route-stdout"; exit 0; fi
   echo '{"enabled":true,"merge_method":"squash"}'; exit 0
 fi
 echo "stub gh: unexpected call: $*" >&2
@@ -116,6 +117,17 @@ describe('auto-merge', () => {
     expect(r.status).toBe(1);
     expect(r.stdout).toBe('Pull request #17: not set to merge itself — gh is refused GraphQL here, '
       + "and the cloud session's route answered: gh: Pull request is a draft (HTTP 422).\n");
+  });
+
+  it.each([
+    ['does not say it was enabled', '{"enabled":false}', "the cloud session's route did not say it was enabled"],
+    ['answers with something other than JSON', 'not json', "the cloud session's route answered with something other than JSON"],
+  ])('reports a cloud route that %s, though gh exited 0', (_, said, why) => {
+    writeFileSync(join(dir, 'merge-answer'), `1\n${GRAPHQL_403}\n`);
+    writeFileSync(join(dir, 'route-stdout'), `${said}\n`);
+    const r = cli(...standard);
+    expect(r.status).toBe(1);
+    expect(r.stdout).toBe(`Pull request #17: not set to merge itself — ${why}.\n`);
   });
 
   it('runs no gh at all where origin is not on GitHub', () => {
