@@ -6530,3 +6530,37 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-05, raised by first-adopter's upstream flush, from its queue entry of 2026-11-05.
+# Found running /flush-upstream in a Claude Code cloud session (Linux x86_64): preflight
+# refused with "gh not signed in" while gh api user answered for the signed-in account,
+# and check-name failed with "HTTP 403: GitHub GraphQL is not available from Claude Code
+# sessions". The same name check run by hand through the REST pulls route passed. There,
+# gh api --paginate failed on the next-page link, which names the repository by numeric
+# id ("Numeric-ID repository paths are not supported through this proxy"); asking for
+# page=1, 2 and so on worked. The sprint status had the same GraphQL defect and was fixed
+# by sprint-status-works-in-a-cloud-session.
+- id: flush-runs-in-a-cloud-session
+  title: A flush runs from a cloud session as it does from the developer's computer
+  status: idea
+  value: A developer who runs /flush-upstream from a Claude Code cloud session gets the
+    same sitting and the same pull requests as from their own computer. Today the
+    preflight says gh is not signed in although GitHub answers as the developer, and
+    once past it, the flush name check and the pull request itself are refused, because
+    they use GitHub's GraphQL interface and gh writes, which a cloud session refuses.
+  acceptanceCriteria:
+    - Preflight decides whether gh can reach GitHub by asking it which account is signed
+      in, and passes where GitHub answers even though gh auth status fails. It still
+      refuses, with its line, where GitHub does not answer.
+    - check-name lists the framework's pull requests through the REST pulls route, reading
+      every page, never through gh pr list.
+    - Where gh cannot write, /flush-upstream says how each task opens its pull request
+      with the session's own GitHub tools, after the checks open makes (the flush name,
+      the branch under upstream/<name>/, never main, the name check), and records the URL
+      as open would.
+    - The guard covers a session where gh auth status fails and GitHub answers, and a
+      GraphQL refusal, for preflight and check-name.
+  type: bug
+  layer: product
+  modules: []
+  refs: []
