@@ -17,6 +17,11 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
    0 and prints the framework repository as `OWNER/NAME` when a flush can reach it. On a
    non-zero exit, show its line and stop: nothing is drafted.
 
+   The preflight asks GitHub which account gh is signed in as, so it passes in a Claude
+   Code cloud session, where `gh auth status` fails although GitHub answers. Every call
+   the flush makes to GitHub goes through `gh api`, GitHub's REST interface, which a
+   cloud session allows; it refuses the gh commands that go through GraphQL.
+
    Then read `Flushes as: <name>.` from the queue's header (`docs/BLUEPRINT-UPSTREAM.md`).
    Whenever you ask for or propose a name, say these two sentences to the operator, word
    for word:
@@ -52,7 +57,10 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
    so nothing goes unwritten because its author could not decide. Step 4 says which kind
    each entry is, and why.
 3. **Clone the framework's current `main`** into a temporary directory
-   (`gh repo clone OWNER/NAME <tmp> -- --depth 1`, with `OWNER/NAME` from the preflight)
+   (`git clone --depth 1 https://github.com/OWNER/NAME.git <tmp>`, with `OWNER/NAME`
+   from the preflight; only where git cannot reach it, as for a private framework with no
+   git credentials, `gh repo clone OWNER/NAME <tmp> -- --depth 1`, which a cloud session
+   refuses)
    to look at it as it is, not as it is remembered. Read its decisions record,
    framework/DECISIONS.md, before advising on any entry. Delete the clone when the
    sitting ends; the plan's tasks make their own.
@@ -105,7 +113,8 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
    - `## Decisions` — every entry with its answer, its reason, and the agreed wording or
      entry.
    - **One task per flushed entry.** The task:
-     - clones the framework's current `main` afresh into a temporary directory;
+     - clones the framework's current `main` afresh into a temporary directory, as step 3
+       does;
      - creates the branch `upstream/<flush name>/<flush-date>-<entry-slug>`;
      - makes the edit, or appends the entry;
      - commits with a body that quotes the approved text from the plan's Decisions, not
@@ -130,6 +139,21 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
        from inside the clone, where `<project-root>` is this project's absolute path — the
        clone has no `.tropis/` or queue of its own; the script reads the flush name from
        the project's queue and refuses a branch not under it — and records the URL it prints;
+     - where `open` stops on a line from GitHub refusing the write (HTTP 403) — a session
+       whose gh cannot write — opens the pull request with the session's own GitHub tools
+       instead, and nothing else changes: runs
+       `bash <project-root>/.tropis/scripts/submit-upstream.sh check-open <project-root> OWNER/NAME <branch>`
+       from inside the clone, which makes every check `open` makes and sends nothing, and
+       goes on only once it exits 0; pushes the branch with
+       `git push https://github.com/OWNER/NAME.git HEAD:refs/heads/<branch>`, or, where
+       the account cannot push there, to its own fork, created with the session's tools
+       (where `open` had already pushed it before GitHub refused the pull request, this
+       pushes the same commit again and changes nothing);
+       opens one pull request against `main` with the session's tools, with the same title
+       and the body file's text as its description, never merging it or setting it to
+       merge; and records its URL as it would `open`'s. A push or a pull request the
+       session cannot make stops that entry: the drain task keeps it in the queue with the
+       refusal as its note;
      - deletes the clone.
    - **A drain task**, in the project, after the last submission. It removes each
      submitted entry and each declined entry from the queue; keeps each held entry with

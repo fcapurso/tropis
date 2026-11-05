@@ -7,10 +7,13 @@
 # Usage:
 #   bash submit-upstream.sh preflight <project-root>
 #     Exits 0 and prints the framework repository as OWNER/NAME when gh is installed,
-#     signed in, and <project-root>/.tropis/README.md's "set up from the framework
-#     at `X`" line names a GitHub repository (https://github.com/OWNER/NAME, with or
-#     without .git, or git@github.com:OWNER/NAME.git). Otherwise exits 1 with one line
-#     on stderr saying what is missing.
+#     GitHub answers it as a signed-in account, and <project-root>/.tropis/README.md's
+#     "set up from the framework at `X`" line names a GitHub repository
+#     (https://github.com/OWNER/NAME, with or without .git, or
+#     git@github.com:OWNER/NAME.git). Otherwise exits 1 with one line on stderr saying
+#     what is missing. It asks GitHub which account gh is signed in as (gh api user), so
+#     it passes where GitHub answers even when gh auth status fails, as it does in a
+#     Claude Code cloud session.
 #
 #   bash submit-upstream.sh open <project-root> <OWNER/NAME> <branch> <title> <body-file>
 #     Run inside a clone whose HEAD is the commit to submit; <project-root> is the
@@ -19,10 +22,18 @@
 #     refuses unless the name matches ^[a-z0-9][a-z0-9-]*$ and the branch starts with
 #     upstream/<name>/, so the project is never named by anything the operator did not
 #     choose. Pushes HEAD to <branch> on
-#     the framework repository when the signed-in account can write there, otherwise on
-#     <login>/<NAME>, creating that fork if it does not exist. Then opens one pull
-#     request against main and prints its URL, and nothing else, on stdout. Refuses a
-#     branch named main.
+#     the framework repository when the signed-in account can push there (the REST
+#     repository route's permissions.push), otherwise on <login>/<NAME>, asking GitHub
+#     to fork the framework first (which returns the existing fork when there is one).
+#     Then opens one pull request against main and prints its URL, and nothing else, on
+#     stdout. Refuses a branch named main.
+#
+#   bash submit-upstream.sh check-open <project-root> <OWNER/NAME> <branch>
+#     Makes every check open makes before it sends anything (the queue's flush name, the
+#     branch under upstream/<name>/ and not main, and check-name) and sends nothing: no
+#     push, no fork, no pull request. Exits 0 and prints nothing when they hold, or
+#     refuses as open would. For a session whose gh cannot write: it then pushes with git
+#     and opens the pull request with its own GitHub tools.
 #
 #   bash submit-upstream.sh suggest-name
 #     Prints a generated flush name, adopter- and six lowercase hexadecimal characters,
@@ -33,11 +44,13 @@
 #     is using. Refuses (one line on stderr, exit 1) a name that is not lowercase letters,
 #     digits and hyphens, and a name under which an account other than the signed-in one
 #     has a pull request on the framework, in any state, from a branch starting
-#     upstream/<name>/. The branch is compared as gh reports it, without a fork's owner.
-#     open makes the same check before it pushes.
+#     upstream/<name>/. The branch is compared as GitHub reports it, without a fork's
+#     owner. open and check-open make the same check before anything is sent.
 #
 # gh is needed only by the flush, at the moment it runs; check-prerequisites.sh does not
-# ask for it.
+# ask for it. Every call goes through gh api, GitHub's REST interface, because a Claude
+# Code cloud session refuses the gh commands that go through GraphQL (gh pr list,
+# gh pr create, gh repo view, gh repo fork, gh repo clone) with HTTP 403.
 
 set -euo pipefail
 
@@ -51,7 +64,9 @@ preflight() {
   local readme="$root/.tropis/README.md"
 
   command -v gh >/dev/null 2>&1 || refuse "gh not installed (https://cli.github.com)"
-  gh auth status >/dev/null 2>&1 || refuse "gh not signed in (gh auth login)"
+  local login
+  login="$(gh api user -q .login 2>/dev/null)" || login=""
+  [ -n "$login" ] || refuse "gh cannot reach GitHub as a signed-in account (gh auth login)"
 
   local addr=""
   if [ -f "$readme" ]; then
@@ -75,8 +90,11 @@ suggest_name() {
   echo "adopter-$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')"
 }
 
-# Refuses a name another account already flushes under. headRefName is the branch
-# without the fork owner, so a pull request from a fork reads like one on the framework.
+# Refuses a name another account already flushes under. head.ref is the branch without
+# the fork owner, so a pull request from a fork reads like one on the framework. The
+# list is read page by page until a page comes back empty, never with gh api --paginate:
+# its next-page link names the repository by numeric id, which the Claude Code cloud
+# session's proxy refuses.
 check_name() {
   local up="${1:?check-name needs OWNER/NAME}"
   local name="${2:?check-name needs a name}"
@@ -84,10 +102,15 @@ check_name() {
   [[ "$name" =~ ^[a-z0-9][a-z0-9-]*$ ]] \
     || refuse "the flush name \"$name\" is not lowercase letters, digits and hyphens: change it"
 
-  local me prs others
+  local me others page=1 batch prs=""
   me="$(gh api user -q .login)"
-  prs="$(gh pr list --repo "$up" --state all --limit 1000 --json headRefName,author \
-    -q '.[] | "\(.headRefName) \(.author.login)"')"
+  while :; do
+    batch="$(gh api "repos/$up/pulls?state=all&per_page=100&page=$page" \
+      -q '.[] | "\(.head.ref) \(.user.login)"')"
+    [ -n "$batch" ] || break
+    prs+="$batch"$'\n'
+    page=$((page + 1))
+  done
   others="$(printf '%s\n' "$prs" \
     | awk -v p="upstream/$name/" -v me="$me" 'index($1, p) == 1 && $2 != me { print $2 }' \
     | sort -u | paste -sd, - | sed 's/,/, /g')"
@@ -95,13 +118,12 @@ check_name() {
     || refuse "the flush name \"$name\" is already used on $up by $others: choose another name"
 }
 
-open_pr() {
+# open_checks <project-root> <OWNER/NAME> <branch>: every check open makes before it
+# sends anything. check-open runs these alone, so the two cannot drift.
+open_checks() {
   local root="${1:?open needs the project root}"
   local up="${2:?open needs OWNER/NAME}"
   local branch="${3:?open needs a branch}"
-  local title="${4:?open needs a title}"
-  local body="${5:?open needs a body file}"
-  local name="${up#*/}"
 
   local queue="$root/docs/BLUEPRINT-UPSTREAM.md"
   [ -f "$queue" ] || refuse "no queue at $queue: run the flush from the project that has one"
@@ -118,33 +140,45 @@ open_pr() {
   [ "$branch" != "main" ] || refuse "refusing to push to main: name the branch for the flushed line"
 
   check_name "$up" "$flush_name"
+}
 
-  local permission
-  permission="$(gh repo view "$up" --json viewerPermission -q .viewerPermission)"
+open_pr() {
+  local root="${1:?open needs the project root}"
+  local up="${2:?open needs OWNER/NAME}"
+  local branch="${3:?open needs a branch}"
+  local title="${4:?open needs a title}"
+  local body="${5:?open needs a body file}"
+  local name="${up#*/}"
+
+  open_checks "$root" "$up" "$branch"
+
+  # The push target: the framework itself when the REST repository route says the
+  # signed-in account may push there, otherwise the account's own fork.
+  local can_push
+  can_push="$(gh api "repos/$up" -q .permissions.push)"
 
   local target head_ref
-  case "$permission" in
-    ADMIN | MAINTAIN | WRITE)
-      target="$up"
-      head_ref="$branch"
-      ;;
-    *)
-      local login
-      login="$(gh api user -q .login)"
-      # gh reports the fork on stdout; send it to stderr so stdout stays the pull
-      # request's URL alone, which is what the caller records.
-      gh repo fork "$up" --clone=false --remote=false >&2
-      target="$login/$name"
-      head_ref="$login:$branch"
-      ;;
-  esac
+  if [ "$can_push" = "true" ]; then
+    target="$up"
+    head_ref="$branch"
+  else
+    local login
+    login="$(gh api user -q .login)"
+    # The fork's full name goes to stderr so stdout stays the pull request's URL alone,
+    # which is what the caller records.
+    gh api -X POST "repos/$up/forks" -q .full_name >&2
+    target="$login/$name"
+    head_ref="$login:$branch"
+  fi
 
   local url
-  url="$(gh repo view "$target" --json url -q .url 2>/dev/null)" && [ -n "$url" ] \
-    || refuse "no repository $target to push to (looked for it with gh repo view)"
+  url="$(gh api "repos/$target" -q .clone_url 2>/dev/null)" && [ -n "$url" ] \
+    || refuse "no repository $target to push to (looked for it with gh api repos/$target)"
   git push "$url" "HEAD:refs/heads/$branch"
 
-  gh pr create --repo "$up" --base main --head "$head_ref" --title "$title" --body-file "$body"
+  # -f sends the title and head as strings; -F reads the body from its file.
+  gh api -X POST "repos/$up/pulls" -f base=main -f "head=$head_ref" -f "title=$title" \
+    -F "body=@$body" -q .html_url
 }
 
 case "${1:-}" in
@@ -163,8 +197,12 @@ case "${1:-}" in
     shift
     check_name "$@"
     ;;
+  check-open)
+    shift
+    open_checks "$@"
+    ;;
   *)
-    echo "usage: submit-upstream.sh suggest-name | check-name <OWNER/NAME> <name> | preflight <project-root> | open <project-root> <OWNER/NAME> <branch> <title> <body-file>" >&2
+    echo "usage: submit-upstream.sh suggest-name | check-name <OWNER/NAME> <name> | preflight <project-root> | open <project-root> <OWNER/NAME> <branch> <title> <body-file> | check-open <project-root> <OWNER/NAME> <branch>" >&2
     exit 2
     ;;
 esac

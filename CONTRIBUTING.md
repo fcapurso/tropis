@@ -18,8 +18,9 @@ what the project learned or built. Or you change the framework here, in this rep
   per flushed entry. Each starts from a fresh clone of the framework's `main`, and opens only
   after the framework's self-check passes in that clone. The branch goes to the framework
   repository or, if you cannot push there, to your fork.
-- **What you need.** `gh` installed and signed in, and `.tropis/README.md` naming the
-  framework's GitHub repository. `.tropis/scripts/submit-upstream.sh` run with `preflight`
+- **What you need.** `gh` installed and answering GitHub as you, which it does from a
+  Claude Code cloud session too, and `.tropis/README.md` naming the framework's GitHub
+  repository. `.tropis/scripts/submit-upstream.sh` run with `preflight`
   says which of the two is missing.
 - **What happens next.** The maintainer takes a flush in with `/absorb-flush`, a group of
   related pull requests at a time. Each one is taken, taken with a stated change, or
