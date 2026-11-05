@@ -6875,18 +6875,30 @@
 # end of life in April 2025. Shaping need not ask again.
 - id: test-tools-take-patched-glob
   title: The test tools a project installs lock glob and minimatch at their patched majors
-  status: idea
+  status: building
   value: A project set up or updated from the next release has no Dependabot alert for
     GHSA-3g3m-2fjr-6pw4 or GHSA-g3hv-75wg-m249, because templates/package.json overrides
     glob to ^14.0.3 and minimatch to ^11.0.4 under Jest, and the lockfile it ships is
     regenerated from that. minimatch 11 needs Node.js 20 or 22 and later, so this drops
     Node.js 18 for projects, and the self-check's test tools move with the lockfile.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - templates/package.json overrides glob to ^14.0.3 and minimatch to ^11.0.4, and
+      templates/package-lock.json locks no glob below 14 and no minimatch below 11.
+    - npm audit on an install from that lockfile reports neither GHSA-3g3m-2fjr-6pw4
+      nor GHSA-g3hv-75wg-m249.
+    - guards/dependency-overrides.test.js carries an entry for each override, and fails
+      once the package that pulls in the old major asks for the patched one itself.
+    - The prerequisite check accepts Node.js 20 and 22 and later, and refuses 18 and 21
+      naming the versions it needs, asserted by guards/check-prerequisites.test.js.
+    - The self-check passes with its test tools installed from the regenerated lockfile.
+    - The release notes tell projects that their checks now need Node.js 20, or 22 or
+      later.
   type: improvement
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-05-dependabot-alerts.md
+    - docs/superpowers/plans/2026-11-05-test-tools-take-patched-glob.md
 
 # 2026-11-05, found by the sprint session. A team member's executor, a Claude Code
 # subagent in a cloud session, finished its plan, committed its handover, and then
