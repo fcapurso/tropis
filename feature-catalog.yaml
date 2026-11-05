@@ -2326,9 +2326,30 @@
 # check and every tool that finds blocks keep working. The two transitional fill-ins the
 # finding names (feature's before-ship-commit, idea's before-commit) are not built: only
 # the generated documents FW-043 retires needed them.
+# Shipped by docs/superpowers/plans/2026-11-05-commands-have-named-fill-ins.md.
+# Criterion 1 (six commands, named fill-ins): guards/release.test.js "holds fourteen named
+# fill-ins..." and guards/set-up-project.test.js "names every project-owned block in a
+# command...".
+# Criterion 2 (no .new, carried by name through added, renamed, removed):
+# guards/take-version.test.js "carries fill-ins by name..." and "lists a renamed, a
+# re-purposed and a removed fill-in..."; guards/installed-files.test.js carryFillIns
+# cases.
+# Criterion 3 (report names new, renamed, gone, changed purpose, with gone text):
+# take-version.test.js "lists a renamed, a re-purposed and a removed fill-in..." and
+# "moves the single block..." (new).
+# Criterion 4 (the move of an earlier release's block): take-version.test.js "moves the
+# single block of an earlier release into the named fill-ins"; installed-files.test.js
+# move cases.
+# Criterion 5 (a change outside the fill-ins still writes .new): take-version.test.js
+# "writes .new with the fill-ins carried when the project adds a block of its own".
+# Criterion 6 (check-version lists the same lines): guards/check-version.test.js "lists a
+# fill-in the release renames, as the take will".
+# Criterion 7 (shipped /release, real take, section added upstream): take-version.test.js
+# "carries fill-ins by name and lists nothing when only the text around them changed" and
+# the renamed, re-purposed and removed case.
 - id: commands-have-named-fill-ins
   title: A command's fill-ins are carried by name when a project takes a new release
-  status: building
+  status: shipped
   value: A project that filled in a command keeps its fill-ins through every update
     without merging by hand, and is told when a fill-in is new, renamed, means something
     different or has gone. Today each command has one free-text block, carried as one
@@ -2357,7 +2378,11 @@
       upstream arriving with the fill-ins in place.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - scripts/installed-files.js
+    - scripts/take-version.mjs
+    - scripts/check-version.mjs
+    - commands/release.md
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
     - docs/superpowers/plans/2026-11-05-commands-have-named-fill-ins.md
