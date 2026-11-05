@@ -223,6 +223,9 @@
     "bundle-brief-names-every-item": [
       "brief for a bundle's first item now names every item and says to end SHIPPED only once all ship; brief/launch for a later bundle item is refused naming the first (#269, 301a108; claim #266).",
       "Executor was a Sonnet subagent (dispatch named a Cursor model); fresh-agent check skipped since no framework, rule or command file changed; board page not rebuilt."
+    ],
+    "test-tools-take-patched-glob": [
+      "Overrides glob ^14.0.3 and minimatch ^11.0.4, lockfile regenerated; check-prerequisites accepts Node 20 or 22+; FW-073; Sonnet executor; RELEASES.md conflict kept both lines; README still says Node 18.14 for /refresh-readme (#271, e8aae28; claim #268)."
     ]
   }
 }
