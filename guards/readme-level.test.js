@@ -41,6 +41,35 @@ describe('how a project chooses the README level', () => {
     expect(level).toContain(phrase);
   });
 
+  // Backs readme-skeleton-for-closed-products: both commands, and setup by hand, ask
+  // whether the product is open or closed-source, and only the closed-source answer copies.
+  const skeletonAt = refresh.indexOf('**`/refresh-readme skeleton`');
+  const skeleton = flat(refresh.slice(skeletonAt, refresh.indexOf('**`/refresh-readme` with no option', skeletonAt)));
+  const byHand = read('../bootstrap.md');
+  const stepAt = byHand.indexOf('## Step 3a');
+  const step = flat(byHand.slice(stepAt, byHand.indexOf('## Step 4', stepAt)));
+
+  it.each([
+    ['open or closed-source'],
+    ['.tropis/templates/readme-skeleton-closed.md'],
+    ['.tropis/templates/readme-skeleton.md'],
+    ['do not ask'],
+  ])('the skeleton option contains %s', (phrase) => {
+    expect(skeletonAt).toBeGreaterThanOrEqual(0);
+    expect(skeleton).toContain(phrase);
+  });
+
+  it.each([
+    ['open or closed-source'],
+    ['readme-skeleton-closed.md'],
+    ['copy nothing'],
+    ['already exists, in which case do not ask and leave it'],
+  ])('bootstrap Stage 3a and Step 3a contain %s', (phrase) => {
+    expect(stage).toContain(phrase);
+    expect(stepAt).toBeGreaterThanOrEqual(0);
+    expect(step).toContain(phrase);
+  });
+
   const notes = read('../RELEASES.md');
   // /release rewrites these notes and the release job moves them from [Unreleased] under a
   // version, so the test pins the behaviour, not the wording or the section: in the newest

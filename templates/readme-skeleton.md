@@ -1,7 +1,10 @@
-<!-- The README's sections, in order. The first is written as the page's opening
-     paragraph under its title, with no heading of its own; the rest are ## sections.
-     A project may copy this file to docs/readme/skeleton.md and change it;
-     /refresh-readme then uses that copy. -->
+<!-- The README's sections, in order. The reader it assumes: someone deciding whether
+     to use or adopt the product, who may never have seen it, as the reader of an open
+     project's page is. For a closed-source product, whose readers build, run, release
+     or assess it, readme-skeleton-closed.md fits instead. The first section is written
+     as the page's opening paragraph under its title, with no heading of its own; the
+     rest are ## sections. A project may copy this file to docs/readme/skeleton.md and
+     change it; /refresh-readme then uses that copy. -->
 
 **Page length:** at most 1,200 words, counted as `wc -w` counts them, title and fixed text included.
 

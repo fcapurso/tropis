@@ -74,7 +74,10 @@ describe('blueprint README usable', () => {
     expect(missing).toEqual([]);
   });
 
-  it('both README outlines list requirements once, under What it needs', () => {
+  // The checks below that read What it needs, the aspects and Using it day to day hold
+  // for the two open-source outlines: the default and this repository's. The closed-source
+  // outline has none of those sections, and its own case follows them.
+  it('both open-source README outlines list requirements once, under What it needs', () => {
     for (const path of ['templates/readme-skeleton.md', 'docs/readme/skeleton.md']) {
       const text = readFileSync(join(root, path), 'utf8');
       const sections = text.split(/^## /m).slice(1);
@@ -98,7 +101,7 @@ describe('blueprint README usable', () => {
 
   // Backs readme-gives-an-overview-not-a-feature-list: an overview in five to seven
   // aspects, and a page kept under the limit its skeleton sets.
-  it('both README outlines set a page length and five to seven aspects', () => {
+  it('both open-source README outlines set a page length and five to seven aspects', () => {
     for (const path of ['templates/readme-skeleton.md', 'docs/readme/skeleton.md']) {
       const text = readFileSync(join(root, path), 'utf8');
       expect({ path, limit: /^\*\*Page length:\*\* at most [0-9,]+ words/m.test(text) })
@@ -154,6 +157,46 @@ describe('blueprint README usable', () => {
       .toEqual({ dispatch: false, feature: false });
   });
 
+  // Backs readme-skeleton-for-closed-products.
+  it('the closed-source outline has its sections in order, a page length, and no adopter sections', () => {
+    const text = readFileSync(join(root, 'templates/readme-skeleton-closed.md'), 'utf8');
+    const headings = text.split(/^## /m).slice(1).map((s) => s.split('\n')[0].trim());
+    expect(headings).toEqual([
+      'What it is',
+      'Getting a working copy',
+      'Environments and accounts',
+      'How it works',
+      'Changing and releasing it',
+      'Limits and risks',
+      'Where to go next',
+    ]);
+    expect(/^\*\*Page length:\*\* at most [0-9,]+ words/m.test(text)).toBe(true);
+    for (const section of text.split(/^## /m).slice(1)) {
+      for (const line of ['- **Job:**', '- **Facts from:**', '- **Length:**']) {
+        expect({ section: section.split('\n')[0], line, found: section.includes(line) })
+          .toEqual({ section: section.split('\n')[0], line, found: true });
+      }
+    }
+  });
+
+  it('each shipped skeleton names the reader it assumes and the other skeleton', () => {
+    for (const [path, other] of [
+      ['templates/readme-skeleton.md', 'readme-skeleton-closed.md'],
+      ['templates/readme-skeleton-closed.md', 'readme-skeleton.md'],
+    ]) {
+      const header = readFileSync(join(root, path), 'utf8').split('-->')[0].replace(/\s+/g, ' ');
+      expect({ path, reader: header.includes('The reader it assumes:') }).toEqual({ path, reader: true });
+      expect({ path, other: header.includes(other) }).toEqual({ path, other: true });
+    }
+  });
+
+  it('setup installs both skeletons', () => {
+    const script = readFileSync(join(root, 'scripts/set-up-project.sh'), 'utf8');
+    for (const t of ['templates/readme-skeleton.md', 'templates/readme-skeleton-closed.md']) {
+      expect({ t, copied: script.includes(`"$BP"/${t}`) }).toEqual({ t, copied: true });
+    }
+  });
+
   it('What it does for you has five to seven bullets', () => {
     const at = readme.indexOf('## What it does for you');
     expect(at).toBeGreaterThanOrEqual(0);
@@ -178,6 +221,7 @@ describe('blueprint README usable', () => {
       'Then keep the page under its limit.',
       'cut until it is under',
       'Never cut `Fixed text:`',
+      'or from the closed-source skeleton\'s Getting a working copy',
       'what you cut to stay under it',
       'limits the page to 1,200 words',
       'and the page\'s word count against its limit',

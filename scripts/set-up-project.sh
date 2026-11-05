@@ -94,7 +94,8 @@ fs.writeFileSync(process.argv[2], text.replaceAll("{{PROJECT_NAME}}", () => valu
 if [ -n "$name" ]; then
   node -e 'process.stdout.write(JSON.stringify({ name: process.argv[1] }, null, 2) + "\n")' "$name" > "$PROJECT/.tropis/project.json"
 fi
-cp "$BP"/templates/project-brief.md "$BP"/templates/readme-skeleton.md "$PROJECT/.tropis/templates/"
+cp "$BP"/templates/project-brief.md "$BP"/templates/readme-skeleton.md "$BP"/templates/readme-skeleton-closed.md \
+   "$PROJECT/.tropis/templates/"
 cp "$BP"/templates/pipeline-caller.yml "$BP"/templates/staging-caller.yml \
    "$BP"/templates/github/main-branch-ruleset.json "$PROJECT/.tropis/templates/"
 cp "$BP"/templates/backlog-board.html "$BP"/templates/backlog-bands.yaml "$PROJECT/.tropis/templates/"
