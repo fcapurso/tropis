@@ -8,7 +8,8 @@
     "author-built-evidence-reaches-the-reviewer",
     "dependabot-alerts-are-assessed",
     "readme-follows-the-developers-role",
-    "plan-dates-follow-the-project-time-zone"
+    "plan-dates-follow-the-project-time-zone",
+    "flush-runs-in-a-cloud-session"
   ],
   "entries": [
     {
