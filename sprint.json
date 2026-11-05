@@ -9,7 +9,8 @@
     "dependabot-alerts-are-assessed",
     "readme-follows-the-developers-role",
     "plan-dates-follow-the-project-time-zone",
-    "flush-runs-in-a-cloud-session"
+    "flush-runs-in-a-cloud-session",
+    "update-lists-the-release-steps"
   ],
   "entries": [
     {
