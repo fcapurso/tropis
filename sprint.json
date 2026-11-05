@@ -294,6 +294,9 @@
       "No timeZone set in this repository's .tropis/project.json since the developer's zone isn't recorded; defaults to UTC (#252 claim, #256 build).",
       "No DECISIONS.md entry: the choice of the project's zone over the machine's is recorded in the backlog item and plan.",
       "The plan's red-check step could not fail (its fixture lacked plans); noted in the review record, and a real red check was run on a project with plans."
+    ],
+    "flush-runs-in-a-cloud-session": [
+      "Moved open to the REST interface entirely (gh api), not just the two calls the item named, since gh api writes worked in a cloud session (#257, 04a2f71)."
     ]
   }
 }
