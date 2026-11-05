@@ -6719,17 +6719,30 @@
 # item that changes the merge path.
 - id: release-and-next-run-in-a-cloud-session
   title: /release and /next work from a cloud session as from the developer's computer
-  status: idea
+  status: building
   value: A developer working from a Claude Code cloud session can see what is in flight
     and carry a release through, as from their own computer. Today /next's check of open
     pull requests fails there, and /release cannot set its pull requests to merge or
     find the commit a merge made, so a release stops partway with nothing saying how to
     go on.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - /next and /release list open pull requests, and /release reads the commit a merge
+      made, through the REST pulls route with gh api, never gh pr list or gh pr view.
+    - /release opens its pull requests through gh api and sets them to merge themselves
+      with a shipped script that runs gh pr merge --auto and, only where gh is refused
+      GraphQL, the cloud session's auto-merge route with the squash subject and body.
+    - The script reports any other refusal without trying the other route, and runs gh
+      only where origin is on GitHub; a guard runs it against a stub gh for each case.
+    - The workflow says a session where gh pr is refused opens, sets to merge and updates
+      its pull request through gh as above, keeping its own GitHub tools only for waking
+      on the pull request's activity, recorded as a decision amending FW-063.
+    - A fresh agent at /release and /next in a session where gh pr is refused names only
+      those commands, recorded with its tool and version.
   type: bug
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-05-release-and-next-run-in-a-cloud-session.md
 
 # 2026-11-05, raised by the developer after the first /absorb-flush from a Claude Code
 # cloud session (Linux x86_64). Its preflight stopped on gh auth status, and every other
