@@ -300,7 +300,8 @@
       "Kept check-open and the session's-own-tools instructions: pushing to another repository and forking from a cloud session are still untested.",
       "Lists read one page at a time, never --paginate (the proxy refuses its next-page link, per the cloud-session-gh-routes spike).",
       "Executor ran as a Claude Code Opus 5.5 subagent because /dispatch named a Cursor model, unavailable in a cloud session.",
-      "Fixed one gap the fresh agent found on the branch (re-push after a refused PR is harmless), declared in the review record."
+      "Fixed one gap the fresh agent found on the branch (re-push after a refused PR is harmless), declared in the review record.",
+      "Did not correct workflow.md 'Where gh cannot write'; handed it to release-and-next-run-in-a-cloud-session via a backlog comment."
     ]
   }
 }
