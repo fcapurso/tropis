@@ -464,3 +464,128 @@ Reviews the branch, runs a probe of `commands/flush-upstream.md` with a fresh ag
 invented flush in a cloud session whose `open` stops on HTTP 403: does it run
 `check-open`, push with git and open the pull request with the session's tools, without
 merging), writes the review record, and merges.
+
+## Handover report
+
+### Task completion
+
+- **Task 0.** Isolated with `bash .tropis/scripts/isolate-for-plan.sh` from the main
+  checkout, then `npm --prefix .tropis ci` in the worktree; `git status --porcelain`
+  printed nothing; the self-check passed. Tools: git 2.43.0, node v22.23.4, gh 2.89.0,
+  Linux x86_64, in a Claude Code cloud session.
+- **Task 1.** Stub gh and cases reworked as *Tests* says; committed (`06cd8f7`); red
+  against the old script (below).
+- **Task 2.** Script changed as *The change* says; committed (`35a0534`); guard green.
+- **Task 3.** The three command changes and the CONTRIBUTING phrase; committed; self-check
+  passed.
+- **Task 4.** Backlog item to `shipped` (it read `building`), `modules` set, criteria
+  mapped in comments, band block removed; committed. The board hook staged no
+  `docs/backlog-board/index.html`, so that file is not in the diff.
+- **Task 5.** Clone, checks, this report, push. No pull request opened.
+
+### Verification results
+
+All on Linux x86_64, Claude Code cloud session; git 2.43.0, node v22.23.4, gh 2.89.0,
+Jest from `.tropis/node_modules` (the installed release's).
+
+- **Guard alone, red (Task 1, old script):** `Tests: 23 failed, 14 passed, 37 total`.
+  Failing: preflight › refuses when gh is not signed in, passes where gh auth status
+  fails and GitHub answers, never asks gh auth status; check-name › refuses a name another
+  account has a pull request under, compares the branch without the fork owner, lists
+  pull requests through the REST pulls route, page by page, refuses a name used only on a
+  later page, accepts the signed-in account's own earlier flushes, accepts a name nobody
+  uses…; open › pushes to the framework itself…, opens its pull request with no GraphQL
+  call, pushes to the account's own fork…, stops naming the fork…, and accepts the name
+  without its trailing full stop, refuses a name another account already uses…, never
+  merges… (can push: true) and (can push: false); check-open › passes and sends nothing…,
+  and all five refuses-as-open-does cases. Every added case is red. Of the cases that only
+  keep existing intent, these passed against the old script: preflight prints OWNER/NAME
+  (3), refuses a local-path address, refuses when the README does not say, refuses when gh
+  is not installed; suggest-name; check-name refuses an invalid name before asking gh;
+  open refuses a branch named main, and the five refusals of a branch not under the flush
+  name except the trailing-full-stop acceptance. The rest failed because the stub now
+  refuses `gh pr`/`gh repo` and answers `gh auth status` by `STUB_AUTH_STATUS`.
+- **Guard alone, green (Task 2 and on the final commit):** `Tests: 37 passed, 37 total`.
+- `bash -n scripts/submit-upstream.sh`: no output.
+- `grep -nE 'gh (pr|repo|auth)' scripts/submit-upstream.sh`: lines 15, 52, 53 (header
+  comment) and 69 (the refusal message's "(gh auth login)" hint). None runs a command.
+- **Task 5 clone:** `git clone --depth 1 https://github.com/fcapurso/tropis.git <tmp>`
+  exited 0 (head `f38ef18`); the clone was deleted.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 191 passed, 191 total`.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect,
+  the clean baseline passed, and the framework repository's own guards passed.`
+  The same line again on the commit carrying this report, with `npm --prefix .tropis test`
+  again at 191 passed.
+- `git diff --stat origin/main...HEAD` before this report:
+
+  ```
+   CONTRIBUTING.md                |   5 +-
+   commands/flush-upstream.md     |  26 ++++-
+   docs/backlog-board/bands.yaml  |  16 ---
+   feature-catalog.yaml           |  20 +++-
+   guards/submit-upstream.test.js | 225 ++++++++++++++++++++++++++++++++---------
+   scripts/submit-upstream.sh     | 122 ++++++++++++++--------
+   6 files changed, 303 insertions(+), 111 deletions(-)
+  ```
+
+### Scope
+
+The six files above plus this plan file; every one is in *File Structure*.
+`docs/backlog-board/index.html` was not touched. Worktree used:
+`../tropis-flush-cloud-build` (a sibling of the main checkout), branch
+`plan/flush-runs-in-a-cloud-session-build`.
+
+### Judgment calls
+
+- **How the guard was run alone.** The plan's form
+  (`jest.js --rootDir . guards/submit-upstream.test.js`) does not run: Jest finds no
+  config file ("Could not find a config file based on provided values"), and the guards
+  are ES modules with no `package.json` saying so at the repository root. I ran it as the
+  self-check does, from a scratch directory outside the repository holding
+  `{"type":"module"}` as `package.json`, `templates/framework-jest.config.js` as
+  `jest.config.js`, a copy of `guards/submit-upstream.test.js`, and a symlink `scripts`
+  to the worktree's `scripts/`, then
+  `node --experimental-vm-modules .tropis/node_modules/jest/bin/jest.js --config <scratch>/jest.config.js guards/submit-upstream.test.js`.
+  This reads the working tree, so the red run used the old script as it stood at the
+  Task 1 commit.
+- **The queue-root helpers** (`queueRoot`, `named`) moved from inside `describe('open')`
+  to the outer describe so `check-open` reuses them, as *Tests* asks. `isPullRequest`
+  sits beside them for the same reason.
+- **"works where GraphQL is refused"** is the existing accept and refuse cases of
+  check-name, since the stub always refuses `pr` and `repo` now; I added a `noGraphQL()`
+  assertion (no logged call starts `pr ` or `repo `) to "refuses a name another account
+  has a pull request under" and "accepts a name nobody uses…", and added no separate case.
+- **check-open › when the branch is named main** is refused by the branch-under-name
+  check (its message quotes `"main"`), exactly as `open`'s own main case is; the later
+  `refusing to push to main` line is reached by neither, as before this plan.
+- **check-open dispatches straight to `open_checks`**; there is no separate
+  `check_open` function. Its argument-missing messages read "open needs …", the same as
+  `open`'s.
+- **The stub's never-merges assertion** checks no logged call contains `merge`, as the
+  plan says.
+- **Source.** Written against this repository's own script and guard; no outside
+  source was used. The REST shapes (`permissions.push`, `POST forks`, `POST pulls`,
+  `head.ref`, `user.login`, `clone_url`) are the ones the plan names.
+
+### What the plan got wrong
+
+- **The guard-alone command does not run** as written (see *Judgment calls*): with
+  `--rootDir .` and no config, Jest refuses for want of a config file, and without a
+  `{"type":"module"}` package the guard cannot load. The plan's fallback (do what the
+  self-check does) worked.
+- Nothing else found untrue: the line numbers, call list and wording anchors in
+  *Verified* matched `origin/main`.
+
+### Outstanding
+
+- **The change has no screen**, so there is no developer check.
+- The real cloud-session behaviour of a write to another repository and of a fork
+  (`POST repos/<up>/forks`, `POST repos/<up>/pulls` against the framework from a
+  project) is still untried; the guard only exercises a stub. The first real flush from
+  a cloud session is that test, and `check-open` is the fallback if it is refused.
+- `POST forks` returns before GitHub has finished creating a new fork; `open` asks for
+  the fork's `clone_url` and pushes straight after. Where the fork is new, that push may
+  race the fork's creation. Not covered by the plan or the guard; for the reviewer to
+  judge.
+- The probe of `commands/flush-upstream.md` named under *After Task 5* is the
+  specifying session's.
