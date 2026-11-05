@@ -512,3 +512,59 @@ The branch against `origin/main` changes exactly the plan's File Structure table
   does not affect these checks.
 - The installed release in `.tropis/` keeps its UTC check until a release is installed, as the
   plan expects.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session; git 2.43.0, node
+v22.23.4, Jest 30.5.2, Linux x86_64.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: 11 files, every one in the File Structure table.
+- `bash scripts/check-blueprint.sh` on `8f67ee9`: "Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed." (5 min 42 s).
+- The five source guards from a stage of `HEAD` (Task 5 step 1's commands): `Tests: 110
+  passed, 110 total`.
+- Re-broke `todayIn` to ignore its zone (`timeZone: "UTC"`): `guards/today.test.js` went
+  `Tests: 3 failed, 4 passed, 7 total`; restored.
+- The criterion end to end, through `guards/catalog-drift.test.js` with `FRAMEWORK_ROOT`
+  at an invented project, at 2026-11-05 UTC (2026-11-06 in Pacific/Kiritimati): a plan
+  `2026-11-06-probe.md` with `{"timeZone":"Pacific/Kiritimati"}` passed (`1 passed`);
+  the same plan with `{}` failed naming it (`1 failed`); `2026-11-07-probe.md` with the
+  zone failed naming it; `{"timeZone":"Mars/Base"}` failed with `.tropis/project.json:
+  "timeZone" must be an IANA time zone such as "Europe/Rome", not "Mars/Base".`
+
+### Found
+
+Public exposure: read the whole diff, the handover included, for names, home paths,
+hostnames and other projects; nothing.
+
+The executor's two diagnoses were checked. (1) `.gitattributes` lines 6, 9 and 10 mark
+`.tropis/`, `feature-catalog.yaml` and `docs/superpowers/` `export-ignore`, so a
+`git archive` stage holds no plans and the catalog guard passes there vacuously: true,
+and the plan's Task 5 step 1 was wrong to offer it as the red check; the review's red
+check above points `FRAMEWORK_ROOT` at a project that has plans. (2) In the source tree
+the guard's default root, two levels above `guards/`, is outside the repository: true,
+and intended — the comment above `root` says the guard is written for its installed
+place, `.tropis/guards/`, where two levels up is the project root; the self-check
+points it at fixtures. Not a defect.
+
+### Outstanding disposition
+
+- The catalog guard's default root in the source tree: dropped, intended as above.
+- The Dependabot and `npm audit` advisories the executor saw: dropped here; the backlog item
+  `dependabot-alerts-are-assessed` already covers the alerts on `main`.
+- This repository names no `timeZone` (Decision 5): the developer may add theirs to
+  `.tropis/project.json`; it takes effect once a release carrying this is installed.
+
+### Learnings routed
+
+None generalises beyond this plan: the export-ignore trap is already in `AGENTS.md`'s
+gotcha about the self-check checking committed content, and the plan's own step was the
+error.
+
+### Merged because
+
+Every acceptance criterion was re-observed failing without the change and passing with
+it, and the self-check passes on the branch.
