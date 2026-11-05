@@ -269,7 +269,8 @@
     "author-built-evidence-reaches-the-reviewer": [
       "Built the change itself and sent it to a fresh reviewer instead of dispatching an executor: the deliverable is one rule's wording (rules/planning.md).",
       "Left the dispatch prompt unchanged: work its author builds never goes through dispatch.",
-      "Removed the shipped item's bands.yaml entry rather than updating its status, as the previous shipment did."
+      "Removed the shipped item's bands.yaml entry rather than updating its status, as the previous shipment did.",
+      "Fixed the fresh reviewer's three mechanical findings in the plan text itself, declared in the plan."
     ]
   }
 }
