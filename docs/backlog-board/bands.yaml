@@ -107,6 +107,20 @@ cursor-rules-return-after-summarize:
   seen:
     status: idea
     blockers: []
+dependabot-alerts-are-assessed:
+  band: B
+  value: 3
+  valueWhy: An alert in the template lockfile would reach every project; one in the
+    installed release's test tools reaches only this repository's checks.
+  effort: 1
+  effortWhy: Reading two alerts and the lockfiles they name, and deciding each.
+  verdict: "Do next: cheap, and the one question that matters, whether an alert ships to
+    projects, has no answer until someone reads them."
+  evidence: "2026-11-05 — a push reported 2 vulnerabilities on main (1 moderate, 1 low);
+    main carries .tropis/package-lock.json and templates/package-lock.json."
+  seen:
+    status: idea
+    blockers: []
 dependency-licences-are-checked:
   band: B
   value: 3
