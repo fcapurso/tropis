@@ -254,3 +254,90 @@ shape) and the spike's finding.
 - `/absorb-flush` (`absorb-flush-runs-in-a-cloud-session`) can set its group pull
   requests to merge with this script once it takes a merge method; that item's plan
   decides.
+
+## Review record
+
+Reviewed by a fresh reviewer: Claude Code 2.1.318, model claude-opus-5-5, on Linux
+x86_64; git 2.43.0, node v22.23.4, gh 2.89.0, in a cloud session where every `gh pr`
+command answers the GraphQL 403. It had only this repository and the branch
+`plan/release-and-next-run-in-a-cloud-session-build`, and did not write the change.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: twelve files, the plan's File Structure plus
+  `templates/README.md`, the deviation the handover declares (the operator guide names
+  the new script beside `main-status.mjs`, as the doc-closeout table asks).
+- `npm --prefix .tropis test`, before and after the review fix: `Test Suites: 13 passed,
+  13 total`, `Tests: 195 passed, 195 total`.
+- `bash scripts/check-blueprint.sh` on `0547e4a` and again on the review fix `e0b3731`:
+  "Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed." Exit 0 both times.
+- `guards/auto-merge.test.js` against mutations of `scripts/auto-merge.mjs`, in a scratch
+  copy: falling back on any refusal, dropping `commit_title` from the route, and removing
+  the origin check each turned one case red. Ignoring the route's `enabled` answer
+  turned none red; see *Found*.
+- Read-only `gh api` in this session: `pulls/258` is merged as `8f5c8ee`, with
+  `auto_merge` showing `merge_method: squash` and the claim's subject as
+  `commit_title`, as the handover says. The `/next` listing command exited 0 with no
+  open pull request.
+- Added lines searched for home paths, hostnames, emails, session ids and personal or
+  computer names: none beyond the attribution trailers.
+
+### Found
+
+- **`scripts/auto-merge.mjs` is correct.** The number must be a positive integer, each
+  flag takes a value, `--subject` must not be blank, an unknown flag or missing value
+  gives the usage and exit 2. The fallback tests for the text `GitHub GraphQL is not
+  available` in gh's output, not for any 403, so a real refusal on a computer is reported
+  with gh's first stderr line and exit 1. The route's non-zero exit, non-JSON answer, and
+  an answer without `enabled: true` each exit 1 with a line. The root is `git rev-parse
+  --show-toplevel`, falling back to two levels above the script as `main-status.mjs`
+  does; its import of `./main-status.mjs` resolves under `.tropis/scripts/`, where
+  `installed-scripts.txt` installs both, and `main-status.mjs` runs its own command line
+  only when run directly, so importing it runs nothing.
+- **The commands, the workflow, FW-071 and the operator guide agree with each other and
+  with the finding.** `commands/next.md` and `commands/release.md` keep no `gh pr list`,
+  `gh pr view`, `gh pr create` or `mergeCommit`; `/release` names `gh pr merge` once, in
+  the sentence saying what the script runs. FW-071's evidence matches the finding's table.
+  Each acceptance criterion is shown by the guard or check the catalog comment names.
+- **Fixed on the branch (mechanical), `e0b3731`:** *Merge and clean up* still said to pass
+  `--subject` and `--body` "where `gh` can; where it cannot, the title and description
+  are the subject and body", written for the session tools FW-071 retires; it now names
+  `auto-merge.mjs`, which passes them on either route. A fresh-agent check of that
+  sentence (Claude Code 2.1.318, `claude -p --model claude-opus-5-5`, `--tools
+  Read,Grep,Glob`, stream-json, Linux x86_64, invented project) answered `gh api` POST
+  pulls, `auto-merge.mjs` with the subject and body, `main-status.mjs --pull-request`, and
+  said it does not rely on the title and description: pass. Recorded in that commit's body.
+- **Fixed on the branch (mechanical), `e0b3731`:** no case covered a route that exits 0
+  without saying it was enabled, or without JSON; two cases now do, and each goes red with
+  its check removed.
+- **Not a defect, noted:** the workflow now says a cloud session re-runs a run with
+  `gh run rerun`. The finding reached `POST actions/runs/{id}/rerun` only on a run that
+  does not exist (GitHub's 404 came back through the proxy); a real re-run is inferred.
+  `framework/workflow.md`'s *The merge token* still says the token "works where `gh`
+  cannot write", which stays true. `commands/flush-upstream.md` still sends a session
+  whose `gh` cannot write to its own GitHub tools; that is
+  `flush-runs-in-a-cloud-session`'s, out of this plan's scope.
+- Defects blocking merge: none.
+
+### Outstanding disposition
+
+- No screen: the change is commands, a script, the workflow and a decision. Nothing
+  outstanding.
+
+### Learnings routed
+
+- The decision is FW-071 and the workflow paragraph carries the route; the review fix
+  keeps the squash-message sentence with it. No new rule or backlog item. Nothing for an
+  upstream queue: this repository is the upstream.
+- A guard whose stub answers every route with success covers no answer-checking branch;
+  the mutation run found it. No durable change beyond the two cases.
+
+### Merged because
+
+The script does what Decision 2 says, its guard now goes red on each behaviour it names,
+the commands and the workflow send a cloud session only to calls the finding measured or
+the claim exercised, the fresh-agent checks are recorded with tool, version, model, OS
+and architecture, both checks are green, the diff is the plan's files plus one declared
+deviation, and it holds no private material. Merge authority is self-merge after this
+review: it should merge.
