@@ -6928,11 +6928,19 @@
 # after the first item and left the second in planning.
 - id: bundle-brief-names-every-item
   title: A bundle's brief names every backlog item in the bundle
-  status: idea
+  status: building
   value: A team member started on a bundle delivers every item in it, without the sprint
     session having to notice and add the others to the brief by hand.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - sprint.mjs brief for a bundle's first backlog item names every backlog item the
+      bundle carries, each with its title, in sprint order, and joins their design lines.
+    - The brief says the bundle is one plan and one team member, and to end with SHIPPED
+      only once every item in it has shipped.
+    - brief and launch refuse an id that a bundle's first carries, naming that first, and
+      launch refuses before it adds a worktree.
   type: bug
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - scripts/sprint.mjs
+  refs:
+    - docs/superpowers/plans/2026-11-05-bundle-brief-names-every-item.md
