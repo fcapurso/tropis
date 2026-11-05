@@ -281,7 +281,8 @@
       "Pushed stray branch tmp-probe-dependabot-msg (one empty commit) by mistake; needs the developer to delete it."
     ],
     "readme-follows-the-developers-role": [
-      "README change was a full refresh against the new outline, absorbing the pending refresh (#253)."
+      "README change was a full refresh against the new outline, absorbing the pending refresh (#253).",
+      "Both items built by the author and reviewed by fresh Opus subagents on the developer's plan."
     ]
   }
 }
