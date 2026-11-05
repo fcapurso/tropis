@@ -6450,10 +6450,12 @@
 # Raised by the developer on 2026-11-04, after noticing the README gives sprints half a
 # sentence in two places while the day-to-day section still lists the step commands of a
 # few weeks ago. Follows readme-gives-an-overview-not-a-feature-list, which set the page's
-# length and its aspects but kept the old day-to-day job in the outline.
+# length and its aspects but kept the old day-to-day job in the outline. Shaped 2026-11-05
+# in the readme-outline bundle's session: the outline first, then one whole-page refresh
+# against it, which also takes in what shipped since the last refresh.
 - id: readme-follows-the-developers-role
   title: The README describes how the framework is used today, around what the developer does
-  status: idea
+  status: building
   value: Someone reading the README learns how a project actually runs with Tropis now. The
     developer captures ideas, agrees a sprint, answers when a session asks for a decision,
     checks by hand and releases, while sessions take each backlog item from shaping to
@@ -6462,11 +6464,25 @@
     follows, describe a developer who runs each step command themselves, which was the
     routine a few weeks ago. The change starts in the outline, above all the job of Using
     it day to day, so later refreshes keep the new shape.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - This repository's README outline gives Using it day to day the job of describing
+      the developer's part, capturing ideas, agreeing a sprint, answering when a session
+      asks for a decision, checking by hand and releasing, while sessions take each
+      backlog item from shaping to merged on their own. It names a sprint as the main way
+      to work and a single backlog item as the same path taken one at a time.
+    - The default outline every project starts from gives Using it day to day the job of
+      describing the reader's part and when it comes, not a list of the commands they
+      type.
+    - The README's Using it day to day shows the sprint first and does not present
+      /dispatch or /feature as steps the developer runs.
+    - The README is refreshed against the new outline, its refresh point is the commit it
+      was refreshed at, and it stays within its page length with every command it names
+      existing.
   type: improvement
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-05-readme-follows-the-developers-role.md
 
 # 2026-11-05, raised by first-adopter's upstream flush, from its queue entry of 2026-10-27.
 - id: dependency-licences-are-checked
