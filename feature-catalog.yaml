@@ -6587,9 +6587,12 @@
 # docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md, Recommendations.
 # Writes to another repository and forks were not tried: the criterion below on the
 # session's own GitHub tools stands only for whichever of those the proxy refuses.
+# Shaped 2026-11-05 with its plan. A POST to the pulls route through gh api answered
+# 422 for a missing head, not 403, so open moves to REST too; check-open serves a session
+# whose writes to the framework are refused, which is untried from here.
 - id: flush-runs-in-a-cloud-session
   title: A flush runs from a cloud session as it does from the developer's computer
-  status: idea
+  status: building
   value: A developer who runs /flush-upstream from a Claude Code cloud session gets the
     same sitting and the same pull requests as from their own computer. Today the
     preflight says gh is not signed in although GitHub answers as the developer, and
@@ -6615,7 +6618,8 @@
   type: bug
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-05-flush-runs-in-a-cloud-session.md
 
 # 2026-11-05, raised by the developer after absorbing a flush from a Claude Code cloud
 # session (Linux x86_64). There gh answers REST reads (gh api, gh run list) and refuses
