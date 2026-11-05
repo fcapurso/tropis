@@ -211,5 +211,9 @@
       "state": "planning"
     }
   },
-  "notes": {}
+  "notes": {
+    "executor-never-interrupts-its-dispatcher": [
+      "Fixed with a shipped PreToolUse hook (scripts/own-session-guard.sh) that refuses interrupt_session/archive_session on the session the agent runs in, rather than prompt text; reasoning in the hook header and plan, not DECISIONS.md (#270, ccd3469)."
+    ]
+  }
 }
