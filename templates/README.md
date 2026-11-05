@@ -130,7 +130,9 @@ To take a newer release, check out its tag in your Tropis clone and run
 `node scripts/take-version.mjs <project>` from it. The project must have no uncommitted
 changes, and the command never commits. A `<path>.new` file means you had changed that
 file: merge it into the file beside it and delete it; until you do, the installed-files
-check fails. Your own hook entries and other settings in `.claude/settings.json` are
+check fails. A command's fill-ins are carried by name, and the report's *Fill-ins* list
+names any that is new, renamed, asks for something different or is gone, with the text
+of one that is gone. Your own hook entries and other settings in `.claude/settings.json` are
 kept. When a release stops shipping a rule you had edited or added to, your text is
 kept as your own rule in .claude/rules/, with the area it had; delete it if you no longer
 want it. Lines in `.gitignore` and `.gitattributes` are added only when missing, whether you

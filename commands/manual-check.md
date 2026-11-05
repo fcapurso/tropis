@@ -16,7 +16,7 @@ at it.** A ceremony with no subject reads as though someone decided it applied.
 
 From the diff, state which kinds apply and why. Do not ask.
 
-<!-- project-owned: begin — this project's kinds of check. -->
+<!-- project-owned: begin kinds — this project's kinds of check: what each is, what in a change triggers it, and where its procedure lives. -->
 <!-- Replace the two examples
      with your own: what each kind is, what in a change triggers it, and where its full
      procedure lives. -->

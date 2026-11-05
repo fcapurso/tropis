@@ -17,7 +17,7 @@ same files*.
 **To `shipped`, all of these must hold:**
 
 - `modules` lists the implementing paths, and they exist.
-<!-- project-owned: begin — what else this project requires before an item ships. -->
+<!-- project-owned: begin ship-requires — what else this project requires before an item ships. -->
 - Every acceptance criterion is covered by an automated test **or** a recorded entry
   in `docs/verification-log.md`, drafted and recorded through `/manual-check`. State
   which, per criterion, in the commit body.

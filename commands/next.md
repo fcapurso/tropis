@@ -2,7 +2,7 @@
 description: Show what is in flight, ready, and blocked
 ---
 
-<!-- project-owned: begin — the command that prints this project's backlog report. -->
+<!-- project-owned: begin report-command — the command that prints this project's backlog report. -->
 Run `npm --prefix .tropis run next` and report its output.
 <!-- project-owned: end -->
 

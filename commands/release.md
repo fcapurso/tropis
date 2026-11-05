@@ -30,28 +30,41 @@ below it before anything else:
 
 **Delete this command if the project does not ship versioned releases.**
 
-<!-- project-owned: begin — this project's release. -->
-<!-- Fill in each line:
-     - Run from: the root of this repository, where the backlog also lives.
-     - Notes file: RELEASES.md at the root (from templates/RELEASES.md), with an
-       `## [Unreleased]` section /release promotes.
-     - Readers: who the notes are for, in their words — e.g. "administrators and the
-       people who use the product".
-     - Breaking: what forces a major version beyond a breaking commit — e.g. a change to
-       the permissions or network access the product asks for, which its users must
-       approve again.
-     - Version files: each file that carries the version, and where in it — e.g.
-       package.json's version field.
-     - Promote trigger: the command that starts the project's promote pipeline, with
-       <commit> and, where the project deploys to staging, <staged> — e.g.
-       gh workflow run promote.yml --ref main -f commit=<commit> -f staged=<staged>.
-     - Staging trigger: where the project deploys to staging, the command that starts
-       it, with <commit> — e.g. gh workflow run staging.yml --ref main -f commit=<commit>.
-     - Staging workflow: the file name of that workflow — e.g. staging.yml.
-     - Where the run is watched: the URL of the pipeline's runs.
-     A block filled before this release may still say Trigger and Candidate trigger:
-     read them as Promote trigger and Staging trigger. Where Version files or Staging
-     workflow is missing, ask the developer, and suggest adding the line here. -->
+Each fill-in below holds one value this command reads, and the command calls it by
+that name: *the notes file*, *the promote trigger*. A fill-in that holds only its
+example comment is empty: where this command needs it, ask the developer, and suggest
+filling it in here. The fill-ins further down add what this project does at that point;
+an empty one adds nothing.
+
+<!-- project-owned: begin run-from — where /release runs, and what else lives there. -->
+- Run from: the root of this repository, where the backlog also lives.
+<!-- project-owned: end -->
+<!-- project-owned: begin notes-file — the notes file, with an `## [Unreleased]` section /release promotes. -->
+- Notes file: RELEASES.md at the root (from templates/RELEASES.md).
+<!-- project-owned: end -->
+<!-- project-owned: begin readers — who the notes are for, in their words. -->
+<!-- e.g. - Readers: administrators and the people who use the product. -->
+<!-- project-owned: end -->
+<!-- project-owned: begin breaking — what forces a major version beyond a breaking commit. -->
+<!-- e.g. - Breaking: a change to the permissions or network access the product asks for, which its users must approve again. -->
+<!-- project-owned: end -->
+<!-- project-owned: begin version-files — each file that carries the version, and where in it. -->
+<!-- e.g. - Version files: package.json's version field. -->
+<!-- project-owned: end -->
+<!-- project-owned: begin first-release — the version a first release takes. -->
+<!-- e.g. - First release: 1.0.0 -->
+<!-- project-owned: end -->
+<!-- project-owned: begin promote-trigger (was trigger, release-trigger) — the command that starts the project's promote pipeline, with <commit> and, where the project deploys to staging, <staged>. -->
+<!-- e.g. - Promote trigger: gh workflow run promote.yml --ref main -f commit=<commit> -f staged=<staged> -->
+<!-- project-owned: end -->
+<!-- project-owned: begin staging-trigger (was candidate-trigger) — where the project deploys to staging, the command that starts it, with <commit>. -->
+<!-- e.g. - Staging trigger: gh workflow run staging.yml --ref main -f commit=<commit> -->
+<!-- project-owned: end -->
+<!-- project-owned: begin staging-workflow — the file name of the staging workflow. -->
+<!-- e.g. - Staging workflow: staging.yml -->
+<!-- project-owned: end -->
+<!-- project-owned: begin runs-url (was where-the-run-is-watched) — the address where the pipeline's runs are watched. -->
+<!-- e.g. - Where the run is watched: https://github.com/<owner>/<repo>/actions -->
 <!-- project-owned: end -->
 
 ## The merge token
@@ -68,6 +81,9 @@ on a failure or a refusal, so a fix can merge. On *Resume at staging*, take it a
 first. Say each take and release in your report.
 
 ## Stage 1 — Pre-flight
+
+<!-- project-owned: begin before-preflight — what this project does before the pre-flight. -->
+<!-- project-owned: end -->
 
 ```bash
 git status --porcelain
@@ -185,6 +201,8 @@ anything. Where the log and the backlog disagree about what shipped, the log dec
    who reads only this section updates safely. **These steps are written in full,
    however short the rest is:** they are followed literally, so nothing below shortens
    them.
+<!-- project-owned: begin breaking-notes — what the by-hand section says for this project's readers when a release is breaking for them. -->
+<!-- project-owned: end -->
 3. **Each change that matters to them in one or two sentences** saying what they can
    now do, in their words, as a bullet under a heading such as "What you can now do":
    "Hooks warn only when they should", not the mechanism that achieves it. The how is
@@ -229,12 +247,16 @@ staging has passed, the promotion pull request replaces that with
 it stays as the last line of the version's section, and the promote pipeline leaves it
 out of anything it publishes.
 
+<!-- project-owned: begin notes-also — anything else this project's notes carry. -->
+<!-- project-owned: end -->
+
 ## Stage 4 — Confirm
 
 Work out the version: take the last release from Stage 2 and apply the bump by semantic
 versioning — from 1.0, major raises the first number, minor the second, patch the third;
 below 1.0 a breaking change raises the middle number and anything else the last. With no
-previous release there is nothing to count from: ask the developer for the first version.
+previous release there is nothing to count from: ask the developer for the first version,
+unless the first-release fill-in names it.
 
 Print, before any further tool call:
 
@@ -433,6 +455,9 @@ Watch it at: <where the run is watched>
 `node .tropis/scripts/pipeline.mjs promote check` first and stops on a refusal, tags
 `<commit>`, pushes only the tag, and deploys the tag to production. Anything merged
 after `<commit>` waits for the next release. Stop.
+
+<!-- project-owned: begin published — what this project's promote pipeline publishes besides the notes. -->
+<!-- project-owned: end -->
 
 Both steps are the developer's to start: an agent must not run a trigger. The promote
 pipeline is the project's own; what it must do is stated in the workflow's release

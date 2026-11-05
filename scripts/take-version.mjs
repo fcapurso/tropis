@@ -12,7 +12,10 @@
  * A project that holds the framework in the layout this release no longer takes is
  * refused before any write.
  * A shipped file the project left alone is replaced; one it changed is kept and the new
- * text lands beside it as `<path>.new`. A changed file that already holds the new text gets
+ * text lands beside it as `<path>.new`. A command's fill-ins (named project-owned blocks)
+ * are carried into the new text by name, under a former name the new text lists, or, for
+ * a block of an earlier release that had no names, moved in item by item; the report's
+ * Fill-ins list names each one that is new, renamed, re-purposed, moved or gone. A changed file that already holds the new text gets
  * no `.new`. A shipped file the project lacks is listed as
  * removed by the project when a record says it was given it, and written when the
  * baseline came from `--from`. `.claude/settings.json`, the rule areas file and the
@@ -38,7 +41,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  blocks, carryBlocks, fingerprint, recordOf,
+  blocks, carryFillIns, fingerprint, recordOf,
 } from './installed-files.js';
 import { joinAdditions } from './rule-areas.js';
 
@@ -528,6 +531,33 @@ function entryFiles(project) {
   return { reports, decision };
 }
 
+/**
+ * The report's lines for the take's fill-in notes (`carryFillIns`, each with its `rel`),
+ * one string per line. A fill-in whose text the new version no longer holds is followed
+ * by that text, each line indented four spaces. `check-version.mjs` prints the same.
+ * @param {{ rel: string, kind: string }[]} fillIns
+ * @returns {string[]}
+ */
+export function fillInLines(fillIns) {
+  const out = [];
+  for (const n of fillIns) {
+    if (n.kind === 'renamed') out.push(`${n.rel}: ${n.name} was ${n.from}; your text was carried`);
+    else if (n.kind === 'purpose') {
+      out.push(`${n.rel}: ${n.name} now asks for: ${n.now} (was: ${n.was}). Check that your text still answers it.`);
+    } else if (n.kind === 'new') out.push(`${n.rel}: ${n.name} is new and holds the shipped text — ${n.purpose}`);
+    else if (n.kind === 'moved') {
+      out.push(`${n.rel}: ${n.from === 'the block' ? n.from : `"${n.from}"`} moved into ${n.name}`);
+    } else if (n.kind === 'removed') {
+      out.push(`${n.rel}: ${n.name} is no longer a fill-in; your text is not in the new version:`);
+      out.push(...n.lines.map((l) => `    ${l}`));
+    } else if (n.kind === 'unplaced') {
+      out.push(`${n.rel}: not placed in any fill-in; your text is not in the new version:`);
+      out.push(...n.lines.map((l) => `    ${l}`));
+    }
+  }
+  return out;
+}
+
 function apply(input) {
   const {
     project, target, held, fromRecord, baseline, next, nextFiles, projectSettings,
@@ -539,6 +569,7 @@ function apply(input) {
   const deleted = [];
   const newFiles = [];
   const blockMismatch = [];
+  const fillIns = [];
   const removedByProject = [];
   const keptButGone = [];
   const alreadyNew = [];
@@ -583,7 +614,7 @@ function apply(input) {
           if (rel === '.tropis/package.json') packageChanged = true;
         }
       } else if (fingerprint(projectText) === baseline[rel]) {
-        const carried = carryBlocks(projectText, nextText);
+        const carried = carryFillIns(projectText, nextText);
         // No blocks means the fingerprint is the whole file, so a count change is the
         // new version adding its first block and there is nothing of the project's to
         // carry. A file that already has blocks may hold a fill-in the fingerprint
@@ -593,6 +624,7 @@ function apply(input) {
           blockMismatch.push(rel);
         } else {
           const text = carried.mismatch ? nextText : carried.text;
+          fillIns.push(...carried.notes.map((note) => ({ rel, ...note })));
           writeText(dest, text, source);
           if (text !== projectText) {
             replaced.push(rel);
@@ -600,10 +632,11 @@ function apply(input) {
           }
         }
       } else if (nextFiles[rel] !== baseline[rel]) {
-        const carried = carryBlocks(projectText, nextText);
+        const carried = carryFillIns(projectText, nextText);
         if (!carried.mismatch && carried.text === projectText) {
           alreadyNew.push(rel);
         } else {
+          fillIns.push(...carried.notes.map((note) => ({ rel: `${rel}.new`, ...note })));
           writeNew(carried.text);
           if (carried.mismatch) blockMismatch.push(rel);
         }
@@ -716,6 +749,7 @@ function apply(input) {
     deleted,
     newFiles,
     blockMismatch,
+    fillIns,
     removedByProject,
     keptButGone,
     alreadyNew,
@@ -754,6 +788,7 @@ function apply(input) {
   list('Rule areas added', areasAdded);
   list('Rule areas removed', areasRemoved);
   list('Moved', moved);
+  list('Fill-ins', fillInLines(fillIns));
   list('Needs a decision', [
     ...removedByProject.map((p) => `${p} — removed by the project, not restored`),
     ...newFiles.map((p) => `${p}.new — ${blockMismatch.includes(p)
@@ -776,6 +811,9 @@ function apply(input) {
   }
   if (entry.decision) {
     lines.push('  Merge CLAUDE.md into AGENTS.md as above. Until then the entry-file check fails.');
+  }
+  if (fillIns.some((n) => ['purpose', 'removed', 'unplaced'].includes(n.kind))) {
+    lines.push('  Read Fill-ins: put back any text it printed where it belongs, and check each fill-in whose purpose changed.');
   }
   lines.push('  Commit.');
   return { status: 0, text: `${lines.join('\n')}\n`, result };

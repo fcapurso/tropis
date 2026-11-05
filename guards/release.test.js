@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import YAML from 'yaml';
 import { checkReleased, nextVersion, promote } from '../.github/scripts/release.mjs';
+import { blocks, fillIns } from '../scripts/installed-files.js';
 
 describe('nextVersion', () => {
   it('starts at 0.1.0 when nothing has been released, whatever the bump', () => {
@@ -586,13 +587,19 @@ describe('the /release steps', () => {
     expect(resume).toContain('release candidate at');
   });
 
-  it('names the fill-in lines, and reads the old trigger names as the new', () => {
-    const block = section('<!-- project-owned: begin', '<!-- project-owned: end');
-    for (const line of ['Version files:', 'Promote trigger:', 'Staging trigger:', 'Staging workflow:']) {
-      expect(block).toContain(line);
-    }
-    expect(block).toContain('may still say Trigger and Candidate trigger');
-    expect(command.split('<!-- project-owned: begin').length - 1).toBe(1);
+  it('holds fourteen named fill-ins, the old names as was names, and no unnamed block', () => {
+    const named = fillIns(command);
+    expect(named.map((f) => f.name)).toEqual([
+      'run-from', 'notes-file', 'readers', 'breaking', 'version-files', 'first-release',
+      'promote-trigger', 'staging-trigger', 'staging-workflow', 'runs-url',
+      'before-preflight', 'breaking-notes', 'notes-also', 'published',
+    ]);
+    const was = Object.fromEntries(named.map((f) => [f.name, f.was]));
+    expect(was['promote-trigger']).toEqual(['trigger', 'release-trigger']);
+    expect(was['staging-trigger']).toEqual(['candidate-trigger']);
+    expect(was['runs-url']).toEqual(['where-the-run-is-watched']);
+    expect(named.every((f) => f.purpose.length > 0)).toBe(true);
+    expect(blocks(command)).toHaveLength(named.length);
   });
 
   it('prints the two steps by their plain names, step 1 before the check and step 2 last', () => {

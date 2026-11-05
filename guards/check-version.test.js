@@ -46,6 +46,12 @@ function snapshot(dir) {
 
 const BEGIN_TO_END = /(<!-- project-owned: begin[^\n]*\n)[\s\S]*?(<!-- project-owned: end -->)/;
 const fillBlock = (text, inner) => text.replace(BEGIN_TO_END, (_, begin, end) => `${begin}${inner}\n${end}`);
+/** `text` with the named fill-in `name`'s inner lines replaced by `inner`. */
+const fillNamed = (text, name, inner) => {
+  const re = new RegExp(`(<!-- project-owned: begin ${name}[ ][^\\n]*\\n)[\\s\\S]*?(<!-- project-owned: end -->)`);
+  expect(re.test(text)).toBe(true);
+  return text.replace(re, (_, begin, end) => `${begin}${inner}\n${end}`);
+};
 
 /**
  * A scratch Tropis repository tagged `v0.2.0` and a project set up from it and committed.
@@ -316,6 +322,19 @@ describe('check-version.mjs', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('Settings that no longer fit');
     expect(r.stdout).toContain('project-owned blocks differ in number; carry your fill-ins into .claude/commands/release.md.new by hand');
+  }), SLOW);
+
+  it('lists a fill-in the release renames, as the take will', () => inWorld({}, (w) => {
+    edit(w.project, '.claude/commands/release.md', (t) => fillNamed(t, 'readers', '- Readers: the people who run the product.'));
+    w.commit();
+    w.release('v0.2.1', (root) => edit(root, 'commands/release.md', (t) => {
+      const next = t.replace('begin readers — ', 'begin audience (was readers) — ');
+      expect(next).not.toBe(t);
+      return next;
+    }));
+    const r = kept(w, () => w.check('v0.2.1'));
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('.claude/commands/release.md: audience was readers; your text was carried');
   }), SLOW);
 
   it('shows the diff of a shipped rule whose text changes, with its areas', () => inWorld({}, (w) => {
