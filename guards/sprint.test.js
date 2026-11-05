@@ -827,6 +827,35 @@ End your last message with exactly one line: SHIPPED, PARKED: <why> or STOPPED: 
     expect(b.stdout).toBe(BRIEF('without', 'Without one', null));
     expect(run(clone, ['brief', 'nope']).status).toBe(1);
   });
+
+  it('† names every backlog item a bundle carries, and refuses an id the bundle\'s first carries', () => {
+    const world = makeWorld([
+      entry('k1', { title: 'Kiln one', refs: ['docs/superpowers/specs/k.md'] }),
+      entry('k2', { title: 'Kiln two', refs: ['docs/superpowers/specs/k.md', 'docs/superpowers/specs/k2.md'] }),
+      entry('solo', { title: 'Alone' }),
+    ], {
+      k1: row('A', 3, 2, { bundle: 'kiln' }), k2: row('A', 3, 2, { bundle: 'kiln' }), solo: row('A', 3, 1),
+    });
+    const clone = makeClone(world);
+    expect(run(clone, ['start', 'k1', 'k2', 'solo']).status).toBe(0);
+
+    const k = run(clone, ['brief', 'k1']);
+    expect(k.status).toBe(0);
+    expect(k.stdout).toBe(BRIEF('k1', 'Kiln one', '`docs/superpowers/specs/k.md`, `docs/superpowers/specs/k2.md`')
+      .replace('Take the backlog item `k1` (Kiln one) in `feature-catalog.yaml` to shipped.\n', [
+        'Take every backlog item of this bundle in `feature-catalog.yaml` to shipped:',
+        '- `k1` (Kiln one)',
+        '- `k2` (Kiln two)',
+        'They are one plan and one team member: shape, claim and merge them together, and',
+        'end with SHIPPED only once every one of them has shipped.',
+        '',
+      ].join('\n')));
+    expect(run(clone, ['brief', 'solo']).stdout).toBe(BRIEF('solo', 'Alone', null));
+
+    const refused = run(clone, ['brief', 'k2']);
+    expect(refused.status).toBe(1);
+    expect(refused.stdout).toBe("Sprint: k2 is carried by k1's team member; name k1.\n");
+  });
 });
 
 describe('report and end', () => {

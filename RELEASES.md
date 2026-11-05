@@ -19,6 +19,8 @@ For the full development history, see the git log.
 
 - An update shows again every step a release's notes ask you to do by hand, and names any version whose steps it could not read. Updates to 0.7.2 through 0.8.2 showed none of their steps: if you took one of those with /update, read the What to do by hand section of each version you passed, 0.8.0's above all, whose steps are required.
 
+- A sprint's brief for a bundle names every backlog item in it, so the team member delivers them all instead of stopping after the first. Asking for the brief of a bundle's later item now names the item to ask for instead.
+
 ## [0.8.2] — 2026-11-04
 
 Agents now run on the cheapest model your subscriptions include that is good enough for

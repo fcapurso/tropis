@@ -269,3 +269,80 @@ Paste the `Tests:` line.
    check). Commit, and run the self-check again on that commit.
 3. `git push -u origin plan/bundle-brief-names-every-item`. **Do not open a pull
    request** or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+Tasks 0 to 4 done. Three commits before this one: the red test, the script change, and
+the release note, backlog and bands change. Branch pushed; no pull request opened.
+
+### Verification results
+
+Tool: git 2.43.0, node v22.23.4, Linux x86_64.
+
+- Setup: `npm --prefix .tropis ci`, clean tree, self-check passed.
+- Task 1, guard alone (`git archive HEAD` export, `{"type":"module"}` package file,
+  `templates/framework-jest.config.js` as `jest.config.js`, `node_modules` linked to
+  `.self-check/node_modules`, then
+  `node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js guards/sprint.test.js`):
+  `Tests: 1 failed, 51 passed, 52 total`; the new case failed on the `brief k1`
+  output (received the single-item brief).
+- Task 2, same command: `Tests: 52 passed, 52 total`.
+- Task 3/4, `npm --prefix .tropis test`: `Tests: 196 passed, 196 total`.
+- `bash scripts/check-blueprint.sh`, last line: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.`
+
+### Scope
+
+`git diff --stat origin/main...HEAD` lists RELEASES.md, bands.yaml, feature-catalog.yaml,
+guards/sprint.test.js, scripts/sprint.mjs, plus this plan. The board's `index.html` was
+not rebuilt by a hook and was not touched.
+
+### Judgment calls
+
+None. Edits were applied with a script rather than by hand; no named source was
+worked from.
+
+### What the plan got wrong
+
+Nothing found. `start` kept the order `k1, k2, solo`.
+
+### Outstanding
+
+The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session on 2026-11-05 (git 2.43.0, node v22, Linux x86_64).
+
+### Checks re-run
+
+After rebasing on `origin/main` at `e274f78`: `git diff --stat origin/main...HEAD` lists
+6 files, each in *File Structure*; `npm --prefix .tropis test` passes, and
+`bash scripts/check-blueprint.sh` ends `Self-check passed`. The executor showed the new
+case red before the change and green after (52 of 52).
+
+### Found
+
+No defect. `scripts/sprint.mjs` and `guards/sprint.test.js` match the plan's code
+verbatim; `archive` keeps its refusal words through `requireMember`, and `launch`
+refuses a non-first bundle item before it adds a worktree. Nothing fixed on the branch.
+
+### Fresh-agent check
+
+Not owed: nothing under `framework/`, `rules/` or `commands/` changed.
+
+### Outstanding disposition
+
+None. The change has no screen, so there is no developer check.
+
+### Learnings routed
+
+No durable change: `commands/sprint.md` already described the behaviour the script now
+has.
+
+### Merged because
+
+Every criterion is covered by the new guard case, and every check passes after the rebase.

@@ -38,20 +38,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-bundle-brief-names-every-item:
-  band: B
-  value: 3
-  valueWhy: Every sprint bundle's session ships its first item and stops unless the
-    sprint session notices and adds the rest to the brief by hand.
-  effort: 1
-  effortWhy: One function in scripts/sprint.mjs and a guard case.
-  verdict: "A trap in every sprint bundle, cheap to remove. Do it next: nothing blocks
-    it and nothing waits on it."
-  evidence: "2026-11-05 — brief() in scripts/sprint.mjs builds its text from ids[0] alone
-    and never reads the bundle; the readme-outline brief needed a line added by hand."
-  seen:
-    status: idea
-    blockers: []
 commands-reach-cursor:
   band: B
   value: 3

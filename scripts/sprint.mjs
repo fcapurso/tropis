@@ -36,7 +36,9 @@
  *       parked or stopped, 1 for an id not in the backlog. No time limit; works with no
  *       sprint. With --once it checks one time and, where the wait would go on, exits 5
  *       with `Still waiting: ...`, for a session that wakes itself on a schedule.
- *   sprint.mjs brief <id>                        the team member's brief
+ *   sprint.mjs brief <id>     the team member's brief; for a bundle, named by its first
+ *       backlog item, it names every one the bundle carries. Exit 1 for an id another
+ *       team member carries, naming that one
  *   sprint.mjs launch <id> [--tool claude|cursor] [--model <m>] [--interval <seconds>]
  *       starts the entry's team member in that tool's command line, in print mode, in a
  *       worktree `<checkout>-team-<id>` beside the checkout, as a detached `run`, and
@@ -472,6 +474,7 @@ function launch(ctx, opts) {
   const sprint = requireSprint(ctx);
   const id = opts.ids[0];
   requireEntry(sprint, id);
+  requireMember(sprint, id);
   const tool = opts.tool ?? (isTool(sprint.way) ? sprint.way : undefined);
   if (!isTool(tool)) throw new Refusal('Sprint: --tool takes claude or cursor.');
   const { command, name } = TOOLS[tool];
@@ -902,6 +905,13 @@ function readyToArchive(ctx, sprint, backlog) {
     .map((m) => m.id);
 }
 
+/** The team member carrying `id`; refuses when that member is named by another id. */
+function requireMember(sprint, id) {
+  const member = teamMembers(sprint).find((m) => m.carried.includes(id));
+  if (member.id !== id) throw new Refusal(`Sprint: ${id} is carried by ${member.id}'s team member; name ${member.id}.`);
+  return member;
+}
+
 function archive(ctx, opts) {
   const id = opts.ids[0];
   updateSprint(ctx.root, ctx.env, (current) => {
@@ -910,8 +920,7 @@ function archive(ctx, opts) {
     if (!current.archive) {
       throw new Refusal('Sprint: this sprint leaves sessions open; archiving was not agreed at its start.');
     }
-    const member = teamMembers(current).find((m) => m.carried.includes(id));
-    if (member.id !== id) throw new Refusal(`Sprint: ${id} is carried by ${member.id}'s team member; name ${member.id}.`);
+    const member = requireMember(current, id);
     if ((current.archived ?? []).includes(id)) {
       throw new Refusal(`Sprint: ${id}'s session is already recorded as archived.`);
     }
@@ -932,10 +941,21 @@ function brief(ctx, opts) {
   const sprint = requireSprint(ctx);
   const id = opts.ids[0];
   requireEntry(sprint, id);
-  const entry = requireInBacklog(ctx.backlog(), id);
-  const specs = (entry.refs ?? []).filter((r) => r.includes('/specs/')).map((r) => `\`${r}\``);
+  const { carried } = requireMember(sprint, id);
+  const backlog = ctx.backlog();
+  const items = carried.map((c) => requireInBacklog(backlog, c));
+  const specs = [...new Set(items.flatMap((e) => (e.refs ?? []).filter((r) => r.includes('/specs/'))))]
+    .map((r) => `\`${r}\``);
+  const take = items.length === 1
+    ? [`Take the backlog item \`${id}\` (${items[0].title}) in \`feature-catalog.yaml\` to shipped.`]
+    : [
+      `Take every backlog item of this bundle in \`feature-catalog.yaml\` to shipped:`,
+      ...items.map((e) => `- \`${e.id}\` (${e.title})`),
+      'They are one plan and one team member: shape, claim and merge them together, and',
+      'end with SHIPPED only once every one of them has shipped.',
+    ];
   return [
-    `Take the backlog item \`${id}\` (${entry.title}) in \`feature-catalog.yaml\` to shipped.`,
+    ...take,
     ...(specs.length ? [`Its design: ${specs.join(', ')}.`] : []),
     '',
     'Follow `.claude/framework/workflow.md`, *Delivering a backlog item*, from the wait for what it',
