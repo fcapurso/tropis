@@ -111,6 +111,49 @@ describe('blueprint README usable', () => {
     }
   });
 
+  // Backs readme-follows-the-developers-role: the outlines give Using it day to day the
+  // reader's part, and this repository's page shows the sprint first and the developer's
+  // steps only.
+  const job = (text, heading) => {
+    const section = text.split(/^## /m).find((s) => s.startsWith(`${heading}\n`)) ?? '';
+    return (section.split('\n').find((l) => l.startsWith('- **Job:**')) ?? '').replace(/\s+/g, ' ');
+  };
+
+  it('the default outline gives Using it day to day the reader\'s part, not the commands they type', () => {
+    const text = readFileSync(join(root, 'templates/readme-skeleton.md'), 'utf8');
+    const line = job(text, 'Using it day to day');
+    expect({ line, part: line.includes('the part they play') }).toEqual({ line, part: true });
+    expect({ line, typed: line.includes('the commands they type') }).toEqual({ line, typed: false });
+  });
+
+  it('this repository\'s outline gives Using it day to day the developer\'s part, sprint first', () => {
+    const text = readFileSync(join(root, 'docs/readme/skeleton.md'), 'utf8');
+    const line = job(text, 'Using it day to day');
+    for (const phrase of [
+      'captures ideas',
+      'agrees a sprint',
+      'asks for a decision',
+      'checks by hand',
+      'releases',
+      'from shaping to merged on their own',
+      'A sprint is the main way to work',
+      'the same path taken one at a time',
+    ]) {
+      expect({ phrase, found: line.includes(phrase) }).toEqual({ phrase, found: true });
+    }
+  });
+
+  it('Using it day to day shows /sprint first and not /dispatch or /feature', () => {
+    const at = readme.indexOf('## Using it day to day');
+    expect(at).toBeGreaterThanOrEqual(0);
+    const end = readme.indexOf('\n## ', at + 3);
+    const section = readme.slice(at, end === -1 ? undefined : end);
+    const commands = [...section.matchAll(/(?:^|[\s(`])\/([a-z][a-z0-9-]*)/gm)].map((m) => m[1]);
+    expect({ first: commands[0] }).toEqual({ first: 'sprint' });
+    expect({ dispatch: commands.includes('dispatch'), feature: commands.includes('feature') })
+      .toEqual({ dispatch: false, feature: false });
+  });
+
   it('What it does for you has five to seven bullets', () => {
     const at = readme.indexOf('## What it does for you');
     expect(at).toBeGreaterThanOrEqual(0);

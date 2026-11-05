@@ -23,9 +23,10 @@ things are the way they are.
 
 ## What it does for you
 
-- **One path from an idea to a merged change.** An idea is captured in the backlog,
-  shaped, planned by one session, built by another, reviewed and merged, and a team of
-  agent sessions can deliver a whole sprint of them at once.
+- **Sprints that deliver themselves.** You agree a sprint, and a team of agent sessions
+  takes each backlog item from idea to merged change: planned by one session, built by
+  another on the cheapest included model that can do it, reviewed and merged, stopping
+  only when it needs you.
 - **You always know what to do next.** `/next` and a backlog page in your browser show
   what is in flight, ready and blocked, ranked by value over effort.
 - **Rules and lessons reach the agent when they apply.** A rule arrives when the agent
@@ -38,7 +39,8 @@ things are the way they are.
   a host that refuses a merge whose checks have not passed, and agents that see each
   merge through to a green main branch, even with several sessions working at once.
 - **Releases you can take safely.** `/update` says whether a release is safe before you
-  take it, a release can be checked on staging first, and its notes say what you must do.
+  take it, a release can be checked on staging first, and its notes say briefly what
+  changed and in full what you must do.
 
 ## Who it is for
 
@@ -81,9 +83,10 @@ Everything lives in your project's repository and is committed: rules, commands 
 settings in `.claude/`, Tropis's own code and checks in `.tropis/`, and the backlog,
 designs and plans beside your code.
 
-Each change has three roles: a session that writes a self-contained plan, an agent that
-carries it out in a worktree of its own and opens a pull request, and a developer who
-tries the result before it merges. The cycle is in
+Three agent roles carry each change: a session that shapes a backlog item and writes a
+self-contained plan, an agent that carries it out in a worktree of its own, and a
+reviewer with none of the author's context. The session merges once the checks pass, and
+you try anything with a screen before it does. The cycle is in
 [`framework/workflow.md`](framework/workflow.md). Rules are delivered by the area of the
 code being touched, in each tool's own way
 ([`framework/rule-delivery.md`](framework/rule-delivery.md)), and every choice between
@@ -91,23 +94,24 @@ real alternatives is recorded in [`framework/DECISIONS.md`](framework/DECISIONS.
 
 ## Using it day to day
 
-- **`/next`** says what to take next; the backlog page at
-  `docs/backlog-board/index.html` keeps itself current, and `/refresh-board` bands and
-  tidies it.
-- **`/idea`** adds to the backlog, **`/feature`** moves an item along
-  `idea → shaped → building → shipped`, and **`/sprint`** plans a sprint with you and
-  starts the team that delivers it.
-- **`/dispatch`** hands a plan to an executing agent, and **`/manual-check`** records a
-  check only a person can do.
-- **`/capture-learning`** decides where a lesson belongs, and **`/flush-upstream`** sends
-  suggestions for Tropis itself back as pull requests.
-- **`/release`**, **`/refresh-readme`** and **`/refresh-model-tiers`** keep releases,
-  this page and the suggested models current; **`/update`** takes a new Tropis release.
+- **Agree a sprint.** **`/sprint`** proposes one from the backlog, ranked by value over
+  effort. You add, drop and reorder, and say start. One session per backlog item, or per
+  bundle, then shapes, plans, builds, reviews and merges it on its own; `/sprint` again
+  shows where each stands.
+- **Answer when asked.** A session stops only for a decision that is yours, a check only
+  a person can do, or work outside what you agreed. **`/manual-check`** sets out such a
+  check and records what you found.
+- **Capture ideas as they come.** **`/idea`** adds one to the backlog without refining
+  it, and **`/next`** and the backlog page show what is in flight, ready and blocked.
+- **One backlog item at a time** is the same path, in a session you start on it.
+- **Release and update.** **`/release`** drafts the notes and walks you through staging
+  and production, and **`/update`** takes a new Tropis release. Now and then:
+  `/refresh-readme`, `/refresh-model-tiers` and `/flush-upstream`.
 
 ## Where it stands
 
 - **Working today:** everything above, in Claude Code and Cursor, on your machine or in
-  the cloud. Tropis is developed with its own last release installed.
+  the cloud.
 - **Before 1.0.** A release that needs you to do something by hand raises the middle
   number, and its notes say what to do first.
 - **Built from two projects, not a theory.** Both share a language, a platform and a

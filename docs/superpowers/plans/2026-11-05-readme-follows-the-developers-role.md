@@ -132,3 +132,71 @@ readme-follows-the-developers-role
    `refreshedAt`. The guard passes, the page is within its limit.
 3. Move the item to `shipped`, write the handover report.
 4. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.318 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the outline is rewritten
+from this repository's own workflow and commands, and the page from its own README.
+
+### Task completion
+
+- Task 1: done. Three cases in `guards/readme-usable.test.js`: the default outline's
+  *Using it day to day* job says "the part they play" and no longer "the commands they
+  type"; this repository's names the developer's part, sprint first; the page's
+  *Using it day to day* names `/sprint` first and neither `/dispatch` nor `/feature`.
+- Task 2: done. Both outlines; `README.md` refreshed against this repository's outline
+  (1,115 → 1,190 words, limit 1,200); `refreshedAt` set to the `origin/main` commit the
+  page was refreshed against, once the claim had merged.
+- Task 3: done.
+- Task 4: the fresh reviewer's record follows.
+
+### Verification results
+
+- Guard on the working tree, with a scratch script that copies the tracked and untracked
+  files into a temporary directory and runs jest there with `"type": "module"`:
+  `guards/readme-usable.test.js` with the change: `Tests: 11 passed, 11 total`. With
+  `README.md` and both outlines stashed: `Tests: 3 failed, 8 passed, 11 total`, the
+  three new cases.
+- `wc -w README.md`: `1190 README.md`, against a limit of 1,200.
+- `npm --prefix .tropis test`: run again after the report's commit, below the review.
+- `bash scripts/check-blueprint.sh`: run by the pull request's pipeline.
+
+### Scope
+
+`README.md`, `templates/readme-skeleton.md`, `docs/readme/skeleton.md`,
+`docs/readme/readme.yaml`, `guards/readme-usable.test.js`, `feature-catalog.yaml`,
+`docs/backlog-board/bands.yaml` and this plan, all in *File Structure*. Worktree: the
+sibling `../tropis-readme-role-build`.
+
+### Judgment calls
+
+- **The refresh, section by section.** *What it does for you*: the first bullet becomes
+  "Sprints that deliver themselves" and takes in the tier fall-through (the cheapest
+  included model that can do the work); the release bullet takes in
+  a-release-says-what-changed-briefly. *How it works*: the roles now include the
+  shaping session, a fresh reviewer, and the session merging once checks pass, with the
+  developer trying anything with a screen. *Using it day to day*: rewritten as five
+  bullets, sprint first, then answering when asked, capturing ideas, one item at a time,
+  release and update. The opening, the fixed text, *Who it is for*, *What it needs*,
+  *Getting started* and *Where to go next* were judged fine.
+- **Folded without words of their own**, as detail the linked documents hold: the two
+  version-check items, update-skips-a-new-file-that-matches (all under "says whether a
+  release is safe"), large-tier-anchors-on-the-best-pick and
+  picks-are-judged-at-the-default-effort (under the model the work runs on), and
+  sprint-archives-a-session-once-it-ships.
+- **Cut to stay under the limit:** `/refresh-board`, `/capture-learning`, `/dispatch`
+  and `/feature` from *Using it day to day* (sessions run them); the board's file path
+  there (the aspect bullet names the page); "Tropis is developed with its own last
+  release installed" from *Where it stands*.
+- **The default outline stays product-neutral**: an adopter's product has no sprints, so
+  its job speaks of "the part they play" and what the product does on its own.
+
+### What the plan got wrong
+
+- Nothing found.
+
+### Outstanding
+
+- The developer may want to read the page. The next real `/refresh-readme` against the
+  new outline is the live check of the outline.

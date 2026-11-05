@@ -53,8 +53,8 @@ things are the way they are.
 - **Length:** a few paragraphs.
 
 ## Using it day to day
-- **Job:** what someone does once it is set up: the commands they type and when.
-- **Facts from:** the installed commands and scripts.
+- **Job:** what the developer does once Tropis is set up, and what the sessions do for them. The developer captures ideas, agrees a sprint, answers when a session asks for a decision, checks by hand what only a person can, and releases; sessions take each backlog item from shaping to merged on their own. A sprint is the main way to work, and comes first; a single backlog item is the same path taken one at a time. Name the commands for the developer's part; a command a session runs for itself, such as /dispatch, /feature or /capture-learning, is not one of the developer's steps.
+- **Facts from:** framework/workflow.md, *Delivering a backlog item*; commands/sprint.md, commands/idea.md, commands/next.md, commands/manual-check.md, commands/release.md and commands/update.md, for what the developer runs; the other commands, for what is occasional.
 - **Length:** a short section.
 
 ## Where it stands

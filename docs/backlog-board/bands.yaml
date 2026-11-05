@@ -306,7 +306,7 @@ readme-follows-the-developers-role:
     job 'the commands they type and when'; README.md:92-105 lists /dispatch and
     /feature as steps the developer runs."
   seen:
-    status: idea
+    status: shipped
     blockers: []
 readme-skeleton-for-closed-products:
   band: B

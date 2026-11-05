@@ -36,8 +36,8 @@
 - **Length:** a few paragraphs.
 
 ## Using it day to day
-- **Job:** what someone does once it is set up: the commands they type and when.
-- **Facts from:** the installed commands and scripts.
+- **Job:** what someone does once it is set up, around the part they play: what they decide, do and check, and when, naming the command or screen that serves each. What the product does for them on its own is said as such, not listed as steps of theirs. Not a list of every command.
+- **Facts from:** the installed commands and scripts, the operator guide, the project brief.
 - **Length:** a short section.
 
 ## Where it stands
