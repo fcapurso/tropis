@@ -22,11 +22,19 @@ folder: two sessions sharing it would move each other's branch. A hook refuses
 `git checkout -b`, `git switch -c` and `git branch <name>` here and prints the command
 that creates the worktree instead. Your own commands in a terminal are not affected.
 
-`.tropis/project.json` holds the project's own settings: `name`, `public` and `ungated`.
+`.tropis/project.json` holds the project's own settings: `name`, `public`, `ungated` and
+`timeZone`.
 No update replaces it; an update moves an older `.claude/project.json` into it.
 
 The display name is `{ "name": "…" }`. Setup writes it when it is given one; the backlog
 board is titled with it, and with this folder's name when the file lacks it.
+
+**Plans are dated on your calendar.** A plan's file name starts with the day it was
+written, and a check refuses one dated after today. Today is the UTC date unless the
+file names a time zone, as `{ "timeZone": "Europe/Rome" }` (an IANA name). Name yours if
+you work far from UTC: otherwise a plan written in the first hours of your day is
+refused until UTC reaches the same date. A name that is not a time zone fails the check
+and says so.
 
 **If the repository is or will be public**, say so in that file, with `"public": true`
 beside any key already there. Setup asks and writes it; a project that goes public later

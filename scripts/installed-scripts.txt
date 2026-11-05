@@ -26,3 +26,4 @@ merge-token.mjs
 sprint.mjs
 team-member-cli.mjs
 subscriptions.js
+today.js
