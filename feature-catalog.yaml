@@ -6634,3 +6634,21 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-05, raised by the developer. A push to this repository reported "GitHub found 2
+# vulnerabilities on fcapurso/tropis's default branch (1 moderate, 1 low)", from
+# Dependabot. Two lockfiles are on main: .tropis/package-lock.json, the installed
+# release's test tools, and templates/package-lock.json, which ships to every project.
+# Nobody has read the alerts yet.
+- id: dependabot-alerts-are-assessed
+  title: Find out what the two Dependabot alerts on main are and whether they reach projects
+  status: idea
+  value: We know what the two open Dependabot alerts are, which lockfile carries each, and
+    whether either ships to projects through templates/package-lock.json, so each is fixed,
+    dismissed with a reason, or left to the next release on purpose rather than by
+    nobody looking.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs: []
