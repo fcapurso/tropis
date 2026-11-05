@@ -286,6 +286,9 @@
       "An open product copies no skeleton in /bootstrap; only closed-source products get templates/readme-skeleton-closed.md.",
       "Left commands/update.md and guards/set-up-project.test.js out of the second plan to avoid waiting behind other plans; the gap became backlog idea update-names-a-changed-closed-skeleton.",
       "readme-skeleton-for-closed-products landed claim and build as one PR (#254), since it was built and reviewed by the time the token came free."
+    ],
+    "plan-dates-follow-the-project-time-zone": [
+      "No timeZone set in this repository's .tropis/project.json since the developer's zone isn't recorded; defaults to UTC (#252 claim, #256 build)."
     ]
   }
 }
