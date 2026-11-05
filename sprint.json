@@ -10,7 +10,8 @@
     "readme-follows-the-developers-role",
     "plan-dates-follow-the-project-time-zone",
     "flush-runs-in-a-cloud-session",
-    "update-lists-the-release-steps"
+    "update-lists-the-release-steps",
+    "commands-have-named-fill-ins"
   ],
   "entries": [
     {
