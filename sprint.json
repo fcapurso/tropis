@@ -231,6 +231,9 @@
     },
     "cloud-session-gh-routes": {
       "state": "planning"
+    },
+    "dependabot-alerts-are-assessed": {
+      "state": "planning"
     }
   },
   "notes": {}
