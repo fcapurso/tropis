@@ -6416,6 +6416,12 @@
 # "What to do by hand" since 0.7.2, and the helper still reads only "After updating", so
 # 0.7.2, 0.8.0, 0.8.1 and 0.8.2 all reached /update with no steps, required ones included.
 # Fails silently, so it is a backlog item by the backlog rule.
+# Also found in an adopting project on 2026-11-04, taking 0.5.2 to 0.8.2, and raised by
+# first-adopter's upstream flush of 2026-11-05: the helper listed five steps from 0.6.0
+# and 0.7.0 and none of the nine after them, among them 0.8.0's four required ones.
+# /update asked to confirm a breaking update without them, and they were found only by
+# reading the notes by hand. The staging caller would have failed at its next run, since
+# the file it called had been deleted.
 - id: update-lists-the-release-steps
   title: An update lists every step the release notes ask for
   status: idea
@@ -6425,7 +6431,16 @@
     the notes stopped using in 0.7.2, so every release since has reached projects with no
     steps shown and nothing saying any were missed, among them 0.8.0's required step to
     gate the main branch.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - 'The update helper collects the steps of every version''s by-hand section, whether
+      it is headed "After updating: what to do by hand" or "What to do by hand". It
+      recognises the section by what it is, a ### heading naming steps to do by hand,
+      not by its first words.'
+    - A guard runs the helper over Tropis's own RELEASES.md and expects steps from every
+      version that has a by-hand section, so rewording that heading again turns it red
+      instead of silently dropping the steps.
+    - When a version's notes have a by-hand section and the helper reads no step from it,
+      /update says so, naming the version, instead of showing an update with no steps.
   type: bug
   layer: product
   modules: []
