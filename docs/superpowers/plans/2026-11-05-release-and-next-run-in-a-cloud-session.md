@@ -177,3 +177,80 @@ release-and-next-run-in-a-cloud-session
 4. Run the fresh-agent check with its tool calls visible; amend the commit body.
 5. Move the item to `shipped`, write the handover report.
 6. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.318 cloud session; gh 2.89.0, node
+v22, Linux x86_64. Source worked from: none in particular; the script is written against
+this repository's own `scripts/main-status.mjs` (its `originOnGitHub`, its command-line
+shape) and the spike's finding.
+
+### Task completion
+
+- Task 1: done. `scripts/auto-merge.mjs` and `guards/auto-merge.test.js`, 11 cases. With
+  the GraphQL test changed to match nothing, 2 cases failed; with the origin check
+  removed, 3 failed; restored, all pass.
+- Task 2: done. `commands/next.md`, `commands/release.md` (a section *Pull requests* after
+  *The merge token*; Stages 1, 1b, 5, 7 and Step 2 refer to it), `framework/workflow.md`
+  (*Where `gh pr` is refused*, and the gated-merge bullet in *Branching*), FW-071. The
+  four new cases in `guards/release.test.js` fail against the old commands and workflow
+  (4 failed of 97 with those files stashed) and pass now.
+- Task 3: `bash scripts/check-blueprint.sh` on the committed branch; result below.
+- Task 4: the fresh-agent check, below; the commit body records it.
+- Task 5: done. The item is `shipped` with its modules and a comment mapping each
+  criterion to its evidence; `seen.status` follows it in the bands file.
+- Task 6: the fresh reviewer's record follows.
+
+### Deviations
+
+- **The build ran on `plan/release-and-next-run-in-a-cloud-session-build`, in
+  `../tropis-cloud-release-build`,** not the branch and worktree the *Repositories* table
+  names: that branch carried the claim, which merged as #258, and a merged branch is not
+  reused.
+- **`templates/README.md`, the operator guide, gained one paragraph** naming
+  `auto-merge.mjs` beside `main-status.mjs`; the plan's File Structure did not list it.
+  The doc-closeout table sends a new command a project runs there.
+
+### Verification results
+
+- `node .tropis/scripts/merge-token.mjs`, `gh api … pulls` (POST) and the
+  `ccr/auto_merge` route carried this item's own claim, #258, in this cloud session: the
+  pull request was opened by `POST pulls`, `gh pr merge --auto` answered the GraphQL 403,
+  the route answered `{"enabled":true,"merge_method":"squash"}` and `GET pulls/258` showed
+  `auto_merge` with the subject; `main-status.mjs --pull-request 258` reported it merged
+  as `8f5c8ee` and the main branch green. The first time the route is seen to set
+  auto-merge on an open pull request that then merged.
+- The `/next` listing command, run in this session, exited 0 (no pull request was open).
+- Fresh-agent check: Claude Code 2.1.318 on Linux x86_64, `claude -p --model
+  claude-opus-5-5 --output-format stream-json --verbose --tools "Read,Grep,Glob"`,
+  signed in to the developer's plan with no API key. `dispatch.mjs --tier Large` named
+  Claude Opus 5.5. No user-level instructions exist in this container. The probe ran in
+  an invented project holding the branch's `release.md` and `next.md` under
+  `.claude/commands/`, its `workflow.md` and `DECISIONS.md` under `.claude/framework/` and
+  the scripts under `.tropis/scripts/`, told it was a probe, that every `gh pr` command
+  answers the GraphQL 403 and `gh api` and `gh run` answer, and asked for the commands it
+  runs from `/release` Stage 5 (filled slot, branch pushed) through the commit Step 1
+  names, and for `/next`'s listing. Calls: one `Glob` of `.claude/**/*`, then `Read` of
+  `release.md`, `next.md`, `workflow.md` and `DECISIONS.md`. Its answer, in order: take
+  the token with `take --hold` if Stage 1b had not; `gh api -X POST
+  'repos/{owner}/{repo}/pulls' -f title='docs(release): draft notes for the next release'
+  -f body='Bump: minor' -f head=release/1.4.0 -f base=main --jq .number`;
+  `node .tropis/scripts/auto-merge.mjs <N> --subject '…' --body 'Bump: minor'`;
+  `node .tropis/scripts/main-status.mjs --pull-request <N>`; `gh api
+  'repos/{owner}/{repo}/pulls/<N>' --jq .merge_commit_sha`; and for `/next`, `gh api
+  'repos/{owner}/{repo}/pulls?state=open&per_page=100' --jq …`, noting "never use
+  `--paginate`". It said "No `gh pr ...` command appears anywhere in this sequence" and
+  named no session tool. **Pass.**
+
+### Scope
+
+`git diff --stat origin/main...HEAD` lists the plan's files and `templates/README.md`
+(above).
+
+### Learnings routed
+
+- The decision is FW-071. The workflow's paragraph carries the route.
+- Portable: the script is shipped; no upstream queue, this repository is the upstream.
+- `/absorb-flush` (`absorb-flush-runs-in-a-cloud-session`) can set its group pull
+  requests to merge with this script once it takes a merge method; that item's plan
+  decides.
