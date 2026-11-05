@@ -132,3 +132,171 @@ readme-follows-the-developers-role
    `refreshedAt`. The guard passes, the page is within its limit.
 3. Move the item to `shipped`, write the handover report.
 4. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.318 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the outline is rewritten
+from this repository's own workflow and commands, and the page from its own README.
+
+### Task completion
+
+- Task 1: done. Three cases in `guards/readme-usable.test.js`: the default outline's
+  *Using it day to day* job says "the part they play" and no longer "the commands they
+  type"; this repository's names the developer's part, sprint first; the page's
+  *Using it day to day* names `/sprint` first and neither `/dispatch` nor `/feature`.
+- Task 2: done. Both outlines; `README.md` refreshed against this repository's outline
+  (1,115 → 1,190 words, limit 1,200); `refreshedAt` set to the `origin/main` commit the
+  page was refreshed against, once the claim had merged.
+- Task 3: done.
+- Task 4: the fresh reviewer's record follows.
+
+### Verification results
+
+- Guard on the working tree, with a scratch script that copies the tracked and untracked
+  files into a temporary directory and runs jest there with `"type": "module"`:
+  `guards/readme-usable.test.js` with the change: `Tests: 11 passed, 11 total`. With
+  `README.md` and both outlines stashed: `Tests: 3 failed, 8 passed, 11 total`, the
+  three new cases.
+- `wc -w README.md`: `1190 README.md`, against a limit of 1,200.
+- `npm --prefix .tropis test`: run again after the report's commit, below the review.
+- `bash scripts/check-blueprint.sh`: run by the pull request's pipeline.
+
+### Scope
+
+`README.md`, `templates/readme-skeleton.md`, `docs/readme/skeleton.md`,
+`docs/readme/readme.yaml`, `guards/readme-usable.test.js`, `feature-catalog.yaml`,
+`docs/backlog-board/bands.yaml` and this plan, all in *File Structure*. Worktree: the
+sibling `../tropis-readme-role-build`.
+
+### Judgment calls
+
+- **The refresh, section by section.** *What it does for you*: the first bullet becomes
+  "Sprints that deliver themselves" and takes in the tier fall-through (the cheapest
+  included model that can do the work); the release bullet takes in
+  a-release-says-what-changed-briefly. *How it works*: the roles now include the
+  shaping session, a fresh reviewer, and the session merging once checks pass, with the
+  developer trying anything with a screen. *Using it day to day*: rewritten as five
+  bullets, sprint first, then answering when asked, capturing ideas, one item at a time,
+  release and update. The opening, the fixed text, *Who it is for*, *What it needs*,
+  *Getting started* and *Where to go next* were judged fine.
+- **Folded without words of their own**, as detail the linked documents hold: the two
+  version-check items, update-skips-a-new-file-that-matches (all under "says whether a
+  release is safe"), large-tier-anchors-on-the-best-pick and
+  picks-are-judged-at-the-default-effort (under the model the work runs on), and
+  sprint-archives-a-session-once-it-ships.
+- **Cut to stay under the limit:** `/refresh-board`, `/capture-learning`, `/dispatch`
+  and `/feature` from *Using it day to day* (sessions run them); the board's file path
+  there (the aspect bullet names the page); "Tropis is developed with its own last
+  release installed" from *Where it stands*.
+- **The default outline stays product-neutral**: an adopter's product has no sprints, so
+  its job speaks of "the part they play" and what the product does on its own.
+
+### What the plan got wrong
+
+- Nothing found.
+
+### Outstanding
+
+- The developer may want to read the page. The next real `/refresh-readme` against the
+  new outline is the live check of the outline.
+
+## Review record
+
+Reviewed on 2026-11-05 by a fresh reviewer: a Claude Code 2.1.318 subagent on Claude
+Opus 5.5, with only the repository and the branch; git 2.43.0, node v22.23.4, Linux
+x86_64. It did not write the change.
+
+### Checks re-run
+
+- The changed guard on a scratch copy of the working tree (the handover's script):
+  `guards/readme-usable.test.js` gives `Tests: 11 passed, 11 total`.
+- Re-broken: with `origin/main`'s `README.md`, `docs/readme/skeleton.md` and
+  `templates/readme-skeleton.md` checked out, `Tests: 3 failed, 8 passed, 11 total`, the
+  three new cases by name (*the default outline gives Using it day to day the reader's
+  part…*, *this repository's outline gives Using it day to day the developer's part,
+  sprint first*, *Using it day to day shows /sprint first and not /dispatch or
+  /feature*). Restored with `git checkout HEAD --`; `git status --short` printed nothing.
+- `wc -w README.md`: `1190 README.md`, against 1,200.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed`, `Tests: 189 passed, 189 total`.
+- `bash scripts/check-blueprint.sh` on the branch's `HEAD`: `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.`
+- `git diff --stat origin/main...HEAD`: eight files, exactly the *File Structure* table.
+- `refreshedAt` is `3140469c…`, which is `origin/main`'s `HEAD` and the branch's base,
+  the claim's merge: the commit the page was refreshed against, in double quotes.
+- The shipped items since `04f677f`, by comparing `feature-catalog.yaml` at that commit
+  and at `3140469`: 21 shipped since, of which exactly the nine features and
+  improvements the plan names; the rest are bugs and spikes, which *What it does for
+  you* does not take facts from.
+- Every command the page names is under `commands/`; every link resolves.
+
+### Found
+
+- **Public exposure:** none. The diff names no person, computer, home path, hostname or
+  other project; the self-check's private-material guard passed on the full copy of
+  `HEAD`.
+- **One claim on the page reads wrong against the workflow (wording, not fixed).** *How
+  it works* says "Three agent roles carry each change: a session that shapes … and writes
+  a self-contained plan, an agent that carries it out …, and a reviewer with none of the
+  author's context. The session merges once the checks pass". Under `framework/workflow.md`,
+  *Delivering a backlog item* step 3, and `rules/planning.md`, *Who reviews*, the
+  reviewer is the session that shaped and planned the item, not a third party; a reviewer
+  "with none of the author's context" is the exception for a change built by its author
+  (as this plan was). Read as "none of the executor's context" it holds, but a newcomer
+  will read three separate sessions. Suggested wording: "…an agent that carries it out in
+  a worktree of its own, and the planning session again, which reviews the branch and
+  merges it once the checks pass. You try anything with a screen before it merges." Not
+  blocking: the fixed text and the rest of the page agree with the workflow, and the
+  sentence spans more than one line, so it is left to the author.
+- The rest of the page checks out against the repository: `/sprint` proposes from the top
+  of `/next`'s ranking (`inRankOrder` in `scripts/sprint.mjs`), the developer adds, drops
+  and reorders and says start, `status` shows where each stands; a session stops for the
+  three things *Delivering a backlog item* names; a plan runs on the cheapest included
+  model in its tier or above (tier-falls-through-to-the-cheapest-included-pick); a
+  release's notes are brief on what changed and full on the steps by hand
+  (a-release-says-what-changed-briefly).
+- The refresh folded rather than added: *What it does for you* keeps six bullets, its
+  first rewritten in place; *Using it day to day* replaces the command list. The fixed
+  text matches the outline word for word (its guard passes).
+- The default outline stays product-neutral: no sprint, no Tropis command, only "the part
+  they play" and what the product does on its own.
+- The handover's judgment calls hold: the bugs and spikes since the refresh point are not
+  facts for *What it does for you*; the cuts are listed; `/manual-check` is named as the
+  developer's because the developer runs the check it sets out, though the session starts
+  it. The diagnosis "no script parses a section's **Job** line" holds: only the guard and
+  `/refresh-readme`'s prose read the outline, and `scripts/set-up-project.sh` copies it.
+- Observation, not a defect: *Getting started* step 3 still ends "to your first plan",
+  which leans on the developer planning; it was judged fine and is true for a first item
+  started by hand.
+
+### Outstanding disposition
+
+- The *How it works* wording above: the author's call before merge, or the next
+  `/refresh-readme`. Recommended now, as a one-sentence edit.
+- The developer has not read the page; the refresh's yes was given by the sprint's
+  agreement, as the plan says. No screen: no `/manual-check` owed.
+
+### Learnings routed
+
+- No durable change: the one finding is a wording slip on the page, and the outline's job
+  already names where the facts come from.
+
+### Merged because
+
+Fit to merge: each of the four criteria is backed by a guard case that fails on
+`origin/main`'s files and passes on the branch, the page is within its limit, its refresh
+point is the commit it was refreshed against, the self-check and the installed checks
+pass, and the diff is the plan's file list. The one wording finding does not make any
+criterion untrue.
+
+### Fixed after this record, by the author
+
+The *How it works* sentence the reviewer found misleading now reads "Each change has a
+session that shapes a backlog item and writes a self-contained plan, an agent that
+carries it out in a worktree of its own, and the planning session again, which reviews
+the branch and merges it once the checks pass. You try anything with a screen before it
+merges." Getting started step 3, which the reviewer noted ends "to your first plan", now
+reads "Run `/sprint` to agree your first sprint." Both are wording fixes whose content
+the review stated; the page is 1,182 words and `guards/readme-usable.test.js` still
+passes 11 of 11. Self-merged, as the plan's merge authority says.

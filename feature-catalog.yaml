@@ -6498,9 +6498,13 @@
 # length and its aspects but kept the old day-to-day job in the outline. Shaped 2026-11-05
 # in the readme-outline bundle's session: the outline first, then one whole-page refresh
 # against it, which also takes in what shipped since the last refresh.
+# Criterion 1 (this repository's outline): guards/readme-usable.test.js, 'this repository's outline gives Using it day to day the developer's part, sprint first'.
+# Criterion 2 (the default outline): guards/readme-usable.test.js, 'the default outline gives Using it day to day the reader's part, not the commands they type'.
+# Criterion 3 (the page's day-to-day section): guards/readme-usable.test.js, 'Using it day to day shows /sprint first and not /dispatch or /feature'.
+# Criterion 4 (refreshed, within its length, commands exist): guards/readme-usable.test.js, 'the page is within the length its skeleton sets' and 'every slash command named on the page exists under commands/'; the refresh point is docs/readme/readme.yaml's refreshedAt, read by the fresh reviewer in the plan's review record.
 - id: readme-follows-the-developers-role
   title: The README describes how the framework is used today, around what the developer does
-  status: building
+  status: shipped
   value: Someone reading the README learns how a project actually runs with Tropis now. The
     developer captures ideas, agrees a sprint, answers when a session asks for a decision,
     checks by hand and releases, while sessions take each backlog item from shaping to
@@ -6525,7 +6529,10 @@
       existing.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - docs/readme/skeleton.md
+    - templates/readme-skeleton.md
+    - README.md
   refs:
     - docs/superpowers/plans/2026-11-05-readme-follows-the-developers-role.md
 
