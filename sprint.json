@@ -313,7 +313,8 @@
       "Diagnosis of the stall: a subagent's scheduled reminder fires into the parent session, not the subagent; recorded in the review record, no backlog item raised (see executor-never-interrupts-its-dispatcher, raised by the sprint session)."
     ],
     "commands-have-named-fill-ins": [
-      "Fill-in format: each fill-in's name, purpose and former names go in its own opening marker rather than a separate slot syntax (#261, 3d58872)."
+      "Fill-in format: each fill-in's name, purpose and former names go in its own opening marker rather than a separate slot syntax (#261, 3d58872).",
+      "Transitional fill-ins not built; /release's fill-ins taken from migrating this repository's own installed release command; check-version lists fill-ins among the steps a take leaves."
     ]
   }
 }
