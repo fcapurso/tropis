@@ -37,22 +37,6 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-author-built-evidence-reaches-the-reviewer:
-  band: B
-  value: 3
-  valueWhy: The build-it-and-send-it-to-a-fresh-reviewer shape is new, and its first use
-    left the reviewer unable to re-check part of the measurement it was reviewing.
-  effort: 2
-  effortWhy: Saying in the planning rule and the dispatch prompt where an author-built
-    plan's evidence and re-run commands go, so the reviewer finds them.
-  verdict: "Worth doing next, before the shape is used again: a review that cannot
-    reach the evidence reports that it could not, and the measurement goes unchecked."
-  evidence: "2026-11-04 — the review record of the rules-return-after-compaction plan
-    routes 'Evidence outside the reviewer's reach' here; that review could not re-run
-    the fresh-agent check or confirm the handover's test counts."
-  seen:
-    status: building
-    blockers: []
 cloud-session-gh-routes:
   band: B
   value: 3
