@@ -223,3 +223,259 @@ new matcher. No other assertion in that test changes.
    session on it, and have it call `interrupt_session` on its own id; it must report the
    refusal and keep running. Record the tool, version and the call with its answer, then
    delete the throwaway branch.
+
+---
+
+## Handover report
+
+Executed on 2026-11-05 by a Claude Code subagent in a cloud session (Claude Code 2.1.318
+on Linux x86_64, Ubuntu 24.04), from `origin/main` at `a64e8b7`.
+
+### Task completion
+
+1. **Isolate** — done. `bash .tropis/scripts/isolate-for-plan.sh <plan>` created
+   `../tropis-self-interrupt` on `plan/executor-never-interrupts-its-dispatcher` from
+   `origin/main`; `npm --prefix .tropis ci` run there.
+2. **Hook, wiring, guards** — done, in commit `c1e6617`: `scripts/own-session-guard.sh`
+   (Decision 1), the line in `scripts/installed-hooks.txt`, the group and `_comment`
+   sentence in `templates/settings.json` (Decision 2), the new `describe` in
+   `guards/rule-delivery.test.js` and the matcher list in `guards/take-version.test.js`
+   (Decision 3). One defect in the new guard, found by the first self-check, fixed in
+   `3f2f3a2` (*Verification results*).
+3. **Self-check and the trap** — done: the self-check is green on `3f2f3a2`; the new
+   describe alone went red on the three refusal cases with the comparison removed and
+   green with it restored.
+4. **Handover report** — this section; its commit is self-checked and the branch pushed
+   (the last two results are under *Verification results*).
+5. (Reviewer) The live measurement in a throwaway cloud session: not done here, as the
+   plan says. Neither `interrupt_session` nor `archive_session` was called on any session.
+
+### Verification results
+
+Tools: node v22.23.4, GNU bash 5.2.21, Python 3.13.18, git 2.43.0, Jest from
+`templates/package-lock.json` through the self-check; all on Linux x86_64 (`uname -sm`:
+`Linux x86_64`), Ubuntu 24.04.5.
+
+**Smoke run of the script**, before the guards were written (working tree, later
+committed unchanged as `c1e6617`), each payload piped to `bash scripts/own-session-guard.sh`
+with `CLAUDE_CODE_REMOTE_SESSION_ID=cse_01TESTOWN` unless said otherwise:
+
+```
+mcp__claude-code-remote__interrupt_session, session_01TESTOWN: exit=2, stderr:
+  Refused: this would interrupt the session you are running in (session_01TESTOWN).
+  A subagent runs in the session of the agent that started it, so this stops that agent too, and nothing resumes it until a person does.
+  To finish, end your turn and return your report: the agent that dispatched you reads it.
+  (own-session-guard.sh)
+mcp__claude-code-remote__archive_session, session_01TESTOWN: exit=2, "would archive"
+mcp__remote__interrupt_session, session_01TESTOWN:               exit=2, "would interrupt"
+mcp__claude-code-remote__get_session, session_01TESTOWN:         exit=0, no output
+interrupt_session, session_01OTHER:                              exit=0, no output
+interrupt_session, session_01TESTOWN, variable unset (env -u):   exit=0, no output
+malformed JSON ({not json):                                      exit=0, no output
+```
+
+**Self-check 1**, `bash scripts/check-blueprint.sh` on `c1e6617`: exit 1.
+
+```
+  CANNOT RUN  plain-reply            rule-delivery fails on the clean project, so its failure proves nothing
+  FAILED      clean baseline — a guard fails on a project with nothing wrong
+              ● rule delivery › own-session-guard refuses stopping the session it runs in › is silent outside a cloud session, where the variable is unset
+2 problem(s). A guard that cannot fail is not evidence.
+Self-check FAILED: conformance or the clean baseline (above).
+```
+
+The case passed `undefined` to the helper's `own = OWN` parameter to unset the variable,
+and a default parameter takes its default on an explicit `undefined`, so the variable
+stayed set and the hook refused (status 2 where 0 was expected). Fixed in `3f2f3a2`: the
+sentinel is `null`, and the helper's comment says why.
+
+**New describe alone, green run**, on `3f2f3a2`'s content, staged as the trap says: export
+of `HEAD` into a scratch folder, `{"type":"module"}` as `package.json`,
+`templates/framework-jest.config.js` as `jest.config.js`, `node_modules` linked to the
+self-check's `.self-check/node_modules`, and `FRAMEWORK_ROOT` pointing at a fixture whose
+`.tropis/hooks/` holds a copy of each file in `scripts/installed-hooks.txt` (the guard
+resolves the hook from `root`, as the branch-in-worktree one does, and the conformance run
+composes the same fixture). Command:
+`FRAMEWORK_ROOT=<fixture> node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js guards/rule-delivery.test.js -t 'own-session-guard'`
+
+```
+Test Suites: 1 passed, 1 total
+Tests:       158 skipped, 9 passed, 167 total
+```
+
+**Trap run**: line 58 of the fixture's copy of the hook,
+`[ "${own#*_}" = "${session_id#*_}" ] || exit 0`, replaced with `exit 0`; same command:
+
+```
+  ● rule delivery › own-session-guard refuses stopping the session it runs in › refuses interrupt_session on the session it runs in, naming the id
+  ● rule delivery › own-session-guard refuses stopping the session it runs in › refuses archive_session on the session it runs in
+  ● rule delivery › own-session-guard refuses stopping the session it runs in › refuses the tool under another server prefix
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 158 skipped, 6 passed, 167 total
+```
+
+Copy restored (`diff` against `scripts/own-session-guard.sh` in the worktree: identical;
+the worktree's script was never edited for this), same command again:
+
+```
+Test Suites: 1 passed, 1 total
+Tests:       158 skipped, 9 passed, 167 total
+```
+
+**Self-check 2**, `bash scripts/check-blueprint.sh` on `3f2f3a2`: exit 0.
+
+```
+Checking 3f2f3a2 of /home/user/tropis-self-interrupt
+Conformance: every guard must fail on its planted defect
+  caught      plain-reply            rule-delivery
+  (every other plant: caught)
+Clean baseline: every guard must pass
+  ok          clean baseline
+Every guard caught its defect and passed the clean baseline.
+Framework repository: its own guards must pass here and fail on a planted defect
+  (every plant: caught; private-material passed on the full copy of HEAD)
+Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.
+```
+
+The clean baseline runs `guards/take-version.test.js` too, so the new matcher in its
+expected list (`['Bash', 'Edit', 'Read', 'Write', 'mcp__.*__(interrupt_session|archive_session)']`,
+the order JavaScript's default sort gives) passed there; no other assertion in that test
+changed.
+
+**Self-check 3**, on the commit carrying this report (the report's own commit can break a
+check, so it is run on that commit): exit 0, `Self-check passed: every guard caught its
+defect, the clean baseline passed, and the framework repository's own guards passed.`
+The result is written here by amending that
+commit, and the self-check is run once more on the amended commit, the one pushed; that
+last result goes in the executor's report to its dispatcher, since a result written in
+the file is always one commit behind the run that produced it.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report:
+
+```
+ guards/rule-delivery.test.js | 98 ++++++++++++++++++++++++++++++++++++++++++++
+ guards/take-version.test.js  |  4 +-
+ scripts/installed-hooks.txt  |  1 +
+ scripts/own-session-guard.sh | 66 +++++++++++++++++++++++++++++
+ templates/settings.json      | 11 +++++
+ 5 files changed, 179 insertions(+), 1 deletion(-)
+```
+
+Every file is in the File Structure table; this report adds the plan file, which is there
+too. Nothing under `.claude/`, `.cursor/`, `.tropis/`, `CLAUDE.md` or `AGENTS.md` changed.
+Worktree used: `../tropis-self-interrupt` (`/home/user/tropis-self-interrupt`), on
+`plan/executor-never-interrupts-its-dispatcher` from `origin/main` at `a64e8b7`; the main
+checkout was left detached at `origin/main`.
+
+### Judgment calls
+
+- **The hook reads both fields in one `python3` call**, printing the tool name and the
+  session id on two lines, instead of two calls as a literal copy of
+  `branch-in-worktree.sh` would make; malformed JSON prints two empty lines. Behaviour as
+  Decision 1 states.
+- **The group sits after the `Bash` group**, as Decision 2 says, which is at the end of
+  `PreToolUse`. `take-version.mjs` appends a group whose matcher the project lacks, so an
+  updated project gets it last as well.
+- **The wiring test asserts the group's hook list is exactly
+  `['bash .tropis/hooks/own-session-guard.sh']`**, one step past "exactly one group whose
+  hooks name it": a second hook in that group would otherwise pass unnoticed.
+- **Three extra `toContain` assertions on the interrupt message** (`end your turn and
+  return your report`, `(own-session-guard.sh)`), so the guard pins the instruction the
+  agent is given, not only the first line.
+- **The `_comment` sentence** is the plan's suggested wording, split over two lines of the
+  array as the surrounding lines are.
+- **The commit messages** are working history and were written to the merge format in
+  case the reviewer squashes with the first one.
+
+### What the plan got wrong
+
+- **The trap's "run one guard alone" recipe is incomplete for this guard.** In a plain
+  export of `HEAD`, `rule-delivery.test.js` resolves `root` to three levels above
+  `guards/` and the hook under `<root>/.tropis/hooks/`, which does not exist in an export
+  of this repository: both the branch-in-worktree describe and the new one need
+  `FRAMEWORK_ROOT` pointing at a composed fixture, as `check-conformance.sh` provides. The
+  trap names the self-check as showing each step, and that was enough to work it out, but
+  the recipe as written fails with a missing file. The handover says what was run.
+- Nothing else: every claim about the repository checked out (file lists, the line in
+  `take-version.test.js`, the precedent's shape, the hook list readers).
+
+### Outstanding
+
+- **The live measurement (Task 5)** is the reviewer's: a throwaway cloud session on a
+  branch carrying the hook in `.claude/settings.json` and `.tropis/hooks/`, asked to
+  interrupt its own id, reporting the refusal and continuing, with tool and version.
+  Not attempted here, per the plan and the Global Constraints.
+- **Whether Claude Code's hook matcher is applied anchored or as a search** is not settled
+  by this plan's guard, which tests the regex anchored (`^(?:…)$`). The matcher has no
+  anchors, so it matches either way; the live measurement shows the hook firing.
+- **Whether `CLAUDE_CODE_REMOTE_SESSION_ID` reaches a hook's environment** in a cloud
+  session is what the live measurement decides; the plan's evidence is that the session's
+  shell holds it, and a hook is a child of the tool's process. If it does not, the hook is
+  silent everywhere (step 3) and the fix is a different source for the id.
+- **Review record and merge**: not written, not done — parent review.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code 2.1.318 cloud session on Linux x86_64.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` on the handover commit `ce93976`, in the plan's
+  worktree: "Self-check passed: every guard caught its defect, the clean baseline passed,
+  and the framework repository's own guards passed.", exit 0 (node v22.23.4, git 2.43.0).
+- The hook run by hand from the worktree with `CLAUDE_CODE_REMOTE_SESSION_ID=cse_01OWN`
+  (bash 5.2.21, Python 3.13.18): `interrupt_session` on `session_01OWN` printed the
+  four-line refusal and exited 2; `archive_session` on it printed `Refused: this would
+  archive the session you are running in (session_01OWN).` and exited 2; another
+  session's id, the variable unset, and malformed JSON each exited 0 with no output.
+- **Live, Task 5.** A throwaway branch carrying the hook in `.claude/settings.json` and
+  `.tropis/hooks/` was pushed, and a new cloud session started on it (Claude Code
+  2.1.318, Linux x86_64, `CLAUDE_CODE_REMOTE_SESSION_ID` present with prefix `cse`). It
+  called `get_session`, then `mcp__claude-code-remote__interrupt_session` with its own
+  `session_...` id, and the call answered, as an error, `PreToolUse:mcp__claude-code-remote__interrupt_session
+  hook error: [command hook 6]: Refused: this would interrupt the session you are running
+  in (session_<its id>).` followed by the hook's other three lines; the tool-result
+  record shows `permission_decision: reject, reason_type: hook`. The session then
+  replied with its report and ended its turn normally (`stop_reason: end_turn`). This
+  settles the two handover *Outstanding* questions: the matcher fires on the MCP tool's
+  name, and the variable reaches the hook's environment.
+- Not re-run: the executor's red run with the comparison removed. The handover shows
+  three refusal cases failing and six passing with step 4 replaced by `exit 0`, which is
+  what the change predicts; the live run above is the stronger check of the same line.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The plan quotes
+no session id (the specifying session replaced its own with `<X>` before the claim
+landed), and the tests use invented ids.
+
+Nothing else. The diff matches the File Structure table (six files, plus the backlog and
+the bands file in this review commit).
+
+### Outstanding disposition
+
+- Task 5 and both questions it was to settle: done above.
+- The throwaway branch `probe/own-session-guard` could not be deleted from this cloud
+  session (`git push --delete` answered HTTP 403); it is never merged and carries only
+  the probe commit. Left for the developer to delete; dropped as a backlog item, since it
+  changes nothing on `main`.
+- The probe session is left idle, not archived: archiving another session is the
+  developer's acknowledgement to give.
+
+### Learnings routed
+
+- The one-guard recipe in `AGENTS.md` omits `FRAMEWORK_ROOT` for guards that run a
+  shipped hook (*What the plan got wrong*): backlog item
+  `one-guard-recipe-names-framework-root`.
+- The hook is the delivery of this item's lesson at the moment it applies; no rule or
+  framework text changes, so no fresh-agent check is owed. The choice between a hook and
+  a dispatch-prompt sentence is recorded in the hook's header and the plan's Decision 1
+  rather than in `framework/DECISIONS.md`: it changes no framework document and
+  constrains nothing beyond this hook.
+
+### Merged because
+
+Every check passes on the pushed commit and the hook refused a real self-interrupt in a
+live cloud session while letting the session carry on.
