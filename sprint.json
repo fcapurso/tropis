@@ -306,7 +306,8 @@
       "Open: no backlog item yet for the first real cloud flush (first test of cross-repo push and fork); a pre-existing fork-readiness race left alone; the plan's single-guard command was wrong and is unrecorded."
     ],
     "update-lists-the-release-steps": [
-      "Pushed the stalled executor's branch and checked its commits rather than trusting them; re-ran guard, readme-level, installed suite (195/195) and self-check before and after rebase (#259, 1c6a378)."
+      "Pushed the stalled executor's branch and checked its commits rather than trusting them; re-ran guard, readme-level, installed suite (195/195) and self-check before and after rebase (#259, 1c6a378).",
+      "Fresh-agent check passed; it omitted 0.8.0's one-sentence scope note, dropped without a backlog item since each step states its own condition."
     ]
   }
 }
