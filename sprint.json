@@ -275,7 +275,8 @@
       "Landed as two PRs: claim #250, then the work #251 (main green on f38ef18). Fresh-agent check passed on its second run, after the first was inconclusive because the probe read the plan."
     ],
     "dependabot-alerts-are-assessed": [
-      "glob and minimatch moderate advisories (via Jest, shipped to every project through templates/package-lock.json, not exploitable) left for the next release; new backlog item test-tools-take-patched-glob forces the patched majors (cost: no Node 18 for project checks)."
+      "glob and minimatch moderate advisories (via Jest, shipped to every project through templates/package-lock.json, not exploitable) left for the next release; new backlog item test-tools-take-patched-glob forces the patched majors (cost: no Node 18 for project checks).",
+      "deepmerge low advisory (no fix exists, code never runs): recommend dismissing alert 4 as 'Vulnerable code is not actually used' — needs the developer, session cannot write alerts."
     ]
   }
 }
