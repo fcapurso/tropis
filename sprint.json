@@ -3,7 +3,9 @@
   "budget": 5,
   "way": "session",
   "archive": true,
-  "archived": [],
+  "archived": [
+    "executor-never-interrupts-its-dispatcher"
+  ],
   "entries": [
     {
       "id": "executor-never-interrupts-its-dispatcher",
