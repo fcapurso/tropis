@@ -787,3 +787,44 @@ describe('the /release last release', () => {
     );
   });
 });
+
+describe('/next and /release where gh pr is refused', () => {
+  const text = (rel) => readFileSync(
+    resolve(dirname(fileURLToPath(import.meta.url)), '..', rel),
+    'utf8',
+  ).replace(/\s+/g, ' ');
+  const next = text('commands/next.md');
+  const release = text('commands/release.md');
+  const workflow = text('framework/workflow.md');
+  const LIST = "gh api 'repos/{owner}/{repo}/pulls?state=open&per_page=100'";
+
+  it('runs no gh pr command that GraphQL alone answers, other than through the script', () => {
+    for (const command of [next, release]) {
+      for (const refused of ['gh pr list', 'gh pr view', 'gh pr create', 'mergeCommit']) {
+        expect(command).not.toContain(refused);
+      }
+    }
+    expect(next).not.toContain('gh pr merge');
+    // Once, in the sentence that says what auto-merge.mjs runs.
+    expect(release.split('gh pr merge').length - 1).toBe(1);
+    expect(release).toContain('It runs `gh pr merge <N> --auto --squash`, and only where');
+  });
+
+  it('lists open pull requests through the REST pulls route', () => {
+    expect(next).toContain(LIST);
+    expect(release).toContain(LIST);
+  });
+
+  it('opens, sets to merge and reads a pull request by routes a cloud session answers', () => {
+    expect(release).toContain("gh api -X POST 'repos/{owner}/{repo}/pulls'");
+    expect(release).toContain('node .tropis/scripts/auto-merge.mjs <N> --subject <subject> --body <body>');
+    expect(release).toContain("gh api 'repos/{owner}/{repo}/pulls/<N>' --jq .merge_commit_sha");
+  });
+
+  it('gives a session where gh pr is refused the same commands in the workflow', () => {
+    expect(workflow).toContain('**Where `gh pr` is refused.**');
+    expect(workflow).toContain('node .tropis/scripts/auto-merge.mjs <N> --subject <subject> --body <body>');
+    expect(workflow).toContain("gh api -X POST 'repos/{owner}/{repo}/pulls'");
+    expect(workflow).not.toContain('with its own GitHub tools in place of `gh pr merge`');
+  });
+});

@@ -84,6 +84,12 @@ date when `main` moves, and says why when it did not merge. Run
 `.github/workflows/pipeline.yml`; where it cannot — no `gh`, not signed in, an origin that
 is not on GitHub — it says it could not tell, and why.
 
+`node .tropis/scripts/auto-merge.mjs <N> --subject <subject> --body <body>` sets a pull
+request to merge itself as a squash, with that subject and body: through
+`gh pr merge --auto`, or, in a Claude Code cloud session, which refuses `gh` GitHub's
+GraphQL interface, through that session's own route. It prints one line and exits
+non-zero, saying why, when the pull request was not set.
+
 When two plans are built at once, `node .tropis/scripts/plan-overlap.mjs --claim <plan>`
 runs as a backlog item moves to `building`: where the plan shares a file with a plan
 already in `building` it writes `Merges after` into the plan's header, and `node

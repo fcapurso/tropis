@@ -80,6 +80,32 @@ reported — Stage 7's, or Stage 5's on an empty slot — and whenever this comm
 on a failure or a refusal, so a fix can merge. On *Resume at staging*, take it again
 first. Say each take and release in your report.
 
+## Pull requests
+
+Each pull request this command opens, and each question it asks GitHub about one, goes
+through these commands. They answer on the developer's computer and in a Claude Code
+cloud session alike: there, `gh pr` commands are refused, since they use GitHub's
+GraphQL interface, while `gh api` and `gh run` answer.
+
+- **List the open ones:**
+  `gh api 'repos/{owner}/{repo}/pulls?state=open&per_page=100' --jq '.[] | "#\(.number) \(.head.ref) \(.title)"'`.
+  Where 100 come back, ask for `&page=2` and so on, never `--paginate`.
+- **Open one** from the pushed branch, with the commit's subject and body as its title
+  and description:
+  `gh api -X POST 'repos/{owner}/{repo}/pulls' -f title=<subject> -f body=<body> -f head=<branch> -f base=<main branch> --jq .number`
+  prints its number, `<N>`.
+- **Set it so it merges itself** as a squash with that subject and body:
+  `node .tropis/scripts/auto-merge.mjs <N> --subject <subject> --body <body>`. It runs
+  `gh pr merge <N> --auto --squash`, and only where `gh` is refused GraphQL the cloud
+  session's own route. On a non-zero exit, show its line and stop.
+- **Wait for it:** `node .tropis/scripts/main-status.mjs --pull-request <N>`, which only
+  reads, apart from bringing the branch up to date.
+- **The commit the merge made on `main`:**
+  `gh api 'repos/{owner}/{repo}/pulls/<N>' --jq .merge_commit_sha`.
+
+`.claude/framework/workflow.md`, *Where `gh pr` is refused*, says the same for every
+merge.
+
 ## Stage 1 — Pre-flight
 
 <!-- project-owned: begin before-preflight — what this project does before the pre-flight. -->
@@ -95,7 +121,7 @@ git branch --show-current
 
 Stop if the tree is dirty, if either log prints anything, or if the branch is not `main`:
 the release is cut from exactly what the remote has. List any open pull requests against
-`main` and ask whether to continue without them.
+`main` (*Pull requests*) and ask whether to continue without them.
 
 ```bash
 node .tropis/scripts/pipeline.mjs staging slot
@@ -113,7 +139,7 @@ no file, or a level that is none of these — run `/refresh-readme` as its comma
 
 If it committed a refreshed README, push it (`git push origin main`). Where the main
 branch is gated (workflow.md, *Branching*), move that commit to a branch instead, open a
-pull request, run `gh pr merge <N> --auto --squash`, then
+pull request, set it so it merges itself (*Pull requests*), then
 `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only once it
 reports the main branch green; on any other line, show it and stop.
 Pre-flight found nothing else unpushed, so the push carries only that commit.
@@ -288,11 +314,11 @@ The main branch is gated unless `.tropis/project.json` records `"ungated"` (work
 *Branching*). Where it is gated, every commit below goes on a branch in a worktree of
 its own —
 `git worktree add ../<repo>-release-<version> -b release/<version> origin/main` — is
-pushed, gets a pull request, `gh pr merge <N> --auto --squash` with the commit's subject
-and body, then `node .tropis/scripts/main-status.mjs --pull-request <N>`; go on only once
+pushed, gets a pull request set so it merges itself with the commit's subject and body
+(*Pull requests*), then `node .tropis/scripts/main-status.mjs --pull-request <N>`; go on only once
 it reports the main branch green, and on any other line show it and stop. The commit
 the next step names is then the one the merge made on `main`
-(`gh pr view <N> --json mergeCommit -q .mergeCommit.oid`). Remove the worktree after.
+(*Pull requests*). Remove the worktree after.
 Where it is not gated, commit on `main` and push.
 
 **Empty slot — one commit, then step 2.** Set the version in every version file;
@@ -433,8 +459,8 @@ If it names anything but the notes file and the version files, refuse: something
 since staging was checked. Say so, remove the worktree and the branch, and go *Back
 to staging for a newer commit*.
 
-Then push, open the pull request, run `gh pr merge <N> --auto --squash` with that
-subject, then `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only
+Then push, open the pull request, set it so it merges itself with that subject
+and the commit's body (*Pull requests*), then `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only
 once it reports the main branch green; on any other line, show it and stop. Remove the
 worktree. Where the main branch is not gated, make the same commit on `main`, run the
 same check, and push.
@@ -450,7 +476,7 @@ Watch it at: <where the run is watched>
 ```
 
 `<commit>` is the full hash of the commit the promotion put on `main` —
-`gh pr view <N> --json mergeCommit -q .mergeCommit.oid`, or the pushed commit — and
+read as *Pull requests* says, or the pushed commit — and
 `<staged>` the staged commit's full hash. Say what the promote pipeline does: it runs
 `node .tropis/scripts/pipeline.mjs promote check` first and stops on a refusal, tags
 `<commit>`, pushes only the tag, and deploys the tag to production. Anything merged
