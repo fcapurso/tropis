@@ -124,6 +124,196 @@ export function carryBlocks(projectText, nextText) {
   return { text: out.join('\n'), mismatch: false };
 }
 
+// A named begin marker: `begin <name>[ (was <old>[, <old>…])] — <purpose> -->`, on one
+// line. Built from `marker()` for the same reason as BEGIN.
+const NAMED = new RegExp(
+  `${marker('begin')} ([a-z][a-z0-9-]*)(?: \\(was ([a-z0-9, -]+)\\))? — (.*?) -->\\s*$`,
+);
+
+/**
+ * Every complete block in order: `{ begin, body }`, plus `name`, `was` and `purpose`
+ * when its begin marker names it.
+ * @param {string} text
+ */
+function allBlocks(text) {
+  const found = [];
+  let begin = null;
+  scan(text, (line) => {
+    if (BEGIN.test(line)) begin = line;
+  }, (body) => {
+    const m = NAMED.exec(begin);
+    if (!m) found.push({ begin, body });
+    else {
+      found.push({
+        begin,
+        body,
+        name: m[1],
+        was: m[2] === undefined ? [] : m[2].split(',').map((s) => s.trim()).filter(Boolean),
+        purpose: m[3].trim(),
+      });
+    }
+  });
+  return found;
+}
+
+/**
+ * The named fill-ins of `text`, in order. A fill-in is a project-owned block whose
+ * begin marker carries a name, any former names, and its purpose. Unnamed blocks and
+ * an unclosed begin are left out.
+ * @param {string} text
+ * @returns {{ name: string, was: string[], purpose: string, body: string[] }[]}
+ */
+export function fillIns(text) {
+  return allBlocks(text)
+    .filter((b) => b.name !== undefined)
+    .map(({ name, was, purpose, body }) => ({ name, was, purpose, body }));
+}
+
+const collapse = (s) => s.replace(/\s+/g, ' ').trim();
+const filled = (lines) => lines.some((l) => l.trim() !== '');
+
+/**
+ * An unnamed block of an earlier release read as items: `- <Label>:` lines and what
+ * follows them. Comments are the shipped help and are dropped; non-blank lines before
+ * the first item are one unlabelled chunk.
+ * @param {string[]} body
+ * @returns {{ label?: string, lines: string[] }[]}
+ */
+function itemsOf(body) {
+  const items = [];
+  let current = null;
+  const close = () => {
+    if (!current) return;
+    while (current.lines.length && current.lines[current.lines.length - 1].trim() === '') {
+      current.lines.pop();
+    }
+    if (current.label !== undefined || current.lines.length) items.push(current);
+    current = null;
+  };
+  let i = 0;
+  while (i < body.length) {
+    const line = body[i];
+    if (line.trim().startsWith('<!--')) {
+      close();
+      while (i < body.length && !body[i].includes('-->')) i += 1;
+      i += 1;
+      continue;
+    }
+    const m = /^- ([^:]+):(\s|$)/.exec(line);
+    if (m) {
+      close();
+      current = { label: m[1].trim(), lines: [line] };
+    } else if (current) {
+      current.lines.push(line);
+    } else if (line.trim() !== '') {
+      current = { lines: [line] };
+    }
+    i += 1;
+  }
+  close();
+  return items;
+}
+
+const slug = (label) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+/**
+ * `nextText` with the project's fill-ins carried into it by name, and a note for each
+ * fill-in a reader has to look at. When `nextText` has no named fill-in this is
+ * `carryBlocks`. Otherwise each named fill-in of `nextText` takes the body of the
+ * project's fill-in of the same name, or of its first former name the project has;
+ * unnamed blocks are carried by position and must agree in number. A project with no
+ * named fill-in, whose unnamed blocks have nowhere to go by position, has them moved
+ * into the named fill-ins: whole, when there is one block and one fill-in, else item by
+ * item, each `- <Label>:` line to the fill-in named after its label.
+ *
+ * Notes, each with `kind`: `renamed` (from, name), `purpose` (name, was, now), `new`
+ * (name, purpose), `moved` (from, name), `removed` (name, purpose, lines),
+ * `unplaced` (lines).
+ * @param {string} projectText
+ * @param {string} nextText
+ * @returns {{ text: string, mismatch: boolean, notes: object[] }}
+ */
+export function carryFillIns(projectText, nextText) {
+  const next = allBlocks(nextText);
+  const nextNamed = next.filter((b) => b.name !== undefined);
+  if (nextNamed.length === 0) return { ...carryBlocks(projectText, nextText), notes: [] };
+
+  const project = allBlocks(projectText);
+  const projectNamed = project.filter((b) => b.name !== undefined);
+  const projectUnnamed = project.filter((b) => b.name === undefined);
+  const nextUnnamed = next.filter((b) => b.name === undefined);
+  if (nextUnnamed.length > 0 && nextUnnamed.length !== projectUnnamed.length) {
+    return { text: nextText, mismatch: true, notes: [] };
+  }
+
+  // The move: the project's blocks of an earlier release, read into the named fill-ins.
+  const moved = new Map();
+  const unplaced = [];
+  if (projectNamed.length === 0 && projectUnnamed.length > 0 && nextUnnamed.length === 0) {
+    if (projectUnnamed.length === 1 && nextNamed.length === 1) {
+      moved.set(nextNamed[0].name, { from: 'the block', lines: projectUnnamed[0].body });
+    } else {
+      for (const block of projectUnnamed) {
+        for (const item of itemsOf(block.body)) {
+          const key = item.label === undefined ? undefined : slug(item.label);
+          const target = key === undefined ? undefined : nextNamed.find((f) =>
+            !moved.has(f.name) && (f.name === key || f.was.includes(key)));
+          if (target) moved.set(target.name, { from: `"${item.label}"`, lines: item.lines });
+          else unplaced.push({ kind: 'unplaced', lines: item.lines });
+        }
+      }
+    }
+  }
+
+  const notes = [];
+  const taken = new Set();
+  const bodies = next.map((b) => {
+    if (b.name === undefined) return null;
+    const source = projectNamed.find((p) => p.name === b.name)
+      ?? b.was.map((w) => projectNamed.find((p) => p.name === w)).find(Boolean);
+    if (source) {
+      taken.add(source);
+      if (source.name !== b.name) notes.push({ kind: 'renamed', from: source.name, name: b.name });
+      if (collapse(source.purpose) !== collapse(b.purpose)) {
+        notes.push({ kind: 'purpose', name: b.name, was: source.purpose, now: b.purpose });
+      }
+      return source.body;
+    }
+    if (moved.has(b.name)) {
+      const { from, lines } = moved.get(b.name);
+      notes.push({ kind: 'moved', from, name: b.name });
+      return lines;
+    }
+    notes.push({ kind: 'new', name: b.name, purpose: b.purpose });
+    return b.body;
+  });
+
+  for (const p of projectNamed) {
+    if (!taken.has(p) && filled(p.body)) {
+      notes.push({ kind: 'removed', name: p.name, purpose: p.purpose, lines: p.body });
+    }
+  }
+  if (projectNamed.length > 0) {
+    for (const p of projectUnnamed) {
+      // Carried by position when the new text has unnamed blocks of its own.
+      if (nextUnnamed.length === 0 && filled(p.body)) {
+        notes.push({ kind: 'unplaced', lines: p.body });
+      }
+    }
+  }
+  notes.push(...unplaced);
+
+  let n = 0;
+  let u = 0;
+  const out = [];
+  scan(nextText, (line) => out.push(line), () => {
+    const body = bodies[n];
+    out.push(...(body === null ? projectUnnamed[u++].body : body));
+    n += 1;
+  });
+  return { text: out.join('\n'), mismatch: false, notes };
+}
+
 /** @param {string} rel A path relative to the project root, with `/` separators. */
 function excluded(rel) {
   return EXCLUDED.some((item) => rel === item || rel.startsWith(`${item}/`));
