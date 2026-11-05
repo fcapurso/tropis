@@ -2,10 +2,11 @@
 /**
  * The prerequisite check refuses a Node the guards cannot run on.
  *
- * Jest, which runs the guards, accepts Node 18 only from 18.14, so the check must too:
- * otherwise a machine on 18.0 to 18.13 passes setup and fails at the first guard. This
- * runs the shipped script from a scratch .tropis/scripts/, with stubs for node, git and
- * python3 first on PATH, so the version under test is the one the stub reports.
+ * minimatch 11, which Jest uses to find the guards, runs only on Node 20 and on 22 and
+ * later, so the check must accept exactly those: otherwise a machine on 18 or 21 passes
+ * setup and fails at the first guard. This runs the shipped script from a scratch
+ * .tropis/scripts/, with stubs for node, git and python3 first on PATH, so the version
+ * under test is the one the stub reports.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, chmodSync, rmSync } from 'node:fs';
@@ -50,7 +51,7 @@ describe('the prerequisite check and the Node version', () => {
       encoding: 'utf8',
     });
 
-  it.each(['18.14.0', '18.20.4', '20.0.0', '22.15.0'])('accepts node %s', (version) => {
+  it.each(['20.0.0', '20.19.2', '22.15.0', '24.1.0'])('accepts node %s', (version) => {
     const r = run(version);
     expect({ status: r.status, out: r.stdout }).toEqual({
       status: 0,
@@ -58,11 +59,11 @@ describe('the prerequisite check and the Node version', () => {
     });
   });
 
-  it.each(['18.0.0', '18.13.0', '16.20.2'])('refuses node %s and says 18.14 is needed', (version) => {
+  it.each(['16.20.2', '18.14.0', '18.20.4', '21.7.3'])('refuses node %s and says 20, or 22 or newer, is needed', (version) => {
     const r = run(version);
     expect({ status: r.status, out: r.stdout }).toEqual({
       status: 1,
-      out: expect.stringContaining(`MISSING  node       found ${version}, need 18.14 or newer`),
+      out: expect.stringContaining(`MISSING  node       found ${version}, need 20, or 22 or newer`),
     });
   });
 });

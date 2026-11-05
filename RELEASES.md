@@ -21,6 +21,8 @@ For the full development history, see the git log.
 
 - A sprint's brief for a bundle names every backlog item in it, so the team member delivers them all instead of stopping after the first. Asking for the brief of a bundle's later item now names the item to ask for instead.
 
+- Tropis's checks now need Node.js 20, or 22 or later: the test tools a project installs take the releases of glob and minimatch that fix two moderate advisories (GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249), so a project no longer inherits a Dependabot alert for either, and the newer minimatch does not run on Node.js 18 or 21. If you still run Node.js 18, upgrade it before updating; the setup check now says so.
+
 ## [0.8.2] — 2026-11-04
 
 Agents now run on the cheapest model your subscriptions include that is good enough for
