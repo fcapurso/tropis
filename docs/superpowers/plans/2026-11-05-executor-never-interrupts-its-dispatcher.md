@@ -415,3 +415,67 @@ checkout was left detached at `origin/main`.
   shell holds it, and a hook is a child of the tool's process. If it does not, the hook is
   silent everywhere (step 3) and the fix is a different source for the id.
 - **Review record and merge**: not written, not done — parent review.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code 2.1.318 cloud session on Linux x86_64.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` on the handover commit `ce93976`, in the plan's
+  worktree: "Self-check passed: every guard caught its defect, the clean baseline passed,
+  and the framework repository's own guards passed.", exit 0 (node v22.23.4, git 2.43.0).
+- The hook run by hand from the worktree with `CLAUDE_CODE_REMOTE_SESSION_ID=cse_01OWN`
+  (bash 5.2.21, Python 3.13.18): `interrupt_session` on `session_01OWN` printed the
+  four-line refusal and exited 2; `archive_session` on it printed `Refused: this would
+  archive the session you are running in (session_01OWN).` and exited 2; another
+  session's id, the variable unset, and malformed JSON each exited 0 with no output.
+- **Live, Task 5.** A throwaway branch carrying the hook in `.claude/settings.json` and
+  `.tropis/hooks/` was pushed, and a new cloud session started on it (Claude Code
+  2.1.318, Linux x86_64, `CLAUDE_CODE_REMOTE_SESSION_ID` present with prefix `cse`). It
+  called `get_session`, then `mcp__claude-code-remote__interrupt_session` with its own
+  `session_...` id, and the call answered, as an error, `PreToolUse:mcp__claude-code-remote__interrupt_session
+  hook error: [command hook 6]: Refused: this would interrupt the session you are running
+  in (session_<its id>).` followed by the hook's other three lines; the tool-result
+  record shows `permission_decision: reject, reason_type: hook`. The session then
+  replied with its report and ended its turn normally (`stop_reason: end_turn`). This
+  settles the two handover *Outstanding* questions: the matcher fires on the MCP tool's
+  name, and the variable reaches the hook's environment.
+- Not re-run: the executor's red run with the comparison removed. The handover shows
+  three refusal cases failing and six passing with step 4 replaced by `exit 0`, which is
+  what the change predicts; the live run above is the stronger check of the same line.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found. The plan quotes
+no session id (the specifying session replaced its own with `<X>` before the claim
+landed), and the tests use invented ids.
+
+Nothing else. The diff matches the File Structure table (six files, plus the backlog and
+the bands file in this review commit).
+
+### Outstanding disposition
+
+- Task 5 and both questions it was to settle: done above.
+- The throwaway branch `probe/own-session-guard` could not be deleted from this cloud
+  session (`git push --delete` answered HTTP 403); it is never merged and carries only
+  the probe commit. Left for the developer to delete; dropped as a backlog item, since it
+  changes nothing on `main`.
+- The probe session is left idle, not archived: archiving another session is the
+  developer's acknowledgement to give.
+
+### Learnings routed
+
+- The one-guard recipe in `AGENTS.md` omits `FRAMEWORK_ROOT` for guards that run a
+  shipped hook (*What the plan got wrong*): backlog item
+  `one-guard-recipe-names-framework-root`.
+- The hook is the delivery of this item's lesson at the moment it applies; no rule or
+  framework text changes, so no fresh-agent check is owed. The choice between a hook and
+  a dispatch-prompt sentence is recorded in the hook's header and the plan's Decision 1
+  rather than in `framework/DECISIONS.md`: it changes no framework document and
+  constrains nothing beyond this hook.
+
+### Merged because
+
+Every check passes on the pushed commit and the hook refused a real self-interrupt in a
+live cloud session while letting the session carry on.

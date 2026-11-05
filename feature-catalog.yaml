@@ -6907,7 +6907,7 @@
 # items waiting to merge after it were held up with it. The developer resumed it by hand.
 - id: executor-never-interrupts-its-dispatcher
   title: An executor never stops the session that dispatched it
-  status: building
+  status: shipped
   value: A sprint runs unattended without a team member going silent because its own
     executor interrupted it, so the items merging after it are not held up for hours
     with nothing in the sprint status to say why.
@@ -6923,9 +6923,28 @@
       reports the refusal and keeps running, recorded with its tool and version.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/own-session-guard.sh
+    - templates/settings.json
   refs:
     - docs/superpowers/plans/2026-11-05-executor-never-interrupts-its-dispatcher.md
+
+# 2026-11-05, found executing executor-never-interrupts-its-dispatcher. The recipe in
+# AGENTS.md for running one source guard alone stages an export of HEAD and nothing
+# else, so a guard that runs a shipped hook, such as rule-delivery, looks for it under
+# .tropis/hooks/ in the export, finds no file, and fails; it needs FRAMEWORK_ROOT
+# pointed at a composed fixture, as scripts/check-blueprint.sh sets it.
+- id: one-guard-recipe-names-framework-root
+  title: The recipe for running one source guard alone works for a guard that runs a hook
+  status: idea
+  value: An executor told to run one guard alone runs it the first time, instead of
+    reading the self-check to find that a guard running a shipped hook needs
+    FRAMEWORK_ROOT pointed at a composed fixture.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
 
 # 2026-11-05, left open by flush-runs-in-a-cloud-session: its session's only repository
 # was the framework itself, so a push to another repository and a fork from a cloud
