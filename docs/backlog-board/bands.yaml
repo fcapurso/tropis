@@ -18,6 +18,7 @@ absorb-flush-runs-in-a-cloud-session:
   effort: 2
   effortWhy: The command's GitHub steps rewritten for a session where gh cannot write;
     the listing script already takes its listing as JSON and needs no change.
+  bundle: cloud-flush
   verdict: "Worth doing, with no deadline: the hand workaround works but depends on the
     agent improvising each GitHub step."
   evidence: "2026-11-05 — the first cloud sitting stopped at gh auth status and finished
@@ -124,6 +125,7 @@ first-cloud-flush-is-tried:
     adopters flush from their own computers today and the fallback already exists.
   effort: 1
   effortWhy: A spike, a real or invented flush from a cloud session, written up.
+  bundle: cloud-flush
   verdict: "Worth doing before cloud flushes are common, with no deadline; cheapest done
     alongside absorbing a flush from a cloud session."
   seen:
