@@ -318,6 +318,9 @@
       "Transitional fill-ins not built; /release's fill-ins taken from migrating this repository's own installed release command; check-version lists fill-ins among the steps a take leaves.",
       "Resolved one rebase conflict in commands/update.md Stage 6 against update-lists-the-release-steps by keeping both, recorded in the review record.",
       "Executor's setup helper could not read the plan because the main checkout was behind origin/main; set up by hand, no backlog item (reason in the review record). The plan wrongly marked one test as passing on the old code; noted in handover and review."
+    ],
+    "release-and-next-run-in-a-cloud-session": [
+      "Followed the cloud-session-gh-routes spike: rewrote the plan from the session's own GitHub tools to gh api plus a new shipped auto-merge.mjs that falls back to the cloud auto-merge route only on the GraphQL refusal (#263, 5a35f53)."
     ]
   }
 }
