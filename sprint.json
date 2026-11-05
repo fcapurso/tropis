@@ -11,7 +11,8 @@
     "plan-dates-follow-the-project-time-zone",
     "flush-runs-in-a-cloud-session",
     "update-lists-the-release-steps",
-    "commands-have-named-fill-ins"
+    "commands-have-named-fill-ins",
+    "release-and-next-run-in-a-cloud-session"
   ],
   "entries": [
     {
