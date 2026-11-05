@@ -692,3 +692,9 @@ addresses; nothing found.
 Every named fill-in carries by name, the take and the check list what changed, the move
 places a real project's block by its labels and prints the rest, the self-check passes,
 and the new guards go red with the carrying reverted.
+
+**Rebase onto `update-lists-the-release-steps`.** One conflict, in `commands/update.md`
+Stage 6: `main` added a sentence to the required-steps item, and this plan had renumbered
+that list. Resolved mechanically by keeping both — the sentence stays in item 7, the
+pipeline item is 8 and the gate 9. Self-check and `npm --prefix .tropis test` passed
+again after the rebase; the scope is still the 20 files in File Structure.
