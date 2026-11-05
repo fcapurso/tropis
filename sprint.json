@@ -237,6 +237,9 @@
     },
     "author-built-evidence-reaches-the-reviewer": {
       "state": "planning"
+    },
+    "readme-follows-the-developers-role": {
+      "state": "planning"
     }
   },
   "notes": {}
