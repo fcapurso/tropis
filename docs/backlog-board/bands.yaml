@@ -314,9 +314,10 @@ readme-follows-the-developers-role:
   effort: 2
   effortWhy: The outline's job for Using it day to day rewritten around the developer's
     part, then one /refresh-readme run against it.
+  bundle: readme-outline
   verdict: "Do next, ahead of the pending README refresh: a refresh now follows the old
-    outline and repeats the stale routine. Whichever of this and
-    readme-skeleton-for-closed-products is built second rebases on the other's outline."
+    outline and repeats the stale routine. Bundled with readme-skeleton-for-closed-products,
+    which then starts from the new outline."
   evidence: "2026-11-05 — templates/readme-skeleton.md:39 gives Using it day to day the
     job 'the commands they type and when'; README.md:92-105 lists /dispatch and
     /feature as steps the developer runs."
@@ -331,8 +332,9 @@ readme-skeleton-for-closed-products:
   effort: 3
   effortWhy: A second skeleton, a question in /refresh-readme and /bootstrap, and the
     README guards told which checks hold for which skeleton.
-  verdict: "Worth doing, with no deadline. Whichever of this and
-    readme-follows-the-developers-role is built second rebases on the other's outline."
+  bundle: readme-outline
+  verdict: "Worth doing, with no deadline. Bundled with readme-follows-the-developers-role,
+    so the closed-source skeleton starts from the rewritten outline."
   evidence: "2026-11-05 — templates/readme-skeleton.md is the only skeleton shipped."
   seen:
     status: idea
