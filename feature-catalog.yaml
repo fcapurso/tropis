@@ -6451,3 +6451,34 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-05, raised by first-adopter's upstream flush, from its queue entry of 2026-11-05.
+- id: readme-skeleton-for-closed-products
+  title: A closed-source product's README is refreshed from an outline written for its readers
+  status: idea
+  value: 'A project whose product is closed-source gets a README for the people who
+    read it, those who build, run, release or assess the product, instead of a
+    page addressed to a prospective adopter who will never see the repository.
+    Today the only skeleton Tropis ships assumes an open project, so a refresh of a
+    private product''s README produces sales copy aimed at nobody, and leaves out
+    what its readers need: the environments, the accounts and who holds them, the
+    release path, and the legal and licence exposure a due-diligence reader looks for.'
+  acceptanceCriteria:
+    - 'Tropis ships a second skeleton for a closed-source product, with these sections
+      in this order. What it is: the product and its business status. Getting a working
+      copy. Environments and accounts: which exist and who holds them. How it works,
+      with the mistakes that cost the most. Changing and releasing it: what the project
+      adds to Tropis''s workflow, pointing to the rest. Limits and risks. Where to go
+      next. Like the default, it sets a page length.'
+    - Each skeleton's header comment names the reader it assumes, so a project can tell
+      when it does not fit.
+    - /refresh-readme skeleton and /bootstrap ask whether the product is open or
+      closed-source and copy the matching skeleton. A project that already owns a
+      skeleton is not asked, and its copy is untouched.
+    - The README guards say which of their checks hold for each skeleton. The aspects
+      check reads a section the closed-source skeleton does not have.
+    - A project that is never asked, or does not answer, keeps today's default.
+  type: feature
+  layer: product
+  modules: []
+  refs: []
