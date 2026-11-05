@@ -131,7 +131,7 @@ release-and-next-run-in-a-cloud-session
    with `gh api`, sets auto-merge with the script, brings its branch up to date through
    `main-status.mjs`, and keeps its own GitHub tools only for waking on the pull request's
    activity; it cannot delete a branch and does not need to. The gated-merge bullet in
-   *Branching* points there. Recorded as FW-071, amending FW-063.
+   *Branching* points there. Recorded as FW-072, amending FW-063.
 4. **`/release` says this once,** in a section *Pull requests* after *The merge token*,
    and each place that opens one refers to it, rather than repeating three commands at
    three stages.
@@ -163,7 +163,7 @@ release-and-next-run-in-a-cloud-session
 | `commands/next.md` | the in-flight check lists through `gh api` |
 | `commands/release.md` | *Pull requests*; Stage 1's listing; Stages 1b, 5, 7 and Step 2 refer to it |
 | `framework/workflow.md` | Decision 3 |
-| `framework/DECISIONS.md` | FW-071 |
+| `framework/DECISIONS.md` | FW-072 |
 | `feature-catalog.yaml` | the item shaped, then `shipped`, `modules` set, a comment mapping criteria to evidence |
 | `docs/backlog-board/bands.yaml` | `seen.status` follows the item |
 | `docs/superpowers/plans/2026-11-05-release-and-next-run-in-a-cloud-session.md` | the handover report and the review record |
@@ -192,7 +192,7 @@ shape) and the spike's finding.
   removed, 3 failed; restored, all pass.
 - Task 2: done. `commands/next.md`, `commands/release.md` (a section *Pull requests* after
   *The merge token*; Stages 1, 1b, 5, 7 and Step 2 refer to it), `framework/workflow.md`
-  (*Where `gh pr` is refused*, and the gated-merge bullet in *Branching*), FW-071. The
+  (*Where `gh pr` is refused*, and the gated-merge bullet in *Branching*), FW-072. The
   four new cases in `guards/release.test.js` fail against the old commands and workflow
   (4 failed of 97 with those files stashed) and pass now.
 - Task 3: `bash scripts/check-blueprint.sh` on the committed branch; result below.
@@ -249,7 +249,7 @@ shape) and the spike's finding.
 
 ### Learnings routed
 
-- The decision is FW-071. The workflow's paragraph carries the route.
+- The decision is FW-072. The workflow's paragraph carries the route.
 - Portable: the script is shipped; no upstream queue, this repository is the upstream.
 - `/absorb-flush` (`absorb-flush-runs-in-a-cloud-session`) can set its group pull
   requests to merge with this script once it takes a merge method; that item's plan
@@ -295,14 +295,14 @@ command answers the GraphQL 403. It had only this repository and the branch
   does; its import of `./main-status.mjs` resolves under `.tropis/scripts/`, where
   `installed-scripts.txt` installs both, and `main-status.mjs` runs its own command line
   only when run directly, so importing it runs nothing.
-- **The commands, the workflow, FW-071 and the operator guide agree with each other and
+- **The commands, the workflow, FW-072 and the operator guide agree with each other and
   with the finding.** `commands/next.md` and `commands/release.md` keep no `gh pr list`,
   `gh pr view`, `gh pr create` or `mergeCommit`; `/release` names `gh pr merge` once, in
-  the sentence saying what the script runs. FW-071's evidence matches the finding's table.
+  the sentence saying what the script runs. FW-072's evidence matches the finding's table.
   Each acceptance criterion is shown by the guard or check the catalog comment names.
 - **Fixed on the branch (mechanical), `e0b3731`:** *Merge and clean up* still said to pass
   `--subject` and `--body` "where `gh` can; where it cannot, the title and description
-  are the subject and body", written for the session tools FW-071 retires; it now names
+  are the subject and body", written for the session tools FW-072 retires; it now names
   `auto-merge.mjs`, which passes them on either route. A fresh-agent check of that
   sentence (Claude Code 2.1.318, `claude -p --model claude-opus-5-5`, `--tools
   Read,Grep,Glob`, stream-json, Linux x86_64, invented project) answered `gh api` POST
@@ -327,7 +327,7 @@ command answers the GraphQL 403. It had only this repository and the branch
 
 ### Learnings routed
 
-- The decision is FW-071 and the workflow paragraph carries the route; the review fix
+- The decision is FW-072 and the workflow paragraph carries the route; the review fix
   keeps the squash-message sentence with it. No new rule or backlog item. Nothing for an
   upstream queue: this repository is the upstream.
 - A guard whose stub answers every route with success covers no answer-checking branch;
@@ -341,3 +341,12 @@ the claim exercised, the fresh-agent checks are recorded with tool, version, mod
 and architecture, both checks are green, the diff is the plan's files plus one declared
 deviation, and it holds no private material. Merge authority is self-merge after this
 review: it should merge.
+
+### Rebase before merge
+
+Rebased on `origin/main` after `commands-have-named-fill-ins` shipped (#261). The only
+conflict was in `framework/DECISIONS.md`, where both plans appended an FW-071. It was
+resolved by keeping both and renumbering this plan's decision to FW-072, with its
+references in this plan and the catalog comment. `commands/next.md`,
+`commands/release.md` and `guards/release.test.js` merged without conflict: #261
+changed the project-owned blocks, and this plan changed the text outside them.

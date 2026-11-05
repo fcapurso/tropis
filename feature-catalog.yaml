@@ -6755,7 +6755,7 @@
 # and guards/auto-merge.test.js "sets it with gh pr merge" and "falls back to the cloud
 # session route". Criterion 3: guards/auto-merge.test.js "reports any other refusal" and
 # "runs no gh at all where origin is not on GitHub". Criterion 4: framework/workflow.md
-# "Where gh pr is refused", FW-071, and the guard "gives a session where gh pr is refused
+# "Where gh pr is refused", FW-072, and the guard "gives a session where gh pr is refused
 # the same commands in the workflow". Criterion 5: the fresh-agent check in the plan's
 # handover report.
 - id: release-and-next-run-in-a-cloud-session
