@@ -257,5 +257,9 @@
       "state": "planning"
     }
   },
-  "notes": {}
+  "notes": {
+    "cloud-session-gh-routes": [
+      "Shipped the spike straight from its finding with no separate plan, as earlier spikes did; finding (docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md): gh api can set auto-merge and read review threads from a cloud session, so commands keep using gh."
+    ]
+  }
 }
