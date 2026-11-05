@@ -389,18 +389,3 @@ update-check-runs-the-projects-own-checks:
   seen:
     status: idea
     blockers: []
-update-lists-the-release-steps:
-  band: A
-  value: 5
-  valueWhy: Every update since 0.7.2 reaches a project with no by-hand steps shown,
-    required ones included, and nothing says any were missed.
-  effort: 2
-  effortWhy: One heading match in the update helper, a guard over RELEASES.md and a line
-    in /update.
-  verdict: "Do now: it fails silently on every update, and an adopter has already met a
-    breaking update without its required steps."
-  evidence: "2026-11-05 — scripts/update.mjs:100 matches only '### After updating';
-    RELEASES.md heads its four newest by-hand sections '### What to do by hand'."
-  seen:
-    status: idea
-    blockers: []

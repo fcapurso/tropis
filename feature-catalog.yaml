@@ -6477,9 +6477,13 @@
 # /update asked to confirm a breaking update without them, and they were found only by
 # reading the notes by hand. The staging caller would have failed at its next run, since
 # the file it called had been deleted.
+# Shipped by docs/superpowers/plans/2026-11-05-update-lists-the-release-steps.md.
+# Criterion 1: releaseSteps, "reads every by-hand section and names each version it could not read" (guards/update.test.js).
+# Criterion 2: "gives the update helper steps from every version that numbers one" (guards/update.test.js).
+# Criterion 3: the same releaseSteps case for unread, plus the Stage 4 prose in commands/update.md, which the fresh-agent check covers.
 - id: update-lists-the-release-steps
   title: An update lists every step the release notes ask for
-  status: building
+  status: shipped
   value: Someone taking a release through /update is shown each step the notes say to do
     by hand, required or optional, and /update does the required ones or asks about them.
     Today the update helper reads steps only from a section headed After updating, which
@@ -6498,7 +6502,9 @@
       /update says so, naming the version, instead of showing an update with no steps.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/update.mjs
+    - commands/update.md
   refs:
     - docs/superpowers/plans/2026-11-05-update-lists-the-release-steps.md
 
