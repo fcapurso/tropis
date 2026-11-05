@@ -305,6 +305,24 @@ project-settings-are-listed-and-held-once:
   seen:
     status: shaped
     blockers: []
+readme-follows-the-developers-role:
+  band: B
+  value: 3
+  valueWhy: The README is what a prospective adopter reads first, and its day-to-day
+    section shows a routine of step commands that sprints and autonomous sessions have
+    replaced.
+  effort: 2
+  effortWhy: The outline's job for Using it day to day rewritten around the developer's
+    part, then one /refresh-readme run against it.
+  verdict: "Do next, ahead of the pending README refresh: a refresh now follows the old
+    outline and repeats the stale routine. Whichever of this and
+    readme-skeleton-for-closed-products is built second rebases on the other's outline."
+  evidence: "2026-11-05 — templates/readme-skeleton.md:39 gives Using it day to day the
+    job 'the commands they type and when'; README.md:92-105 lists /dispatch and
+    /feature as steps the developer runs."
+  seen:
+    status: idea
+    blockers: []
 readme-skeleton-for-closed-products:
   band: B
   value: 3
