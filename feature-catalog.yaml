@@ -6540,6 +6540,11 @@
 # id ("Numeric-ID repository paths are not supported through this proxy"); asking for
 # page=1, 2 and so on worked. The sprint status had the same GraphQL defect and was fixed
 # by sprint-status-works-in-a-cloud-session.
+# 2026-11-05, cloud-session-gh-routes answered: keep gh, through gh api, with the ccr
+# routes where GraphQL is refused; per item in
+# docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md, Recommendations.
+# Writes to another repository and forks were not tried: the criterion below on the
+# session's own GitHub tools stands only for whichever of those the proxy refuses.
 - id: flush-runs-in-a-cloud-session
   title: A flush runs from a cloud session as it does from the developer's computer
   status: idea
@@ -6578,6 +6583,9 @@
 # the merge commit with gh pr view --json mergeCommit (lines 273 and 431), and never
 # points at the workflow's "Where gh cannot write". The refusal itself names
 # api.github.com routes for auto-merge from a cloud session, untried here.
+# 2026-11-05, cloud-session-gh-routes answered: keep gh, through gh api, with the ccr
+# routes where GraphQL is refused; per item in
+# docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md, Recommendations.
 - id: release-and-next-run-in-a-cloud-session
   title: /release and /next work from a cloud session as from the developer's computer
   status: idea
@@ -6599,6 +6607,9 @@
 # swapping the session's own GitHub tools in by hand: listing through them and feeding
 # the listing script the same JSON, then opening, watching, rebase-merging and closing
 # through them. Not covered by flush-runs-in-a-cloud-session, which is the project side.
+# 2026-11-05, cloud-session-gh-routes answered: keep gh, through gh api, with the ccr
+# routes where GraphQL is refused; per item in
+# docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md, Recommendations.
 - id: absorb-flush-runs-in-a-cloud-session
   title: The maintainer can absorb a flush from a cloud session
   status: idea
@@ -6622,18 +6633,30 @@
 # how release-and-next-run-in-a-cloud-session, flush-runs-in-a-cloud-session and
 # absorb-flush-runs-in-a-cloud-session are planned: keeping gh api calls in the scripts,
 # or describing the session's tools in each command.
+# Shipped 2026-11-05 by the spike itself, in a Claude Code cloud session: the answer is
+# the finding in refs. Criteria to the finding: 1, The routes the refusal names; 2, The
+# other writes; 3, Recommendations. A spike, so no modules.
 - id: cloud-session-gh-routes
   title: Find out whether gh api can set auto-merge and read review threads from a cloud session
-  status: idea
+  status: shipped
   value: Before the commands that break in a cloud session are planned, we know whether a
     script can keep calling GitHub through gh api there, by the routes the refusal names,
     or whether each command must describe the session's own GitHub tools instead. The
     first keeps one code path for the developer's computer and the cloud.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - A written finding says, for each route the GraphQL refusal names, whether gh api
+      reached it from a cloud session and what it answered, recorded with tool, version,
+      operating system and architecture.
+    - The finding says whether gh api can do the other GitHub writes the commands and
+      scripts make there - open a pull request and bring its branch up to date - so a
+      plan knows which calls can stay.
+    - The finding recommends, for each of the three backlog items it decides, whether to
+      keep gh api calls or describe the session's own GitHub tools.
   type: spike
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md
 
 # 2026-11-05, raised by the developer. A push to this repository reported "GitHub found 2
 # vulnerabilities on fcapurso/tropis's default branch (1 moderate, 1 low)", from
