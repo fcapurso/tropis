@@ -498,3 +498,127 @@ and drop the commit (`git reset --hard HEAD~1`).
    so there is no developer check). Commit, and run the self-check again on that commit.
 3. `git push -u origin plan/commands-have-named-fill-ins`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in place.
+
+## Handover report
+
+### Task completion
+
+- **Task 0** — done. The worktree `../tropis-fill-ins` on `plan/commands-have-named-fill-ins`
+  from `origin/main` at `e6717b5`; `npm --prefix .tropis ci`; tree clean; self-check on
+  `e6717b5`: `Self-check passed: every guard caught its defect, the clean baseline passed,
+  and the framework repository's own guards passed.` git 2.43.0, node v22.23.4, Linux
+  x86_64.
+- **Task 1** — done. Cases 1–9 in `guards/installed-files.test.js`, then `fillIns` and
+  `carryFillIns` in `scripts/installed-files.js`.
+- **Task 2** — done. Named fill-ins in the six commands; `/release`'s block replaced by
+  the paragraph and fourteen fill-ins, and the Stage 4 sentence. Cases 15 and 16.
+- **Task 3** — done. Cases 10–14 first, then §2 and §3.
+- **Task 4** — done. `/update` Stage 6 step 3 (later steps renumbered 4–9), the operator
+  guide sentence, FW-071.
+- **Task 5** — done; see *What the plan got wrong* for case 10.
+- **Task 6** — done. The item read `building`; now `shipped`, with the four modules and
+  a comment line per criterion; its block removed from `bands.yaml`.
+- **Task 7** — done; branch pushed, no pull request.
+
+Cases the change makes pass (†): 1–8, 11, 12, 13 (the rewritten *block counts differ*
+case), 14 and 16. Case 10 is not †: it passed before the take changed (below). Case 9,
+case 13's other half and case 15 are not † as the plan says.
+
+### Verification results
+
+All on git 2.43.0, node v22.23.4, Linux x86_64, in a Claude Code cloud session.
+
+Single guards were run the way the self-check's clean baseline runs them: `git archive
+HEAD` into a temporary stage, `package.json` with `"type":"module"`, the template Jest
+config, `.self-check/node_modules` linked, the project tree composed from
+`fixtures/base` as `check-conformance.sh`'s `compose ""` does, then
+`FRAMEWORK_ROOT=<composed> INSTRUCTIONS=<stage> FIXTURES=<stage>/fixtures SCRIPTS=<stage>/scripts node --experimental-vm-modules .self-check/node_modules/.bin/jest --config <stage>/jest.config.js guards/<name>.test.js`
+from the stage. `check-blueprint.sh` has no option to run one guard, so this was a
+throwaway script outside the repository.
+
+- Task 1, before the functions: `installed-files.test.js` — `Test suite failed to run`,
+  `Tests: 0 total` (the import of `carryFillIns` and `fillIns` fails). After:
+  `Tests: 23 passed, 23 total`.
+- Task 2: `release.test.js` and `set-up-project.test.js` — `Tests: 117 passed, 117 total`.
+- Task 3, before §2 and §3: `take-version.test.js` and `check-version.test.js` —
+  `Tests: 4 failed, 74 passed, 78 total`, failing:
+  - `check-version.mjs › lists a fill-in the release renames, as the take will`
+  - `take-version.mjs › writes .new with the fill-ins carried when the project adds a block of its own`
+  - `take-version.mjs › lists a renamed, a re-purposed and a removed fill-in, with the removed one's text`
+  - `take-version.mjs › moves the single block of an earlier release into the named fill-ins`
+
+  After: `Tests: 78 passed, 78 total`.
+- Task 5, `apply()` back on `carryBlocks` (throwaway commit, dropped):
+  `take-version.test.js` — `Tests: 3 failed, 59 passed, 62 total`, failing cases 11
+  (*lists a renamed, a re-purposed and a removed fill-in…*), 12 (*moves the single block
+  of an earlier release…*) and 13 (*writes .new with the fill-ins carried…*).
+- Task 6 and Task 7: `npm --prefix .tropis test` — `Tests: 190 passed, 190 total`.
+- Task 7: `bash scripts/check-blueprint.sh` on `b54c894` — `Self-check passed: every
+  guard caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.`
+- `git diff --stat origin/main...HEAD` before this report: 19 files, all in *File
+  Structure*: `commands/feature.md`, `commands/idea.md`, `commands/manual-check.md`,
+  `commands/next.md`, `commands/refresh-board.md`, `commands/release.md`,
+  `commands/update.md`, `docs/backlog-board/bands.yaml`, `feature-catalog.yaml`,
+  `framework/DECISIONS.md`, `guards/check-version.test.js`,
+  `guards/installed-files.test.js`, `guards/release.test.js`,
+  `guards/set-up-project.test.js`, `guards/take-version.test.js`,
+  `scripts/check-version.mjs`, `scripts/installed-files.js`, `scripts/take-version.mjs`,
+  `templates/README.md` (711 insertions, 77 deletions); this report adds the plan file.
+
+### Scope
+
+Only the files in *File Structure*. No guard lowered or skipped; the assertions changed
+are the ones the plan names (case 13's two cases, case 15). Source: none in particular;
+the finding's prototype was not read, the code was written from the plan's §1 against
+this repository's names.
+
+### Judgment calls
+
+- **Notes carry a `kind` field** (`renamed`, `purpose`, `new`, `moved`, `removed`,
+  `unplaced`); the plan named the kinds but not the field.
+- **Notes are ordered** by the new text's fill-ins (renamed, purpose, moved or new for
+  each), then `removed`, then `unplaced`.
+- **Step 4's `unplaced` for the project's unnamed blocks** is noted only when the new
+  text has no unnamed block. Where it has some, step 2 has already carried them by
+  position, and listing them as not placed would be false.
+- **`fillInLines` returns one string per line**, so the text of a removed or unplaced
+  fill-in follows its line as separate strings with four spaces; the report's list adds
+  its own two, so they read six spaces in, under the line's two.
+- **A moved item's note holds the bare label**; `fillInLines` adds the double quotes.
+- **In `check-version`, the fill-in lines sit with the `blockMismatch` lines** under
+  *Settings that no longer fit*, as §3 says. They are therefore steps, so a release that
+  only renames a filled fill-in reads *safe with these steps*, not *safe*.
+- **Case 13's first half** kept `fillBlock`, which now fills `run-from`; only its title
+  changed, to *carries a filled fill-in into the new text*.
+- **The old block's help** (Trigger read as Promote trigger, ask when a value is missing)
+  is gone with the block; the new paragraph says to ask for an empty fill-in, and the
+  `was` names do the reading of old labels.
+- **Case 12's fixture** is today's source `/release` with the fourteen fill-ins and the
+  paragraph replaced by a shortened copy of the old block's help comment; the project
+  fills it after the comment.
+
+### What the plan got wrong
+
+- **Case 10 is not made to pass by the change, and Task 5 cannot show it failing.** With
+  only the text around the fill-ins changed, both texts have fourteen blocks in the same
+  order, so `carryBlocks` carries them by position just as well, and the old take printed
+  no *Fill-ins* list either. Task 3's red run passed it, and Task 5's failing names are
+  11, 12 and 13, not 10–12. It still guards the outcome; it does not discriminate.
+- **Task 1's red is a suite that cannot load**, not failing cases: the guard imports
+  names the module does not yet export.
+- **The isolation helper could not read the plan.** It reads the plan from the main
+  checkout's working tree, which was detached at `770a494`, without the plan; given the
+  plan from elsewhere it refuses as not committed in the base. The plan has one row, so
+  its command was run from `tropis` exactly as the helper would.
+
+### Outstanding
+
+- **No screen**, so there is no developer check.
+- **Merges after `update-lists-the-release-steps`**, which also touches
+  `commands/update.md`; the rebase may meet a conflict in Stage 6's numbering.
+- **This repository's installed release does not have it** until a release is taken:
+  `npm --prefix .tropis test` runs the old take.
+- A slip during the work, with no effect on the branch: Task 5's `git reset --hard`
+  also discarded Task 6's then-uncommitted edits, which were made again before Task 6's
+  commit.
