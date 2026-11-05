@@ -78,6 +78,20 @@ cursor-rules-return-after-summarize:
   seen:
     status: idea
     blockers: []
+dependency-licences-are-checked:
+  band: B
+  value: 3
+  valueWhy: A closed-source product today learns of a copyleft dependency only in review,
+    and permissive licences' attribution is met by accident.
+  effort: 3
+  effortWhy: A pipeline check, a notices generator, its guard and a rule clause, all new.
+  verdict: "Worth doing, with no deadline: it matters to every closed-source project, and
+    its criteria already settle where the allowed list lives."
+  evidence: "2026-11-05 — nothing in scripts/, guards/ or commands/ reads a dependency's
+    licence; FW-045 is in framework/DECISIONS.md as the entry describes."
+  seen:
+    status: idea
+    blockers: []
 document-rule-reaches-a-new-document:
   band: D
   value: 3
@@ -88,6 +102,22 @@ document-rule-reaches-a-new-document:
     tools like the others.
   verdict: Decide first whether a shipped rule should name folders that each project
     chooses for itself, before building it.
+  seen:
+    status: idea
+    blockers: []
+flush-runs-in-a-cloud-session:
+  band: B
+  value: 3
+  valueWhy: A flush cannot be run from a cloud session at all today, and the developer
+    works from one more and more.
+  effort: 2
+  effortWhy: The preflight and the name check in one script, a REST listing with explicit
+    pages, and a paragraph in /flush-upstream, as sprint status already did.
+  verdict: "Do next: a known fix along a path sprint status has already taken, and the
+    only thing between a cloud session and a flush."
+  evidence: "2026-11-05 — scripts/submit-upstream.sh:54 refuses when gh auth status
+    fails, and :89 lists pull requests with gh pr list; gh auth status fails in this
+    cloud session as the entry says."
   seen:
     status: idea
     blockers: []
@@ -232,6 +262,20 @@ project-settings-are-listed-and-held-once:
   seen:
     status: shaped
     blockers: []
+readme-skeleton-for-closed-products:
+  band: B
+  value: 3
+  valueWhy: A closed-source product's README refresh today produces a page for a reader
+    who never sees the repository.
+  effort: 3
+  effortWhy: A second skeleton, a question in /refresh-readme and /bootstrap, and the
+    README guards told which checks hold for which skeleton.
+  verdict: "Worth doing, with no deadline. Whichever of this and
+    readme-follows-the-developers-role is built second rebases on the other's outline."
+  evidence: "2026-11-05 — templates/readme-skeleton.md is the only skeleton shipped."
+  seen:
+    status: idea
+    blockers: []
 release-notes-stay-a-readable-size:
   band: D
   value: 1
@@ -295,6 +339,21 @@ update-check-runs-the-projects-own-checks:
   evidence: "2026-11-03 — in a scratch clone tagged v0.9.0-rc.1, scripts/check-version.mjs
     took the tag against this repository on v0.8.0 and ran 159 checks with no code
     change; it still runs only npm --prefix .tropis test."
+  seen:
+    status: idea
+    blockers: []
+update-lists-the-release-steps:
+  band: A
+  value: 5
+  valueWhy: Every update since 0.7.2 reaches a project with no by-hand steps shown,
+    required ones included, and nothing says any were missed.
+  effort: 2
+  effortWhy: One heading match in the update helper, a guard over RELEASES.md and a line
+    in /update.
+  verdict: "Do now: it fails silently on every update, and an adopter has already met a
+    breaking update without its required steps."
+  evidence: "2026-11-05 — scripts/update.mjs:100 matches only '### After updating';
+    RELEASES.md heads its four newest by-hand sections '### What to do by hand'."
   seen:
     status: idea
     blockers: []
