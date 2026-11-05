@@ -5889,9 +5889,11 @@
 # sequence number and raised it with every plan, so "later than today" must stay exact:
 # a one-day margin was considered and rejected for letting that habit through, and a
 # hook on writing a plan file for costing more while still dating plans in UTC.
+# Shaped 2026-11-05 in the sprint: the setting is "timeZone" in .tropis/project.json,
+# a name that is not a time zone fails the check, and the module is scripts/today.js.
 - id: plan-dates-follow-the-project-time-zone
   title: A plan's date is checked against today in the project's time zone
-  status: idea
+  status: building
   value: Someone writing a plan just after midnight dates it with the day on their own
     calendar, and the check accepts it on their machine and in CI alike. Today the check
     reads today in UTC, so in a time zone ahead of UTC a plan written in the first hours
@@ -5910,7 +5912,8 @@
   type: bug
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-05-plan-dates-follow-the-project-time-zone.md
 # 2026-11-03, the cloud-sprint epic, agreed with the developer: a cloud session tried
 # /sprint on this repository and could read GitHub and push branches, but every write
 # through gh was refused by the environment's proxy (HTTP 403), so it could neither take
