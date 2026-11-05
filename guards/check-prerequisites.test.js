@@ -4,8 +4,9 @@
  *
  * minimatch 11, which Jest uses to find the guards, runs only on Node 20 and on 22 and
  * later, so the check must accept exactly those: otherwise a machine on 18 or 21 passes
- * setup and fails at the first guard. This runs the shipped script from a scratch .tropis/scripts/, with stubs for node, git and
- * python3 first on PATH, so the version under test is the one the stub reports.
+ * setup and fails at the first guard. This runs the shipped script from a scratch
+ * .tropis/scripts/, with stubs for node, git and python3 first on PATH, so the version
+ * under test is the one the stub reports.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, chmodSync, rmSync } from 'node:fs';
