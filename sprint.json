@@ -267,7 +267,8 @@
       "Follow-up: workflow.md 'Where gh cannot write' is now partly untrue for cloud sessions; whichever of release-and-next / absorb-flush / flush cloud plans lands first should correct it."
     ],
     "author-built-evidence-reaches-the-reviewer": [
-      "Built the change itself and sent it to a fresh reviewer instead of dispatching an executor: the deliverable is one rule's wording (rules/planning.md)."
+      "Built the change itself and sent it to a fresh reviewer instead of dispatching an executor: the deliverable is one rule's wording (rules/planning.md).",
+      "Left the dispatch prompt unchanged: work its author builds never goes through dispatch."
     ]
   }
 }
