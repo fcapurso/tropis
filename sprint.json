@@ -288,7 +288,8 @@
       "readme-skeleton-for-closed-products landed claim and build as one PR (#254), since it was built and reviewed by the time the token came free."
     ],
     "plan-dates-follow-the-project-time-zone": [
-      "No timeZone set in this repository's .tropis/project.json since the developer's zone isn't recorded; defaults to UTC (#252 claim, #256 build)."
+      "No timeZone set in this repository's .tropis/project.json since the developer's zone isn't recorded; defaults to UTC (#252 claim, #256 build).",
+      "No DECISIONS.md entry: the choice of the project's zone over the machine's is recorded in the backlog item and plan."
     ]
   }
 }
