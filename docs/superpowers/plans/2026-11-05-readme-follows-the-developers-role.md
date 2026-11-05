@@ -289,3 +289,14 @@ Fit to merge: each of the four criteria is backed by a guard case that fails on
 point is the commit it was refreshed against, the self-check and the installed checks
 pass, and the diff is the plan's file list. The one wording finding does not make any
 criterion untrue.
+
+### Fixed after this record, by the author
+
+The *How it works* sentence the reviewer found misleading now reads "Each change has a
+session that shapes a backlog item and writes a self-contained plan, an agent that
+carries it out in a worktree of its own, and the planning session again, which reviews
+the branch and merges it once the checks pass. You try anything with a screen before it
+merges." Getting started step 3, which the reviewer noted ends "to your first plan", now
+reads "Run `/sprint` to agree your first sprint." Both are wording fixes whose content
+the review stated; the page is 1,182 words and `guards/readme-usable.test.js` still
+passes 11 of 11. Self-merged, as the plan's merge authority says.

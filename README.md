@@ -73,7 +73,7 @@ code.
 2. In your project, run **`/bootstrap`**. It installs Tropis, holds a short conversation
    that writes the project brief and first backlog, drafts the project's instruction
    file and first rules for you to confirm, and checks that everything passes.
-3. Run `/next` and follow what it suggests to your first plan.
+3. Run `/sprint` to agree your first sprint.
 
 If your tool cannot run `/bootstrap`, follow [bootstrap.md](bootstrap.md) by hand.
 
@@ -83,10 +83,10 @@ Everything lives in your project's repository and is committed: rules, commands 
 settings in `.claude/`, Tropis's own code and checks in `.tropis/`, and the backlog,
 designs and plans beside your code.
 
-Three agent roles carry each change: a session that shapes a backlog item and writes a
-self-contained plan, an agent that carries it out in a worktree of its own, and a
-reviewer with none of the author's context. The session merges once the checks pass, and
-you try anything with a screen before it does. The cycle is in
+Each change has a session that shapes a backlog item and writes a self-contained plan, an
+agent that carries it out in a worktree of its own, and the planning session again,
+which reviews the branch and merges it once the checks pass. You try anything with a
+screen before it merges. The cycle is in
 [`framework/workflow.md`](framework/workflow.md). Rules are delivered by the area of the
 code being touched, in each tool's own way
 ([`framework/rule-delivery.md`](framework/rule-delivery.md)), and every choice between
