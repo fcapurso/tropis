@@ -6611,3 +6611,26 @@
   layer: framework
   modules: []
   refs: []
+
+# 2026-11-05, raised by the developer. In a Claude Code cloud session (Linux x86_64), gh
+# pr list answered "HTTP 403: GitHub GraphQL is not available from Claude Code sessions;
+# use the REST API (gh api repos/{owner}/{repo}/...). For review threads, auto-merge, and
+# draft/ready-for-review use the CCR routes on api.github.com", naming among them
+# PUT or DELETE /repos/{owner}/{repo}/pulls/{n}/ccr/auto_merge and
+# GET /repos/{owner}/{repo}/pulls/{n}/ccr/review_threads. cloud-session-can-write-to-github
+# chose the session's own GitHub tools and never tried these routes. The answer decides
+# how release-and-next-run-in-a-cloud-session, flush-runs-in-a-cloud-session and
+# absorb-flush-runs-in-a-cloud-session are planned: keeping gh api calls in the scripts,
+# or describing the session's tools in each command.
+- id: cloud-session-gh-routes
+  title: Find out whether gh api can set auto-merge and read review threads from a cloud session
+  status: idea
+  value: Before the commands that break in a cloud session are planned, we know whether a
+    script can keep calling GitHub through gh api there, by the routes the refusal names,
+    or whether each command must describe the session's own GitHub tools instead. The
+    first keeps one code path for the developer's computer and the cloud.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs: []
