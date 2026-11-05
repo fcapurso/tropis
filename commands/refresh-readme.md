@@ -32,9 +32,15 @@ when the developer says yes; `suggests` means a refresh only reports; `manual` m
 Tropis stays out of the README. If the file already has that level, say so:
 there is nothing to commit. Then stop. Do not refresh.
 
-**`/refresh-readme skeleton`.** If `docs/readme/skeleton.md` is absent, copy
-`.tropis/templates/readme-skeleton.md` to it (create `docs/readme/` if needed). If the
-copy is already there, leave it: do not overwrite a skeleton the project owns. Then
+**`/refresh-readme skeleton`.** If `docs/readme/skeleton.md` is absent, ask whether
+the product is open or closed-source, and wait for the answer. Tropis ships two
+skeletons, and each one's header comment names the reader it assumes:
+`.tropis/templates/readme-skeleton.md` for an open product, whose README is read by
+people deciding whether to use it, and `.tropis/templates/readme-skeleton-closed.md`
+for a closed-source one, whose README is read by those who build, run, release or
+assess it. Copy the matching one to `docs/readme/skeleton.md` (create `docs/readme/` if
+needed); with no clear answer, copy the open one, the default. If the copy is already
+there, do not ask and leave it: do not overwrite a skeleton the project owns. Then
 offer to rework it with the developer in conversation, and make the changes they ask
 for in that file. If the file is the same as what is committed — no fresh copy and no
 changes — say so and stop. Otherwise, a fresh copy included, ask whether to commit
@@ -62,7 +68,8 @@ is no refresh point yet.
 ## Read
 
 Read the skeleton: `docs/readme/skeleton.md` when that file exists, otherwise
-`.tropis/templates/readme-skeleton.md`. Do not edit the skeleton during a refresh.
+`.tropis/templates/readme-skeleton.md`, the default. A closed-source product uses its
+skeleton only once `/refresh-readme skeleton` or `/bootstrap` has copied it. Do not edit the skeleton during a refresh.
 
 A skeleton is a header comment, then a line `**Page length:**` giving the most words
 the whole page may have, then one `## <Heading>` per section, in order. Under a

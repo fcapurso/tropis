@@ -48,6 +48,14 @@ Ask which level the project wants: Tropis writes the README from its skeleton
 (`manual`). Recommend `writes` when the project had no `README.md` before the setup, and
 `suggests` when it had one. Then run `/refresh-readme <level>`.
 
+Unless the level is `manual`, ask whether the product is open or closed-source. The
+README of an open product is read by people deciding whether to use it; that of a
+closed-source one by those who build, run, release or assess it. On closed-source, copy
+`.tropis/templates/readme-skeleton-closed.md` to `docs/readme/skeleton.md` (create
+`docs/readme/` if needed) and commit that file only. On open-source, or with no clear
+answer, copy nothing: the installed default, `.tropis/templates/readme-skeleton.md`, is
+the open product's skeleton, and a copy would stop later releases improving it.
+
 ## Stage 3b — The pipeline
 
 Ask where the repository is hosted, and whether it is or will be public. On yes, write

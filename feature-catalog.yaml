@@ -6574,9 +6574,14 @@
 # readme-follows-the-developers-role, whose outline it starts from. Asked as a question:
 # /bootstrap copies only the closed-source skeleton; an open product keeps the installed
 # default, so later releases still reach it.
+# Criterion 1 (the second skeleton, its sections and page length): guards/readme-usable.test.js, 'the closed-source outline has its sections in order, a page length, and no adopter sections'.
+# Criterion 2 (each header names its reader): guards/readme-usable.test.js, 'each shipped skeleton names the reader it assumes and the other skeleton'.
+# Criterion 3 (the question, and an owned skeleton left alone): guards/readme-level.test.js, 'the skeleton option contains …' and 'bootstrap Stage 3a and Step 3a contain …'; guards/readme-usable.test.js, 'setup installs both skeletons'; and the fresh-agent check recorded in the commit body.
+# Criterion 4 (the guards say which checks hold for which skeleton): guards/readme-usable.test.js, the comment above 'both open-source README outlines list requirements once, under What it needs' and the two cases it names.
+# Criterion 5 (never asked keeps the default): guards/readme-level.test.js, 'bootstrap Stage 3a and Step 3a contain copy nothing', and commands/refresh-readme.md's Read, which falls back to the installed default; the fresh reviewer read it in the plan's review record.
 - id: readme-skeleton-for-closed-products
   title: A closed-source product's README is refreshed from an outline written for its readers
-  status: building
+  status: shipped
   value: 'A project whose product is closed-source gets a README for the people who
     read it, those who build, run, release or assess the product, instead of a
     page addressed to a prospective adopter who will never see the repository.
@@ -6601,7 +6606,10 @@
     - A project that is never asked, or does not answer, keeps today's default.
   type: feature
   layer: product
-  modules: []
+  modules:
+    - templates/readme-skeleton-closed.md
+    - commands/refresh-readme.md
+    - commands/bootstrap.md
   refs:
     - docs/superpowers/plans/2026-11-05-readme-skeleton-for-closed-products.md
 

@@ -155,3 +155,84 @@ readme-skeleton-for-closed-products
 3. Run the fresh-agent check with its tool calls visible; record it in the commit body.
 4. Move the item to `shipped`, write the handover report.
 5. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.318 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the skeleton follows the
+backlog item's section list and the default skeleton's form, and the command text this
+repository's own commands.
+
+### Task completion
+
+- Task 1: done. In `guards/readme-usable.test.js`: the closed-source outline's sections,
+  page length and lines; both headers naming their reader and the other skeleton; setup
+  copying both; the two open-source cases renamed and a comment saying which checks hold
+  for which skeleton. In `guards/readme-level.test.js`: the skeleton option's question,
+  both templates and "do not ask"; the same question and "copy nothing" in
+  `commands/bootstrap.md` Stage 3a and `bootstrap.md` Step 3a.
+- Task 2: done. `templates/readme-skeleton-closed.md`, the default's header,
+  `commands/refresh-readme.md`, `commands/bootstrap.md`, `bootstrap.md`,
+  `scripts/set-up-project.sh`.
+- Task 3: done, passed (below).
+- Task 4: done.
+- Task 5: the fresh reviewer's record follows.
+
+### Verification results
+
+- Guards on the working tree, with a scratch script that copies the tracked and untracked
+  files into a temporary directory and runs jest there:
+  `guards/readme-usable.test.js guards/readme-level.test.js` before the change:
+  `Tests: 9 failed, 19 passed, 28 total`; after it: `Tests: 28 passed, 28 total`.
+- `bash scripts/check-blueprint.sh` on the build commit: `Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own guards
+  passed.` (set-up-project and framework-integrity run there, not in the scratch copy,
+  which lacks their environment).
+- Fresh-agent check: a Claude Code 2.1.318 subagent, model Claude Opus 5.5, Linux x86_64,
+  signed in to the developer's plan, with only an invented closed-source project in a
+  scratch repository (a project brief, a one-line README, `.tropis/templates/` holding
+  both skeletons, `.claude/commands/refresh-readme.md` from this branch). Told it was a
+  probe, to run `/refresh-readme skeleton` twice, writing each question before taking the
+  given answer (closed-source; no changes; yes to commit). Run 1: it asked "Is the
+  product open or closed-source?" first, quoting "If `docs/readme/skeleton.md` is absent,
+  ask whether the product is open or closed-source, and wait for the answer.", copied
+  `.tropis/templates/readme-skeleton-closed.md`, asked to rework and to commit, and
+  committed that file only. Run 2: no open-or-closed question, quoting "If the copy is
+  already there, do not ask and leave it", and stopped with nothing to commit. Checked
+  on disk afterwards: `cmp docs/readme/skeleton.md .tropis/templates/readme-skeleton-closed.md`
+  printed nothing and the probe's log was `33a92e1 docs(readme): add the closed-source
+  README skeleton` over `init`. Its tool calls were Bash and file reads inside the
+  scratch project; a relative `cp` was refused by a permission rule and retried with
+  absolute paths, which does not bear on the clause. **Pass.**
+
+### Scope
+
+Every file in *File Structure*. Worktree: the sibling `../tropis-readme-closed-build`,
+built on `readme-follows-the-developers-role`'s branch and rebased onto `main` once that
+merged.
+
+### Judgment calls
+
+- The page length is 1,500 words, against the default's 1,200: the closed-source page
+  holds environments and risks a team needs.
+- No *Using it day to day*: the item's section list has none; *Changing and releasing
+  it* carries what the team does.
+- A clear answer is required to copy the closed-source skeleton; no clear answer copies
+  the default in `/refresh-readme skeleton` and nothing in `/bootstrap`, so criterion 5
+  holds in both.
+- `/bootstrap` skips the question at `manual`, where Tropis keeps out of the README.
+- The `Merges after` lines the overlap check first wrote for `commands-have-named-fill-ins`
+  and `update-lists-the-release-steps` went with the files that caused them
+  (`commands/update.md`, `guards/set-up-project.test.js`), before the claim landed; the
+  plan's Decision 4 says why.
+
+### What the plan got wrong
+
+- Nothing found.
+
+### Outstanding
+
+- `/update`'s Stage 8 note names only the default skeleton changing. A closed-source
+  project owning a copy is not told when the closed-source template changes. Left out to
+  avoid holding this plan behind two others (Decision 4); a project owning a skeleton
+  owns its changes.

@@ -160,6 +160,14 @@ level: writes          # writes · suggests · manual
 refreshedAt: ""        # the commit the README was last refreshed at; empty until then
 ```
 
+Unless the level is `manual`, ask whether the product is open or closed-source. The
+README of an open product is read by people deciding whether to use it; that of a
+closed-source one by those who build, run, release or assess it. On closed-source, copy
+`.tropis/templates/readme-skeleton-closed.md` to `docs/readme/skeleton.md`. On
+open-source, or with no clear answer, copy nothing: the installed default,
+`.tropis/templates/readme-skeleton.md`, is the open product's skeleton, and a copy
+would stop later releases improving it.
+
 ## Step 4 — Fill the operator guide
 
 The setup copied `templates/README.md` to `.tropis/README.md` with the display name at
