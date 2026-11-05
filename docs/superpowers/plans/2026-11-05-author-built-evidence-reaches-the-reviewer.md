@@ -146,3 +146,86 @@ author-built-evidence-reaches-the-reviewer
 6. Merge as the workflow's *Merging* says.
 
 **Model tier: Large** (the author builds it).
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.318 cloud session; git 2.43.0, node
+v22.23.4, Linux x86_64. Source worked from: none in particular; the wording is written
+against this repository's own `rules/planning.md` and the review record it cites.
+
+### Task completion
+
+- Task 1: done. The bullet "**Put what the fresh reviewer re-checks within its reach
+  before starting it.**" follows *Do not rehearse the work to write its plan*; the
+  section *Evidence the reviewer could not reach* is in `rules/incidents/planning.md`.
+- Task 2: done (below); the commit body records it.
+- Task 3: done (below).
+- Task 4: done; the item is `shipped`.
+- Task 5: the probe's two streams and the self-check and suite output are in
+  `.review-evidence/` in this worktree, excluded by `info/exclude` under
+  `git rev-parse --git-common-dir`; the fresh reviewer's record follows.
+
+### Verification results
+
+- **Fresh-agent check:** Claude Code 2.1.318 on Linux x86_64, `claude -p --model
+  claude-opus-5-5 --output-format stream-json --verbose --tools
+  "Read,Grep,Glob,Write,Edit" --permission-mode acceptEdits`, signed in to the
+  developer's plan (the stream's `apiKeySource` is `none`), in a scratch clone of the
+  branch with `.claude/rules/planning.md` replaced by the source rule under its `paths:`
+  header. No user-level instructions exist in this container. `dispatch.mjs --tier
+  Large` names Claude Opus 5.5. The task: write the title, Goal and *Shape* of an
+  invented spike (whether a hook's reply reaches an interrupted agent) whose three raw
+  transcripts, carrying session ids, sit in a scratch directory outside the repository,
+  saying exactly how the reviewer is prepared and started; the prompt named no folder,
+  no exclude file and no flag.
+  - **Run 1, inconclusive:** its calls included a `Read` of this plan (still in the
+    clone), which describes the answer. It wrote the expected Shape, but a run that read
+    the answer proves nothing about the rule.
+  - **Run 2, pass:** this plan removed from the clone. Calls: `Grep` of
+    `rules/planning.md` for `rehearse|reviewer|fresh agent|session id|## Shape` (its
+    reply carries the new bullet), `Glob` of the plans, `Read` of `rules/planning.md`
+    lines 55–114 (carries the bullet), `Grep`s and a `Read` of the compaction plan's
+    *Shape*, a `Grep` of `.tropis/scripts/dispatch.mjs` for `--tier`, one `Write`. The
+    Shape it wrote: `echo '/.review-evidence/' >> "$(git rev-parse
+    --git-common-dir)/info/exclude"`, copies the three transcripts into
+    `.review-evidence/`, checks `git status --porcelain` "still prints nothing: the
+    folder is excluded", starts the reviewer with `--allowedTools` naming
+    `Bash(bash scripts/check-blueprint.sh)` and `Bash(npm --prefix .tropis test)`, and
+    tells it: "If you cannot open a file the handover rests on, or a command you need is
+    refused, stop and name it instead of" writing the record.
+- **Exclude file reaches every worktree:** in this build worktree, with an untracked
+  `.review-evidence/x`, `git status --short` listed `?? .review-evidence/`; after one
+  line in `/…/tropis/.git/info/exclude` (the common dir) it did not, here or in the claim
+  worktree.
+- `bash scripts/check-blueprint.sh` on commit `6080f6e`: "Self-check passed: every guard
+  caught its defect, the clean baseline passed, and the framework repository's own
+  guards passed.", exit 0.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 188 passed,
+  188 total`.
+
+### Scope
+
+To be read from `git diff --stat origin/main...HEAD` once the claim has landed; the
+files are the five in the File Structure table. Worktrees: `../tropis-evidence-reach`
+(the claim) and `../tropis-evidence-reach-build` (this work, stacked on the claim and
+rebased onto `main` after it lands).
+
+### Judgment calls
+
+- The shipped item's band is removed from `docs/backlog-board/bands.yaml`, as shipping
+  `rules-return-after-compaction` removed its band, rather than its `seen.status`
+  following it as the File Structure row says: the board reports a band for a shipped
+  entry as stale.
+- The dispatch prompt (named in the band's *effortWhy*) is not changed: author-built
+  work is not dispatched.
+- The probe received the rule by reading `rules/planning.md`, not as a loaded area
+  rule: it searched the source rule first. The text it acted on is the new text either
+  way.
+
+### What the plan got wrong
+
+- The bands row: removed, not followed (above).
+
+### Outstanding
+
+- Nothing.
