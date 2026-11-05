@@ -306,7 +306,7 @@ release-and-next-run-in-a-cloud-session:
     cloud session, while gh api and gh run list answered; commands/next.md:22 and
     commands/release.md lines 100, 269, 273, 414 and 431 use the refused calls."
   seen:
-    status: building
+    status: shipped
     blockers: []
 release-notes-stay-a-readable-size:
   band: D

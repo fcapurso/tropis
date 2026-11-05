@@ -6748,9 +6748,19 @@
 # of the three items lands first to correct the workflow's "Where gh cannot write" for a
 # cloud session. That item did not touch the workflow, so the correction falls here, the
 # item that changes the merge path.
+# Shipped by docs/superpowers/plans/2026-11-05-release-and-next-run-in-a-cloud-session.md.
+# Criterion 1: guards/release.test.js "lists open pull requests through the REST pulls
+# route" and "runs no gh pr command that GraphQL alone answers". Criterion 2: the same
+# file's "opens, sets to merge and reads a pull request by routes a cloud session answers",
+# and guards/auto-merge.test.js "sets it with gh pr merge" and "falls back to the cloud
+# session route". Criterion 3: guards/auto-merge.test.js "reports any other refusal" and
+# "runs no gh at all where origin is not on GitHub". Criterion 4: framework/workflow.md
+# "Where gh pr is refused", FW-072, and the guard "gives a session where gh pr is refused
+# the same commands in the workflow". Criterion 5: the fresh-agent check in the plan's
+# handover report.
 - id: release-and-next-run-in-a-cloud-session
   title: /release and /next work from a cloud session as from the developer's computer
-  status: building
+  status: shipped
   value: A developer working from a Claude Code cloud session can see what is in flight
     and carry a release through, as from their own computer. Today /next's check of open
     pull requests fails there, and /release cannot set its pull requests to merge or
@@ -6771,7 +6781,11 @@
       those commands, recorded with its tool and version.
   type: bug
   layer: product
-  modules: []
+  modules:
+    - scripts/auto-merge.mjs
+    - commands/release.md
+    - commands/next.md
+    - framework/workflow.md
   refs:
     - docs/superpowers/plans/2026-11-05-release-and-next-run-in-a-cloud-session.md
 

@@ -2354,3 +2354,40 @@ prints the same lines; `/update` reads it with the developer. A command edited o
 its fill-ins is still forked, and its new text lands in a `.new` file with the fill-ins
 carried. A fill-in's name and purpose are an interface: a purpose changes only when its
 meaning does, and a rename keeps the old name in `was`.
+
+## FW-072: A session where `gh pr` is refused merges through `gh api` and one auto-merge script
+
+**Date:** 2026-11-05 · **Status:** Accepted; built by the backlog item
+`release-and-next-run-in-a-cloud-session`.
+
+**Decision:** A session where `gh` is refused GitHub's GraphQL interface, such as a
+Claude Code cloud session, merges through `gh` as any session does, not through its own
+GitHub tools. Commands list, open and read pull requests through `gh api` and the REST
+pulls route, on the developer's computer as in the cloud. Setting auto-merge, which
+GitHub's REST interface cannot do, goes through `.tropis/scripts/auto-merge.mjs`: it runs
+`gh pr merge --auto --squash` with the subject and body, and only on the GraphQL refusal
+calls the cloud session's own route, `PUT …/pulls/<n>/ccr/auto_merge`, with the same
+subject and body. The session's own GitHub tools are left for waking on a pull
+request's activity. `/next` and `/release` are the first commands to follow it.
+
+**Evidence:** The spike `cloud-session-gh-routes`, 2026-11-05, Claude Code 2.1.318 and
+`gh` 2.89.0 in a cloud session, Linux x86_64: `POST pulls`, `PATCH pulls/<n>` and
+`PUT pulls/<n>/update-branch` reached GitHub, `ccr/auto_merge` set and cleared auto-merge
+with its subject and body, and every `gh pr` command answered the GraphQL 403. Its
+finding is the spec dated 2026-11-05 on those routes. The claim pull request of this
+backlog item, #258, was opened by `POST pulls` and set to merge by `ccr/auto_merge` in a
+cloud session, and merged. FW-063's route had inferred those writes refused without
+trying them. Source: none in particular.
+
+**Rejected:** Describing the session's own GitHub tools in each command (FW-063's route:
+every command would carry a second procedure, and the tool that sets auto-merge takes no
+subject or body). Calling the cloud route first (it exists only in the cloud). Falling
+back on any refusal of `gh pr merge` (a real refusal on the developer's computer, such as
+auto-merge being off for the repository, would be hidden behind a route that is not
+there).
+
+**Consequences:** Amends FW-063's "a cloud session merges through its own GitHub tools";
+the merge token stays as FW-063 decided. The workflow's paragraph *Where `gh` cannot
+write* becomes *Where `gh pr` is refused*. Deleting a branch is still refused there,
+and still not needed. The route answered "enabled" for a pull request already merged, so
+`main-status.mjs --pull-request` remains what says whether auto-merge is on.

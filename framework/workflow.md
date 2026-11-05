@@ -130,8 +130,8 @@ when the framework half exists to serve the application half. Full rule:
   `"ungated"`. There every change, a backlog edit or a plan file included, reaches
   `main` through a pull request that merges itself once green: commit on a branch in a
   worktree of its own (above), take the merge token, push it, open the pull request,
-  run `gh pr merge <N> --auto --squash` with `--subject` and `--body` (or, where `gh`
-  cannot write, as *Merge and clean up* says), and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
+  run `gh pr merge <N> --auto --squash` with `--subject` and `--body` (or, where `gh pr`
+  is refused, as *Merge and clean up* says), and then run `node .tropis/scripts/main-status.mjs --pull-request <N>`.
   Release the token once that command has reported (*The merge token*).
   **Setting auto-merge does not finish the job; the change is done when that command
   reports the main branch green.** Auto-merge does not update a branch, and the host
@@ -417,22 +417,28 @@ pending; they passed afterwards, by luck.
 
 A squash takes its message from the pull request's title and description where the
 repository is set so (setup asks for it: the default squash message is the pull request
-title and description). Pass `--subject` and `--body` explicitly anyway where `gh` can;
-where it cannot, the title and description are the subject and body. Left to itself,
-a repository set the old way inherits the branch commits' messages, and the merged
+title and description). Pass `--subject` and `--body` explicitly anyway, to
+`gh pr merge` or, where `gh pr` is refused, to `auto-merge.mjs`, which passes them on
+either route; where neither can run, the title and description are the subject and
+body. Left to itself, a repository set the old way inherits the branch commits' messages, and the merged
 commit then lists working history instead of saying what the plan made true.
 
-**Where `gh` cannot write.** A session whose `gh` writes are refused (a Claude Code cloud
-session's answer HTTP 403) merges the same way, with its own GitHub tools in place of
-`gh pr merge`. It takes and releases the merge token as everyone does. It opens the pull
-request with the subject as its title and the body as its description, sets it to merge
-itself as a squash, and brings its branch up to date when it falls behind. It waits with
-`main-status.mjs --pull-request <N>`, which only reads. When that stops because the
-branch could not be brought up to date, bring it up to date with the tool and run the
-wait again. Where the tool can subscribe to the pull request's activity, that wakes the
-session on each check result. Where a run must be re-run by hand (`gh run rerun`), report
-the line and the run's address to the developer instead. The session cannot delete a
-branch and does not need to: the repository deletes merged head branches.
+**Where `gh pr` is refused.** A Claude Code cloud session refuses `gh` GitHub's GraphQL
+interface, which every `gh pr` command uses (HTTP 403, `GitHub GraphQL is not
+available`), and passes `gh api` and `gh run`, which use REST, writes to pull requests
+included. Such a session merges the same way, through `gh`. It takes and releases the
+merge token as everyone does. It opens the pull request with
+`gh api -X POST 'repos/{owner}/{repo}/pulls'`, the subject as its title and the body as
+its description, and sets it to merge itself with
+`node .tropis/scripts/auto-merge.mjs <N> --subject <subject> --body <body>`, which runs
+`gh pr merge --auto --squash` and, on that refusal only, the session's own route. It
+waits with `main-status.mjs --pull-request <N>`, which brings the branch up to date as
+it waits. The merge commit is `gh api 'repos/{owner}/{repo}/pulls/<N>' --jq
+.merge_commit_sha`, and a run is re-run with `gh run rerun`. A list is read page by
+page, never with `--paginate`, whose next-page link that session refuses. Its own GitHub
+tools are left for what `gh` has no route to: waking on the pull request's activity,
+where the tool can subscribe to it. The session cannot delete a branch and does not
+need to: the repository deletes merged head branches.
 
 **The sequence ends by waiting for the run the merge started on the main branch.**
 `main-status.mjs --wait` asks GitHub, through `gh`, for the pipeline's push run on that

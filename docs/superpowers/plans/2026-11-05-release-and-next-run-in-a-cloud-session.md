@@ -131,7 +131,7 @@ release-and-next-run-in-a-cloud-session
    with `gh api`, sets auto-merge with the script, brings its branch up to date through
    `main-status.mjs`, and keeps its own GitHub tools only for waking on the pull request's
    activity; it cannot delete a branch and does not need to. The gated-merge bullet in
-   *Branching* points there. Recorded as FW-071, amending FW-063.
+   *Branching* points there. Recorded as FW-072, amending FW-063.
 4. **`/release` says this once,** in a section *Pull requests* after *The merge token*,
    and each place that opens one refers to it, rather than repeating three commands at
    three stages.
@@ -163,7 +163,7 @@ release-and-next-run-in-a-cloud-session
 | `commands/next.md` | the in-flight check lists through `gh api` |
 | `commands/release.md` | *Pull requests*; Stage 1's listing; Stages 1b, 5, 7 and Step 2 refer to it |
 | `framework/workflow.md` | Decision 3 |
-| `framework/DECISIONS.md` | FW-071 |
+| `framework/DECISIONS.md` | FW-072 |
 | `feature-catalog.yaml` | the item shaped, then `shipped`, `modules` set, a comment mapping criteria to evidence |
 | `docs/backlog-board/bands.yaml` | `seen.status` follows the item |
 | `docs/superpowers/plans/2026-11-05-release-and-next-run-in-a-cloud-session.md` | the handover report and the review record |
@@ -177,3 +177,176 @@ release-and-next-run-in-a-cloud-session
 4. Run the fresh-agent check with its tool calls visible; amend the commit body.
 5. Move the item to `shipped`, write the handover report.
 6. Send the branch to the fresh reviewer, who writes the review record.
+
+## Handover report
+
+Built by the specifying session, a Claude Code 2.1.318 cloud session; gh 2.89.0, node
+v22, Linux x86_64. Source worked from: none in particular; the script is written against
+this repository's own `scripts/main-status.mjs` (its `originOnGitHub`, its command-line
+shape) and the spike's finding.
+
+### Task completion
+
+- Task 1: done. `scripts/auto-merge.mjs` and `guards/auto-merge.test.js`, 11 cases. With
+  the GraphQL test changed to match nothing, 2 cases failed; with the origin check
+  removed, 3 failed; restored, all pass.
+- Task 2: done. `commands/next.md`, `commands/release.md` (a section *Pull requests* after
+  *The merge token*; Stages 1, 1b, 5, 7 and Step 2 refer to it), `framework/workflow.md`
+  (*Where `gh pr` is refused*, and the gated-merge bullet in *Branching*), FW-072. The
+  four new cases in `guards/release.test.js` fail against the old commands and workflow
+  (4 failed of 97 with those files stashed) and pass now.
+- Task 3: `bash scripts/check-blueprint.sh` on the committed branch; result below.
+- Task 4: the fresh-agent check, below; the commit body records it.
+- Task 5: done. The item is `shipped` with its modules and a comment mapping each
+  criterion to its evidence; `seen.status` follows it in the bands file.
+- Task 6: the fresh reviewer's record follows.
+
+### Deviations
+
+- **The build ran on `plan/release-and-next-run-in-a-cloud-session-build`, in
+  `../tropis-cloud-release-build`,** not the branch and worktree the *Repositories* table
+  names: that branch carried the claim, which merged as #258, and a merged branch is not
+  reused.
+- **`templates/README.md`, the operator guide, gained one paragraph** naming
+  `auto-merge.mjs` beside `main-status.mjs`; the plan's File Structure did not list it.
+  The doc-closeout table sends a new command a project runs there.
+
+### Verification results
+
+- `node .tropis/scripts/merge-token.mjs`, `gh api … pulls` (POST) and the
+  `ccr/auto_merge` route carried this item's own claim, #258, in this cloud session: the
+  pull request was opened by `POST pulls`, `gh pr merge --auto` answered the GraphQL 403,
+  the route answered `{"enabled":true,"merge_method":"squash"}` and `GET pulls/258` showed
+  `auto_merge` with the subject; `main-status.mjs --pull-request 258` reported it merged
+  as `8f5c8ee` and the main branch green. The first time the route is seen to set
+  auto-merge on an open pull request that then merged.
+- The `/next` listing command, run in this session, exited 0 (no pull request was open).
+- Fresh-agent check: Claude Code 2.1.318 on Linux x86_64, `claude -p --model
+  claude-opus-5-5 --output-format stream-json --verbose --tools "Read,Grep,Glob"`,
+  signed in to the developer's plan with no API key. `dispatch.mjs --tier Large` named
+  Claude Opus 5.5. No user-level instructions exist in this container. The probe ran in
+  an invented project holding the branch's `release.md` and `next.md` under
+  `.claude/commands/`, its `workflow.md` and `DECISIONS.md` under `.claude/framework/` and
+  the scripts under `.tropis/scripts/`, told it was a probe, that every `gh pr` command
+  answers the GraphQL 403 and `gh api` and `gh run` answer, and asked for the commands it
+  runs from `/release` Stage 5 (filled slot, branch pushed) through the commit Step 1
+  names, and for `/next`'s listing. Calls: one `Glob` of `.claude/**/*`, then `Read` of
+  `release.md`, `next.md`, `workflow.md` and `DECISIONS.md`. Its answer, in order: take
+  the token with `take --hold` if Stage 1b had not; `gh api -X POST
+  'repos/{owner}/{repo}/pulls' -f title='docs(release): draft notes for the next release'
+  -f body='Bump: minor' -f head=release/1.4.0 -f base=main --jq .number`;
+  `node .tropis/scripts/auto-merge.mjs <N> --subject '…' --body 'Bump: minor'`;
+  `node .tropis/scripts/main-status.mjs --pull-request <N>`; `gh api
+  'repos/{owner}/{repo}/pulls/<N>' --jq .merge_commit_sha`; and for `/next`, `gh api
+  'repos/{owner}/{repo}/pulls?state=open&per_page=100' --jq …`, noting "never use
+  `--paginate`". It said "No `gh pr ...` command appears anywhere in this sequence" and
+  named no session tool. **Pass.**
+
+### Scope
+
+`git diff --stat origin/main...HEAD` lists the plan's files and `templates/README.md`
+(above).
+
+### Learnings routed
+
+- The decision is FW-072. The workflow's paragraph carries the route.
+- Portable: the script is shipped; no upstream queue, this repository is the upstream.
+- `/absorb-flush` (`absorb-flush-runs-in-a-cloud-session`) can set its group pull
+  requests to merge with this script once it takes a merge method; that item's plan
+  decides.
+
+## Review record
+
+Reviewed by a fresh reviewer: Claude Code 2.1.318, model claude-opus-5-5, on Linux
+x86_64; git 2.43.0, node v22.23.4, gh 2.89.0, in a cloud session where every `gh pr`
+command answers the GraphQL 403. It had only this repository and the branch
+`plan/release-and-next-run-in-a-cloud-session-build`, and did not write the change.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: twelve files, the plan's File Structure plus
+  `templates/README.md`, the deviation the handover declares (the operator guide names
+  the new script beside `main-status.mjs`, as the doc-closeout table asks).
+- `npm --prefix .tropis test`, before and after the review fix: `Test Suites: 13 passed,
+  13 total`, `Tests: 195 passed, 195 total`.
+- `bash scripts/check-blueprint.sh` on `0547e4a` and again on the review fix `e0b3731`:
+  "Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed." Exit 0 both times.
+- `guards/auto-merge.test.js` against mutations of `scripts/auto-merge.mjs`, in a scratch
+  copy: falling back on any refusal, dropping `commit_title` from the route, and removing
+  the origin check each turned one case red. Ignoring the route's `enabled` answer
+  turned none red; see *Found*.
+- Read-only `gh api` in this session: `pulls/258` is merged as `8f5c8ee`, with
+  `auto_merge` showing `merge_method: squash` and the claim's subject as
+  `commit_title`, as the handover says. The `/next` listing command exited 0 with no
+  open pull request.
+- Added lines searched for home paths, hostnames, emails, session ids and personal or
+  computer names: none beyond the attribution trailers.
+
+### Found
+
+- **`scripts/auto-merge.mjs` is correct.** The number must be a positive integer, each
+  flag takes a value, `--subject` must not be blank, an unknown flag or missing value
+  gives the usage and exit 2. The fallback tests for the text `GitHub GraphQL is not
+  available` in gh's output, not for any 403, so a real refusal on a computer is reported
+  with gh's first stderr line and exit 1. The route's non-zero exit, non-JSON answer, and
+  an answer without `enabled: true` each exit 1 with a line. The root is `git rev-parse
+  --show-toplevel`, falling back to two levels above the script as `main-status.mjs`
+  does; its import of `./main-status.mjs` resolves under `.tropis/scripts/`, where
+  `installed-scripts.txt` installs both, and `main-status.mjs` runs its own command line
+  only when run directly, so importing it runs nothing.
+- **The commands, the workflow, FW-072 and the operator guide agree with each other and
+  with the finding.** `commands/next.md` and `commands/release.md` keep no `gh pr list`,
+  `gh pr view`, `gh pr create` or `mergeCommit`; `/release` names `gh pr merge` once, in
+  the sentence saying what the script runs. FW-072's evidence matches the finding's table.
+  Each acceptance criterion is shown by the guard or check the catalog comment names.
+- **Fixed on the branch (mechanical), `e0b3731`:** *Merge and clean up* still said to pass
+  `--subject` and `--body` "where `gh` can; where it cannot, the title and description
+  are the subject and body", written for the session tools FW-072 retires; it now names
+  `auto-merge.mjs`, which passes them on either route. A fresh-agent check of that
+  sentence (Claude Code 2.1.318, `claude -p --model claude-opus-5-5`, `--tools
+  Read,Grep,Glob`, stream-json, Linux x86_64, invented project) answered `gh api` POST
+  pulls, `auto-merge.mjs` with the subject and body, `main-status.mjs --pull-request`, and
+  said it does not rely on the title and description: pass. Recorded in that commit's body.
+- **Fixed on the branch (mechanical), `e0b3731`:** no case covered a route that exits 0
+  without saying it was enabled, or without JSON; two cases now do, and each goes red with
+  its check removed.
+- **Not a defect, noted:** the workflow now says a cloud session re-runs a run with
+  `gh run rerun`. The finding reached `POST actions/runs/{id}/rerun` only on a run that
+  does not exist (GitHub's 404 came back through the proxy); a real re-run is inferred.
+  `framework/workflow.md`'s *The merge token* still says the token "works where `gh`
+  cannot write", which stays true. `commands/flush-upstream.md` still sends a session
+  whose `gh` cannot write to its own GitHub tools; that is
+  `flush-runs-in-a-cloud-session`'s, out of this plan's scope.
+- Defects blocking merge: none.
+
+### Outstanding disposition
+
+- No screen: the change is commands, a script, the workflow and a decision. Nothing
+  outstanding.
+
+### Learnings routed
+
+- The decision is FW-072 and the workflow paragraph carries the route; the review fix
+  keeps the squash-message sentence with it. No new rule or backlog item. Nothing for an
+  upstream queue: this repository is the upstream.
+- A guard whose stub answers every route with success covers no answer-checking branch;
+  the mutation run found it. No durable change beyond the two cases.
+
+### Merged because
+
+The script does what Decision 2 says, its guard now goes red on each behaviour it names,
+the commands and the workflow send a cloud session only to calls the finding measured or
+the claim exercised, the fresh-agent checks are recorded with tool, version, model, OS
+and architecture, both checks are green, the diff is the plan's files plus one declared
+deviation, and it holds no private material. Merge authority is self-merge after this
+review: it should merge.
+
+### Rebase before merge
+
+Rebased on `origin/main` after `commands-have-named-fill-ins` shipped (#261). The only
+conflict was in `framework/DECISIONS.md`, where both plans appended an FW-071. It was
+resolved by keeping both and renumbering this plan's decision to FW-072, with its
+references in this plan and the catalog comment. `commands/next.md`,
+`commands/release.md` and `guards/release.test.js` merged without conflict: #261
+changed the project-owned blocks, and this plan changed the text outside them.
