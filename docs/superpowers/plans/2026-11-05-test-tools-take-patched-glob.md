@@ -283,3 +283,45 @@ run step 1 again on that commit, and push the branch.
   when a release is installed. Do not edit it.
 - **`README.md` still says 18.14 after this plan.** Do not edit it; `/refresh-readme`
   rewrites it at release.
+
+## Handover report
+
+### Task completion
+
+- Task 1 done (09bc935): overrides added, lockfile regenerated in a scratch copy.
+- Task 2 done (09bc935): two `OVERRIDES` entries.
+- Task 3 done: test change committed alone (a6be06a), run staged, 4 failed and 4 passed; script change (81de869), 8 passed.
+- Task 4 done (ebcd994): FW-073 appended.
+- Task 5 done (ebcd994): one release-notes line, with a blank line before it.
+- Task 6 done: see Verification. No pull request, review record or merge.
+- Named source: none in particular.
+
+### Verification results
+
+Tools: node v22.23.4, npm 10.9.9, jest 30.5.2 (self-check install), Linux x86_64 (`uname -sm`).
+
+- Lockfile: `grep -c '"node_modules/glob"'` printed `1`; the node script printed `node_modules/glob 14.0.3` and `node_modules/minimatch 11.0.4`; `grep -c PROJECT_SLUG-framework` printed `2`.
+- `npm ci` then `npm audit --json` in the scratch copy: vulnerabilities `@jest/core, deepmerge, jest, jest-cli, jest-config`; no `glob`, no `minimatch`. The five are the expected deepmerge (low, no fix) and the Jest packages that depend on it.
+- `bash scripts/check-blueprint.sh` on ebcd994: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.` Re-run on the final commit below.
+- Staged `dependency-overrides`: 7 passed, 7 total. Staged `check-prerequisites`: 8 passed, 8 total.
+- Re-broken with `"glob": "^13.0.0"` (staged export only): `Tests: 1 failed, 6 passed, 7 total`; failure `glob is still needed`, `jest-config now asks for glob ^13.0.6 itself, which the override ^13.0.0 was there to force`. Restored: 7 passed.
+- `npm --prefix .tropis test`: 13 suites, 198 tests passed.
+- `git diff --stat origin/main...HEAD`: RELEASES.md, framework/DECISIONS.md, guards/check-prerequisites.test.js, guards/dependency-overrides.test.js, scripts/check-prerequisites.sh, templates/package-lock.json, templates/package.json, and this plan once the report is committed. Nothing else.
+
+### Scope
+
+Only the files in the File Structure table (feature-catalog.yaml untouched).
+
+### Judgment calls
+
+- The red run of `check-prerequisites` happened before `.self-check` existed, so it used jest from `.tropis/node_modules` linked as `node_modules`; the later runs used `.self-check/node_modules`.
+- The verbose list lines (`glob is still needed` and so on) were not captured by my output filter for the passing run; the failing run shows the test name, and the counts match the 7 tests (4 pre-existing/new override entries plus the checks).
+
+### What the plan got wrong
+
+- The audit's `vulnerabilities` is not just `deepmerge`: it also lists `@jest/core`, `jest`, `jest-cli` and `jest-config`, which are flagged only as dependents of deepmerge. None names glob or minimatch.
+- The plan's header says `8f36064` for origin/main; the worktree was based on `e274f78`. No effect.
+
+### Outstanding
+
+Parent review, pull request and merge; the `feature-catalog.yaml` move to `shipped`; README still says Node 18.14 until `/refresh-readme`.
