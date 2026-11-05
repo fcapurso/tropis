@@ -421,3 +421,94 @@ a reason unrelated to this change, stop and report it.
   Task 5's steps 1, 3 and 4 against that commit and put their final output in the report
   (amend that commit with it). Push the branch:
   `git push -u origin plan/plan-dates-follow-the-project-time-zone`.
+
+## Handover report
+
+Executed in the worktree `../tropis-plan-dates-tz` on `plan/plan-dates-follow-the-project-time-zone`.
+Tools: git 2.43.0, Node v22.23.4, Jest 30.5.2 and yaml 2.9.1 (from the installed release's
+`.tropis/node_modules`), Linux x86_64.
+
+### Task completion
+
+- **Task 1, the module:** done as written. `scripts/today.js` added. `today.js` appended to
+  `scripts/installed-scripts.txt`: the list is not alphabetical, so it goes last.
+- **Task 2, its tests:** done as written. `guards/today.test.js` passes, 10 tests.
+- **Task 3, the guards:** done. The four guards import `todayIn` or `plansDatedAfter` and
+  `projectToday` as written. `grep -rn "toISOString().slice(0, 10)" guards` prints nothing.
+- **Task 4, the operator guide:** done as written in `templates/README.md`.
+- **Task 5, verification:** done, with the stage corrected (see *What the plan got wrong*).
+- **Task 6, close-out:** done. `feature-catalog.yaml`: the item is `shipped`, with
+  `modules: [scripts/today.js]` and a comment above it mapping each criterion to its evidence.
+  `docs/backlog-board/bands.yaml`: its `seen.status` is `shipped`. The board is generated and
+  not committed, so there was nothing to rebuild. This report is appended.
+
+Commits on the branch: `b30e27f` (Tasks 1 to 4), then the close-out commit (Task 6, with
+this report). Two throwaway probe commits, for the red check, were reset away; they are not
+on the branch.
+
+### Verification results
+
+Checked on the close-out commit, before this report was added. Only `docs/superpowers/` changed
+after that, which none of these checks reads.
+
+1. **Source guards** (a stage built from HEAD, with the export-ignored paths copied in, and
+   `FRAMEWORK_ROOT` set to the stage; see below):
+   `Test Suites: 5 passed, 5 total` / `Tests: 110 passed, 110 total`
+   for `guards/today.test.js`, `catalog-drift`, `dispatch`, `subscriptions` and `sprint`.
+2. **Red check:** a throwaway commit added `docs/superpowers/plans/2099-01-01-probe.md`. The stage
+   built from that commit failed `no live plan filename is dated after today`:
+   `Expected: []`, `Received: ["2099-01-01-probe.md"]`, at `guards/catalog-drift.test.js:105`.
+   The commit was then reset away.
+3. **`bash scripts/check-blueprint.sh`:** exit 0. Its last line is
+   `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+   framework repository's own guards passed.` The conformance run lists
+   `caught  future-dated-plan  catalog-drift`.
+4. **`npm --prefix .tropis test`:** exit 0. `Test Suites: 13 passed, 13 total` /
+   `Tests: 193 passed, 193 total`.
+
+### Scope
+
+The branch against `origin/main` changes exactly the plan's File Structure table: `scripts/today.js`,
+`scripts/installed-scripts.txt`, `guards/today.test.js`, the four guards, `templates/README.md`,
+`feature-catalog.yaml`, `docs/backlog-board/bands.yaml` and this plan. Nothing under `.claude/`,
+`.tropis/`, `CLAUDE.md` or `AGENTS.md` changed. `.tropis/project.json` was not given a `timeZone`
+(Decision 5).
+
+### Judgment calls
+
+- **The stage** is built from `git archive HEAD`, plus copies of `docs/superpowers/`,
+  `feature-catalog.yaml` and `.tropis/project.json` from the clean tree. The tree was first
+  checked equal to HEAD for those paths. See the first item under *What the plan got wrong*.
+- **The red check** was done with a real commit and a reset, as the plan says, not by editing a
+  stage. Its output is recorded above.
+- **`installed-scripts.txt`:** `today.js` was appended at the end, because the list is not sorted.
+
+### What the plan got wrong
+
+1. **Task 5, step 1 cannot see the catalog guard's inputs as written.** `.gitattributes` marks
+   `.tropis/`, `feature-catalog.yaml` and `docs/superpowers/` `export-ignore`, so `git archive HEAD`
+   leaves them out. In that stage `livePlanFiles()` returns `[]`, and `no live plan filename is
+   dated after today` passes without checking anything. The plan's red check (step 2) cannot fail
+   from that stage either. The first green run in this session was therefore vacuous for that test;
+   the runs above are not. The stage builder copies those three paths from the clean tree.
+   The plan should say so, or give the stage builder used here.
+2. **The catalog-drift guard needs `FRAMEWORK_ROOT` in a stage.** With it unset, the guard uses
+   `resolve(here, '../..')`, which is the parent of the directory the stage sits in, so it reads
+   no plans at all. That is true in the source tree too: run as written, the guard checks the
+   repository's parent, not the repository. This predates the plan and is not changed here. The
+   self-check reaches the guard through conformance, where the root is correct, so the self-check
+   is not affected.
+3. **The self-check's last line** begins `Self-check passed:` and continues; the plan's
+   `ends with Self-check passed` describes the same result.
+
+### Outstanding
+
+- The branch is pushed; no pull request is open, per the parent-review authority. The parent
+  review and merge are yours.
+- Item 2 above: `guards/catalog-drift.test.js` resolves its root incorrectly when run from the
+  source tree without `FRAMEWORK_ROOT`. A follow-up could fix it, or make it fail loudly when
+  `docs/superpowers/plans` is missing.
+- `npm --prefix .tropis ci` printed npm's advisory to run `npm audit`. I did not look into it; it
+  does not affect these checks.
+- The installed release in `.tropis/` keeps its UTC check until a release is installed, as the
+  plan expects.

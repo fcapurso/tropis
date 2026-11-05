@@ -232,7 +232,7 @@ plan-dates-follow-the-project-time-zone:
   evidence: "2026-11-03 — guards/catalog-drift.test.js, guards/dispatch.test.js and
     guards/sprint.test.js each compute today with toISOString().slice(0, 10)."
   seen:
-    status: idea
+    status: shipped
     blockers: []
 plan-folder-names-no-plugin:
   band: C
