@@ -53,6 +53,20 @@ author-built-evidence-reaches-the-reviewer:
   seen:
     status: idea
     blockers: []
+cloud-session-gh-routes:
+  band: B
+  value: 3
+  valueWhy: Its answer decides how three cloud-session bugs are planned, and could let
+    their scripts keep one code path.
+  effort: 1
+  effortWhy: A few gh api calls against a throwaway pull request from a cloud session.
+  verdict: "Do next, before any of the three cloud-session bugs is shaped: it is cheap,
+    and a plan written without it may choose the wrong route."
+  evidence: "2026-11-05 — the 403 from gh pr list in a cloud session names the routes;
+    nothing in the backlog or the cloud sprint spec and plan mentions them."
+  seen:
+    status: idea
+    blockers: []
 commands-have-named-fill-ins:
   band: B
   value: 4
