@@ -26,6 +26,8 @@ building world tests on the real `/release` need judgment.
 request and merges. Stop after Task 7; do not open a pull request, write a review record
 or merge.
 
+**Merges after:** update-lists-the-release-steps
+
 **No fresh-agent check is owed.** No file under `framework/` other than the decision
 record, and none under `rules/`, changes. The command edits change where a project's
 values sit, not what an agent is told to do with them: `/release` already tells the agent
