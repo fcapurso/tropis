@@ -320,7 +320,8 @@
       "Executor's setup helper could not read the plan because the main checkout was behind origin/main; set up by hand, no backlog item (reason in the review record). The plan wrongly marked one test as passing on the old code; noted in handover and review."
     ],
     "release-and-next-run-in-a-cloud-session": [
-      "Followed the cloud-session-gh-routes spike: rewrote the plan from the session's own GitHub tools to gh api plus a new shipped auto-merge.mjs that falls back to the cloud auto-merge route only on the GraphQL refusal (#263, 5a35f53)."
+      "Followed the cloud-session-gh-routes spike: rewrote the plan from the session's own GitHub tools to gh api plus a new shipped auto-merge.mjs that falls back to the cloud auto-merge route only on the GraphQL refusal (#263, 5a35f53).",
+      "Corrected the workflow's cloud paragraph, now 'Where gh pr is refused', recorded as decision FW-072 amending FW-063; operator guide gained one paragraph naming the script, a file the plan had not listed."
     ]
   }
 }
