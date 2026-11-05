@@ -48,6 +48,14 @@ with Jest; no package file at the root.
   installed.** The installed dispatch script reads only the first line of `Requires:`
   and drops the rest without saying so; the source in `scripts/plan-binding.js` reads a
   field to the end of its paragraph and refuses one that reads empty.
+- **To run one source guard alone, stage it the way the self-check does.** Jest with
+  `--rootDir .` and no config refuses, and the guards are ES modules that will not load
+  without a `{"type":"module"}` package file. In an export of `HEAD` (`git archive`),
+  write that package file, copy `templates/framework-jest.config.js` to
+  `jest.config.js`, link a `node_modules` holding Jest, and run
+  `node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js guards/<name>.test.js`.
+  `scripts/check-blueprint.sh` shows each step. A plan that names a shorter command
+  sends its executor to work this out again, as the plan for flush-runs-in-a-cloud-session did.
 - **The worktree command may appear in a plan only in its Repositories table.** Anywhere
   else in the plan, the plan check refuses it as undispatchable.
 - **A colon followed by a space inside an unquoted backlog value breaks the YAML.**

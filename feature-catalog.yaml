@@ -6832,6 +6832,8 @@
 # 2026-11-05, from the spike dependabot-alerts-are-assessed. Jest 30.5.2 asks for glob
 # ^13 and minimatch ^10, and both have a moderate advisory fixed only in the next major.
 # An override was tried on a copy of this repository and the suite passed.
+# 2026-11-05, the developer accepted dropping Node.js 18 for projects' checks: it reached
+# end of life in April 2025. Shaping need not ask again.
 - id: test-tools-take-patched-glob
   title: The test tools a project installs lock glob and minimatch at their patched majors
   status: idea
@@ -6846,3 +6848,52 @@
   modules: []
   refs:
     - docs/superpowers/specs/2026-11-05-dependabot-alerts.md
+
+# 2026-11-05, found by the sprint session. A team member's executor, a Claude Code
+# subagent in a cloud session, finished its plan, committed its handover, and then
+# called interrupt_session on the team member's own session. The session sat idle from
+# 18:16 to about 20:40 UTC, sprint status showed it as building throughout, and two
+# items waiting to merge after it were held up with it. The developer resumed it by hand.
+- id: executor-never-interrupts-its-dispatcher
+  title: An executor never stops the session that dispatched it
+  status: idea
+  value: A sprint runs unattended without a team member going silent because its own
+    executor interrupted it, so the items merging after it are not held up for hours
+    with nothing in the sprint status to say why.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
+
+# 2026-11-05, left open by flush-runs-in-a-cloud-session: its session's only repository
+# was the framework itself, so a push to another repository and a fork from a cloud
+# session were never tried. check-open and the session's own GitHub tools are the
+# fallback written for a refusal nobody has yet seen.
+- id: first-cloud-flush-is-tried
+  title: Find out whether a flush from a cloud session can push to another repository and fork
+  status: idea
+  value: The first adopter to flush from a cloud session is not the one who finds out,
+    mid-flush, whether pushing to the framework's repository or to a fork works there,
+    or whether the fallback written for a refusal holds.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md
+
+# 2026-11-05, found by the sprint session: sprint.mjs brief for a bundle's first item
+# names that item only. The bundle readme-outline's brief was extended by hand to name
+# readme-skeleton-for-closed-products; without that its session would have ended SHIPPED
+# after the first item and left the second in planning.
+- id: bundle-brief-names-every-item
+  title: A bundle's brief names every backlog item in the bundle
+  status: idea
+  value: A team member started on a bundle delivers every item in it, without the sprint
+    session having to notice and add the others to the brief by hand.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
