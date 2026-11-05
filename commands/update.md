@@ -40,7 +40,7 @@ node .tropis/scripts/update.mjs fetch [vX.Y.Z]
 ```
 
 Pass the version only when the user named one. The helper prints one JSON object on
-stdout. Read `source`, `clone`, `held`, `target`, `breaking` and `steps`.
+stdout. Read `source`, `clone`, `held`, `target`, `breaking`, `steps` and `unread`.
 
 **Exit 2.** No source is recorded. Ask where this project's framework comes from, and
 suggest the URL they cloned Tropis from. Run the helper again with
@@ -70,6 +70,12 @@ Show, before you ask anything:
 - whether the release is breaking (`breaking` from the helper)
 - every step from `steps`, grouped by `version`, each marked required or optional
   (`optional: true` is optional; every other step is required)
+- each version in `unread`, saying that its notes ask for something by hand that the
+  helper could not read as steps. Quote that version's by-hand section from the
+  clone's `RELEASES.md` (under its `## [x.y.z]` heading, the `###` heading that names
+  what to do by hand, or else each paragraph that starts like a numbered step), so
+  the user sees what it asks. Never show an update as having no steps while `unread`
+  names a version
 
 Then ask, and go on only for the answer named here. Anything else is an abort
 (Stage 9). The branch does not exist yet, so aborting here only discards the clone.
@@ -130,6 +136,8 @@ Do these in order. The take's report is the list: `Next:`, then *Needs a decisio
    the path the step states. When it needs the user's judgement, say what you would do
    and ask. A required step the user declines is not done; report it at the end. Do
    not perform an optional step. Those are printed at the end and left to the user.
+   Treat each instruction quoted for a version in `unread` (Stage 4) as a required
+   step, unless it says it is optional.
 7. **The pipeline, when the project does not have one.** When no file in
    `.github/workflows/` has a `uses:` line naming `tropis-pipeline.yml` or
    `project-pipeline.yml`, offer it in the same words as bootstrap's Stage 3b. On yes, write
@@ -193,6 +201,7 @@ Then discard the clone. Print:
 
 - each optional step, with its version
 - any required step not done
+- each version in `unread`, and what was done about its quoted section
 - files kept because the project changed them
 - the files the take moved, from its *Moved* list: say that the project's settings and
   worktree setup now live under `.tropis/`, where releases before this one kept them in

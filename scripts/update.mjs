@@ -64,16 +64,35 @@ export function versionBreaks(target, held) {
     : targetParts[0] > heldParts[0];
 }
 
+/** A `###` heading that names steps to do by hand, however it is worded. */
+const BY_HAND = /^### .*\bby hand\b/i;
+/** A paragraph that starts like a numbered step: `**<n>. `. */
+const STEP = /^\*\*\d+\. /;
+
+function byVersion(a, b) {
+  if (a === b) return 0;
+  return newer(parseVersion(a), parseVersion(b)) ? 1 : -1;
+}
+
+function paragraphs(lines) {
+  return lines.join('\n').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+}
+
 /**
- * Steps from `## [x.y.z] — date` sections with held < x.y.z ≤ target, in version
- * order. A step is a paragraph whose first line starts `**<n>. `; it is optional
- * when that lead starts `**<n>. Optional:`. A version with no `### After updating`
- * subsection contributes none.
+ * What the release notes ask a project to do by hand, from each `## [x.y.z] — date`
+ * section with held < x.y.z ≤ target, in version order. Steps are read from every
+ * `###` subsection whose heading names steps to do by hand ("After updating: what to do
+ * by hand" and "What to do by hand" alike). A step is a paragraph whose first line
+ * starts `**<n>. `; it is optional when that lead starts `**<n>. Optional:`.
+ * `unread` lists each version whose notes ask for something by hand that no step was
+ * read from: a by-hand subsection with no step in it, or a paragraph shaped as a step
+ * under any other heading.
  * @param {string} text
  * @param {string} held
  * @param {string} target
+ * @returns {{ steps: { version: string, optional: boolean, text: string }[], unread: string[] }}
  */
-export function stepsBetween(text, held, target) {
+export function releaseSteps(text, held, target) {
   const heldParts = parseVersion(held);
   const targetParts = parseVersion(target);
   const sections = [];
@@ -85,38 +104,52 @@ export function stepsBetween(text, held, target) {
       sections.push(section);
       continue;
     }
+    if (line.startsWith('## ')) {
+      section = null;
+      continue;
+    }
     if (section) section.lines.push(line);
   }
 
   const steps = [];
+  const unread = [];
   for (const item of sections) {
     const parts = parseVersion(item.version);
     if (!parts || !heldParts || !targetParts) continue;
     if (!newer(parts, heldParts) || newer(parts, targetParts)) continue;
-    let inAfter = false;
-    const after = [];
+    let inHand = false;
+    let hasHand = false;
+    const hand = [];
+    const other = [];
     for (const line of item.lines) {
-      if (line.startsWith('### ') || line.startsWith('## ')) {
-        inAfter = line.startsWith('### After updating');
+      if (line.startsWith('### ')) {
+        inHand = BY_HAND.test(line);
+        if (inHand) hasHand = true;
+        hand.push('');
+        other.push('');
         continue;
       }
-      if (inAfter) after.push(line);
+      (inHand ? hand : other).push(line);
     }
-    for (const paragraph of after.join('\n').split(/\n\s*\n/)) {
-      const textOf = paragraph.trim();
-      if (!/^\*\*\d+\. /.test(textOf)) continue;
+    const read = paragraphs(hand).filter((p) => STEP.test(p));
+    for (const textOf of read) {
       steps.push({
         version: item.version,
         optional: /^\*\*\d+\. Optional:/.test(textOf),
         text: textOf,
       });
     }
+    const stray = paragraphs(other).some((p) => STEP.test(p));
+    if ((hasHand && read.length === 0) || stray) unread.push(item.version);
   }
-  steps.sort((a, b) => {
-    if (a.version === b.version) return 0;
-    return newer(parseVersion(a.version), parseVersion(b.version)) ? 1 : -1;
-  });
-  return steps;
+  steps.sort((a, b) => byVersion(a.version, b.version));
+  unread.sort(byVersion);
+  return { steps, unread };
+}
+
+/** The steps alone, as `releaseSteps` reads them. */
+export function stepsBetween(text, held, target) {
+  return releaseSteps(text, held, target).steps;
 }
 
 function listTags(source) {
@@ -212,7 +245,7 @@ function fetchRelease(argv) {
   const targetParts = parseVersion(target);
   if (!targetParts || !newer(targetParts, heldParts)) {
     process.stdout.write(`${JSON.stringify({
-      source, clone: null, held, target: null, breaking: false, steps: [],
+      source, clone: null, held, target: null, breaking: false, steps: [], unread: [],
     })}\n`);
     return;
   }
@@ -220,13 +253,15 @@ function fetchRelease(argv) {
   const clone = cloneAt(source, target);
   const notesPath = join(clone, 'RELEASES.md');
   const notes = existsSync(notesPath) ? readFileSync(notesPath, 'utf8') : '';
+  const { steps, unread } = releaseSteps(notes, held, target);
   process.stdout.write(`${JSON.stringify({
     source,
     clone,
     held,
     target,
     breaking: versionBreaks(target, held),
-    steps: stepsBetween(notes, held, target),
+    steps,
+    unread,
   })}\n`);
 }
 

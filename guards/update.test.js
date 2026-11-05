@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { breaking, parseVersion } from '../scripts/take-version.mjs';
-import { versionBreaks } from '../scripts/update.mjs';
+import { releaseSteps, versionBreaks } from '../scripts/update.mjs';
 
 const blueprint = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const script = join(blueprint, 'scripts/update.mjs');
@@ -221,6 +221,7 @@ describe('update.mjs fetch', () => {
           text: '**2. Optional: say hello.** Run echo hello.',
         },
       ]);
+      expect(json.unread).toEqual([]);
       rmSync(json.clone, { recursive: true, force: true });
     } finally {
       rmSync(source.parent, { recursive: true, force: true });
@@ -259,5 +260,96 @@ describe('update.mjs discard', () => {
       rmSync(source.parent, { recursive: true, force: true });
       rmSync(held.parent, { recursive: true, force: true });
     }
+  });
+});
+
+const NOTES = `# Releases
+
+## [Unreleased]
+
+**1. Not a release yet.** Never read.
+
+## [0.6.0] — 2026-10-04
+
+### Steps to do by hand after updating
+
+**1. Read a reworded heading.** Still a by-hand section.
+
+## [0.5.2] — 2026-10-03
+
+### What to do by hand
+
+Delete the old folder; this section has no numbered step.
+
+### Smaller corrections
+
+- Nothing to do.
+
+## [0.5.1] — 2026-10-02
+
+### Manual work
+
+**1. A step under another heading.** Not read as a step.
+
+## [0.5.0] — 2026-10-01
+
+### What to do by hand
+
+**1. Required.** Do it.
+
+**2. Optional: maybe.** Or not.
+
+### What you can now do
+
+- A change.
+
+## [0.4.0] — 2026-09-30
+
+### What to do by hand
+
+Held already, so never reported.
+`;
+
+describe('releaseSteps', () => {
+  it('reads every by-hand section and names each version it could not read', () => {
+    const { steps, unread } = releaseSteps(NOTES, 'v0.4.0', 'v0.6.0');
+    expect(steps).toEqual([
+      { version: 'v0.5.0', optional: false, text: '**1. Required.** Do it.' },
+      { version: 'v0.5.0', optional: true, text: '**2. Optional: maybe.** Or not.' },
+      {
+        version: 'v0.6.0',
+        optional: false,
+        text: '**1. Read a reworded heading.** Still a by-hand section.',
+      },
+    ]);
+    expect(unread).toEqual(['v0.5.1', 'v0.5.2']);
+  });
+
+  it('reports nothing outside the versions between held and target', () => {
+    const { steps, unread } = releaseSteps(NOTES, 'v0.5.2', 'v0.6.0');
+    expect(steps.map((s) => s.version)).toEqual(['v0.6.0']);
+    expect(unread).toEqual([]);
+  });
+});
+
+describe("Tropis's own release notes", () => {
+  const notes = readFileSync(join(blueprint, 'RELEASES.md'), 'utf8');
+  // Versions whose section has a paragraph that starts like a numbered step, found
+  // without the helper's heading match, so a reworded heading cannot hide them.
+  const numbered = notes
+    .split(/^(?=## \[)/m)
+    .map((section) => [/^## \[(\d+\.\d+\.\d+)\] — /.exec(section), section])
+    .filter(([heading, section]) => heading && /^\*\*\d+\. /m.test(section))
+    .map(([heading]) => `v${heading[1]}`);
+  const { steps, unread } = releaseSteps(notes, 'v0.0.0', 'v999.0.0');
+
+  it('has numbered steps under both headings it has used', () => {
+    expect(numbered).toEqual(expect.arrayContaining(['v0.7.0', 'v0.8.0']));
+  });
+
+  it('gives the update helper steps from every version that numbers one', () => {
+    const read = new Set(steps.map((s) => s.version));
+    expect(numbered.filter((v) => !read.has(v))).toEqual([]);
+    expect(unread).toEqual([]);
   });
 });

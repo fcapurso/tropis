@@ -792,6 +792,15 @@ migration file per release — a second copy of what the notes already say.
 `After updating` heading and the numbered bold leads are a format. A step a project may
 skip starts with `Optional:` inside its bold lead.
 
+**Amended 2026-11-05 — the section is found by what it is.** The notes renamed the
+heading to *What to do by hand* in 0.7.2, and the helper, which matched the words
+`After updating`, read no step from any release after, 0.8.0's required steps included,
+with nothing saying any were missed. It now reads every `###` heading that names steps
+to do by hand, reports each version whose notes ask for something by hand that it read
+no step from, and a guard reads Tropis's own notes, so a reworded heading fails the
+self-check. The numbered bold leads, and `Optional:` inside them, remain the format;
+the heading's words do not.
+
 ## FW-024: The self-check runs the guards that check the framework repository
 
 **Date:** 2026-10-20 · **Status:** Accepted

@@ -17,7 +17,7 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+- An update shows again every step a release's notes ask you to do by hand, and names any version whose steps it could not read. Updates to 0.7.2 through 0.8.2 showed none of their steps: if you took one of those with /update, read the What to do by hand section of each version you passed, 0.8.0's above all, whose steps are required.
 
 ## [0.8.2] — 2026-11-04
 
