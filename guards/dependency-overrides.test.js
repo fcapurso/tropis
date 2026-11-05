@@ -34,6 +34,19 @@ function isBlueprintTree(dir) {
  * dependency on the overridden one is too old. Remove the override and its entry together.
  */
 export const OVERRIDES = {
+  glob: {
+    via: 'jest-config',
+    why:
+      'Jest 30 asks for glob 13, which has GHSA-3g3m-2fjr-6pw4 (fixed in 14.0.2), so every ' +
+      'project inherits a Dependabot alert for it. glob 14 runs on the same Node.js.',
+  },
+  minimatch: {
+    via: 'test-exclude',
+    why:
+      'test-exclude 8 asks for minimatch 10, which has GHSA-g3hv-75wg-m249 (fixed in ' +
+      '11.0.1), so every project inherits a Dependabot alert for it. minimatch 11.0.4 ' +
+      'needs Node.js 20, or 22 and later.',
+  },
   'test-exclude': {
     via: 'babel-plugin-istanbul',
     why:
