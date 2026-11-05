@@ -692,17 +692,30 @@
 # worktree and those commands were allowed.
 - id: author-built-evidence-reaches-the-reviewer
   title: Evidence for a plan its author built reaches the fresh reviewer
-  status: idea
+  status: building
   value: When a plan's author builds the work and sends it to a fresh reviewer, the
     evidence the work rests on and the commands the review re-runs are within the
     reviewer's reach, so the review checks the measurement rather than reporting that it
     could not.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The planning rule's build-it-yourself shape says the author copies every file the
+      handover rests on into the checkout the reviewer runs in, kept out of commits by
+      the repository's local exclude file, and names that folder in the plan.
+    - It says the plan names the commands the review re-runs and the reviewer is started
+      with them permitted, and that a command the host's required check runs before
+      merge may be left to that check, the record saying so.
+    - It says a reviewer that cannot open a file the handover rests on, or is refused a
+      command it was given, stops and names it instead of writing the record.
+    - A fresh agent asked to write the Shape of an invented author-built measurement puts
+      its evidence inside the reviewer's checkout and permits the re-run commands,
+      recorded in the commit body and the handover report.
   type: feature
   layer: product
-  modules: []
+  modules:
+    - rules/planning.md
   refs:
     - docs/superpowers/plans/2026-11-04-rules-return-after-compaction.md
+    - docs/superpowers/plans/2026-11-05-author-built-evidence-reaches-the-reviewer.md
 # 2026-11-04, split from rules-return-after-compaction while shaping it, because the cloud
 # session that measured the Claude Code half has no Cursor.
 - id: cursor-rules-return-after-summarize
