@@ -53,6 +53,46 @@ function snapshot(dir) {
 
 const BEGIN_TO_END = /(<!-- project-owned: begin[^\n]*\n)[\s\S]*?(<!-- project-owned: end -->)/;
 const fillBlock = (text, inner) => text.replace(BEGIN_TO_END, (_, begin, end) => `${begin}${inner}\n${end}`);
+/** `text` with the named fill-in `name`'s inner lines replaced by `inner`. */
+const fillNamed = (text, name, inner) => {
+  const re = new RegExp(`(<!-- project-owned: begin ${name}[ ][^\\n]*\\n)[\\s\\S]*?(<!-- project-owned: end -->)`);
+  expect(re.test(text)).toBe(true);
+  return text.replace(re, (_, begin, end) => `${begin}${inner}\n${end}`);
+};
+const RELEASE = '.claude/commands/release.md';
+const addStage = (t) => t.replace('## Stage 1 — Pre-flight', '## Stage 0 — Before\n\nA new stage.\n\n## Stage 1 — Pre-flight');
+
+/**
+ * Today's source /release with its fill-ins set back to the single unnamed block of the
+ * releases before them: the shape a project that took one of those releases holds.
+ */
+const OLD_RELEASE_BLOCK = [
+  "<!-- project-owned: begin — this project's release. -->",
+  '<!-- Fill in each line:',
+  '     - Run from: the root of this repository, where the backlog also lives.',
+  '     - Notes file: RELEASES.md at the root (from templates/RELEASES.md), with an',
+  '       `## [Unreleased]` section /release promotes.',
+  '     - Promote trigger: the command that starts the project\'s promote pipeline, with',
+  '       <commit> and, where the project deploys to staging, <staged>.',
+  '     - Staging trigger: where the project deploys to staging, the command that starts',
+  '       it, with <commit>.',
+  '     A block filled before this release may still say Trigger and Candidate trigger:',
+  '     read them as Promote trigger and Staging trigger. -->',
+  '<!-- project-owned: end -->',
+  '',
+].join('\n');
+const oldRelease = () => {
+  const now = readFileSync(join(blueprint, 'commands/release.md'), 'utf8');
+  const start = now.indexOf('Each fill-in below holds one value');
+  const last = '<!-- project-owned: begin runs-url';
+  const end = now.indexOf('<!-- project-owned: end -->\n', now.indexOf(last)) + '<!-- project-owned: end -->\n'.length;
+  expect(start).toBeGreaterThan(0);
+  expect(end).toBeGreaterThan(start);
+  const single = `${now.slice(0, start)}${OLD_RELEASE_BLOCK}${now.slice(end)}`;
+  const old = single.replace(/<!-- project-owned: begin [a-z][^\n]*\n<!-- project-owned: end -->\n\n?/g, '');
+  expect((old.match(/project-owned: begin/g) ?? [])).toHaveLength(1);
+  return old;
+};
 
 /**
  * A scratch Tropis repository tagged `v0.2.0` and a project set up from it and committed.
@@ -407,7 +447,7 @@ describe('take-version.mjs', () => {
     expect(snapshot(w.project)).toEqual(before);
   }), SLOW);
 
-  it('carries a filled project-owned block into the new text', () => inWorld({}, (w) => {
+  it('carries a filled fill-in into the new text', () => inWorld({}, (w) => {
     const filled = '- Run from: the root of this repository.';
     w.release('v0.2.1', (root) => edit(root, 'commands/release.md', (t) => {
       const next = t.replace('## Stage 1 — Pre-flight', '## Stage 1 — Preflight');
@@ -869,24 +909,103 @@ describe('take-version.mjs', () => {
     expect(snapshot(w.project)).toEqual(before);
   }), SLOW);
 
-  it('writes the new text unchanged when the block counts differ', () => inWorld({}, (w) => {
-    w.release('v0.2.1', (root) => edit(root, 'commands/release.md', (t) => {
-      const next = t.replace('## Stage 1 — Pre-flight', '## Stage 1 — Preflight');
-      expect(next).not.toBe(t);
-      return next;
-    }));
-    // A second block makes the project's count two against the new version's one.
-    edit(w.project, '.claude/commands/release.md', (t) => `${t}\n<!-- project-owned: begin — our own -->\nours\n<!-- project-owned: end -->\n`);
+  it('writes .new with the fill-ins carried when the project adds a block of its own', () => inWorld({}, (w) => {
+    w.release('v0.2.1', (root) => edit(root, 'commands/release.md', addStage));
+    const runFrom = '- Run from: the root of this repository.';
+    // A block outside the fill-ins is an edit outside them: the command is forked.
+    edit(w.project, RELEASE, (t) => `${fillNamed(t, 'run-from', runFrom)}\n<!-- project-owned: begin — our own -->\nours\n<!-- project-owned: end -->\n`);
     w.commit();
-    const mine = read(w.project, '.claude/commands/release.md');
-    expect((mine.match(/project-owned: begin/g) ?? [])).toHaveLength(2);
+    const mine = read(w.project, RELEASE);
 
     const r = w.take('v0.2.1');
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
-    expect(read(w.project, '.claude/commands/release.md')).toBe(mine);
-    expect(read(w.project, '.claude/commands/release.md.new')).toBe(w.at('v0.2.1', 'commands/release.md'));
-    expect(r.stdout).toContain('.claude/commands/release.md.new — project-owned blocks differ in number');
+    expect(read(w.project, RELEASE)).toBe(mine);
+    expect(read(w.project, `${RELEASE}.new`)).toBe(fillNamed(w.at('v0.2.1', 'commands/release.md'), 'run-from', runFrom));
+    expect(r.stdout).toContain(`${RELEASE}.new — the new version's text; merge it into ${RELEASE}`);
+    expect(r.stdout).not.toContain('project-owned blocks differ in number');
+    expect(r.stdout).toContain(`  ${RELEASE}.new: not placed in any fill-in; your text is not in the new version:\n      ours`);
+  }), SLOW);
+
+  it('carries fill-ins by name and lists nothing when only the text around them changed', () => inWorld({}, (w) => {
+    w.release('v0.2.1', (root) => edit(root, 'commands/release.md', addStage));
+    const readers = '- Readers: the people who run the product.';
+    const trigger = '- Promote trigger: gh workflow run promote.yml --ref main -f commit=<commit>';
+    edit(w.project, RELEASE, (t) => fillNamed(fillNamed(t, 'readers', readers), 'promote-trigger', trigger));
+    w.commit();
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(existsSync(join(w.project, `${RELEASE}.new`))).toBe(false);
+    const result = read(w.project, RELEASE);
+    expect(result).toBe(fillNamed(fillNamed(w.at('v0.2.1', 'commands/release.md'), 'readers', readers), 'promote-trigger', trigger));
+    expect(result).toContain('## Stage 0 — Before');
+    expect(r.stdout).not.toContain('Fill-ins:');
+    expect(r.stdout).not.toContain('Read Fill-ins');
+  }), SLOW);
+
+  it('lists a renamed, a re-purposed and a removed fill-in, with the removed one\'s text', () => inWorld({}, (w) => {
+    const readers = '- Readers: the people who run the product.';
+    const trigger = '- Promote trigger: gh workflow run promote.yml --ref main -f commit=<commit>';
+    const breaking = '- Breaking: a new permission the product asks for.';
+    const oldPurpose = "the command that starts the project's promote pipeline, with <commit> and, where the project deploys to staging, <staged>.";
+    const newPurpose = "the command that starts the project's promote pipeline, with <commit> only.";
+    w.release('v0.2.1', (root) => edit(root, 'commands/release.md', (t) => {
+      const next = t
+        .replace('begin readers — ', 'begin audience (was readers) — ')
+        .replace(oldPurpose, newPurpose)
+        .replace(/<!-- project-owned: begin breaking — [^\n]*\n[^\n]*\n<!-- project-owned: end -->\n/, '');
+      expect(next).toContain('begin audience (was readers)');
+      expect(next).toContain(newPurpose);
+      expect(next).not.toContain('begin breaking —');
+      return next;
+    }));
+    edit(w.project, RELEASE, (t) => fillNamed(fillNamed(fillNamed(t, 'readers', readers), 'promote-trigger', trigger), 'breaking', breaking));
+    w.commit();
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(existsSync(join(w.project, `${RELEASE}.new`))).toBe(false);
+    const result = read(w.project, RELEASE);
+    expect(result).toBe(fillNamed(fillNamed(w.at('v0.2.1', 'commands/release.md'), 'audience', readers), 'promote-trigger', trigger));
+    expect(r.stdout).toContain('Fill-ins:');
+    expect(r.stdout).toContain(`  ${RELEASE}: audience was readers; your text was carried`);
+    expect(r.stdout).toContain(`  ${RELEASE}: promote-trigger now asks for: ${newPurpose} (was: ${oldPurpose}). Check that your text still answers it.`);
+    expect(r.stdout).toContain(`  ${RELEASE}: breaking is no longer a fill-in; your text is not in the new version:\n      ${breaking}`);
+    const next = r.stdout.slice(r.stdout.indexOf('Next:'));
+    expect(next).toContain('  Read Fill-ins: put back any text it printed where it belongs, and check each fill-in whose purpose changed.');
+    expect(next.indexOf('Read Fill-ins')).toBeLessThan(next.indexOf('  Commit.'));
+  }), SLOW);
+
+  it('moves the single block of an earlier release into the named fill-ins', () => inWorld({ v020: { 'commands/release.md': oldRelease() } }, (w) => {
+    w.release('v0.2.1', (root) => write(root, 'commands/release.md', readFileSync(join(blueprint, 'commands/release.md'), 'utf8')));
+    const runFrom = '- Run from: the root of this repository.';
+    const trigger = '- Trigger: gh workflow run promote.yml --ref main -f commit=<commit>';
+    const candidate = '- Candidate trigger: gh workflow run staging.yml --ref main -f commit=<commit>';
+    const trial = '- Rule trial: run /rule-trial before each release.';
+    edit(w.project, RELEASE, (t) => t.replace(
+      '     read them as Promote trigger and Staging trigger. -->\n',
+      `     read them as Promote trigger and Staging trigger. -->\n${runFrom}\n${trigger}\n${candidate}\n${trial}\n`,
+    ));
+    w.commit();
+    expect(read(w.project, RELEASE)).toContain(trial);
+
+    const r = w.take('v0.2.1');
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+    expect(existsSync(join(w.project, `${RELEASE}.new`))).toBe(false);
+    const result = read(w.project, RELEASE);
+    expect(result).toBe(fillNamed(fillNamed(fillNamed(
+      w.at('v0.2.1', 'commands/release.md'), 'run-from', runFrom), 'promote-trigger', trigger), 'staging-trigger', candidate));
+    expect(result).not.toContain('Fill in each line');
+    expect(r.stdout).toContain(`  ${RELEASE}: "Run from" moved into run-from`);
+    expect(r.stdout).toContain(`  ${RELEASE}: "Trigger" moved into promote-trigger`);
+    expect(r.stdout).toContain(`  ${RELEASE}: "Candidate trigger" moved into staging-trigger`);
+    expect(r.stdout).toContain(`  ${RELEASE}: readers is new and holds the shipped text — who the notes are for, in their words.`);
+    expect(r.stdout).toContain(`  ${RELEASE}: not placed in any fill-in; your text is not in the new version:\n      ${trial}`);
+    expect(r.stdout).toContain('  Read Fill-ins:');
   }), SLOW);
 
   it('stops with a way back when the project generator fails', () => inWorld({}, (w) => {
