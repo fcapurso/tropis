@@ -249,6 +249,9 @@
     },
     "release-and-next-run-in-a-cloud-session": {
       "state": "planning"
+    },
+    "commands-have-named-fill-ins": {
+      "state": "planning"
     }
   },
   "notes": {}
