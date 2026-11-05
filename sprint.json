@@ -246,6 +246,9 @@
     },
     "flush-runs-in-a-cloud-session": {
       "state": "planning"
+    },
+    "release-and-next-run-in-a-cloud-session": {
+      "state": "planning"
     }
   },
   "notes": {}
