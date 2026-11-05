@@ -282,7 +282,8 @@
     ],
     "readme-follows-the-developers-role": [
       "README change was a full refresh against the new outline, absorbing the pending refresh (#253).",
-      "Both items built by the author and reviewed by fresh Opus subagents on the developer's plan."
+      "Both items built by the author and reviewed by fresh Opus subagents on the developer's plan.",
+      "An open product copies no skeleton in /bootstrap; only closed-source products get templates/readme-skeleton-closed.md."
     ]
   }
 }
