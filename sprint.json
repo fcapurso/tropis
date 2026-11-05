@@ -273,6 +273,9 @@
       "Removed the shipped item's bands.yaml entry rather than updating its status, as the previous shipment did.",
       "Fixed the fresh reviewer's three mechanical findings in the plan text itself, declared in the plan.",
       "Landed as two PRs: claim #250, then the work #251 (main green on f38ef18). Fresh-agent check passed on its second run, after the first was inconclusive because the probe read the plan."
+    ],
+    "dependabot-alerts-are-assessed": [
+      "glob and minimatch moderate advisories (via Jest, shipped to every project through templates/package-lock.json, not exploitable) left for the next release; new backlog item test-tools-take-patched-glob forces the patched majors (cost: no Node 18 for project checks)."
     ]
   }
 }
