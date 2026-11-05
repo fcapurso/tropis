@@ -21,7 +21,9 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fingerprint } from './installed-files.js';
-import { Refusal, run, takeVersion } from './take-version.mjs';
+import {
+  Refusal, fillInLines, run, takeVersion,
+} from './take-version.mjs';
 
 const tropis = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOK_PATH = /\.tropis\/[^\s"'`;|&)]+/g;
@@ -138,6 +140,7 @@ function settingsThatDoNotFit(clone, result) {
   for (const rel of result.blockMismatch) {
     lines.push(`project-owned blocks differ in number; carry your fill-ins into ${rel}.new by hand`);
   }
+  lines.push(...fillInLines(result.fillIns ?? []));
   let settings;
   try {
     settings = JSON.parse(readFileSync(join(clone, '.claude/settings.json'), 'utf8'));
