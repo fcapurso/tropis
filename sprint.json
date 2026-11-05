@@ -311,6 +311,9 @@
       "Fresh-agent check passed; it omitted 0.8.0's one-sentence scope note, dropped without a backlog item since each step states its own condition.",
       "Projects that updated to 0.7.2-0.8.2 through /update missed their by-hand steps (including 0.8.0's four required ones) until a release with this fix is installed; the release-note bullet tells readers to go back and read those sections.",
       "Diagnosis of the stall: a subagent's scheduled reminder fires into the parent session, not the subagent; recorded in the review record, no backlog item raised (see executor-never-interrupts-its-dispatcher, raised by the sprint session)."
+    ],
+    "commands-have-named-fill-ins": [
+      "Fill-in format: each fill-in's name, purpose and former names go in its own opening marker rather than a separate slot syntax (#261, 3d58872)."
     ]
   }
 }
