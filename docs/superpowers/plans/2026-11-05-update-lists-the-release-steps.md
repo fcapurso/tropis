@@ -518,3 +518,65 @@ under the worktree changed because of it.
 check on `commands/update.md` and `framework/DECISIONS.md`, which the plan says the
 specifying session runs and records in the merge commit. Release-note and backlog edits
 are in `RELEASES.md` and `feature-catalog.yaml` as Task 4 says.
+
+## Review record
+
+**Reviewed by the specifying session on 2026-11-05**, on branch head `71cf3e5`. The
+executor was stopped after its last commit and before Task 5's push; the reviewer pushed
+the branch, on the developer's word, and checked the commits rather than trust them.
+
+### Checks re-run
+
+Claude Code 2.1.318, Node v22.23.4, git 2.43.0, Linux x86_64.
+
+- `git diff --stat origin/main...HEAD`: 8 files, each in *File Structure*.
+- `guards/update.test.js` alone in an export of HEAD, the way the self-check runs it:
+  `Tests: 11 passed, 11 total`. With the four `### What to do by hand` headings renamed
+  to `### Manual steps` in the export: `Tests: 1 failed, 10 passed, 11 total`, the
+  failing case `gives the update helper steps from every version that numbers one`.
+- `guards/readme-level.test.js` alone, since it also reads by-hand steps: `Tests: 7
+  passed, 7 total`.
+- `npm --prefix .tropis test`: `Tests: 188 passed, 188 total`.
+- `bash scripts/check-blueprint.sh` on `71cf3e5`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+
+### Found
+
+- The code, tests, command text, amendment and release note are the plan's text, placed
+  as it says. No defect.
+- The handover says the self-check after the handover commit is "recorded below"; it is
+  not. The reviewer's run above stands in for it.
+
+### Fresh-agent check
+
+A fresh agent (Claude Code 2.1.318, model Opus 5.5, the Large tier's included pick;
+read-only tools, Linux x86_64), told the output was a probe, was given
+`commands/update.md` and a helper result with `unread: ["v0.8.0"]` against a clone
+whose 0.8.0 by-hand heading had been reworded so the helper read no step from it. It
+was asked what it would show at Stage 4. It named v0.8.0 as unread, quoted its five
+numbered paragraphs from the clone's notes, said it would treat 1 to 4 as required and
+5 as optional, showed the other versions' steps, and asked `Update to v0.8.2?` only
+after all of it. It cited the new Stage 4 bullet and the Stage 6 sentence. Pass.
+
+It quoted the numbered paragraphs only, dropping 0.8.0's scoping sentence above them,
+as the fallback wording says. Dropped, not a backlog item: each of those steps starts
+"Where … exists" itself, and the fallback is reached only for notes already malformed.
+
+### Outstanding disposition
+
+No screen, so no developer check. Nothing outstanding.
+
+### Learnings routed
+
+- A subagent's scheduled wake fires into its parent session, not into the subagent, so
+  an executor that waits on one stalls. Dropped as a framework change: the workflow
+  already says a dispatched executor runs its long commands as background commands
+  that wake it, and this executor broke that; the parent recovered by pushing.
+- Otherwise no durable change beyond the FW-023 amendment the plan made.
+
+### Merged because
+
+Every criterion is backed: criteria 1 and 2 by the guard cases named in the backlog
+comments, criterion 3 by the `releaseSteps` case and the fresh-agent check above. The
+checks are green on the branch and are re-run after the rebase before merge.
