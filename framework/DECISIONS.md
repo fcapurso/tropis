@@ -2391,3 +2391,31 @@ the merge token stays as FW-063 decided. The workflow's paragraph *Where `gh` ca
 write* becomes *Where `gh pr` is refused*. Deleting a branch is still refused there,
 and still not needed. The route answered "enabled" for a pull request already merged, so
 `main-status.mjs --pull-request` remains what says whether auto-merge is on.
+
+## FW-073: The test tools lock glob and minimatch at their patched majors, and need Node.js 20 or 22 and later
+
+**Date:** 2026-11-05 · **Status:** Accepted; built by the backlog item
+`test-tools-take-patched-glob`.
+
+**Decision:** `templates/package.json` overrides glob to `^14.0.3` and minimatch to
+`^11.0.4` under Jest, and the lockfile every project installs is regenerated from it.
+minimatch 11.0.4 runs on Node.js 20 and on 22 and later, so the prerequisite check asks
+for those and Tropis's checks no longer run on Node.js 18.
+
+**Evidence:** The spike `dependabot-alerts-are-assessed`, 2026-11-05: Jest 30.5.2 asks
+for glob ^13 and minimatch ^10, each with a moderate advisory fixed only in the next
+major, and every project set up from the release inherited both alerts. With the
+overrides, `npm audit` reports neither, and the self-check passes. Source: none in
+particular.
+
+**Rejected:** Pinning minimatch at 11.0.3, the last release that allows Node.js 18: it
+holds the fix, but locks the projects to a release minimatch has already moved past, and
+Node.js 18 reached end of life in April 2025; the developer accepted dropping it.
+Waiting for Jest to ask for the patched majors itself: every project carries the alerts
+until it does. Dismissing the alerts as unreachable: true today, but the dismissal would
+have to be repeated on every project's own repository.
+
+**Consequences:** Two more overrides, each with an entry in
+`guards/dependency-overrides.test.js` that fails once Jest's own dependency catches up,
+which is when to remove it. A project on Node.js 18 sees the setup check refuse it and
+must upgrade Node.js before running its checks; the release notes say so.
