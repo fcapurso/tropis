@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { parseLastVerified, picksForTier } from '../scripts/plan-binding.js';
 // A namespace, so the file still loads while these are not yet exported.
 import * as binding from '../scripts/plan-binding.js';
+import { todayIn } from '../scripts/today.js';
 
 // A developer's own TROPIS_SUBSCRIPTIONS would answer the cases that expect no record,
 // so every run here gets an environment without it.
@@ -148,7 +149,7 @@ describe('dispatch command', () => {
   it("prints the picks and their date from the project's own picks file", () => {
     const { parent, root } = project(plan(PROJECT_ONLY));
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayIn();
       writeFileSync(join(root, 'docs/model-picks.md'), `# Model picks\n\n**Last verified: ${today}.**\n\n| Tier | Models | Indicative price (in/out per Mtok) |\n|---|---|---|\n| **Small** | Example Model (all) | $1/$2 |\n`);
       const r = run(root, 'node', ['.tropis/scripts/dispatch.mjs', PLAN]);
       expect(r.status).toBe(0);
@@ -572,7 +573,7 @@ esac
 });
 
 describe('dispatch names the pick to use', () => {
-  const today = () => new Date().toISOString().slice(0, 10);
+  const today = () => todayIn();
   const picksText = () => `**Last verified: ${today()}.**
 
 | Tier | Models |

@@ -25,6 +25,7 @@ import YAML from 'yaml';
 // A namespace import, so a missing export fails the case that uses it and not the file.
 import * as sprint from '../scripts/sprint.mjs';
 import * as binding from '../scripts/plan-binding.js';
+import { todayIn } from '../scripts/today.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const shipped = resolve(here, '../scripts');
@@ -958,7 +959,7 @@ describe('the documents', () => {
 });
 
 describe('the team member\'s model', () => {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIn();
   const PICKS = `**Last verified: ${today}.**
 
 | Tier | Models |

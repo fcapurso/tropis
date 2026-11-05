@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
+import { todayIn } from '../scripts/today.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const blueprint = resolve(here, '..');
@@ -31,7 +32,7 @@ const envWith = (subscriptions) => {
   return env;
 };
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayIn();
 // Invented models and an invented subscription: nothing here is anyone's real plan.
 const PICKS = `**Last verified: ${TODAY}.**
 
