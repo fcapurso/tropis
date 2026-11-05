@@ -6895,15 +6895,25 @@
 # items waiting to merge after it were held up with it. The developer resumed it by hand.
 - id: executor-never-interrupts-its-dispatcher
   title: An executor never stops the session that dispatched it
-  status: idea
+  status: building
   value: A sprint runs unattended without a team member going silent because its own
     executor interrupted it, so the items merging after it are not held up for hours
     with nothing in the sprint status to say why.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - In a project set up or updated from the next release, a call to interrupt or
+      archive the cloud session the agent runs in is refused, with a message saying it
+      would stop the agent that dispatched it and to end the turn with a report instead.
+    - A call to interrupt or archive another session, any other tool, and every call
+      outside a cloud session go through unchanged and with no output.
+    - A guard runs the hook against each of those payloads, and checks it is wired on
+      both tools in the settings template and listed among the installed hooks.
+    - A cloud session started on a branch carrying the hook, asked to interrupt itself,
+      reports the refusal and keeps running, recorded with its tool and version.
   type: bug
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-05-executor-never-interrupts-its-dispatcher.md
 
 # 2026-11-05, left open by flush-runs-in-a-cloud-session: its session's only repository
 # was the framework itself, so a push to another repository and a fork from a cloud
