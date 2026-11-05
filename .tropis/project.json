@@ -1,4 +1,5 @@
 {
   "name": "Tropis",
-  "public": true
+  "public": true,
+  "timeZone": "Europe/Brussels"
 }
