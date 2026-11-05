@@ -818,6 +818,103 @@ describe('rule delivery', () => {
     });
   });
 
+  describe('own-session-guard refuses stopping the session it runs in', () => {
+    // A subagent's tool calls are made in its parent's session, so interrupting or
+    // archiving the session the agent runs in stops its dispatcher. The hook reads the
+    // session's own id from CLAUDE_CODE_REMOTE_SESSION_ID (cse_<X>), and the session
+    // tools name the same session session_<X>. A refusal is exit 2 with the message on
+    // stderr and nothing on stdout (harness-scripts.md).
+    const ownHook = resolve(root, '.tropis/hooks/own-session-guard.sh');
+    const settingsTemplate = resolve(here, '../templates/settings.json');
+    const installedHooks = resolve(here, '../scripts/installed-hooks.txt');
+    const MATCHER = 'mcp__.*__(interrupt_session|archive_session)';
+    const OWN = 'cse_01TESTOWN';
+
+    /**
+     * Run the hook with a payload shaped as Claude Code sends it, and the session's own
+     * id set or deleted explicitly: the variable may be set in the environment running
+     * this guard, so every case decides it for itself.
+     * @param {string|object} payload a JSON string as given, or an object to serialise
+     * @param {string|undefined} own CLAUDE_CODE_REMOTE_SESSION_ID, or undefined to unset it
+     */
+    function runOwnHook(payload, own = OWN) {
+      const env = { ...process.env };
+      if (own === undefined) delete env.CLAUDE_CODE_REMOTE_SESSION_ID;
+      else env.CLAUDE_CODE_REMOTE_SESSION_ID = own;
+      const input = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      const r = spawnSync('bash', [ownHook], { input, env, encoding: 'utf8' });
+      if (r.error) throw r.error;
+      return { stdout: r.stdout, stderr: r.stderr, status: r.status };
+    }
+
+    const call = (tool, session_id) => ({ tool_name: tool, tool_input: { session_id } });
+    const INTERRUPT = 'mcp__claude-code-remote__interrupt_session';
+    const ARCHIVE = 'mcp__claude-code-remote__archive_session';
+
+    it('refuses interrupt_session on the session it runs in, naming the id', () => {
+      const r = runOwnHook(call(INTERRUPT, 'session_01TESTOWN'));
+      expect(r.status).toBe(2);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain('Refused: this would interrupt the session you are running in');
+      expect(r.stderr).toContain('session_01TESTOWN');
+      expect(r.stderr).toContain('end your turn and return your report');
+      expect(r.stderr).toContain('(own-session-guard.sh)');
+    });
+
+    it('refuses archive_session on the session it runs in', () => {
+      const r = runOwnHook(call(ARCHIVE, 'session_01TESTOWN'));
+      expect(r.status).toBe(2);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain('would archive');
+    });
+
+    it('refuses the tool under another server prefix', () => {
+      const r = runOwnHook(call('mcp__remote__interrupt_session', 'session_01TESTOWN'));
+      expect(r.status).toBe(2);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain('would interrupt');
+    });
+
+    it("is silent on another session's id", () => {
+      const r = runOwnHook(call(INTERRUPT, 'session_01OTHER'));
+      expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+    });
+
+    it('is silent outside a cloud session, where the variable is unset', () => {
+      const r = runOwnHook(call(INTERRUPT, 'session_01TESTOWN'), undefined);
+      expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+    });
+
+    it('is silent on an empty session_id', () => {
+      const r = runOwnHook(call(INTERRUPT, ''));
+      expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+    });
+
+    it('is silent on another tool given the own id', () => {
+      const r = runOwnHook(call('mcp__claude-code-remote__get_session', 'session_01TESTOWN'));
+      expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+    });
+
+    it('is silent on malformed JSON', () => {
+      const r = runOwnHook('{"tool_name": "mcp__claude-code-remote__interrupt_session", ');
+      expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+    });
+
+    it('is wired once, under a matcher that names the two session-stopping tools, and listed among the installed hooks', () => {
+      const settings = JSON.parse(readFileSync(settingsTemplate, 'utf8'));
+      const groups = settings.hooks.PreToolUse
+        .filter((g) => (g.hooks ?? []).some((h) => h.command.includes('own-session-guard.sh')));
+      expect(groups).toHaveLength(1);
+      expect(groups[0].matcher).toBe(MATCHER);
+      expect(groups[0].hooks.map((h) => h.command)).toEqual(['bash .tropis/hooks/own-session-guard.sh']);
+      const matcher = new RegExp(`^(?:${groups[0].matcher})$`);
+      expect(matcher.test(INTERRUPT)).toBe(true);
+      expect(matcher.test(ARCHIVE)).toBe(true);
+      expect(matcher.test('mcp__claude-code-remote__get_session')).toBe(false);
+      expect(readFileSync(installedHooks, 'utf8').split('\n')).toContain('own-session-guard.sh');
+    });
+  });
+
   describe('framework documents are reachable', () => {
     const FRAMEWORK_DIR = resolve(root, '.claude/framework');
 

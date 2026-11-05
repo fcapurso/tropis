@@ -16,6 +16,8 @@
     "command itself. Every hook that lets the call run replies through",
     ".tropis/hooks/hook-reply.sh, the one shape both tools pass to the agent;",
     "branch-in-worktree.sh refuses the call instead, with exit 2 and its message on stderr.",
+    "own-session-guard.sh, on the cloud session tools that interrupt or archive a session,",
+    "refuses one aimed at the session it runs in, the same way.",
     "",
     "Everything else is project-specific and belongs here only when the project needs",
     "it. What the two source projects added, as examples of the kind of thing that",
@@ -69,6 +71,15 @@
           {
             "type": "command",
             "command": "bash .tropis/hooks/public-exposure-check.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*__(interrupt_session|archive_session)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/own-session-guard.sh"
           }
         ]
       }

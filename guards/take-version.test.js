@@ -652,7 +652,9 @@ describe('take-version.mjs', () => {
       'bash .tropis/hooks/public-exposure-check.sh',
     ]);
     expect(afterBash[0].hooks[1].if).toBe('Bash(gh pr merge *)');
-    expect(groups.map((g) => g.matcher).sort()).toEqual(['Bash', 'Edit', 'Read', 'Write']);
+    expect(groups.map((g) => g.matcher).sort()).toEqual([
+      'Bash', 'Edit', 'Read', 'Write', 'mcp__.*__(interrupt_session|archive_session)',
+    ]);
     expect(r.stdout).not.toContain('settings.json.new');
     expect(existsSync(join(w.project, '.claude/settings.json.new'))).toBe(false);
   }), SLOW);
