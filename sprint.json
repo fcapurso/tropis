@@ -206,6 +206,9 @@
     },
     "test-tools-take-patched-glob": {
       "state": "planning"
+    },
+    "bundle-brief-names-every-item": {
+      "state": "planning"
     }
   },
   "notes": {}
