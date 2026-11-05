@@ -200,6 +200,10 @@
     "first-cloud-flush-is-tried",
     "bundle-brief-names-every-item"
   ],
-  "marks": {},
+  "marks": {
+    "executor-never-interrupts-its-dispatcher": {
+      "state": "planning"
+    }
+  },
   "notes": {}
 }
