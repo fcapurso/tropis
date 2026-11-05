@@ -265,6 +265,9 @@
       "Fixed both blocking findings from the fresh-agent review of the finding (an assumption presented as a measurement; an unsupported flush recommendation) and noted gh api --paginate fails through the proxy.",
       "Took the merge token before opening #245, since the PR itself was the probe target.",
       "Follow-up: workflow.md 'Where gh cannot write' is now partly untrue for cloud sessions; whichever of release-and-next / absorb-flush / flush cloud plans lands first should correct it."
+    ],
+    "author-built-evidence-reaches-the-reviewer": [
+      "Built the change itself and sent it to a fresh reviewer instead of dispatching an executor: the deliverable is one rule's wording (rules/planning.md)."
     ]
   }
 }
