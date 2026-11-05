@@ -297,7 +297,8 @@
     ],
     "flush-runs-in-a-cloud-session": [
       "Moved open to the REST interface entirely (gh api), not just the two calls the item named, since gh api writes worked in a cloud session (#257, 04a2f71).",
-      "Kept check-open and the session's-own-tools instructions: pushing to another repository and forking from a cloud session are still untested."
+      "Kept check-open and the session's-own-tools instructions: pushing to another repository and forking from a cloud session are still untested.",
+      "Lists read one page at a time, never --paginate (the proxy refuses its next-page link, per the cloud-session-gh-routes spike)."
     ]
   }
 }
