@@ -37,17 +37,17 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-cloud-session-gh-routes:
+bundle-brief-names-every-item:
   band: B
   value: 3
-  valueWhy: Its answer decides how three cloud-session bugs are planned, and could let
-    their scripts keep one code path.
+  valueWhy: Every sprint bundle's session ships its first item and stops unless the
+    sprint session notices and adds the rest to the brief by hand.
   effort: 1
-  effortWhy: A few gh api calls against a throwaway pull request from a cloud session.
-  verdict: "Do next, before any of the three cloud-session bugs is shaped: it is cheap,
-    and a plan written without it may choose the wrong route."
-  evidence: "2026-11-05 — the 403 from gh pr list in a cloud session names the routes;
-    nothing in the backlog or the cloud sprint spec and plan mentions them."
+  effortWhy: One function in scripts/sprint.mjs and a guard case.
+  verdict: "A trap in every sprint bundle, cheap to remove. Do it next: nothing blocks
+    it and nothing waits on it."
+  evidence: "2026-11-05 — brief() in scripts/sprint.mjs builds its text from ids[0] alone
+    and never reads the bundle; the readme-outline brief needed a line added by hand."
   seen:
     status: idea
     blockers: []
@@ -76,20 +76,6 @@ cursor-rules-return-after-summarize:
   seen:
     status: idea
     blockers: []
-dependabot-alerts-are-assessed:
-  band: B
-  value: 3
-  valueWhy: An alert in the template lockfile would reach every project; one in the
-    installed release's test tools reaches only this repository's checks.
-  effort: 1
-  effortWhy: Reading two alerts and the lockfiles they name, and deciding each.
-  verdict: "Do next: cheap, and the one question that matters, whether an alert ships to
-    projects, has no answer until someone reads them."
-  evidence: "2026-11-05 — a push reported 2 vulnerabilities on main (1 moderate, 1 low);
-    main carries .tropis/package-lock.json and templates/package-lock.json."
-  seen:
-    status: idea
-    blockers: []
 dependency-licences-are-checked:
   band: B
   value: 3
@@ -114,6 +100,32 @@ document-rule-reaches-a-new-document:
     tools like the others.
   verdict: Decide first whether a shipped rule should name folders that each project
     chooses for itself, before building it.
+  seen:
+    status: idea
+    blockers: []
+executor-never-interrupts-its-dispatcher:
+  band: A
+  value: 4
+  valueWhy: It silently held a sprint team member and two items behind it for about two
+    hours, with nothing in sprint status to show it; unattended sprints depend on it not
+    recurring.
+  effort: 2
+  effortWhy: A cause to confirm (a subagent's reminder firing into its parent, then the
+    interrupt) and a change to how an executor waits, in the dispatch brief or workflow.
+  verdict: "Do now: every cloud sprint dispatches executors as subagents, and the next
+    stall may happen with nobody looking."
+  seen:
+    status: idea
+    blockers: []
+first-cloud-flush-is-tried:
+  band: B
+  value: 2
+  valueWhy: Spares the first adopter flushing from a cloud session a half-sent flush, but
+    adopters flush from their own computers today and the fallback already exists.
+  effort: 1
+  effortWhy: A spike, a real or invented flush from a cloud session, written up.
+  verdict: "Worth doing before cloud flushes are common, with no deadline; cheapest done
+    alongside absorbing a flush from a cloud session."
   seen:
     status: idea
     blockers: []
@@ -188,21 +200,6 @@ pipeline-bills-no-job-that-decides-nothing:
   seen:
     status: shaped
     blockers: []
-plan-dates-follow-the-project-time-zone:
-  band: B
-  value: 2
-  valueWhy: Hit only in the first hours after local midnight, but then a correct plan
-    is refused and the agent renames it and every reference to it.
-  effort: 2
-  effortWhy: One setting, one shared date function, and the three places that compute
-    today switched to it.
-  verdict: "Small and worth doing; keeps the check exact, which the rejected one-day
-    margin would not, so the sequence-number habit stays caught."
-  evidence: "2026-11-03 — guards/catalog-drift.test.js, guards/dispatch.test.js and
-    guards/sprint.test.js each compute today with toISOString().slice(0, 10)."
-  seen:
-    status: shipped
-    blockers: []
 plan-folder-names-no-plugin:
   band: C
   value: 2
@@ -258,56 +255,6 @@ project-settings-are-listed-and-held-once:
   seen:
     status: shaped
     blockers: []
-readme-follows-the-developers-role:
-  band: B
-  value: 3
-  valueWhy: The README is what a prospective adopter reads first, and its day-to-day
-    section shows a routine of step commands that sprints and autonomous sessions have
-    replaced.
-  effort: 2
-  effortWhy: The outline's job for Using it day to day rewritten around the developer's
-    part, then one /refresh-readme run against it.
-  bundle: readme-outline
-  verdict: "Do next, ahead of the pending README refresh: a refresh now follows the old
-    outline and repeats the stale routine. Bundled with readme-skeleton-for-closed-products,
-    which then starts from the new outline."
-  evidence: "2026-11-05 — templates/readme-skeleton.md:39 gives Using it day to day the
-    job 'the commands they type and when'; README.md:92-105 lists /dispatch and
-    /feature as steps the developer runs."
-  seen:
-    status: shipped
-    blockers: []
-readme-skeleton-for-closed-products:
-  band: B
-  value: 3
-  valueWhy: A closed-source product's README refresh today produces a page for a reader
-    who never sees the repository.
-  effort: 3
-  effortWhy: A second skeleton, a question in /refresh-readme and /bootstrap, and the
-    README guards told which checks hold for which skeleton.
-  bundle: readme-outline
-  verdict: "Worth doing, with no deadline. Bundled with readme-follows-the-developers-role,
-    so the closed-source skeleton starts from the rewritten outline."
-  evidence: "2026-11-05 — templates/readme-skeleton.md is the only skeleton shipped."
-  seen:
-    status: shipped
-    blockers: []
-release-and-next-run-in-a-cloud-session:
-  band: B
-  value: 3
-  valueWhy: A release cannot be carried through from a cloud session, and /next's
-    in-flight check fails there.
-  effort: 2
-  effortWhy: A REST listing in /next, as sprint status already uses, and /release's
-    merge steps pointed at the workflow's route where gh cannot write.
-  verdict: "Do next, with flush-runs-in-a-cloud-session: the same GraphQL and write
-    refusals, along a path sprint status has already taken."
-  evidence: "2026-11-05 — gh pr list and gh repo clone answered HTTP 403 for GraphQL in a
-    cloud session, while gh api and gh run list answered; commands/next.md:22 and
-    commands/release.md lines 100, 269, 273, 414 and 431 use the refused calls."
-  seen:
-    status: shipped
-    blockers: []
 release-notes-stay-a-readable-size:
   band: D
   value: 1
@@ -358,6 +305,19 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+test-tools-take-patched-glob:
+  band: B
+  value: 3
+  valueWhy: Every project inherits two moderate Dependabot alerts from the shipped
+    lockfile; none is exploitable, but each project has to look at them.
+  effort: 2
+  effortWhy: An override in templates/package.json and a regenerated lockfile, already
+    tried on a copy of this repository with the suite passing.
+  verdict: "Do next, in time for the next release. The developer has accepted dropping
+    Node.js 18, so shaping has no open question."
+  seen:
+    status: idea
+    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4
@@ -371,6 +331,19 @@ update-check-runs-the-projects-own-checks:
   evidence: "2026-11-03 — in a scratch clone tagged v0.9.0-rc.1, scripts/check-version.mjs
     took the tag against this repository on v0.8.0 and ran 159 checks with no code
     change; it still runs only npm --prefix .tropis test."
+  seen:
+    status: idea
+    blockers: []
+update-names-a-changed-closed-skeleton:
+  band: D
+  value: 2
+  valueWhy: Only closed-source projects that copied the skeleton benefit, and only when
+    the skeleton next changes.
+  effort: 2
+  effortWhy: A comparison of the project's copy's origin with the release's skeleton, and
+    a line in /update's report.
+  verdict: "Leave it until the closed-source skeleton changes in a release; until then
+    there is nothing for an update to say."
   seen:
     status: idea
     blockers: []
