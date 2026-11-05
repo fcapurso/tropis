@@ -277,7 +277,8 @@
     "dependabot-alerts-are-assessed": [
       "glob and minimatch moderate advisories (via Jest, shipped to every project through templates/package-lock.json, not exploitable) left for the next release; new backlog item test-tools-take-patched-glob forces the patched majors (cost: no Node 18 for project checks).",
       "deepmerge low advisory (no fix exists, code never runs): recommend dismissing alert 4 as 'Vulnerable code is not actually used' — needs the developer, session cannot write alerts.",
-      "Spike written by the author and checked by a fresh agent, no separate plan or claim PR; finding in docs/superpowers/specs/2026-11-05-dependabot-alerts.md (#255)."
+      "Spike written by the author and checked by a fresh agent, no separate plan or claim PR; finding in docs/superpowers/specs/2026-11-05-dependabot-alerts.md (#255).",
+      "Pushed stray branch tmp-probe-dependabot-msg (one empty commit) by mistake; needs the developer to delete it."
     ]
   }
 }
