@@ -132,22 +132,6 @@ document-rule-reaches-a-new-document:
   seen:
     status: idea
     blockers: []
-flush-runs-in-a-cloud-session:
-  band: B
-  value: 3
-  valueWhy: A flush cannot be run from a cloud session at all today, and the developer
-    works from one more and more.
-  effort: 2
-  effortWhy: The preflight and the name check in one script, a REST listing with explicit
-    pages, and a paragraph in /flush-upstream, as sprint status already did.
-  verdict: "Do next: a known fix along a path sprint status has already taken, and the
-    only thing between a cloud session and a flush."
-  evidence: "2026-11-05 — scripts/submit-upstream.sh:54 refuses when gh auth status
-    fails, and :89 lists pull requests with gh pr list; gh auth status fails in this
-    cloud session as the entry says."
-  seen:
-    status: idea
-    blockers: []
 framework-calls-itself-one-thing:
   band: C
   value: 2
