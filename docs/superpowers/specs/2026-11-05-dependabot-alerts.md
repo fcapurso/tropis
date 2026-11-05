@@ -47,21 +47,30 @@ project's own files:
 - **minimatch.** The denial of service needs a crafted pattern. The patterns are the
   project's own Jest configuration (`testMatch`, coverage settings), written by the
   project.
-- **deepmerge.** `jest-config` uses it to merge the project's Jest configuration over
-  Jest's defaults, and a preset's `globals` with the project's. Both sides are the
-  project's own configuration.
+- **deepmerge.** `jest-config` calls it in two places: `mergeConfig()`, a helper Jest
+  exports and runs only when a configuration file calls it, and the merge of a preset's
+  `globals` with the project's. The configuration Tropis ships,
+  `templates/framework-jest.config.js`, uses neither, so deepmerge never runs in the
+  framework's checks. A project that adds either merges only its own configuration.
+
+The argument assumes the checks run on code the project trusts. A pull request from a
+fork runs its own test code in the pipeline anyway, so these packages add nothing to what
+such a pull request can already do, and fork workflows here wait for approval.
 
 ## What happens to each
 
 - **glob and minimatch: fixed in the next release, on purpose.** An `overrides` entry in
   `templates/package.json` lifts them to the patched majors, glob `^14.0.3` and minimatch
   `^11.0.4`. Tried on a copy of this repository: `npm audit` then reports neither, and
-  the installed release's suite passes, all 187 tests, except the check that the
-  installed files match their install fingerprints, which fails because the copy's
+  186 of the installed release's 187 tests pass. The one that fails checks that the
+  installed files match their install fingerprints, and fails because the copy's
   package file had been edited. That change is the backlog item
   `test-tools-take-patched-glob`. This repository's own `.tropis/` follows when that
-  release is installed.
+  release is installed. Two consequences go with it: minimatch 11 requires Node.js 20
+  or 22 and later, where Jest 30 still runs on 18.14, so the override drops Node.js 18
+  for projects; and `scripts/check-blueprint.sh` installs its test tools from the same
+  lockfile, so the self-check moves with it.
 - **deepmerge: dismissed, with the reason "Vulnerable code is not actually used".** No
-  patched version exists, and Jest merges only the project's own configuration with it.
+  patched version exists, and the framework's checks never call it.
   The dismissal is the developer's to make on the Security tab, since the session cannot
   write to the alerts. If deepmerge publishes a fix, Dependabot opens a new alert for it.

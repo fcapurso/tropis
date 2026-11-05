@@ -6766,7 +6766,7 @@
 # Shipped 2026-11-05 by the spike in a Claude Code cloud session; the answer is in the
 # spec in refs. Three advisories, all through Jest, in both lockfiles, none reachable from
 # untrusted input. glob and minimatch are fixed by test-tools-take-patched-glob; deepmerge
-# has no fix and is for the developer to dismiss. A spike, so no modules.
+# has no fix, never runs in the framework's checks, and is for the developer to dismiss. A spike, so no modules.
 - id: dependabot-alerts-are-assessed
   title: Find out what the two Dependabot alerts on main are and whether they reach projects
   status: shipped
@@ -6789,7 +6789,8 @@
   value: A project set up or updated from the next release has no Dependabot alert for
     GHSA-3g3m-2fjr-6pw4 or GHSA-g3hv-75wg-m249, because templates/package.json overrides
     glob to ^14.0.3 and minimatch to ^11.0.4 under Jest, and the lockfile it ships is
-    regenerated from that.
+    regenerated from that. minimatch 11 needs Node.js 20 or 22 and later, so this drops
+    Node.js 18 for projects, and the self-check's test tools move with the lockfile.
   acceptanceCriteria: []
   type: improvement
   layer: product
