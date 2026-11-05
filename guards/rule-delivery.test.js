@@ -835,11 +835,12 @@ describe('rule delivery', () => {
      * id set or deleted explicitly: the variable may be set in the environment running
      * this guard, so every case decides it for itself.
      * @param {string|object} payload a JSON string as given, or an object to serialise
-     * @param {string|undefined} own CLAUDE_CODE_REMOTE_SESSION_ID, or undefined to unset it
+     * @param {string|null} own CLAUDE_CODE_REMOTE_SESSION_ID, or null to unset it (an
+     *   explicit undefined would take the default)
      */
     function runOwnHook(payload, own = OWN) {
       const env = { ...process.env };
-      if (own === undefined) delete env.CLAUDE_CODE_REMOTE_SESSION_ID;
+      if (own === null) delete env.CLAUDE_CODE_REMOTE_SESSION_ID;
       else env.CLAUDE_CODE_REMOTE_SESSION_ID = own;
       const input = typeof payload === 'string' ? payload : JSON.stringify(payload);
       const r = spawnSync('bash', [ownHook], { input, env, encoding: 'utf8' });
@@ -881,7 +882,7 @@ describe('rule delivery', () => {
     });
 
     it('is silent outside a cloud session, where the variable is unset', () => {
-      const r = runOwnHook(call(INTERRUPT, 'session_01TESTOWN'), undefined);
+      const r = runOwnHook(call(INTERRUPT, 'session_01TESTOWN'), null);
       expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
     });
 
