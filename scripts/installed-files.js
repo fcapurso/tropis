@@ -258,7 +258,7 @@ export function carryFillIns(projectText, nextText) {
           const key = item.label === undefined ? undefined : slug(item.label);
           const target = key === undefined ? undefined : nextNamed.find((f) =>
             !moved.has(f.name) && (f.name === key || f.was.includes(key)));
-          if (target) moved.set(target.name, { from: `"${item.label}"`, lines: item.lines });
+          if (target) moved.set(target.name, { from: item.label, lines: item.lines });
           else unplaced.push({ kind: 'unplaced', lines: item.lines });
         }
       }
