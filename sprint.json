@@ -315,7 +315,8 @@
     "commands-have-named-fill-ins": [
       "Fill-in format: each fill-in's name, purpose and former names go in its own opening marker rather than a separate slot syntax (#261, 3d58872).",
       "Transitional fill-ins not built; /release's fill-ins taken from migrating this repository's own installed release command; check-version lists fill-ins among the steps a take leaves.",
-      "Resolved one rebase conflict in commands/update.md Stage 6 against update-lists-the-release-steps by keeping both, recorded in the review record."
+      "Resolved one rebase conflict in commands/update.md Stage 6 against update-lists-the-release-steps by keeping both, recorded in the review record.",
+      "Executor's setup helper could not read the plan because the main checkout was behind origin/main; set up by hand, no backlog item (reason in the review record). The plan wrongly marked one test as passing on the old code; noted in handover and review."
     ]
   }
 }
