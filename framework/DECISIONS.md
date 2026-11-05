@@ -2313,3 +2313,44 @@ a tier the picks are still listed least usage first, so a Large plan, a team mem
 fresh reviewer get the pick they got before unless the table's order and its figures
 disagree. A plan of a lower tier may run on a more capable model than it needs when that
 model costs less per task.
+
+## FW-071: A command's fill-ins are named blocks carried by name
+
+**Date:** 2026-11-05 · **Status:** Accepted; built by the backlog item
+`commands-have-named-fill-ins`.
+
+**Decision:** A command holds what is the project's to make in fill-ins: project-owned
+blocks whose begin marker names the fill-in, any names it had before, and its purpose,
+on one line — `begin <name> (was <old>, …) — <purpose>`. The end marker is unchanged, so
+the fingerprint, the drift check and every guard that finds blocks read a fill-in as a
+block, and the purpose, outside the block, is part of the fingerprint. Taking a release
+carries each fill-in by its name, or by the first former name the project has, whatever
+the order. A fill-in carried under its own name with the same purpose is not reported.
+The take lists one that is renamed, whose purpose changed, that is new (it holds the
+shipped text), or that the release dropped, printing the text of a dropped one. A
+project's single unnamed block from an earlier release is moved into the named fill-ins
+once: whole when there is one fill-in, otherwise each `- <Label>:` item into the
+fill-in named after its label, with the shipped help comments dropped and what finds no
+fill-in printed. The six commands that held a block hold named fill-ins; `/release`'s
+one block became ten value fill-ins and four behaviour fill-ins. Blocks in shipped
+scripts stay unnamed and are carried by position, as before.
+
+**Evidence:** The finding at docs/superpowers/specs/2026-11-04-command-slots-finding.md
+counted the changes projects made to shipped commands: 23 of the 40 are the project's to
+make and fit a fill-in. Today's take carried one unnamed block by position, so a label
+the release renamed was carried silently under the old name, and any change in the
+number of blocks wrote a `.new` file. Built by the plan
+docs/superpowers/plans/2026-11-05-commands-have-named-fill-ins.md. Source: none in
+particular; the finding's prototype was read for the idea.
+
+**Rejected:** The prototype's separate slot marker (a second syntax every tool that reads
+blocks would have to learn, for no gain). Taking a new shipped default into a fill-in the
+project never changed (the take keeps no copy of earlier shipped texts to compare with,
+so a project's body is always carried). The two transitional fill-ins of `/feature` and
+`/idea`, which served only generated documents FW-043 retires.
+
+**Consequences:** The take's report gains a *Fill-ins* list, and the version check
+prints the same lines; `/update` reads it with the developer. A command edited outside
+its fill-ins is still forked, and its new text lands in a `.new` file with the fill-ins
+carried. A fill-in's name and purpose are an interface: a purpose changes only when its
+meaning does, and a rename keeps the old name in `was`.
