@@ -6873,9 +6873,17 @@
 # An override was tried on a copy of this repository and the suite passed.
 # 2026-11-05, the developer accepted dropping Node.js 18 for projects' checks: it reached
 # end of life in April 2025. Shaping need not ask again.
+# Shipped by docs/superpowers/plans/2026-11-05-test-tools-take-patched-glob.md.
+# Criteria 1 and 2: the plan's handover and review record (the lockfile resolves glob
+# 14.0.3 and minimatch 11.0.4, and npm audit names neither); criterion 1's override is
+# also held by guards/dependency-overrides.test.js "lists every override here, and only
+# those". Criterion 3: the same guard's "glob is still needed" and "minimatch is still
+# needed", re-broken in review. Criterion 4: guards/check-prerequisites.test.js "accepts
+# node" and "refuses node ... is needed". Criterion 5: scripts/check-blueprint.sh, which
+# installs from the lockfile, passing in review. Criterion 6: RELEASES.md, Unreleased.
 - id: test-tools-take-patched-glob
   title: The test tools a project installs lock glob and minimatch at their patched majors
-  status: building
+  status: shipped
   value: A project set up or updated from the next release has no Dependabot alert for
     GHSA-3g3m-2fjr-6pw4 or GHSA-g3hv-75wg-m249, because templates/package.json overrides
     glob to ^14.0.3 and minimatch to ^11.0.4 under Jest, and the lockfile it ships is
@@ -6895,7 +6903,11 @@
       later.
   type: improvement
   layer: product
-  modules: []
+  modules:
+    - templates/package.json
+    - templates/package-lock.json
+    - scripts/check-prerequisites.sh
+    - guards/dependency-overrides.test.js
   refs:
     - docs/superpowers/specs/2026-11-05-dependabot-alerts.md
     - docs/superpowers/plans/2026-11-05-test-tools-take-patched-glob.md

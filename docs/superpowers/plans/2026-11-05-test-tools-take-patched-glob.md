@@ -325,3 +325,53 @@ Only the files in the File Structure table (feature-catalog.yaml untouched).
 ### Outstanding
 
 Parent review, pull request and merge; the `feature-catalog.yaml` move to `shipped`; README still says Node 18.14 until `/refresh-readme`.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, Node.js 22.23.4, npm 10.9.9, Jest 30.5.2, Linux x86_64.
+
+- The lockfile: `node_modules/glob 14.0.3` and `node_modules/minimatch 11.0.4`, the only
+  copies of either (`find node_modules` on a scratch `npm ci` found 2 package files in all).
+- `npm audit --json` on that scratch install: `@jest/core, deepmerge, jest, jest-cli,
+  jest-config`, all from deepmerge; neither glob nor minimatch.
+- `guards/check-prerequisites.test.js` and `guards/dependency-overrides.test.js` staged
+  from an export of `364a7dd`: `Tests: 15 passed, 15 total`. With `origin/main`'s
+  `scripts/check-prerequisites.sh` put back in the export: `Tests: 4 failed, 4 passed,
+  8 total`, so the guard goes red on the old check.
+- `bash scripts/check-blueprint.sh` on `364a7dd`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`, after reinstalling its test tools from the new lockfile.
+- `git diff --stat origin/main...HEAD`: the files in the File Structure table only.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing.
+
+- One docblock line in `guards/check-prerequisites.test.js` ran past the file's width;
+  the review rewrapped it (`364a7dd`), a mechanical fix.
+- The handover's diagnosis that the extra audit entries come only from deepmerge holds:
+  the audit JSON names deepmerge as the `via` of each Jest entry.
+- The handover's Scope did not name the worktree path; it was `../tropis-patched-glob`,
+  as the plan said.
+
+### Outstanding disposition
+
+- The move to `shipped`: done in this pull request.
+- `README.md` still says Node 18.14: dropped as a backlog item, because `/refresh-readme`
+  rewrites the page at release and the release notes already say Node.js 20, or 22 and
+  later.
+- The deepmerge alert: the developer's to dismiss on the Security tab, as the spec says;
+  nothing here changes it.
+
+### Learnings routed
+
+Nothing generalises: the plan's audit expectation missed that npm lists a vulnerable
+package's dependents too, which is a fact about npm's output already shown in the spec
+("npm reports 19 entries per lockfile … because it also lists every Jest package").
+
+### Merged because
+
+The overrides took, the audit names neither advisory, both guards fail on what they
+guard, and the self-check passes with the tools installed from the new lockfile.
