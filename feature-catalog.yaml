@@ -6451,3 +6451,36 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-05, raised by first-adopter's upstream flush, from its queue entry of 2026-10-27.
+- id: dependency-licences-are-checked
+  title: Every production dependency's licence is checked by the pipeline and credited in a file
+  status: idea
+  value: A project whose product is closed-source learns at build time, not in a
+    procurement review, that a dependency's licence would oblige it to publish its
+    source. Today no check reads a licence, so such a dependency reaches main with
+    nothing objecting, and the attribution permissive licences require is met only
+    when a bundler happens to keep library banners. The pipeline checks every
+    production dependency's licence against the project's own allowed list, and a
+    notices file, kept current by a guard, credits each with its licence text.
+  acceptanceCriteria:
+    - The pipeline fails when a production dependency carries a licence outside the
+      project's allowed list, and names the package and the licence that stopped it.
+    - 'The allowed list is a product-owned file at the repository root, beside the
+      notices file, read by the shared check rather than restated inside it. It is not a
+      framework setting under FW-045: like a project''s README skeleton or staging
+      pipeline, it holds the project''s own content and lives where that content
+      belongs, and an update never writes to it.'
+    - A third-party notices file is generated from the installed tree, credits every
+      production dependency with its licence, and is committed.
+    - Regenerating the notices file is one command, and a guard compares the committed
+      copy with a fresh run, as other generated documents are compared.
+    - Development-only dependencies are out of scope, and the check says so.
+    - Nothing in the check or the generator names a product; a project adopts it by
+      writing its allowed list.
+    - Adding a licence or an exception to the allowed list is the developer's decision,
+      and the rule that carries the check says an agent never makes it.
+  type: feature
+  layer: product
+  modules: []
+  refs: []
