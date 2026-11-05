@@ -208,8 +208,8 @@ repository's own commands.
 ### Scope
 
 Every file in *File Structure*. Worktree: the sibling `../tropis-readme-closed-build`,
-built on `readme-follows-the-developers-role`'s branch and rebased onto `main` once that
-merged.
+built on `readme-follows-the-developers-role`'s branch, which has not merged yet; it is
+rebased onto `main` once that merges.
 
 ### Judgment calls
 
@@ -236,3 +236,105 @@ merged.
   project owning a copy is not told when the closed-source template changes. Left out to
   avoid holding this plan behind two others (Decision 4); a project owning a skeleton
   owns its changes.
+
+## Review record
+
+Fresh reviewer: a Claude Code 2.1.318 subagent on Claude Opus 5.5, with only the
+repository and this branch; git 2.43.0, node v22.23.4, Linux x86_64. Reviewed
+`HEAD~2..HEAD` (`d964159`, the claim; `8874f14`, the build) on
+`plan/readme-skeleton-for-closed-products-build`, which sits on
+`readme-follows-the-developers-role`'s unmerged commits.
+
+### Checks re-run
+
+- Changed guards on a scratch copy of the working tree
+  (`guards/readme-usable.test.js guards/readme-level.test.js`):
+  `Tests: 28 passed, 28 total`.
+- Re-broken: `templates/readme-skeleton.md`, `commands/refresh-readme.md`,
+  `commands/bootstrap.md`, `bootstrap.md` and `scripts/set-up-project.sh` taken from
+  `HEAD~2`, `templates/readme-skeleton-closed.md` removed: `Tests: 9 failed, 19 passed,
+  28 total`. The failures are the three new `readme-usable` cases (the closed-source
+  outline, both headers naming their reader, setup installing both) and six
+  `readme-level` cases (the skeleton option's question, the closed template and "do not
+  ask"; Stage 3a and Step 3a's question, the closed template and "copy nothing"). The
+  handover's 9 / 19 matches. Restored with `git checkout HEAD -- .`; `git status --short`
+  printed nothing.
+- `npm --prefix .tropis test` before this record: `Tests: 1 failed, 189 passed, 190
+  total`, the one failure `gives every executed plan a review record` naming this plan,
+  which this record answers.
+- `bash scripts/check-blueprint.sh` on `8874f14`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`, exit 0.
+- `git diff --stat HEAD~2..HEAD`: eleven files, each in *File Structure*; nothing else.
+- Diagnoses re-checked. Decision 4's claim that an update installs the new template:
+  `scripts/take-version.mjs` line 173 runs `scripts/set-up-project.sh`, so it holds. The
+  `Merges after` removal: on `origin/main` (`e6717b5`) the items building are
+  `commands-have-named-fill-ins`, `update-lists-the-release-steps` and
+  `readme-follows-the-developers-role`; the first two plans' File Structure tables share
+  no file with this plan's except the backlog and bands file the overlap check ignores,
+  so a `--claim` on the final plan would have written only
+  `readme-follows-the-developers-role`. The removal happened before the claim landed
+  (`d964159` carries only that line), so nothing on `main` was taken back. Acceptable.
+  The fresh-agent check is described the same way in the handover and in `8874f14`'s
+  body, with tool, version, model, operating system and architecture.
+
+### Found
+
+Public exposure: read the whole diff, the plan and both commit messages; nothing. The
+only other project is named by its pseudonym, `first-adopter`; no home paths,
+hostnames, sessions other than the attribution line, or personal names.
+
+Criteria: 1, 2 and 4 hold and are pinned by guards. 3 holds for `/refresh-readme
+skeleton` and, by construction, for `/bootstrap` (below). 5 holds: the skeleton option
+copies the open default on no clear answer, Stage 3a and Step 3a copy nothing, and
+*Read* falls back to the installed default; the refresh half is checked by reading only,
+no guard pins "with no clear answer, copy the open one". The closed-source skeleton fits
+its stated reader, has the sections in the stated order, and keeps secrets off the page
+twice (the header, and *Environments and accounts*: "where credentials live, never what
+they are"). The two commands and the by-hand bootstrap say the same thing; the skeleton
+option's later steps (rework, commit that file only) apply unchanged to either copy.
+Leaving `commands/update.md` and `guards/set-up-project.test.js` alone is sound: both
+are in building plans, and the new template is installed and asserted through
+`guards/readme-usable.test.js` reading the setup script.
+
+Defects, none blocking:
+
+1. `commands/refresh-readme.md`, *At `writes`*: "never cut a step from Getting started
+   that a reader needs" names the open skeleton's section only. The closed-source
+   skeleton's equivalent, *Getting a working copy*, loses that protection when a page
+   runs over its limit. One-line fix: name both sections. Not fixed here: this review
+   commits only the plan file.
+2. `/bootstrap` Stage 3a and `bootstrap.md` Step 3a do not say to skip the question when
+   `docs/readme/skeleton.md` already exists. Criterion 3's "not asked, copy untouched"
+   holds there only because a project just set up has no skeleton; a project that
+   carried one in would be asked, and a closed-source answer would overwrite it.
+3. The fresh-agent check exercised `/refresh-readme skeleton` only. The new `/bootstrap`
+   paragraph changes what an agent is told too, and no probe ran it; the plan's *Shape*
+   scoped the probe that way, so this is a gap in the plan, not in the build.
+4. `commands/refresh-readme.md`, *Read*: one line runs to 119 characters, past the
+   file's wrap. Cosmetic.
+5. The handover's *Scope* said the branch was rebased onto `main` once
+   `readme-follows-the-developers-role` merged; that plan has not merged (`origin/main`
+   lacks `b50787a`). Fixed in this file by the reviewer, a wording correction of the
+   report only.
+
+### Outstanding disposition
+
+- `/update`'s Stage 8 note naming only the default skeleton: no backlog id yet. This
+  review commits only the plan file, so it cannot add one. The specifying session raises
+  it as an idea, together with defects 1 to 3, once `commands-have-named-fill-ins` and
+  `update-lists-the-release-steps` (both touching `commands/update.md`) have shipped, or
+  fixes 1 on this branch before merge; either way it is recorded before the merge.
+- No criterion needs the developer to observe it; no unexplained symptom.
+
+### Learnings routed
+
+- None generalises beyond this plan. Defect 3 is an instance of the workflow's existing
+  rule, *Choose the task to exercise the clause you just wrote*: a change to two commands
+  wants a probe of each. No new rule.
+
+### Merged because
+
+The deliverable meets all five criteria, its guards go red without it and green with it,
+the self-check passes, and the defects found are small edges and wording that the
+specifying session can fix or record as a backlog idea before the self-merge.
