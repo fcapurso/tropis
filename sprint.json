@@ -304,6 +304,9 @@
       "Fixed one gap the fresh agent found on the branch (re-push after a refused PR is harmless), declared in the review record.",
       "Did not correct workflow.md 'Where gh cannot write'; handed it to release-and-next-run-in-a-cloud-session via a backlog comment.",
       "Open: no backlog item yet for the first real cloud flush (first test of cross-repo push and fork); a pre-existing fork-readiness race left alone; the plan's single-guard command was wrong and is unrecorded."
+    ],
+    "update-lists-the-release-steps": [
+      "Pushed the stalled executor's branch and checked its commits rather than trusting them; re-ran guard, readme-level, installed suite (195/195) and self-check before and after rebase (#259, 1c6a378)."
     ]
   }
 }
