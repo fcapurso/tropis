@@ -26,10 +26,12 @@ one comes in through Jest, a development dependency, and none through `yaml`.
 npm reports 19 entries per lockfile (3 low, 16 moderate) because it also lists every
 Jest package above these three; there are three advisories.
 
-The push message counted two (one moderate, one low). The low one is deepmerge. The
-moderate one is glob or minimatch; the minimatch advisory has the higher npm advisory
-number of the two, so it is likely the one published after that push. The Security tab
-shows which; nothing below depends on it.
+The push message counted two (one moderate, one low). A push later the same day counted
+one, low, alert 4: deepmerge, the only low advisory. So GitHub no longer reports a
+moderate alert on `main`, although `npm audit` still finds glob and minimatch in both
+lockfiles. This session could not read why: the alert may have been dismissed, or
+GitHub's matching may differ from npm's. The Security tab shows it. Nothing below
+depends on it, because the decisions follow the lockfiles.
 
 ## Whether they reach projects
 
