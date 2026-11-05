@@ -18,7 +18,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import YAML from 'yaml';
-import { fingerprint, shippedFiles, blocks } from '../scripts/installed-files.js';
+import { fingerprint, shippedFiles, blocks, fillIns } from '../scripts/installed-files.js';
 
 const blueprint = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const setup = join(blueprint, 'scripts/set-up-project.sh');
@@ -334,6 +334,36 @@ describe('set-up-project.sh', () => {
         '.claude/commands/release.md',
         '.tropis/guards/rule-claims.test.js',
         '.tropis/hooks/framework-commit-check.sh',
+      ]);
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
+  it('names every project-owned block in a command, once, with its purpose', () => {
+    const { parent, dir } = repository();
+    try {
+      expect(runSetup(dir).status).toBe(0);
+      const commands = shippedFiles(dir).filter((rel) => rel.startsWith('.claude/commands/'));
+      const withBlocks = [];
+      for (const rel of commands) {
+        const text = readFileSync(join(dir, rel), 'utf8');
+        const named = fillIns(text);
+        if (blocks(text).length === 0) continue;
+        withBlocks.push(rel);
+        expect({ rel, unnamed: blocks(text).length - named.length }).toEqual({ rel, unnamed: 0 });
+        expect({ rel, empty: named.filter((f) => f.purpose === '').map((f) => f.name) })
+          .toEqual({ rel, empty: [] });
+        const names = named.map((f) => f.name);
+        expect({ rel, names: [...new Set(names)] }).toEqual({ rel, names });
+      }
+      expect(withBlocks).toEqual([
+        '.claude/commands/feature.md',
+        '.claude/commands/idea.md',
+        '.claude/commands/manual-check.md',
+        '.claude/commands/next.md',
+        '.claude/commands/refresh-board.md',
+        '.claude/commands/release.md',
       ]);
     } finally {
       rmSync(parent, { recursive: true, force: true });

@@ -32,7 +32,7 @@ line with the reason, write nothing, and stop.
 6. The file is YAML. Quote nothing that does not need it, let long prose fold across
    lines, and put any reasoning about the backlog item in a `#` comment above the key it
    explains — comments are part of the record here.
-<!-- project-owned: begin — how this project checks and commits a new backlog item. -->
+<!-- project-owned: begin checks — how this project checks and commits a new backlog item. -->
 7. Run the project's checks (`npm --prefix .tropis test`) and commit the backlog. If the
    checks fail on the new backlog item, fix the backlog item, not the check.
 <!-- project-owned: end -->
