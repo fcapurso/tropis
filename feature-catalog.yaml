@@ -6560,7 +6560,54 @@
       as open would.
     - The guard covers a session where gh auth status fails and GitHub answers, and a
       GraphQL refusal, for preflight and check-name.
+    # Added 2026-11-05 by the developer: gh repo clone also goes through GraphQL and is
+    # refused in a cloud session ("HTTP 403: GitHub GraphQL is not available from Claude
+    # Code sessions"), measured in one on Linux x86_64.
+    - The sitting's clone of the framework's main (step 3 of /flush-upstream) works where
+      gh repo clone is refused, by cloning with git from the framework's address.
   type: bug
   layer: product
+  modules: []
+  refs: []
+
+# 2026-11-05, raised by the developer after absorbing a flush from a Claude Code cloud
+# session (Linux x86_64). There gh answers REST reads (gh api, gh run list) and refuses
+# GraphQL with "HTTP 403: GitHub GraphQL is not available from Claude Code sessions", and
+# refuses writes. /next lists pull requests with gh pr list (commands/next.md:22), which
+# is GraphQL. /release merges with gh pr merge --auto (lines 100, 269 and 414) and reads
+# the merge commit with gh pr view --json mergeCommit (lines 273 and 431), and never
+# points at the workflow's "Where gh cannot write". The refusal itself names
+# api.github.com routes for auto-merge from a cloud session, untried here.
+- id: release-and-next-run-in-a-cloud-session
+  title: /release and /next work from a cloud session as from the developer's computer
+  status: idea
+  value: A developer working from a Claude Code cloud session can see what is in flight
+    and carry a release through, as from their own computer. Today /next's check of open
+    pull requests fails there, and /release cannot set its pull requests to merge or
+    find the commit a merge made, so a release stops partway with nothing saying how to
+    go on.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
+
+# 2026-11-05, raised by the developer after the first /absorb-flush from a Claude Code
+# cloud session (Linux x86_64). Its preflight stopped on gh auth status, and every other
+# gh call it names (pr list, pr create, pr checks --watch, pr merge --rebase, pr close)
+# uses GraphQL or writes, which a cloud session refuses. The sitting finished only by
+# swapping the session's own GitHub tools in by hand: listing through them and feeding
+# the listing script the same JSON, then opening, watching, rebase-merging and closing
+# through them. Not covered by flush-runs-in-a-cloud-session, which is the project side.
+- id: absorb-flush-runs-in-a-cloud-session
+  title: The maintainer can absorb a flush from a cloud session
+  status: idea
+  value: The maintainer can take in a project's flush from a Claude Code cloud session,
+    with the same listing, decisions and group pull requests as from their own computer,
+    instead of the command stopping at its preflight and the sitting depending on an
+    agent improvising the GitHub steps.
+  acceptanceCriteria: []
+  type: bug
+  layer: framework
   modules: []
   refs: []

@@ -10,6 +10,21 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
+absorb-flush-runs-in-a-cloud-session:
+  band: B
+  value: 2
+  valueWhy: Only the maintainer runs it, and a sitting can finish today by swapping in
+    the session's GitHub tools by hand.
+  effort: 2
+  effortWhy: The command's GitHub steps rewritten for a session where gh cannot write;
+    the listing script already takes its listing as JSON and needs no change.
+  verdict: "Worth doing, with no deadline: the hand workaround works but depends on the
+    agent improvising each GitHub step."
+  evidence: "2026-11-05 — the first cloud sitting stopped at gh auth status and finished
+    through the session's GitHub tools, as the entry describes."
+  seen:
+    status: idea
+    blockers: []
 adopt-into-a-project-with-its-own-framework:
   band: C
   value: 3
@@ -273,6 +288,22 @@ readme-skeleton-for-closed-products:
   verdict: "Worth doing, with no deadline. Whichever of this and
     readme-follows-the-developers-role is built second rebases on the other's outline."
   evidence: "2026-11-05 — templates/readme-skeleton.md is the only skeleton shipped."
+  seen:
+    status: idea
+    blockers: []
+release-and-next-run-in-a-cloud-session:
+  band: B
+  value: 3
+  valueWhy: A release cannot be carried through from a cloud session, and /next's
+    in-flight check fails there.
+  effort: 2
+  effortWhy: A REST listing in /next, as sprint status already uses, and /release's
+    merge steps pointed at the workflow's route where gh cannot write.
+  verdict: "Do next, with flush-runs-in-a-cloud-session: the same GraphQL and write
+    refusals, along a path sprint status has already taken."
+  evidence: "2026-11-05 — gh pr list and gh repo clone answered HTTP 403 for GraphQL in a
+    cloud session, while gh api and gh run list answered; commands/next.md:22 and
+    commands/release.md lines 100, 269, 273, 414 and 431 use the refused calls."
   seen:
     status: idea
     blockers: []
