@@ -4,7 +4,8 @@
   "way": "session",
   "archive": true,
   "archived": [
-    "executor-never-interrupts-its-dispatcher"
+    "executor-never-interrupts-its-dispatcher",
+    "bundle-brief-names-every-item"
   ],
   "entries": [
     {
