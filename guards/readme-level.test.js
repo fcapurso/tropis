@@ -63,6 +63,7 @@ describe('how a project chooses the README level', () => {
     ['open or closed-source'],
     ['readme-skeleton-closed.md'],
     ['copy nothing'],
+    ['already exists, in which case do not ask and leave it'],
   ])('bootstrap Stage 3a and Step 3a contain %s', (phrase) => {
     expect(stage).toContain(phrase);
     expect(stepAt).toBeGreaterThanOrEqual(0);

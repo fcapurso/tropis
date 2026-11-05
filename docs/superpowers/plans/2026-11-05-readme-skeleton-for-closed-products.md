@@ -338,3 +338,26 @@ Defects, none blocking:
 The deliverable meets all five criteria, its guards go red without it and green with it,
 the self-check passes, and the defects found are small edges and wording that the
 specifying session can fix or record as a backlog idea before the self-merge.
+
+### Fixed after this record, by the author
+
+- **Defect 1:** `commands/refresh-readme.md`, *At `writes`*, now never cuts a step "from
+  Getting started, or from the closed-source skeleton's Getting a working copy"; the
+  phrase is added to `guards/readme-usable.test.js`'s command phrases.
+- **Defect 2:** `commands/bootstrap.md` Stage 3a and `bootstrap.md` Step 3a skip the
+  question when `docs/readme/skeleton.md` already exists ("in which case do not ask and
+  leave it"); pinned in `guards/readme-level.test.js`. Guards: `Tests: 29 passed, 29
+  total`.
+- **Defect 3:** a second fresh-agent probe ran `/bootstrap` Stage 3a: a Claude Code
+  2.1.318 subagent on Claude Opus 5.5, Linux x86_64, with only an invented closed-source
+  project. Run 1 asked the level, wrote `docs/readme/readme.yaml`, asked "Is the product
+  open or closed-source?", copied `.tropis/templates/readme-skeleton-closed.md` (checked
+  with `cmp`) and committed it alone; run 2 did not ask open or closed and changed
+  nothing. **Pass.** It also noted that the level question is asked again on a second
+  run, which is unchanged by this plan and harmless (the level command says there is
+  nothing to commit).
+- **Defect 4:** the long *Read* line is re-wrapped.
+- **Outstanding:** `/update`'s Stage 8 note is now the backlog idea
+  `update-names-a-changed-closed-skeleton`.
+
+Self-merged after `readme-follows-the-developers-role`, as the plan's merge authority says.

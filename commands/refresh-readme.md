@@ -69,7 +69,8 @@ is no refresh point yet.
 
 Read the skeleton: `docs/readme/skeleton.md` when that file exists, otherwise
 `.tropis/templates/readme-skeleton.md`, the default. A closed-source product uses its
-skeleton only once `/refresh-readme skeleton` or `/bootstrap` has copied it. Do not edit the skeleton during a refresh.
+skeleton only once `/refresh-readme skeleton` or `/bootstrap` has copied it. Do not
+edit the skeleton during a refresh.
 
 A skeleton is a header comment, then a line `**Page length:**` giving the most words
 the whole page may have, then one `## <Heading>` per section, in order. Under a
@@ -138,8 +139,8 @@ bullets it holds keeps that many.
 **Then keep the page under its limit.** Count it again. If it is over, cut until it is
 under: fold two bullets or sentences that say one thing, drop detail a linked document
 already holds, and shorten the sections you judged fine as well, if need be. Never cut
-`Fixed text:`, and never cut a step from Getting started that a reader needs for it to
-work as written.
+`Fixed text:`, and never cut a step from Getting started, or from the closed-source
+skeleton's Getting a working copy, that a reader needs for it to work as written.
 
 Run the project's checks (`npm --prefix .tropis test`). If any fails because of the page,
 fix the page and run them again; if one still fails, say which and why when you ask.

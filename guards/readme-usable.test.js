@@ -221,6 +221,7 @@ describe('blueprint README usable', () => {
       'Then keep the page under its limit.',
       'cut until it is under',
       'Never cut `Fixed text:`',
+      'or from the closed-source skeleton\'s Getting a working copy',
       'what you cut to stay under it',
       'limits the page to 1,200 words',
       'and the page\'s word count against its limit',

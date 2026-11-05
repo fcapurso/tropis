@@ -6613,6 +6613,21 @@
   refs:
     - docs/superpowers/plans/2026-11-05-readme-skeleton-for-closed-products.md
 
+# 2026-11-05, from the review of readme-skeleton-for-closed-products: /update's Stage 8
+# note keys on .tropis/templates/readme-skeleton.md only. Left out of that plan so it did
+# not wait behind two plans building in commands/update.md.
+- id: update-names-a-changed-closed-skeleton
+  title: An update says when the closed-source README skeleton changed
+  status: idea
+  value: A closed-source project that owns a copy of its README skeleton is told, after
+    an update, that the skeleton it was copied from changed, as an open project is told
+    of the default, and is offered the difference.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
+
 # 2026-11-05, raised by first-adopter's upstream flush, from its queue entry of 2026-11-05.
 # Found running /flush-upstream in a Claude Code cloud session (Linux x86_64): preflight
 # refused with "gh not signed in" while gh api user answered for the signed-in account,
