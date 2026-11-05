@@ -2304,21 +2304,46 @@
 # copies, fixes already taken and three procedure changes with a better home. A
 # prototype carried them by name from v0.5.2 to v0.8.1. Called fill-ins because "slot"
 # already names the pipeline's staging slot.
+# 2026-11-05, shaped and claimed in a sprint session: the fill-in is a project-owned
+# block whose begin marker carries a name and purpose, so the fingerprint, the drift
+# check and every tool that finds blocks keep working. The two transitional fill-ins the
+# finding names (feature's before-ship-commit, idea's before-commit) are not built: only
+# the generated documents FW-043 retires needed them.
 - id: commands-have-named-fill-ins
   title: A command's fill-ins are carried by name when a project takes a new release
-  status: idea
+  status: building
   value: A project that filled in a command keeps its fill-ins through every update
     without merging by hand, and is told when a fill-in is new, renamed, means something
     different or has gone. Today each command has one free-text block, carried as one
     lump, so a renamed field stays under its old name with nothing said, and a release
     that adds or removes a block writes the whole command beside the project's as a .new
     file to merge by hand.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - /feature, /idea, /next, /manual-check and /refresh-board each have one named
+      fill-in where their block is today, /release has a named fill-in for each value
+      it reads and one at each point a project adds behaviour, and no other shipped
+      command has any.
+    - A project that changed a command only inside its fill-ins takes a release without
+      a .new file for that command, its text carried by name, also when the release
+      adds, renames or removes a fill-in.
+    - The take's report names each fill-in that is new, renamed or gone, and each whose
+      purpose changed with the old and new purpose side by side, and prints the text of
+      one that is gone.
+    - A project whose command still has the single block of an earlier release has it
+      moved into the named fill-ins by the take that introduces them, each labelled
+      line placed by its name, and the report prints what it could not place.
+    - A change outside the fill-ins still leaves the new version beside the command as
+      a .new file.
+    - check-version.mjs lists the same fill-in lines the take would print.
+    - On the shipped /release and the real take, a test shows fill-ins carried by name,
+      a removed one listed with its text, a changed purpose listed, and a section added
+      upstream arriving with the fill-ins in place.
   type: improvement
   layer: product
   modules: []
   refs:
     - docs/superpowers/specs/2026-10-09-framework-updates-like-a-dependency-design.md
+    - docs/superpowers/plans/2026-11-05-commands-have-named-fill-ins.md
 
 # 2026-10-16, found by a trial update of this repository to v0.3.0: its .gitattributes
 # holds the export-ignore lines anchored with a leading /, because unanchored they also
