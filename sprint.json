@@ -216,6 +216,9 @@
       "Fixed with a shipped PreToolUse hook (scripts/own-session-guard.sh) that refuses interrupt_session/archive_session on the session the agent runs in, rather than prompt text; reasoning in the hook header and plan, not DECISIONS.md (#270, ccd3469).",
       "Live-tested in a throwaway cloud session: the hook refused a self-interrupt and the session finished normally. Executor ran as a Fable 5.1 subagent (Medium picks are Cursor-only); parent review and merge by the team member.",
       "Left for the developer: delete branch probe/own-session-guard, archive the session 'Probe: own-session-guard (throwaway)'. Raised idea one-guard-recipe-names-framework-root (the AGENTS.md one-guard recipe lacks FRAMEWORK_ROOT for hook guards)."
+    ],
+    "bundle-brief-names-every-item": [
+      "brief for a bundle's first item now names every item and says to end SHIPPED only once all ship; brief/launch for a later bundle item is refused naming the first (#269, 301a108; claim #266)."
     ]
   }
 }
