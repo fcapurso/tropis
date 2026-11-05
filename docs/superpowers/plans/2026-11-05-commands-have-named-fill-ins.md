@@ -622,3 +622,73 @@ this repository's names.
 - A slip during the work, with no effect on the branch: Task 5's `git reset --hard`
   also discarded Task 6's then-uncommitted edits, which were made again before Task 6's
   commit.
+
+## Review record
+
+Reviewed by the specifying session, a Claude Code cloud session. Tools: git 2.43.0,
+node v22.23.4, Linux x86_64.
+
+### Checks re-run
+
+- `bash scripts/check-blueprint.sh` on the handover head `f9b4d82`: `Self-check passed:
+  every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`
+- Re-break: a throwaway commit making `carryFillIns` return `carryBlocks` for every text,
+  then the self-check: `Self-check FAILED: conformance or the clean baseline`, with the
+  seven `carryFillIns ›` unit cases, `take-version.mjs › lists a renamed, a re-purposed
+  and a removed fill-in…`, `› moves the single block of an earlier release…`, `› writes
+  .new with the fill-ins carried when the project adds a block of its own` and
+  `check-version.mjs › lists a fill-in the release renames, as the take will` among the
+  failures. Commit dropped.
+- The move on a real block: `carryFillIns` run on this repository's installed
+  `.claude/commands/release.md` (v0.8.2's single block) against the branch's
+  `commands/release.md`: no mismatch; *Run from*, *Notes file*, *Readers*, *Breaking*,
+  *Trigger* (into `promote-trigger`) and *Where the run is watched* (into `runs-url`)
+  moved by name; *Main branch* and *Rule trial* printed as not placed with their text;
+  the eight fill-ins the block had no line for listed as new.
+- Scope: `git diff --stat origin/main...HEAD` lists the twenty files of *File
+  Structure*, nothing else.
+
+### Found
+
+Public exposure: the diff was read for names, home paths, hostnames and email
+addresses; nothing found.
+
+- The handover's diagnosis of case 10 holds: both texts carry fourteen blocks in the
+  same order, so positional carrying gives the same result; the re-break confirms case
+  10 is not among the failures. It still pins the outcome. The plan was wrong to mark it †.
+- The isolation helper's refusal is real and its cause is as reported: this session's
+  main checkout is detached at the commit the cloud started on, behind `origin/main`, so
+  `isolate-for-plan.sh` cannot read a plan that landed after it. The executor ran the
+  one Repositories row by hand, as the helper would have.
+- Code matches *The change*. The executor's judgment calls are sound: a project's
+  unnamed blocks are listed as not placed only when the new text has no unnamed block
+  (otherwise they are carried by position); `check-version.mjs` lists the fill-in lines
+  among the settings that do not fit, as §3 said, so a release that adds a fill-in reads
+  *safe with these steps*, which tells the operator to read the list.
+
+### Outstanding disposition
+
+- No developer check: the change has no screen.
+- `npm --prefix .tropis test` runs the installed take until a release is installed:
+  that is how this repository works (`AGENTS.md`, *Gotchas*), not a defect.
+- The rebase onto `update-lists-the-release-steps`, which also changes
+  `commands/update.md`, is settled at merge; a conflict there is reviewed before the
+  merge.
+- The isolation helper reading the plan from a main checkout that is behind: dropped as
+  a backlog item. The workflow already says a cloud session's only checkout sits on the
+  branch the cloud assigned it; the dispatch prompt now in use says to fetch first, and
+  the executor recovered with the row's own command in one step.
+- The release-note line is the developer's at `/release`.
+
+### Learnings routed
+
+- None generalises beyond this plan. The † mis-mark on case 10 is the planning rule's
+  *A check states what it prints when it passes and what it prints when it fails*
+  already: the author did not ask what the case prints before the change.
+
+### Merged because
+
+Every named fill-in carries by name, the take and the check list what changed, the move
+places a real project's block by its labels and prints the rest, the self-check passes,
+and the new guards go red with the carrying reverted.
