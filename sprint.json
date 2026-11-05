@@ -307,7 +307,8 @@
     ],
     "update-lists-the-release-steps": [
       "Pushed the stalled executor's branch and checked its commits rather than trusting them; re-ran guard, readme-level, installed suite (195/195) and self-check before and after rebase (#259, 1c6a378).",
-      "Fresh-agent check passed; it omitted 0.8.0's one-sentence scope note, dropped without a backlog item since each step states its own condition."
+      "Fresh-agent check passed; it omitted 0.8.0's one-sentence scope note, dropped without a backlog item since each step states its own condition.",
+      "Projects that updated to 0.7.2-0.8.2 through /update missed their by-hand steps (including 0.8.0's four required ones) until a release with this fix is installed; the release-note bullet tells readers to go back and read those sections."
     ]
   }
 }
