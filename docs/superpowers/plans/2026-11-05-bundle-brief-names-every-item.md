@@ -312,3 +312,37 @@ Nothing found. `start` kept the order `k1, k2, solo`.
 ### Outstanding
 
 The change has no screen, so there is no developer check.
+
+## Review record
+
+Reviewed by the specifying session on 2026-11-05 (git 2.43.0, node v22, Linux x86_64).
+
+### Checks re-run
+
+After rebasing on `origin/main` at `e274f78`: `git diff --stat origin/main...HEAD` lists
+6 files, each in *File Structure*; `npm --prefix .tropis test` passes, and
+`bash scripts/check-blueprint.sh` ends `Self-check passed`. The executor showed the new
+case red before the change and green after (52 of 52).
+
+### Found
+
+No defect. `scripts/sprint.mjs` and `guards/sprint.test.js` match the plan's code
+verbatim; `archive` keeps its refusal words through `requireMember`, and `launch`
+refuses a non-first bundle item before it adds a worktree. Nothing fixed on the branch.
+
+### Fresh-agent check
+
+Not owed: nothing under `framework/`, `rules/` or `commands/` changed.
+
+### Outstanding disposition
+
+None. The change has no screen, so there is no developer check.
+
+### Learnings routed
+
+No durable change: `commands/sprint.md` already described the behaviour the script now
+has.
+
+### Merged because
+
+Every criterion is covered by the new guard case, and every check passes after the rebase.
