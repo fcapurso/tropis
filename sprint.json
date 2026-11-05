@@ -279,6 +279,9 @@
       "deepmerge low advisory (no fix exists, code never runs): recommend dismissing alert 4 as 'Vulnerable code is not actually used' — needs the developer, session cannot write alerts.",
       "Spike written by the author and checked by a fresh agent, no separate plan or claim PR; finding in docs/superpowers/specs/2026-11-05-dependabot-alerts.md (#255).",
       "Pushed stray branch tmp-probe-dependabot-msg (one empty commit) by mistake; needs the developer to delete it."
+    ],
+    "readme-follows-the-developers-role": [
+      "README change was a full refresh against the new outline, absorbing the pending refresh (#253)."
     ]
   }
 }
