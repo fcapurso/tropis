@@ -18,23 +18,51 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const script = resolve(here, '../scripts/submit-upstream.sh');
 
-// Answers from the environment the test sets, and logs every call as one line.
+// Answers from the environment the test sets, and logs every call as one line. Like a
+// Claude Code cloud session, it refuses every gh command that goes through GraphQL and
+// answers only gh api, GitHub's REST interface, and only the routes the script asks for.
 const STUB_GH = `#!/usr/bin/env bash
 echo "$*" >> "$STUB_LOG"
-case "$1 $2" in
-  "auth status") [ "\${STUB_SIGNED_IN:-1}" = 1 ]; exit ;;
-  "api user") echo "$STUB_LOGIN"; exit 0 ;;
-  "repo fork") echo "✓ Created fork $STUB_LOGIN/framework"; exit 0 ;;
-  "pr list") printf '%s' "\${STUB_PRS:-}"; [ -z "\${STUB_PRS:-}" ] || echo; exit 0 ;;
-  "pr create") echo "https://github.com/$STUB_UPSTREAM/pull/1"; exit 0 ;;
-  "repo view")
-    case "$*" in
-      *viewerPermission*) echo "$STUB_PERMISSION"; exit 0 ;;
-      *--json\\ url*) var="STUB_URL_$(echo "$3" | tr -c 'A-Za-z0-9\\n' '_')"; echo "\${!var}"; exit 0 ;;
+unexpected() { echo "stub gh: unexpected call: $ALL" >&2; exit 99; }
+graphql() { echo "HTTP 403: GitHub GraphQL is not available from Claude Code sessions; use the REST API (gh api repos/{owner}/{repo}/...). (https://api.github.com/graphql)" >&2; exit 1; }
+ALL="$*"
+case "$1" in
+  auth) [ "\${STUB_AUTH_STATUS:-1}" = 1 ]; exit ;;
+  pr|repo) graphql ;;
+  api) shift ;;
+  *) unexpected ;;
+esac
+method=GET route="" jq=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -X|--method) method="$2"; shift 2 ;;
+    -q|--jq) jq="$2"; shift 2 ;;
+    -f|-F|--field|--raw-field|-H|--header) shift 2 ;;
+    --paginate) echo "Numeric-ID repository paths are not supported through this proxy" >&2; exit 1 ;;
+    *) [ -n "$route" ] || route="$1"; shift ;;
+  esac
+done
+case "$method $route" in
+  "GET user")
+    [ "\${STUB_SIGNED_IN:-1}" = 1 ] || { echo "HTTP 401: Bad credentials (https://api.github.com/user)" >&2; exit 1; }
+    echo "$STUB_LOGIN"; exit 0 ;;
+  "GET repos/$STUB_UPSTREAM/pulls?state=all&per_page=100&page="*)
+    case "\${route##*page=}" in
+      1) out="\${STUB_PRS:-}" ;;
+      2) out="\${STUB_PRS_PAGE2:-}" ;;
+      *) out="" ;;
+    esac
+    printf '%s' "$out"; [ -z "$out" ] || echo; exit 0 ;;
+  "POST repos/$STUB_UPSTREAM/forks") echo "$STUB_LOGIN/framework"; exit 0 ;;
+  "POST repos/$STUB_UPSTREAM/pulls") echo "https://github.com/$STUB_UPSTREAM/pull/1"; exit 0 ;;
+  "GET repos/"*)
+    full="\${route#repos/}"
+    case "$jq" in
+      .permissions.push) [ "$full" != "$STUB_UPSTREAM" ] || { echo "$STUB_CAN_PUSH"; exit 0; } ;;
+      .clone_url) var="STUB_URL_$(echo "$full" | tr -c 'A-Za-z0-9\\n' '_')"; echo "\${!var}"; exit 0 ;;
     esac ;;
 esac
-echo "stub gh: unexpected call: $*" >&2
-exit 99
+unexpected
 `;
 
 const git = (cwd, ...args) => {
@@ -86,7 +114,7 @@ describe('submitting a flush upstream', () => {
     STUB_LOG: log,
     STUB_UPSTREAM: UPSTREAM,
     STUB_LOGIN: 'someone',
-    STUB_PERMISSION: 'WRITE',
+    STUB_CAN_PUSH: 'true',
     STUB_URL_acme_framework: upstream,
     STUB_URL_someone_framework: fork,
     ...extra,
@@ -105,6 +133,15 @@ describe('submitting a flush upstream', () => {
   };
   const readmeFor = (address) =>
     `# Framework\n\nThis project was set up from the framework at \`${address}\`. General adoption,\nthe development cycle are documented there.\n`;
+
+  // A project root whose queue holds the given text, or no queue at all when null.
+  const queueRoot = (queue) => {
+    const root = join(dir, 'queue-project');
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    if (queue !== null) writeFileSync(join(root, 'docs', 'BLUEPRINT-UPSTREAM.md'), queue);
+    return root;
+  };
+  const named = (name) => `# Upstream queue\n\nLast flushed: 2026-10-01.\nFlushes as: ${name}.\n`;
 
   const branches = (bare) => git(bare, 'for-each-ref', '--format=%(refname)', 'refs/heads');
 
@@ -146,6 +183,21 @@ describe('submitting a flush upstream', () => {
       expect(r.stderr).toContain('gh auth login');
     });
 
+    it('passes where gh auth status fails and GitHub answers', () => {
+      const r = run(['preflight', project(readmeFor('https://github.com/acme/framework'))], {
+        env: env({ STUB_AUTH_STATUS: '0' }),
+      });
+      expect(r.stderr).toBe('');
+      expect(r.status).toBe(0);
+      expect(r.stdout.trim()).toBe('acme/framework');
+    });
+
+    it('never asks gh auth status', () => {
+      const r = run(['preflight', project(readmeFor('https://github.com/acme/framework'))]);
+      expect(r.status).toBe(0);
+      expect(calls().some((c) => c.startsWith('auth'))).toBe(false);
+    });
+
     it('refuses when gh is not installed', () => {
       const empty = join(dir, 'empty');
       mkdirSync(empty);
@@ -176,8 +228,14 @@ describe('submitting a flush upstream', () => {
   });
 
   describe('check-name', () => {
-    const prsCalls = () => calls().filter((c) => c.startsWith('pr list'));
-    const check = (name, prs) => run(['check-name', UPSTREAM, name], { env: env({ STUB_PRS: prs }) });
+    const prsCalls = () => calls().filter((c) => c.startsWith('api') && c.includes('/pulls?state=all'));
+    const check = (name, prs, page2 = '') =>
+      run(['check-name', UPSTREAM, name], { env: env({ STUB_PRS: prs, STUB_PRS_PAGE2: page2 }) });
+    // The stub refuses gh pr and gh repo as a cloud session does, so these cases run where
+    // GraphQL is refused; this asserts none was even tried.
+    const noGraphQL = () => {
+      expect(calls().some((c) => c.startsWith('pr ') || c.startsWith('repo '))).toBe(false);
+    };
 
     it('refuses a name another account has a pull request under', () => {
       const r = check('example', 'upstream/example/2026-10-01-x other');
@@ -186,6 +244,7 @@ describe('submitting a flush upstream', () => {
       expect(r.stderr.trim().split('\n')).toHaveLength(1);
       expect(r.stderr).toContain('example');
       expect(r.stderr).toContain('other');
+      noGraphQL();
     });
 
     it('compares the branch without the fork owner', () => {
@@ -194,7 +253,27 @@ describe('submitting a flush upstream', () => {
       const r = check('example', 'upstream/example/2026-10-01-x other');
       expect(r.status).toBe(1);
       expect(r.stderr).toContain('other');
-      expect(prsCalls()).toHaveLength(1);
+      expect(prsCalls()).toHaveLength(2);
+    });
+
+    it('lists pull requests through the REST pulls route, page by page', () => {
+      const r = check('example', 'upstream/example/2026-10-01-x someone', 'upstream/elsewhere/2026-10-01-y other');
+      expect(r.status).toBe(0);
+      const pages = prsCalls();
+      expect(pages).toHaveLength(3);
+      pages.forEach((c, i) => {
+        expect(c).toContain(`repos/${UPSTREAM}/pulls?state=all&per_page=100&page=${i + 1}`);
+        expect(c).not.toContain('--paginate');
+      });
+      expect(calls().some((c) => c.startsWith('pr '))).toBe(false);
+    });
+
+    it('refuses a name used only on a later page', () => {
+      const r = check('example', 'upstream/elsewhere/2026-10-01-y someone', 'upstream/example/2026-10-01-x other');
+      expect(r.status).toBe(1);
+      expect(r.stdout).toBe('');
+      expect(r.stderr.trim().split('\n')).toHaveLength(1);
+      expect(r.stderr).toContain('other');
     });
 
     it('accepts the signed-in account\u2019s own earlier flushes', () => {
@@ -209,6 +288,7 @@ describe('submitting a flush upstream', () => {
       expect(r.status).toBe(0);
       expect(r.stdout).toBe('');
       expect(r.stderr).toBe('');
+      noGraphQL();
     });
 
     it('refuses an invalid name before asking gh for pull requests', () => {
@@ -220,27 +300,22 @@ describe('submitting a flush upstream', () => {
     });
   });
 
+  // A pull request is opened by POSTing to the framework's REST pulls route.
+  const isPullRequest = (c) => c.includes('-X POST') && c.includes(`repos/${UPSTREAM}/pulls`);
+
   describe('open', () => {
     const body = () => {
       const file = join(dir, 'body.md');
       writeFileSync(file, 'What this changes.\n');
       return file;
     };
-    // A project root whose queue holds the given text, or no queue at all when null.
-    const queueRoot = (queue) => {
-      const root = join(dir, 'queue-project');
-      mkdirSync(join(root, 'docs'), { recursive: true });
-      if (queue !== null) writeFileSync(join(root, 'docs', 'BLUEPRINT-UPSTREAM.md'), queue);
-      return root;
-    };
-    const named = (name) => `# Upstream queue\n\nLast flushed: 2026-10-01.\nFlushes as: ${name}.\n`;
     const root = () => queueRoot(named('example'));
     const openWith = (queueText, branch, e = env()) =>
       run(['open', queueRoot(queueText), UPSTREAM, branch, 'A title', body()], { cwd: clone, env: e });
     const open = (e) => run(['open', root(), UPSTREAM, BRANCH, 'A title', body()], { cwd: clone, env: e });
 
     it('pushes to the framework itself when the account can write there', () => {
-      const r = open(env({ STUB_PERMISSION: 'WRITE' }));
+      const r = open(env({ STUB_CAN_PUSH: 'true' }));
       expect(r.stderr).not.toContain('stub gh: unexpected call');
       expect(r.status).toBe(0);
       expect(r.stdout.trim()).toBe(`https://github.com/${UPSTREAM}/pull/1`);
@@ -250,17 +325,23 @@ describe('submitting a flush upstream', () => {
       expect(branches(fork)).toBe('');
 
       const made = calls();
-      expect(made.some((c) => c.startsWith('repo fork'))).toBe(false);
-      const pr = made.filter((c) => c.startsWith('pr create'));
+      expect(made.some((c) => c.includes('/forks'))).toBe(false);
+      const pr = made.filter(isPullRequest);
       expect(pr).toHaveLength(1);
-      expect(pr[0]).toContain(`--repo ${UPSTREAM}`);
-      expect(pr[0]).toContain('--base main');
-      expect(pr[0]).toContain(`--head ${BRANCH} `);
-      expect(pr[0]).not.toContain(':');
+      expect(pr[0]).toContain('base=main');
+      expect(pr[0]).toContain(`head=${BRANCH} `);
+      expect(pr[0]).not.toContain('head=someone:');
+      expect(pr[0]).toContain('body=@');
+    });
+
+    it('opens its pull request with no GraphQL call', () => {
+      const r = open(env({ STUB_CAN_PUSH: 'true' }));
+      expect(r.status).toBe(0);
+      expect(calls().some((c) => c.startsWith('pr ') || c.startsWith('repo '))).toBe(false);
     });
 
     it('pushes to the account\u2019s own fork when it can only read', () => {
-      const r = open(env({ STUB_PERMISSION: 'READ' }));
+      const r = open(env({ STUB_CAN_PUSH: 'false' }));
       expect(r.stderr).not.toContain('stub gh: unexpected call');
       expect(r.status).toBe(0);
       expect(r.stdout.trim()).toBe(`https://github.com/${UPSTREAM}/pull/1`);
@@ -270,35 +351,39 @@ describe('submitting a flush upstream', () => {
       expect(branches(upstream)).toBe('');
 
       const made = calls();
-      expect(made.filter((c) => c.startsWith('repo fork'))).toHaveLength(1);
-      expect(made.find((c) => c.startsWith('repo fork'))).toContain(UPSTREAM);
-      const pr = made.filter((c) => c.startsWith('pr create'));
+      const forks = made.filter((c) => c.includes('/forks'));
+      expect(forks).toHaveLength(1);
+      expect(forks[0]).toContain('-X POST');
+      expect(forks[0]).toContain(`repos/${UPSTREAM}/forks`);
+      const pr = made.filter(isPullRequest);
       expect(pr).toHaveLength(1);
-      expect(pr[0]).toContain(`--head someone:${BRANCH}`);
+      expect(pr[0]).toContain('base=main');
+      expect(pr[0]).toContain(`head=someone:${BRANCH}`);
+      expect(pr[0]).toContain('body=@');
     });
 
     it('stops naming the fork it looked for when that fork does not exist', () => {
-      const r = open(env({ STUB_PERMISSION: 'READ', STUB_URL_someone_framework: '' }));
+      const r = open(env({ STUB_CAN_PUSH: 'false', STUB_URL_someone_framework: '' }));
       expect(r.status).toBe(1);
       expect(r.stdout).toBe('');
-      // gh's own report of the fork comes first on stderr; the refusal is the last line.
+      // The fork's full name comes first on stderr; the refusal is the last line.
       expect(r.stderr.trim().split('\n').pop()).toContain('someone/framework');
       expect(branches(upstream)).toBe('');
       expect(branches(fork)).toBe('');
-      expect(calls().some((c) => c.startsWith('pr create'))).toBe(false);
+      expect(calls().some(isPullRequest)).toBe(false);
     });
 
     it('refuses a branch named main before pushing anything', () => {
       const r = run(['open', root(), UPSTREAM, 'main', 'A title', body()], {
         cwd: clone,
-        env: env({ STUB_PERMISSION: 'WRITE' }),
+        env: env({ STUB_CAN_PUSH: 'true' }),
       });
       expect(r.status).toBe(1);
       expect(r.stdout).toBe('');
       expect(r.stderr.trim().split('\n')).toHaveLength(1);
       expect(r.stderr).toContain('main');
       expect(branches(upstream)).toBe('');
-      expect(calls().some((c) => c.startsWith('pr create'))).toBe(false);
+      expect(calls().some(isPullRequest)).toBe(false);
     });
 
     describe('refuses a branch not under the flush name', () => {
@@ -308,7 +393,7 @@ describe('submitting a flush upstream', () => {
         expect(r.stderr).toMatch(pattern);
         expect(branches(upstream)).toBe('');
         expect(branches(fork)).toBe('');
-        expect(calls().some((c) => c.startsWith('pr create'))).toBe(false);
+        expect(calls().some(isPullRequest)).toBe(false);
       };
 
       it('when the project has no queue file', () => {
@@ -344,17 +429,63 @@ describe('submitting a flush upstream', () => {
       expect(r.stderr).toContain('other');
       expect(branches(upstream)).toBe('');
       expect(branches(fork)).toBe('');
-      expect(calls().some((c) => c.startsWith('pr create'))).toBe(false);
+      expect(calls().some(isPullRequest)).toBe(false);
     });
 
-    it.each(['WRITE', 'READ'])('never merges and never pushes to main (%s)', (permission) => {
-      const r = open(env({ STUB_PERMISSION: permission }));
+    it.each(['true', 'false'])('never merges and never pushes to main (can push: %s)', (canPush) => {
+      const r = open(env({ STUB_CAN_PUSH: canPush }));
       expect(r.status).toBe(0);
-      expect(calls().some((c) => /^pr merge/.test(c))).toBe(false);
+      expect(calls().some((c) => c.includes('merge'))).toBe(false);
       for (const bare of [upstream, fork]) {
         expect(existsSync(join(bare, 'refs/heads/main'))).toBe(false);
         expect(branches(bare)).not.toContain('refs/heads/main');
       }
+    });
+  });
+
+  describe('check-open', () => {
+    const checkOpen = (queueText, branch, e = env()) =>
+      run(['check-open', queueRoot(queueText), UPSTREAM, branch], { cwd: clone, env: e });
+    const nothingSent = () => {
+      expect(branches(upstream)).toBe('');
+      expect(branches(fork)).toBe('');
+      const made = calls();
+      expect(made.some((c) => c.includes('/forks'))).toBe(false);
+      expect(made.some((c) => c.includes('-X POST'))).toBe(false);
+      expect(made.some((c) => c.includes('.permissions.push'))).toBe(false);
+    };
+
+    it('passes and sends nothing when every check holds', () => {
+      const r = checkOpen(named('example'), BRANCH);
+      expect(r.stderr).toBe('');
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('');
+      nothingSent();
+    });
+
+    describe('refuses as open does', () => {
+      const refused = (r, pattern) => {
+        expect(r.status).not.toBe(0);
+        expect(r.stdout).toBe('');
+        expect(r.stderr).toMatch(pattern);
+        nothingSent();
+      };
+
+      it('when the project has no queue file', () => {
+        refused(checkOpen(null, BRANCH), /BLUEPRINT-UPSTREAM\.md/);
+      });
+      it('when the queue has no Flushes as line', () => {
+        refused(checkOpen('# Upstream queue\n\nLast flushed: 2026-10-01.\n', BRANCH), /Flushes as/);
+      });
+      it('when the branch is under another name', () => {
+        refused(checkOpen(named('example'), 'upstream/other/2026-10-28-x'), /upstream\/example\//);
+      });
+      it('when the branch is named main', () => {
+        refused(checkOpen(named('example'), 'main'), /main/);
+      });
+      it('when another account uses the name', () => {
+        refused(checkOpen(named('example'), BRANCH, env({ STUB_PRS: `${BRANCH} other` })), /other/);
+      });
     });
   });
 });
