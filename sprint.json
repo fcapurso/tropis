@@ -322,7 +322,8 @@
     "release-and-next-run-in-a-cloud-session": [
       "Followed the cloud-session-gh-routes spike: rewrote the plan from the session's own GitHub tools to gh api plus a new shipped auto-merge.mjs that falls back to the cloud auto-merge route only on the GraphQL refusal (#263, 5a35f53).",
       "Corrected the workflow's cloud paragraph, now 'Where gh pr is refused', recorded as decision FW-072 amending FW-063; operator guide gained one paragraph naming the script, a file the plan had not listed.",
-      "Built it itself with a fresh review; the reviewer fixed a leftover workflow sentence and two missing test cases on the branch."
+      "Built it itself with a fresh review; the reviewer fixed a leftover workflow sentence and two missing test cases on the branch.",
+      "Merged after commands-have-named-fill-ins; resolved a duplicate FW-071 in the decision record by renumbering its own to FW-072."
     ]
   }
 }
