@@ -6763,10 +6763,13 @@
 # vulnerabilities on fcapurso/tropis's default branch (1 moderate, 1 low)", from
 # Dependabot. Two lockfiles are on main: .tropis/package-lock.json, the installed
 # release's test tools, and templates/package-lock.json, which ships to every project.
-# Nobody has read the alerts yet.
+# Shipped 2026-11-05 by the spike in a Claude Code cloud session; the answer is in the
+# spec in refs. Three advisories, all through Jest, in both lockfiles, none reachable from
+# untrusted input. glob and minimatch are fixed by test-tools-take-patched-glob; deepmerge
+# has no fix and is for the developer to dismiss. A spike, so no modules.
 - id: dependabot-alerts-are-assessed
   title: Find out what the two Dependabot alerts on main are and whether they reach projects
-  status: idea
+  status: shipped
   value: We know what the two open Dependabot alerts are, which lockfile carries each, and
     whether either ships to projects through templates/package-lock.json, so each is fixed,
     dismissed with a reason, or left to the next release on purpose rather than by
@@ -6775,4 +6778,21 @@
   type: spike
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/specs/2026-11-05-dependabot-alerts.md
+# 2026-11-05, from the spike dependabot-alerts-are-assessed. Jest 30.5.2 asks for glob
+# ^13 and minimatch ^10, and both have a moderate advisory fixed only in the next major.
+# An override was tried on a copy of this repository and the suite passed.
+- id: test-tools-take-patched-glob
+  title: The test tools a project installs lock glob and minimatch at their patched majors
+  status: idea
+  value: A project set up or updated from the next release has no Dependabot alert for
+    GHSA-3g3m-2fjr-6pw4 or GHSA-g3hv-75wg-m249, because templates/package.json overrides
+    glob to ^14.0.3 and minimatch to ^11.0.4 under Jest, and the lockfile it ships is
+    regenerated from that.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs:
+    - docs/superpowers/specs/2026-11-05-dependabot-alerts.md
