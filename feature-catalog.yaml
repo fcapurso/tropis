@@ -6713,6 +6713,10 @@
 # 2026-11-05, cloud-session-gh-routes answered: keep gh, through gh api, with the ccr
 # routes where GraphQL is refused; per item in
 # docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md, Recommendations.
+# 2026-11-05, from the review of flush-runs-in-a-cloud-session: the finding asks whichever
+# of the three items lands first to correct the workflow's "Where gh cannot write" for a
+# cloud session. That item did not touch the workflow, so the correction falls here, the
+# item that changes the merge path.
 - id: release-and-next-run-in-a-cloud-session
   title: /release and /next work from a cloud session as from the developer's computer
   status: idea

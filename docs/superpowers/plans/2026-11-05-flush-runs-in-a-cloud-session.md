@@ -589,3 +589,77 @@ The six files above plus this plan file; every one is in *File Structure*.
   judge.
 - The probe of `commands/flush-upstream.md` named under *After Task 5* is the
   specifying session's.
+
+## Review record
+
+Reviewed by the specifying session, which did not write the code: Claude Code in a cloud
+session, model claude-opus-5-5, on Linux x86_64; git 2.43.0, node v22.23.4, gh 2.89.0.
+
+### Checks re-run
+
+- `git diff --stat origin/main...HEAD`: seven files, all in *File Structure*
+  (`docs/backlog-board/index.html` was not rebuilt, as allowed).
+- The guard alone, run as the handover describes (a scratch directory with
+  `{"type":"module"}`, `templates/framework-jest.config.js` and a link to the branch's
+  `scripts/`): `Tests: 37 passed, 37 total`.
+- Re-broke the script three ways, each restored afterwards. Preflight back on
+  `gh auth status`: `Tests: 3 failed, 34 passed`. check-name reading page 1 only:
+  `Tests: 3 failed, 34 passed`. check-open running `open` instead of the checks alone:
+  `Tests: 1 failed, 36 passed`. Each change the plan made is held by a case that goes
+  red without it.
+- The handover's diagnosis that `jest.js --rootDir .` cannot run the guard alone matches
+  how `scripts/check-blueprint.sh` runs the source guards (from a scratch copy with a
+  module package file); the plan's command was wrong.
+- In this session on 2026-11-05: `gh api -X POST repos/<this repository>/pulls` opened
+  the claim pull request (#249) and `PUT .../pulls/249/ccr/auto_merge` with
+  `merge_method=squash` answered `{"enabled":true,"merge_method":"squash"}`; `git clone
+  --depth 1` of the framework's address succeeded and `gh repo clone` answered the
+  GraphQL 403.
+- Fresh-agent probe of `commands/flush-upstream.md`, on claude-opus-5-5 (the Large pick
+  `dispatch.mjs --tier Large` names) as a subagent of this cloud session, told to read
+  only: given an invented flush whose `open` stopped on an HTTP 403, it answered with
+  `check-open` first, a `git push` of the branch, the pull request opened with the
+  session's own tools, never merging or setting auto-merge, and a refusal stopping the
+  entry; it answered `git clone --depth 1` for the clone and that preflight passes on
+  `gh api user` (citing script lines 68 and 69). **Pass**, with one gap (below).
+
+### Found
+
+Public exposure: read every added line for names, home paths, hostnames, email
+addresses, session ids and other projects; found nothing but this public repository's
+own address.
+
+- **The probe's gap, fixed on the branch by the reviewer.** `open` can push the branch
+  and then be refused at the pull request, and the fallback did not say pushing again was
+  safe. One parenthesis now says it pushes the same commit again and changes nothing.
+  Mechanical, and declared here: the reviewer approved its own words.
+- **The workflow's *Where gh cannot write*** is partly untrue for a cloud session, as the
+  spike's finding says; this plan did not touch the workflow. Routed to
+  `release-and-next-run-in-a-cloud-session` with a comment in the backlog, since that
+  item changes the merge path the section describes.
+
+### Outstanding disposition
+
+- No screen: no developer check.
+- Writes to another repository and forks from a real cloud session are untried: dropped
+  as a backlog item, because nothing here can try them (this session's only repository
+  is the framework itself), and the fallback the command now describes, with
+  `check-open`, is what a refusal leads to. The first real flush from a cloud session is
+  the test.
+- The fork race (a new fork not yet ready when `open` pushes): dropped, because it is
+  not new. The old `gh repo fork` followed by an immediate push had the same window, and
+  a refused push stops the entry with its note, to be sent at the next flush.
+
+### Learnings routed
+
+- The plan's command for running one source guard alone was wrong, and the right way
+  (as the self-check does) is written nowhere a plan author reads. Not routed: the
+  handover records the working form, and `CLAUDE.md` already says to check the source
+  with its own guards; a second plan tripping on it would make it a rule.
+- Nothing else generalises beyond the finding the spike already recorded.
+
+### Merged because
+
+Every criterion is held by a guard case that goes red without the change or by the
+command's text, which a fresh agent followed correctly, and the one gap it found is
+closed.

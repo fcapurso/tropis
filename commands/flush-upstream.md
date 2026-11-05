@@ -146,7 +146,9 @@ Nothing in this command, and nothing in the plan it drafts, automates that decis
        from inside the clone, which makes every check `open` makes and sends nothing, and
        goes on only once it exits 0; pushes the branch with
        `git push https://github.com/OWNER/NAME.git HEAD:refs/heads/<branch>`, or, where
-       the account cannot push there, to its own fork, created with the session's tools;
+       the account cannot push there, to its own fork, created with the session's tools
+       (where `open` had already pushed it before GitHub refused the pull request, this
+       pushes the same commit again and changes nothing);
        opens one pull request against `main` with the session's tools, with the same title
        and the body file's text as its description, never merging it or setting it to
        merge; and records its URL as it would `open`'s. A push or a pull request the
