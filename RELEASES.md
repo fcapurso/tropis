@@ -17,11 +17,57 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-- An update shows again every step a release's notes ask you to do by hand, and names any version whose steps it could not read. Updates to 0.7.2 through 0.8.2 showed none of their steps: if you took one of those with /update, read the What to do by hand section of each version you passed, 0.8.0's above all, whose steps are required.
+_Nothing yet._
 
-- A sprint's brief for a bundle names every backlog item in it, so the team member delivers them all instead of stopping after the first. Asking for the brief of a bundle's later item now names the item to ask for instead.
+## [0.9.0] — 2026-11-06
 
-- Tropis's checks now need Node.js 20, or 22 or later: the test tools a project installs take the releases of glob and minimatch that fix two moderate advisories (GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249), so a project no longer inherits a Dependabot alert for either, and the newer minimatch does not run on Node.js 18 or 21. If you still run Node.js 18, upgrade it before updating; the setup check now says so.
+A sprint no longer stalls because a team member's own agent stopped it, and a bundle's
+team member delivers every item in it. `/update` shows every step a release asks you to
+do by hand again, your text in a command now survives a release wherever the command
+moves it, and a project no longer inherits two Dependabot alerts from Tropis's test
+tools, which now need Node.js 20, 22, or 24 and later.
+
+### What to do by hand
+
+**1. Upgrade Node.js if you run 18, 21 or 23.** The test tools that run Tropis's checks
+now refuse those versions, so the checks would not run after the update. Run
+`node --version`; if it starts with `v18`, `v21` or `v23`, install Node.js 20, 22, or 24
+or later before running `/update`.
+
+**2. If you took 0.7.2, 0.8.0, 0.8.1 or 0.8.2 with `/update`, do their steps by hand.**
+Until this release `/update` showed none of those versions' steps, so any you passed may
+still be undone. Open `RELEASES.md` in the Tropis clone, read *What to do by hand* under
+each of those versions you took, and do the steps not marked optional; 0.8.0's are
+required.
+
+### What you can now do
+
+- **Leave a sprint to run on its own.** An agent can no longer interrupt or archive the
+  session it runs in, which had left a team member silent for hours; it ends its turn
+  and returns its report instead.
+- **Give a bundle to one team member.** The bundle's brief names every backlog item in
+  it, so the team member delivers them all instead of stopping after the first.
+- **Take a release without losing your text in a command.** What you wrote in a
+  command's fill-ins now follows each fill-in by name when a release moves or renames
+  it, and `/update` lists any fill-in that changed.
+- **Run `/flush-upstream`, `/release` and `/next` from a Claude Code cloud session**, as
+  from your own computer.
+- **Keep a README for a closed-source product.** `/bootstrap` and
+  `/refresh-readme skeleton` ask whether the product is open or closed-source, and a
+  closed-source one gets an outline written for the people who build, run and release
+  it.
+- **Date plans in your own time zone.** Name it as `"timeZone"` in
+  `.tropis/project.json`, and a plan written just after midnight is no longer refused
+  until UTC catches up.
+- **No Dependabot alerts from Tropis's test tools.** A project set up or updated from
+  this release no longer inherits the glob and minimatch advisories.
+
+### Smaller corrections
+
+- The planning rule says where the author of work they built puts the evidence a fresh
+  reviewer re-checks, so the review can reach it.
+
+Checked on staging: no — this project does not deploy to staging
 
 ## [0.8.2] — 2026-11-04
 
