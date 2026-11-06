@@ -30,26 +30,37 @@ below it before anything else:
 
 **Delete this command if the project does not ship versioned releases.**
 
-<!-- project-owned: begin — this project's release. -->
+Each fill-in below holds one value this command reads, and the command calls it by
+that name: *the notes file*, *the promote trigger*. A fill-in that holds only its
+example comment is empty: where this command needs it, ask the developer, and suggest
+filling it in here. The fill-ins further down add what this project does at that point;
+an empty one adds nothing.
+
+<!-- project-owned: begin run-from — where /release runs, and what else lives there. -->
 - Run from: the root of this repository, where the backlog also lives.
+<!-- project-owned: end -->
+<!-- project-owned: begin notes-file — the notes file, with an `## [Unreleased]` section /release promotes. -->
 - Notes file: `RELEASES.md` at the root. Here the notes reach main already promoted: at
   Stage 5, once the bump is confirmed, work out the version with
   `node .github/scripts/release.mjs version <bump> <last tag>`, then run
   `node .github/scripts/release.mjs promote RELEASES.md <version> <today, YYYY-MM-DD, UTC>`
   before committing. The release job only tags.
-- Main branch: gated where `.tropis/project.json` records no `ungated`. There Stage 1b's
-  README commit and Stage 5's notes commit each go on a branch, through a pull request
-  that merges itself (`gh pr merge <N> --auto --squash`), and the next stage waits until
-  it has merged.
-- Rule trial: before Stage 1, run `/rule-trial` with the last release, found with the
-  command in Stage 2. Go on to Stage 1 only once its pull request has merged and the main
-  branch is green, including a skipped trial, which is recorded the same way. Where it
-  removed a clause, Stage 3's notes name the rule and what it no longer says, under the
-  closing small-corrections heading.
+<!-- project-owned: end -->
+<!-- project-owned: begin readers — who the notes are for, in their words. -->
 - Readers: people who set up and run projects with the framework.
+<!-- project-owned: end -->
+<!-- project-owned: begin breaking — what forces a major version beyond a breaking commit. -->
 - Breaking: as `RELEASES.md` defines it — a project taking the release must act by hand.
   Below 1.0 the release job raises the middle number only for `bump=major`, and `minor`
   raises the last one: so a breaking release is `bump=major` until 1.0.
+<!-- project-owned: end -->
+<!-- project-owned: begin version-files — each file that carries the version, and where in it. -->
+- Version files: none. The version lives only in `RELEASES.md`'s headings and the tag.
+<!-- project-owned: end -->
+<!-- project-owned: begin first-release — the version a first release takes. -->
+<!-- e.g. - First release: 1.0.0 -->
+<!-- project-owned: end -->
+<!-- project-owned: begin promote-trigger (was trigger, release-trigger) — the command that starts the project's promote pipeline, with <commit> and, where the project deploys to staging, <staged>. -->
 - Trigger: `gh workflow run ci.yml --ref main -f version=<version> -f commit=<commit>`,
   once the notes are on main. `<commit>` is the full hash of the commit that carries the
   promoted notes: where the notes went through a pull request, its merge commit,
@@ -57,6 +68,14 @@ below it before anything else:
   Stage 5 pushed. Never `origin/main`'s head, which may already hold later work. The job
   tags that commit, refusing one not on main or whose notes do not name the version, and
   pushes only the tag; anything merged after it waits for the next release.
+<!-- project-owned: end -->
+<!-- project-owned: begin staging-trigger (was candidate-trigger) — where the project deploys to staging, the command that starts it, with <commit>. -->
+<!-- e.g. - Staging trigger: gh workflow run staging.yml --ref main -f commit=<commit> -->
+<!-- project-owned: end -->
+<!-- project-owned: begin staging-workflow — the file name of the staging workflow. -->
+<!-- e.g. - Staging workflow: staging.yml -->
+<!-- project-owned: end -->
+<!-- project-owned: begin runs-url (was where-the-run-is-watched) — the address where the pipeline's runs are watched. -->
 - Where the run is watched: https://github.com/fcapurso/tropis/actions/workflows/ci.yml
 <!-- project-owned: end -->
 
@@ -73,7 +92,41 @@ reported — Stage 7's, or Stage 5's on an empty slot — and whenever this comm
 on a failure or a refusal, so a fix can merge. On *Resume at staging*, take it again
 first. Say each take and release in your report.
 
+## Pull requests
+
+Each pull request this command opens, and each question it asks GitHub about one, goes
+through these commands. They answer on the developer's computer and in a Claude Code
+cloud session alike: there, `gh pr` commands are refused, since they use GitHub's
+GraphQL interface, while `gh api` and `gh run` answer.
+
+- **List the open ones:**
+  `gh api 'repos/{owner}/{repo}/pulls?state=open&per_page=100' --jq '.[] | "#\(.number) \(.head.ref) \(.title)"'`.
+  Where 100 come back, ask for `&page=2` and so on, never `--paginate`.
+- **Open one** from the pushed branch, with the commit's subject and body as its title
+  and description:
+  `gh api -X POST 'repos/{owner}/{repo}/pulls' -f title=<subject> -f body=<body> -f head=<branch> -f base=<main branch> --jq .number`
+  prints its number, `<N>`.
+- **Set it so it merges itself** as a squash with that subject and body:
+  `node .tropis/scripts/auto-merge.mjs <N> --subject <subject> --body <body>`. It runs
+  `gh pr merge <N> --auto --squash`, and only where `gh` is refused GraphQL the cloud
+  session's own route. On a non-zero exit, show its line and stop.
+- **Wait for it:** `node .tropis/scripts/main-status.mjs --pull-request <N>`, which only
+  reads, apart from bringing the branch up to date.
+- **The commit the merge made on `main`:**
+  `gh api 'repos/{owner}/{repo}/pulls/<N>' --jq .merge_commit_sha`.
+
+`.claude/framework/workflow.md`, *Where `gh pr` is refused*, says the same for every
+merge.
+
 ## Stage 1 — Pre-flight
+
+<!-- project-owned: begin before-preflight — what this project does before the pre-flight. -->
+- Rule trial: before Stage 1, run `/rule-trial` with the last release, found with the
+  command in Stage 2. Go on to Stage 1 only once its pull request has merged and the main
+  branch is green, including a skipped trial, which is recorded the same way. Where it
+  removed a clause, Stage 3's notes name the rule and what it no longer says, under the
+  closing small-corrections heading.
+<!-- project-owned: end -->
 
 ```bash
 git status --porcelain
@@ -85,7 +138,7 @@ git branch --show-current
 
 Stop if the tree is dirty, if either log prints anything, or if the branch is not `main`:
 the release is cut from exactly what the remote has. List any open pull requests against
-`main` and ask whether to continue without them.
+`main` (*Pull requests*) and ask whether to continue without them.
 
 ```bash
 node .tropis/scripts/pipeline.mjs staging slot
@@ -103,7 +156,7 @@ no file, or a level that is none of these — run `/refresh-readme` as its comma
 
 If it committed a refreshed README, push it (`git push origin main`). Where the main
 branch is gated (workflow.md, *Branching*), move that commit to a branch instead, open a
-pull request, run `gh pr merge <N> --auto --squash`, then
+pull request, set it so it merges itself (*Pull requests*), then
 `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only once it
 reports the main branch green; on any other line, show it and stop.
 Pre-flight found nothing else unpushed, so the push carries only that commit.
@@ -191,6 +244,8 @@ anything. Where the log and the backlog disagree about what shipped, the log dec
    who reads only this section updates safely. **These steps are written in full,
    however short the rest is:** they are followed literally, so nothing below shortens
    them.
+<!-- project-owned: begin breaking-notes — what the by-hand section says for this project's readers when a release is breaking for them. -->
+<!-- project-owned: end -->
 3. **Each change that matters to them in one or two sentences** saying what they can
    now do, in their words, as a bullet under a heading such as "What you can now do":
    "Hooks warn only when they should", not the mechanism that achieves it. The how is
@@ -235,12 +290,16 @@ staging has passed, the promotion pull request replaces that with
 it stays as the last line of the version's section, and the promote pipeline leaves it
 out of anything it publishes.
 
+<!-- project-owned: begin notes-also — anything else this project's notes carry. -->
+<!-- project-owned: end -->
+
 ## Stage 4 — Confirm
 
 Work out the version: take the last release from Stage 2 and apply the bump by semantic
 versioning — from 1.0, major raises the first number, minor the second, patch the third;
 below 1.0 a breaking change raises the middle number and anything else the last. With no
-previous release there is nothing to count from: ask the developer for the first version.
+previous release there is nothing to count from: ask the developer for the first version,
+unless the first-release fill-in names it.
 
 Print, before any further tool call:
 
@@ -272,11 +331,11 @@ The main branch is gated unless `.tropis/project.json` records `"ungated"` (work
 *Branching*). Where it is gated, every commit below goes on a branch in a worktree of
 its own —
 `git worktree add ../<repo>-release-<version> -b release/<version> origin/main` — is
-pushed, gets a pull request, `gh pr merge <N> --auto --squash` with the commit's subject
-and body, then `node .tropis/scripts/main-status.mjs --pull-request <N>`; go on only once
+pushed, gets a pull request set so it merges itself with the commit's subject and body
+(*Pull requests*), then `node .tropis/scripts/main-status.mjs --pull-request <N>`; go on only once
 it reports the main branch green, and on any other line show it and stop. The commit
 the next step names is then the one the merge made on `main`
-(`gh pr view <N> --json mergeCommit -q .mergeCommit.oid`). Remove the worktree after.
+(*Pull requests*). Remove the worktree after.
 Where it is not gated, commit on `main` and push.
 
 **Empty slot — one commit, then step 2.** Set the version in every version file;
@@ -417,8 +476,8 @@ If it names anything but the notes file and the version files, refuse: something
 since staging was checked. Say so, remove the worktree and the branch, and go *Back
 to staging for a newer commit*.
 
-Then push, open the pull request, run `gh pr merge <N> --auto --squash` with that
-subject, then `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only
+Then push, open the pull request, set it so it merges itself with that subject
+and the commit's body (*Pull requests*), then `node .tropis/scripts/main-status.mjs --pull-request <N>`, and go on only
 once it reports the main branch green; on any other line, show it and stop. Remove the
 worktree. Where the main branch is not gated, make the same commit on `main`, run the
 same check, and push.
@@ -434,11 +493,14 @@ Watch it at: <where the run is watched>
 ```
 
 `<commit>` is the full hash of the commit the promotion put on `main` —
-`gh pr view <N> --json mergeCommit -q .mergeCommit.oid`, or the pushed commit — and
+read as *Pull requests* says, or the pushed commit — and
 `<staged>` the staged commit's full hash. Say what the promote pipeline does: it runs
 `node .tropis/scripts/pipeline.mjs promote check` first and stops on a refusal, tags
 `<commit>`, pushes only the tag, and deploys the tag to production. Anything merged
 after `<commit>` waits for the next release. Stop.
+
+<!-- project-owned: begin published — what this project's promote pipeline publishes besides the notes. -->
+<!-- project-owned: end -->
 
 Both steps are the developer's to start: an agent must not run a trigger. The promote
 pipeline is the project's own; what it must do is stated in the workflow's release

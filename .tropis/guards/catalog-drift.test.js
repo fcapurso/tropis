@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join, basename } from 'node:path';
 import YAML from 'yaml';
+import { plansDatedAfter, projectToday } from '../scripts/today.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 // Installed at .tropis/guards/, two levels below the project root. Pointed at fixtures/
@@ -97,13 +98,10 @@ describe('catalog drift', () => {
   });
 
   it('no live plan filename is dated after today', () => {
-    const today = new Date().toISOString().slice(0, 10);
-    const future = livePlanFiles()
-      .map((f) => basename(f))
-      .filter((n) => {
-        const m = /^(\d{4}-\d{2}-\d{2})-/.exec(n);
-        return m && m[1] > today;
-      });
+    const future = plansDatedAfter(
+      livePlanFiles().map((f) => basename(f)),
+      projectToday(root),
+    );
     expect(future).toEqual([]);
   });
 

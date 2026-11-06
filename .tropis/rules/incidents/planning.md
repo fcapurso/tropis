@@ -20,6 +20,15 @@ string that the replacement text the plan authorised contains.
 One plan was written by doing the whole change on a throwaway copy to measure exact
 figures for its checks, and was then dispatched to an executor who did it again.
 
+## Evidence the reviewer could not reach
+
+The first plan built by its author and sent to a fresh reviewer, a measurement of
+whether an area rule comes back after compaction (2026-11-04), kept its probe and
+transcripts in the session's scratchpad. The first review run could not open them; the
+second was given uncommitted copies inside its worktree and re-checked every row, but
+was refused the test suite and the self-check by its permission settings, and left
+those figures to the pull request's required check.
+
 ## Two plans that verified one checkout
 
 Two plans listed verification commands only for the first of their checkouts while

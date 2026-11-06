@@ -16,7 +16,7 @@ at it.** A ceremony with no subject reads as though someone decided it applied.
 
 From the diff, state which kinds apply and why. Do not ask.
 
-<!-- project-owned: begin — this project's kinds of check. -->
+<!-- project-owned: begin kinds — this project's kinds of check: what each is, what in a change triggers it, and where its procedure lives. -->
 - **Setup** — anything that changes what the setup script writes into a project, or what
   a set-up project's commands do. Procedure: in an empty folder, `git init`, run
   `bash <this checkout>/scripts/set-up-project.sh .`, then

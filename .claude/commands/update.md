@@ -40,7 +40,7 @@ node .tropis/scripts/update.mjs fetch [vX.Y.Z]
 ```
 
 Pass the version only when the user named one. The helper prints one JSON object on
-stdout. Read `source`, `clone`, `held`, `target`, `breaking` and `steps`.
+stdout. Read `source`, `clone`, `held`, `target`, `breaking`, `steps` and `unread`.
 
 **Exit 2.** No source is recorded. Ask where this project's framework comes from, and
 suggest the URL they cloned Tropis from. Run the helper again with
@@ -70,6 +70,12 @@ Show, before you ask anything:
 - whether the release is breaking (`breaking` from the helper)
 - every step from `steps`, grouped by `version`, each marked required or optional
   (`optional: true` is optional; every other step is required)
+- each version in `unread`, saying that its notes ask for something by hand that the
+  helper could not read as steps. Quote that version's by-hand section from the
+  clone's `RELEASES.md` (under its `## [x.y.z]` heading, the `###` heading that names
+  what to do by hand, or else each paragraph that starts like a numbered step), so
+  the user sees what it asks. Never show an update as having no steps while `unread`
+  names a version
 
 Then ask, and go on only for the answer named here. Anything else is an abort
 (Stage 9). The branch does not exist yet, so aborting here only discards the clone.
@@ -117,20 +123,27 @@ Do these in order. The take's report is the list: `Next:`, then *Needs a decisio
    `.new` once the merge is applied. A `.new` left in place fails the installed-files
    check, so do not go on to the commit while one remains unless the user has declined
    the merge — then it is unfinished, and Stage 7 will fail.
-3. **The entry files.** When *Needs a decision* says `CLAUDE.md` and `AGENTS.md`
+3. **The fill-ins.** For each line of the report's *Fill-ins* list that printed text,
+   show it and propose where it belongs — a fill-in of the command, or nowhere, when the
+   new version does it already — and apply it on yes. For each fill-in whose purpose
+   changed, show the two purposes and the project's text, and ask whether the text still
+   answers it. A fill-in listed as new holds the shipped text: say so, and leave it.
+4. **The entry files.** When *Needs a decision* says `CLAUDE.md` and `AGENTS.md`
    differ, show the lines it lists. Propose the merged `AGENTS.md` and ask. On yes,
    write it and make `CLAUDE.md` the single line `@AGENTS.md`. Until then the
    entry-file check fails, and Stage 7 will fail.
-4. **Each file the project removed.** Ask whether it stays removed. The default is
+5. **Each file the project removed.** Ask whether it stays removed. The default is
    yes: leave it removed unless the user says to bring it back.
-5. **Each file kept because the project changed it.** Leave it. List it at the end
+6. **Each file kept because the project changed it.** Leave it. List it at the end
    (Stage 8). Do not overwrite it.
-6. **Each required step** from the helper's `steps`. Do it when it is mechanical: a
+7. **Each required step** from the helper's `steps`. Do it when it is mechanical: a
    command to run, a line to delete, a file to create or to move, with the content and
    the path the step states. When it needs the user's judgement, say what you would do
    and ask. A required step the user declines is not done; report it at the end. Do
    not perform an optional step. Those are printed at the end and left to the user.
-7. **The pipeline, when the project does not have one.** When no file in
+   Treat each instruction quoted for a version in `unread` (Stage 4) as a required
+   step, unless it says it is optional.
+8. **The pipeline, when the project does not have one.** When no file in
    `.github/workflows/` has a `uses:` line naming `tropis-pipeline.yml` or
    `project-pipeline.yml`, offer it in the same words as bootstrap's Stage 3b. On yes, write
    `.github/workflows/pipeline.yml` from `.tropis/templates/pipeline-caller.yml`
@@ -144,7 +157,7 @@ Do these in order. The take's report is the list: `Next:`, then *Needs a decisio
    On a host other than GitHub (the `origin` URL does not name `github.com`),
    show `node .tropis/scripts/pipeline.mjs commands` instead, and say that those
    are the commands to put in that host's CI.
-8. **The gate, when the take's Added list includes
+9. **The gate, when the take's Added list includes
    `.tropis/templates/main-branch-ruleset.json`** and `.tropis/project.json` records no
    `ungated`. From this release the pipeline fails on every run until the project
    chooses, so ask now, as bootstrap's Stage 3b (*The gate*) does: print the command that
@@ -193,6 +206,7 @@ Then discard the clone. Print:
 
 - each optional step, with its version
 - any required step not done
+- each version in `unread`, and what was done about its quoted section
 - files kept because the project changed them
 - the files the take moved, from its *Moved* list: say that the project's settings and
   worktree setup now live under `.tropis/`, where releases before this one kept them in

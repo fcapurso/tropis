@@ -2,7 +2,7 @@
 description: Show what is in flight, ready, and blocked
 ---
 
-<!-- project-owned: begin — the command that prints this project's backlog report. -->
+<!-- project-owned: begin report-command — the command that prints this project's backlog report. -->
 Run `npm --prefix .tropis run next` and report its output.
 <!-- project-owned: end -->
 
@@ -19,9 +19,14 @@ Then — because the backlog cannot know these — also check:
 
 ```bash
 git status
-gh pr list --state open
+gh api 'repos/{owner}/{repo}/pulls?state=open&per_page=100' --jq '.[] | "#\(.number) \(.head.ref) \(.title)"'
 git worktree list
 ```
+
+The pull requests are listed through GitHub's REST interface, which answers on the
+developer's computer and in a Claude Code cloud session alike; `gh pr` commands use GraphQL,
+which a cloud session refuses. Where 100 come back, ask for `&page=2` and so on, never
+`--paginate`, whose next-page link the cloud session refuses.
 
 Report anything in flight in the repository that the backlog does not show.
 A mismatch between the two is itself the finding: either a backlog item was left at

@@ -20,7 +20,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  blocks, carryBlocks, fingerprint, recordOf, recordProblems, shippedFiles,
+  blocks, carryBlocks, carryFillIns, fillIns, fingerprint, recordOf, recordProblems,
+  shippedFiles,
 } from '../scripts/installed-files.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -147,6 +148,150 @@ describe('carryBlocks', () => {
     const carried = carryBlocks(project, next);
     expect(carried.mismatch).toBe(true);
     expect(carried.text).toBe(next);
+  });
+});
+
+// A named fill-in as lines: its begin marker, its body, its end marker.
+const fill = (name, purpose, body = [], was = []) => [
+  marker(`begin ${name}${was.length ? ` (was ${was.join(', ')})` : ''} — ${purpose} -->`),
+  ...body,
+  marker('end -->'),
+];
+const doc = (...parts) => [...parts.flat(), ''].join('\n');
+
+describe('fillIns', () => {
+  it('reads name, was and purpose, and ignores an unnamed block', () => {
+    const text = doc(
+      'top',
+      fill('promote-trigger', 'the command that starts it.', ['- Promote trigger: go'], ['trigger', 'release-trigger']),
+      marker('begin — an unnamed block. -->'),
+      'unnamed',
+      marker('end -->'),
+      fill('kinds', 'this project\'s kinds.'),
+      marker('begin open — never closed. -->'),
+    );
+    expect(fillIns(text)).toEqual([
+      {
+        name: 'promote-trigger',
+        was: ['trigger', 'release-trigger'],
+        purpose: 'the command that starts it.',
+        body: ['- Promote trigger: go'],
+      },
+      { name: 'kinds', was: [], purpose: 'this project\'s kinds.', body: [] },
+    ]);
+  });
+});
+
+describe('carryFillIns', () => {
+  it('carries fill-ins by name when the new text reorders them, with no notes', () => {
+    const project = doc(fill('a', 'first.', ['A1', 'A2']), 'mid', fill('b', 'second.', ['B1']));
+    const next = doc('top', fill('b', 'second.', ['shipped B']), fill('a', 'first.', []), 'end');
+    expect(carryFillIns(project, next)).toEqual({
+      text: doc('top', fill('b', 'second.', ['B1']), fill('a', 'first.', ['A1', 'A2']), 'end'),
+      mismatch: false,
+      notes: [],
+    });
+  });
+
+  it('carries a body by a was name and notes renamed', () => {
+    const project = doc(fill('old-name', 'the value.', ['mine']));
+    const next = doc(fill('new-name', 'the value.', ['shipped'], ['older', 'old-name']));
+    const carried = carryFillIns(project, next);
+    expect(carried.text).toBe(doc(fill('new-name', 'the value.', ['mine'], ['older', 'old-name'])));
+    expect(carried.notes).toEqual([{ kind: 'renamed', from: 'old-name', name: 'new-name' }]);
+  });
+
+  it('notes a changed purpose with both purposes, and not a whitespace-only one', () => {
+    const project = doc(fill('a', 'one thing.', ['mine']), fill('b', 'the  other   thing.', ['also']));
+    const next = doc(fill('a', 'another thing.'), fill('b', 'the other thing.'));
+    const carried = carryFillIns(project, next);
+    expect(carried.text).toBe(doc(fill('a', 'another thing.', ['mine']), fill('b', 'the other thing.', ['also'])));
+    expect(carried.notes).toEqual([
+      { kind: 'purpose', name: 'a', was: 'one thing.', now: 'another thing.' },
+    ]);
+  });
+
+  it('keeps the new text\'s body for a fill-in the project lacks, and notes new', () => {
+    const project = doc(fill('a', 'first.', ['mine']));
+    const next = doc(fill('a', 'first.'), fill('c', 'a new value.', ['shipped C']));
+    const carried = carryFillIns(project, next);
+    expect(carried.text).toBe(doc(fill('a', 'first.', ['mine']), fill('c', 'a new value.', ['shipped C'])));
+    expect(carried.notes).toEqual([{ kind: 'new', name: 'c', purpose: 'a new value.' }]);
+  });
+
+  it('notes a dropped fill-in as removed with its lines, unless it holds only blank lines', () => {
+    const project = doc(
+      fill('a', 'first.', ['mine']),
+      fill('d', 'gone.', ['D1', '', 'D2']),
+      fill('e', 'also gone.', ['', '   ']),
+    );
+    const next = doc(fill('a', 'first.'));
+    const carried = carryFillIns(project, next);
+    expect(carried.text).toBe(doc(fill('a', 'first.', ['mine'])));
+    expect(carried.notes).toEqual([
+      { kind: 'removed', name: 'd', purpose: 'gone.', lines: ['D1', '', 'D2'] },
+    ]);
+  });
+
+  it('moves one unnamed block whole into the one named fill-in', () => {
+    const project = doc(marker('begin — the old block. -->'), '<!-- help -->', 'X', 'Y', marker('end -->'));
+    const next = doc('top', fill('only', 'the one value.', ['shipped']));
+    const carried = carryFillIns(project, next);
+    expect(carried.text).toBe(doc('top', fill('only', 'the one value.', ['<!-- help -->', 'X', 'Y'])));
+    expect(carried.mismatch).toBe(false);
+    expect(carried.notes).toEqual([{ kind: 'moved', from: 'the block', name: 'only' }]);
+  });
+
+  it('moves labelled items by name or was name, drops the help comment, and lists the rest', () => {
+    const project = doc(
+      marker('begin — this project\'s release. -->'),
+      '<!-- Fill in each line:',
+      '     - Run from: the shipped help, not an item.',
+      '     - Trigger: also help. -->',
+      'Loose text before any item.',
+      '- Run from: here',
+      '- Trigger: go --ref main',
+      '  -f commit=<commit>',
+      '',
+      '- Rule trial: yes',
+      '- Run from: twice',
+      marker('end -->'),
+    );
+    const next = doc(
+      fill('run-from', 'where it runs.', ['- Run from: shipped']),
+      fill('promote-trigger', 'the trigger.', [], ['trigger', 'release-trigger']),
+      fill('readers', 'who reads.', ['<!-- e.g. -->']),
+    );
+    const carried = carryFillIns(project, next);
+    expect(carried.text).toBe(doc(
+      fill('run-from', 'where it runs.', ['- Run from: here']),
+      fill('promote-trigger', 'the trigger.', ['- Trigger: go --ref main', '  -f commit=<commit>'], ['trigger', 'release-trigger']),
+      fill('readers', 'who reads.', ['<!-- e.g. -->']),
+    ));
+    expect(carried.mismatch).toBe(false);
+    expect(carried.notes).toEqual([
+      { kind: 'moved', from: 'Run from', name: 'run-from' },
+      { kind: 'moved', from: 'Trigger', name: 'promote-trigger' },
+      { kind: 'new', name: 'readers', purpose: 'who reads.' },
+      { kind: 'unplaced', lines: ['Loose text before any item.'] },
+      { kind: 'unplaced', lines: ['- Rule trial: yes'] },
+      { kind: 'unplaced', lines: ['- Run from: twice'] },
+    ]);
+  });
+
+  it('behaves as carryBlocks when the new text has no named fill-in', () => {
+    const project = doc(marker('begin -->'), 'A', marker('end -->'));
+    const same = doc('top', marker('begin -->'), 'shipped', marker('end -->'));
+    expect(carryFillIns(project, same)).toEqual({ ...carryBlocks(project, same), notes: [] });
+    expect(carryFillIns(project, same).text).toBe(doc('top', marker('begin -->'), 'A', marker('end -->')));
+    const more = doc(marker('begin -->'), 'one', marker('end -->'), marker('begin -->'), 'two', marker('end -->'));
+    expect(carryFillIns(project, more)).toEqual({ text: more, mismatch: true, notes: [] });
+  });
+
+  it('reports a mismatch when the new text\'s unnamed blocks differ in number from the project\'s', () => {
+    const project = doc(fill('a', 'first.', ['mine']));
+    const next = doc(fill('a', 'first.'), marker('begin -->'), 'extra', marker('end -->'));
+    expect(carryFillIns(project, next)).toEqual({ text: next, mismatch: true, notes: [] });
   });
 });
 
