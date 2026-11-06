@@ -54,10 +54,9 @@ code.
 
 ## What it needs
 
-- **Required on your machine:** `git`, `bash`, `python3` and `node` 18.14 or later, on
-  an even-numbered version from 20 on (Jest, which runs the checks, refuses 19, 21 and
-  23). They enter none of your project's dependencies; why these four is in
-  [`framework/DECISIONS.md`](framework/DECISIONS.md), FW-005.
+- **Required on your machine:** `git`, `bash`, `python3` and `node` 20, 22, or 24 or
+  later (the test tools that run the checks refuse 18, 21 and 23). They enter none of
+  your project's dependencies; why these four is in [`framework/DECISIONS.md`](framework/DECISIONS.md), FW-005.
 - **Required: an agent tool** that runs hooks before a command and reads a project
   instruction file. Claude Code and Cursor are supported today.
 - **Optional: GitHub.** The pipeline runs there as CI, and the host can refuse a merge
