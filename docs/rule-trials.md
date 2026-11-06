@@ -43,3 +43,10 @@ The format of an entry:
 - Clause: "A test of something that keeps state in a shared folder gives it a folder of its own."
 - Outcome: skipped
 - Why: the trial is under review. Its replacement, a word budget per rule file with a tidy-up pass over the whole file (`rule-pruning-keeps-pace`), waits on the experiments recorded on `rule-is-measured-with-and-without`, and a one-clause run in the meantime would add little.
+
+## Since v0.8.2
+
+- Rule file: `rules/planning.md`
+- Clause: "Put what the fresh reviewer re-checks within its reach before starting it."
+- Outcome: skipped
+- Why: the trial is under review. Its replacement, a word budget per rule file with a tidy-up pass over the whole file (`rule-pruning-keeps-pace`), waits on the experiments recorded on `rule-is-measured-with-and-without`, and a one-clause run in the meantime would add little.
