@@ -41,6 +41,15 @@
             "command": "bash .tropis/hooks/public-exposure-check.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*__(interrupt_session|archive_session)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .tropis/hooks/own-session-guard.sh"
+          }
+        ]
       }
     ]
   },

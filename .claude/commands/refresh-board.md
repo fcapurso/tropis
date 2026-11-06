@@ -94,7 +94,7 @@ rather than a weak finding: a pass that finds nothing reports `Grooming: nothing
 
 **5. Look.** Open the page the build printed in a browser and look at it.
 
-<!-- project-owned: begin — a project's own step for publishing the page, if it has one. -->
+<!-- project-owned: begin publish — a project's own step for publishing the page, if it has one. -->
 <!-- What this block is for: publishing the page somewhere else. As shipped, there is no publishing step. -->
 <!-- project-owned: end -->
 

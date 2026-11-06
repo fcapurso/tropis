@@ -792,6 +792,15 @@ migration file per release — a second copy of what the notes already say.
 `After updating` heading and the numbered bold leads are a format. A step a project may
 skip starts with `Optional:` inside its bold lead.
 
+**Amended 2026-11-05 — the section is found by what it is.** The notes renamed the
+heading to *What to do by hand* in 0.7.2, and the helper, which matched the words
+`After updating`, read no step from any release after, 0.8.0's required steps included,
+with nothing saying any were missed. It now reads every `###` heading that names steps
+to do by hand, reports each version whose notes ask for something by hand that it read
+no step from, and a guard reads Tropis's own notes, so a reworded heading fails the
+self-check. The numbered bold leads, and `Optional:` inside them, remain the format;
+the heading's words do not.
+
 ## FW-024: The self-check runs the guards that check the framework repository
 
 **Date:** 2026-10-20 · **Status:** Accepted
@@ -2304,3 +2313,109 @@ a tier the picks are still listed least usage first, so a Large plan, a team mem
 fresh reviewer get the pick they got before unless the table's order and its figures
 disagree. A plan of a lower tier may run on a more capable model than it needs when that
 model costs less per task.
+
+## FW-071: A command's fill-ins are named blocks carried by name
+
+**Date:** 2026-11-05 · **Status:** Accepted; built by the backlog item
+`commands-have-named-fill-ins`.
+
+**Decision:** A command holds what is the project's to make in fill-ins: project-owned
+blocks whose begin marker names the fill-in, any names it had before, and its purpose,
+on one line — `begin <name> (was <old>, …) — <purpose>`. The end marker is unchanged, so
+the fingerprint, the drift check and every guard that finds blocks read a fill-in as a
+block, and the purpose, outside the block, is part of the fingerprint. Taking a release
+carries each fill-in by its name, or by the first former name the project has, whatever
+the order. A fill-in carried under its own name with the same purpose is not reported.
+The take lists one that is renamed, whose purpose changed, that is new (it holds the
+shipped text), or that the release dropped, printing the text of a dropped one. A
+project's single unnamed block from an earlier release is moved into the named fill-ins
+once: whole when there is one fill-in, otherwise each `- <Label>:` item into the
+fill-in named after its label, with the shipped help comments dropped and what finds no
+fill-in printed. The six commands that held a block hold named fill-ins; `/release`'s
+one block became ten value fill-ins and four behaviour fill-ins. Blocks in shipped
+scripts stay unnamed and are carried by position, as before.
+
+**Evidence:** The finding at docs/superpowers/specs/2026-11-04-command-slots-finding.md
+counted the changes projects made to shipped commands: 23 of the 40 are the project's to
+make and fit a fill-in. Today's take carried one unnamed block by position, so a label
+the release renamed was carried silently under the old name, and any change in the
+number of blocks wrote a `.new` file. Built by the plan
+docs/superpowers/plans/2026-11-05-commands-have-named-fill-ins.md. Source: none in
+particular; the finding's prototype was read for the idea.
+
+**Rejected:** The prototype's separate slot marker (a second syntax every tool that reads
+blocks would have to learn, for no gain). Taking a new shipped default into a fill-in the
+project never changed (the take keeps no copy of earlier shipped texts to compare with,
+so a project's body is always carried). The two transitional fill-ins of `/feature` and
+`/idea`, which served only generated documents FW-043 retires.
+
+**Consequences:** The take's report gains a *Fill-ins* list, and the version check
+prints the same lines; `/update` reads it with the developer. A command edited outside
+its fill-ins is still forked, and its new text lands in a `.new` file with the fill-ins
+carried. A fill-in's name and purpose are an interface: a purpose changes only when its
+meaning does, and a rename keeps the old name in `was`.
+
+## FW-072: A session where `gh pr` is refused merges through `gh api` and one auto-merge script
+
+**Date:** 2026-11-05 · **Status:** Accepted; built by the backlog item
+`release-and-next-run-in-a-cloud-session`.
+
+**Decision:** A session where `gh` is refused GitHub's GraphQL interface, such as a
+Claude Code cloud session, merges through `gh` as any session does, not through its own
+GitHub tools. Commands list, open and read pull requests through `gh api` and the REST
+pulls route, on the developer's computer as in the cloud. Setting auto-merge, which
+GitHub's REST interface cannot do, goes through `.tropis/scripts/auto-merge.mjs`: it runs
+`gh pr merge --auto --squash` with the subject and body, and only on the GraphQL refusal
+calls the cloud session's own route, `PUT …/pulls/<n>/ccr/auto_merge`, with the same
+subject and body. The session's own GitHub tools are left for waking on a pull
+request's activity. `/next` and `/release` are the first commands to follow it.
+
+**Evidence:** The spike `cloud-session-gh-routes`, 2026-11-05, Claude Code 2.1.318 and
+`gh` 2.89.0 in a cloud session, Linux x86_64: `POST pulls`, `PATCH pulls/<n>` and
+`PUT pulls/<n>/update-branch` reached GitHub, `ccr/auto_merge` set and cleared auto-merge
+with its subject and body, and every `gh pr` command answered the GraphQL 403. Its
+finding is the spec dated 2026-11-05 on those routes. The claim pull request of this
+backlog item, #258, was opened by `POST pulls` and set to merge by `ccr/auto_merge` in a
+cloud session, and merged. FW-063's route had inferred those writes refused without
+trying them. Source: none in particular.
+
+**Rejected:** Describing the session's own GitHub tools in each command (FW-063's route:
+every command would carry a second procedure, and the tool that sets auto-merge takes no
+subject or body). Calling the cloud route first (it exists only in the cloud). Falling
+back on any refusal of `gh pr merge` (a real refusal on the developer's computer, such as
+auto-merge being off for the repository, would be hidden behind a route that is not
+there).
+
+**Consequences:** Amends FW-063's "a cloud session merges through its own GitHub tools";
+the merge token stays as FW-063 decided. The workflow's paragraph *Where `gh` cannot
+write* becomes *Where `gh pr` is refused*. Deleting a branch is still refused there,
+and still not needed. The route answered "enabled" for a pull request already merged, so
+`main-status.mjs --pull-request` remains what says whether auto-merge is on.
+
+## FW-073: The test tools lock glob and minimatch at their patched majors, and need Node.js 20 or 22 and later
+
+**Date:** 2026-11-05 · **Status:** Accepted; built by the backlog item
+`test-tools-take-patched-glob`.
+
+**Decision:** `templates/package.json` overrides glob to `^14.0.3` and minimatch to
+`^11.0.4` under Jest, and the lockfile every project installs is regenerated from it.
+minimatch 11.0.4 runs on Node.js 20 and on 22 and later, so the prerequisite check asks
+for those and Tropis's checks no longer run on Node.js 18.
+
+**Evidence:** The spike `dependabot-alerts-are-assessed`, 2026-11-05: Jest 30.5.2 asks
+for glob ^13 and minimatch ^10, each with a moderate advisory fixed only in the next
+major, and every project set up from the release inherited both alerts. With the
+overrides, `npm audit` reports neither, and the self-check passes. Source: none in
+particular.
+
+**Rejected:** Pinning minimatch at 11.0.3, the last release that allows Node.js 18: it
+holds the fix, but locks the projects to a release minimatch has already moved past, and
+Node.js 18 reached end of life in April 2025; the developer accepted dropping it.
+Waiting for Jest to ask for the patched majors itself: every project carries the alerts
+until it does. Dismissing the alerts as unreachable: true today, but the dismissal would
+have to be repeated on every project's own repository.
+
+**Consequences:** Two more overrides, each with an entry in
+`guards/dependency-overrides.test.js` that fails once Jest's own dependency catches up,
+which is when to remove it. A project on Node.js 18 sees the setup check refuse it and
+must upgrade Node.js before running its checks; the release notes say so.

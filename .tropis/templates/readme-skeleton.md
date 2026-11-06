@@ -1,7 +1,10 @@
-<!-- The README's sections, in order. The first is written as the page's opening
-     paragraph under its title, with no heading of its own; the rest are ## sections.
-     A project may copy this file to docs/readme/skeleton.md and change it;
-     /refresh-readme then uses that copy. -->
+<!-- The README's sections, in order. The reader it assumes: someone deciding whether
+     to use or adopt the product, who may never have seen it, as the reader of an open
+     project's page is. For a closed-source product, whose readers build, run, release
+     or assess it, readme-skeleton-closed.md fits instead. The first section is written
+     as the page's opening paragraph under its title, with no heading of its own; the
+     rest are ## sections. A project may copy this file to docs/readme/skeleton.md and
+     change it; /refresh-readme then uses that copy. -->
 
 **Page length:** at most 1,200 words, counted as `wc -w` counts them, title and fixed text included.
 
@@ -36,8 +39,8 @@
 - **Length:** a few paragraphs.
 
 ## Using it day to day
-- **Job:** what someone does once it is set up: the commands they type and when.
-- **Facts from:** the installed commands and scripts.
+- **Job:** what someone does once it is set up, around the part they play: what they decide, do and check, and when, naming the command or screen that serves each. What the product does for them on its own is said as such, not listed as steps of theirs. Not a list of every command.
+- **Facts from:** the installed commands and scripts, the operator guide, the project brief.
 - **Length:** a short section.
 
 ## Where it stands
