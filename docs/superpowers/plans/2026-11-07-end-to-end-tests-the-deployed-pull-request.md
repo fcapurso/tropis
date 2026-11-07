@@ -517,3 +517,49 @@ event as well (found by the first test run).
 
 Nothing. The workflow itself was not run (the plan forbids it); the reviewer sees it only
 through the guard.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session in a Claude Code cloud session, git 2.43, Node.js 22, Jest 30.5.2 (the self-check's install), Linux x86_64.
+
+- `bash scripts/check-blueprint.sh` on `0ab11fe`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `guards/pipeline.test.js` staged from an export of `0ab11fe`, linked to `.self-check/node_modules`: `Tests: 162 passed, 162 total`.
+- Re-broken in that export by deleting `gateDecision`'s `end-to-end-on === 'environment'` return: `Tests: 2 failed, 160 passed, 162 total`.
+- `git diff --stat origin/main...HEAD`: the files in the File Structure table only, `feature-catalog.yaml` added by this review for the move to `shipped`.
+
+### Found
+
+Public exposure: the diff was read for private material, and none was found.
+
+- The plan's Task 2 keyed the result substitution on the plan alone. The executor also keyed it on the event, so a push ignores `end-to-end-deployed`, which is what the plan's own tests asked for. This is correct and needed no change.
+- The handover's self-check bullet points at a closing line that was never added. The re-run above stands in for it.
+- The executor ran the staged guard against `.tropis/node_modules` instead of `.self-check/node_modules`. The re-run above used the self-check's install.
+
+### Acceptance criteria
+
+All are covered by automated tests in `guards/pipeline.test.js`. The workflow criteria are asserted on the template as YAML (no GitHub run exercises them here):
+
+1. Waits for sanity, unit, integration and the environment: *GitHub workflow* asserts `end-to-end-deployed`'s `needs` and `if`.
+2. Deploys first, and the deploy job does not deploy again: the step order assertion, and the gate tests that decide `skipped` with the sentence naming the deploy.
+3. `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH`: the `run end-to-end --branch` tests.
+4. One concurrency group across both: the concurrency loop covers `end-to-end-deployed`, and both steps sit in that one job.
+5. Evidence for 7 days on failure: the upload step assertions.
+6. The gate still requires the stage: the gate's `needs`, and the held decision on `end-to-end-deployed=failure` and `skipped`.
+7. Unchanged elsewhere: the `endToEndOn` cases that return `runner`, `end-to-end`'s unchanged `needs`, and the plan output without `--event`.
+8. FW-074 amends FW-028: `framework/DECISIONS.md`.
+
+### Outstanding disposition
+
+- The move to `shipped` is done in this pull request.
+- This is breaking for projects with both a filled slot and an end-to-end script. The release notes say so, and `/release` will treat it as breaking.
+- The first real run of `end-to-end-deployed` happens in an adopter's project. No project here has a branch slot.
+
+### Learnings routed
+
+No durable change. The one planning gap was the event in the substitution. It was specific to this design, and the plan's own tests caught it.
+
+### Merged because
+
+The plan's design is implemented as written. Every guard the plan added fails on what it guards. The self-check passes. The pipeline is unchanged wherever the branch slot is empty, the script is absent, or the event is a push.
