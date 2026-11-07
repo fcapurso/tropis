@@ -17,7 +17,7 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+- The hook that refuses a branch in your main checkout now judges the repository the command acts on, after a leading `cd` or git's `-C`. A flush, or any session in your main checkout, can create a branch in another clone or in a worktree with an ordinary `git checkout -b`, and a branch aimed at the main checkout from elsewhere is now refused too.
 
 ## [0.9.0] — 2026-11-06
 
