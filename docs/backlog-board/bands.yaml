@@ -107,15 +107,16 @@ document-rule-reaches-a-new-document:
     status: idea
     blockers: []
 end-to-end-tests-the-deployed-pull-request:
-  band: C
+  band: B
   value: 3
   valueWhy: Lets a project make browser tests that need a deployed app a required check
     on the pull request's own code.
   effort: 3
   effortWhy: The pipeline template's job order and concurrency change, the end-to-end job
     deploys first, and a decision record amends FW-028.
-  verdict: "Decide first: whether a pull request's own environment may receive a deploy
-    before every stage has passed, which FW-028 forbids today."
+  verdict: "Do next: the developer decided on 2026-11-07 that a pull request's own
+    environment may receive a deploy before every stage has passed, as an exception to
+    FW-028 that staging and production do not get."
   evidence: "2026-11-07 — templates/github/tropis-pipeline.yml: end-to-end needs only plan
     and framework, and deploy needs gate and branch-create, so the stage runs before the
     pull request's deploy."
