@@ -211,7 +211,8 @@
     "branch-hook-judges-the-repository-the-command-acts-on": [
       "The project is the repository the hook runs in; a branch is refused only when the command's target directory is that repository's main checkout (FW-075, amending FW-040).",
       "Executor ran on Sonnet because the tier's picks are Cursor models, which this cloud session cannot start.",
-      "Reviewer fixed an overclaiming release-note line and renumbered its decision from FW-074 to FW-075 after the rebase."
+      "Reviewer fixed an overclaiming release-note line and renumbered its decision from FW-074 to FW-075 after the rebase.",
+      "No fresh-agent check: only a decision record entry changed among framework documents."
     ]
   }
 }
