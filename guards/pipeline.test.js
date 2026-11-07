@@ -12,6 +12,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import {
+  endToEndOn,
   stagingSlot,
   stagingSummary,
   environmentName,
@@ -1079,6 +1080,154 @@ describe('deploy gate', () => {
   });
 });
 
+describe('where the end-to-end stage runs', () => {
+  const stagesOf = (e2e) => planOf({ 'end-to-end': e2e });
+
+  it('is the environment only for a pull request with a filled slot and a planned stage', () => {
+    expect(endToEndOn({ stages: stagesOf('run'), branch: 'filled', event: 'pull_request' })).toBe('environment');
+    expect(endToEndOn({ stages: stagesOf('run'), branch: 'filled', event: 'push' })).toBe('runner');
+    expect(endToEndOn({ stages: stagesOf('run'), branch: 'empty', event: 'pull_request' })).toBe('runner');
+    expect(endToEndOn({ stages: stagesOf('empty'), branch: 'filled', event: 'pull_request' })).toBe('runner');
+    expect(endToEndOn({ stages: stagesOf('skipped'), branch: 'filled', event: 'pull_request' })).toBe('runner');
+  });
+
+  function project({ slot = true } = {}) {
+    const root = repository();
+    write(root, 'pipeline/prose.txt', 'docs/\n');
+    write(root, 'pipeline/end-to-end.sh', 'exit 0\n');
+    if (slot) fillBranchSlot(root);
+    const base = commit(root, 'base');
+    write(root, 'src/a.js', 'a\n');
+    const head = commit(root, 'code');
+    return { root, base, head };
+  }
+
+  const planLines = (root, args) => {
+    const result = runPipeline(root, ['plan', ...args]);
+    expect(result.status).toBe(0);
+    return result.stdout.split('\n').filter((line) => line !== '');
+  };
+
+  it('prints end-to-end-on=environment for a pull request with a filled slot', () => {
+    const { root, base } = project();
+    const lines = planLines(root, ['--base', base, '--event', 'pull_request']);
+    expect(lines).toContain('end-to-end=run');
+    expect(lines).toContain('end-to-end-on=environment');
+    expect(lines.indexOf('end-to-end-on=environment')).toBe(STAGES.length);
+    expect(lines.at(-1)).toBe('branch=filled');
+  });
+
+  it('prints runner for a push, and for a pull request with an empty slot', () => {
+    const filled = project();
+    expect(planLines(filled.root, ['--base', filled.base, '--event', 'push'])).toContain('end-to-end-on=runner');
+    const empty = project({ slot: false });
+    expect(planLines(empty.root, ['--base', empty.base, '--event', 'pull_request'])).toContain('end-to-end-on=runner');
+  });
+
+  it('prints no end-to-end-on line without --event', () => {
+    const { root, base } = project();
+    const lines = planLines(root, ['--base', base]);
+    expect(lines.filter((line) => line.startsWith('end-to-end-on='))).toEqual([]);
+  });
+
+  it('prints runner when the passed commit makes the stage skipped', () => {
+    const { root, base, head } = project();
+    write(root, 'docs/a.md', 'a\n');
+    commit(root, 'prose');
+    const lines = planLines(root, ['--base', base, '--passed', head, '--event', 'pull_request']);
+    expect(lines).toContain('end-to-end=skipped');
+    expect(lines).toContain('end-to-end-on=runner');
+  });
+
+  it('refuses --event with no value', () => {
+    const { root } = project();
+    const result = runPipeline(root, ['plan', '--event']);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toBe('plan: --event needs push or pull_request\n');
+  });
+});
+
+describe('the gate with the end-to-end stage in the environment', () => {
+  function gate(root, { plan, event = 'pull_request', results, summary, branch = 'filled' }) {
+    return runPipeline(root, [
+      'gate', '--plan', '-', '--event', event, '--branch', branch,
+      ...(summary ? ['--summary', summary] : []),
+      ...Object.entries(results).map(([stage, result]) => `${stage}=${result}`),
+    ], { input: `${Object.entries(plan).map(([key, value]) => `${key}=${value}`).join('\n')}\n` });
+  }
+
+  const onEnvironment = () => ({ ...planOf(), 'end-to-end-on': 'environment', branch: 'filled' });
+  const resultsDeployed = (deployed, overrides = {}) => ({
+    ...resultsOf({ 'end-to-end': 'skipped', ...overrides }),
+    'end-to-end-deployed': deployed,
+  });
+
+  it('takes the deployed result as the stage, and does not deploy again', () => {
+    const root = repository();
+    const summary = join(root, 'summary.md');
+    const result = gate(root, { plan: onEnvironment(), results: resultsDeployed('success'), summary });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('deploy=skipped\n');
+    const text = readFileSync(summary, 'utf8');
+    expect(text).toContain('| end-to-end | run — passed |');
+    expect(text).toContain("| deploy | skipped — the end-to-end stage deployed this commit to the branch's environment |");
+  });
+
+  it('holds when the deployed job failed, naming the stage', () => {
+    const root = repository();
+    const result = gate(root, { plan: onEnvironment(), results: resultsDeployed('failure') });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('deploy=held\n');
+    expect(result.stderr).toContain('held — end-to-end did not pass');
+  });
+
+  it('holds when the deployed job never started', () => {
+    const root = repository();
+    const result = gate(root, { plan: onEnvironment(), results: resultsDeployed('skipped') });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('deploy=held\n');
+  });
+
+  it('holds on another stage failing even when the deployed job passed', () => {
+    const root = repository();
+    const result = gate(root, { plan: onEnvironment(), results: resultsDeployed('success', { unit: 'failure' }) });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('held — unit did not pass');
+  });
+
+  it('ignores the deployed result on a push', () => {
+    const root = repository();
+    const plan = onEnvironment();
+    const green = gate(root, { plan, event: 'push', results: { ...resultsOf(), 'end-to-end-deployed': 'failure' } });
+    expect(green.status).toBe(0);
+    expect(green.stdout).toBe('deploy=run\n');
+  });
+
+  it('ignores the deployed result when the plan has no end-to-end-on line', () => {
+    const root = repository();
+    const plan = planOf();
+    const pr = gate(root, { plan, results: { ...resultsOf(), 'end-to-end-deployed': 'failure' } });
+    expect(pr.status).toBe(0);
+    expect(pr.stdout).toBe('deploy=run\n');
+    const runner = gate(root, { plan: { ...plan, 'end-to-end-on': 'runner' }, results: { ...resultsOf(), 'end-to-end-deployed': 'failure' } });
+    expect(runner.stdout).toBe('deploy=run\n');
+  });
+
+  it('exits 2 when the plan says environment and the deployed result is missing', () => {
+    const root = repository();
+    const result = gate(root, { plan: onEnvironment(), results: resultsOf({ 'end-to-end': 'skipped' }) });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toBe('gate: missing result for end-to-end-deployed\n');
+    expect(result.stdout).toBe('');
+  });
+
+  it('decides through gateDecision the same way', () => {
+    const plan = onEnvironment();
+    expect(gateDecision({ plan, results: resultsDeployed('success'), event: 'pull_request', branch: 'filled' })).toBe('skipped');
+    expect(gateDecision({ plan, results: resultsDeployed('failure'), event: 'pull_request', branch: 'filled' })).toBe('held');
+  });
+});
+
 describe('deploy gate with a passed commit', () => {
   const PASSED = 'b'.repeat(40);
   const skippedStages = { sanity: 'skipped', unit: 'skipped', integration: 'skipped', 'end-to-end': 'skipped' };
@@ -1648,6 +1797,98 @@ describe('run, gate and commands', () => {
     expect(prose.stderr).toContain('skipped — only prose and framework files changed');
   });
 
+  describe('run end-to-end --branch', () => {
+    const CHECK = [
+      'if [ "$TROPIS_ENVIRONMENT" != "feature-x" ] || [ "$TROPIS_BRANCH" != "feature-x" ]; then exit 9; fi',
+      'exit 0',
+      '',
+    ].join('\n');
+    const BLANK = [
+      'if [ -n "${TROPIS_ENVIRONMENT:-}" ] || [ -n "${TROPIS_BRANCH:-}" ]; then exit 9; fi',
+      'exit 0',
+      '',
+    ].join('\n');
+
+    function e2eProject(script = CHECK, { slot = true } = {}) {
+      const root = repository();
+      write(root, 'pipeline/end-to-end.sh', script);
+      if (slot) fillBranchSlot(root);
+      commit(root, 'base');
+      return root;
+    }
+
+    it('gives the script the environment and the branch', () => {
+      const root = e2eProject();
+      const result = runPipeline(root, ['run', 'end-to-end', '--branch', 'feature-x']);
+      expect(result.status).toBe(0);
+    });
+
+    it('gives the script neither without --branch', () => {
+      const root = e2eProject(BLANK);
+      const result = runPipeline(root, ['run', 'end-to-end'], { env: { TROPIS_ENVIRONMENT: '', TROPIS_BRANCH: '' } });
+      expect(result.status).toBe(0);
+      const withBranch = runPipeline(root, ['run', 'end-to-end', '--branch', 'feature-x']);
+      expect(withBranch.status).toBe(9);
+    });
+
+    it('refuses an empty slot', () => {
+      const root = e2eProject(CHECK, { slot: false });
+      const result = runPipeline(root, ['run', 'end-to-end', '--branch', 'feature-x']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toBe('run: --branch needs pipeline/branch/\n');
+    });
+
+    it('refuses a partial slot with the slot\'s own error', () => {
+      const root = e2eProject(CHECK, { slot: false });
+      write(root, 'pipeline/branch/create.sh', 'exit 0\n');
+      const result = runPipeline(root, ['run', 'end-to-end', '--branch', 'feature-x']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('pipeline/branch/');
+    });
+
+    it('refuses a branch whose environment is permanent', () => {
+      const root = e2eProject();
+      const result = runPipeline(root, ['run', 'end-to-end', '--branch', 'production']);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('permanent');
+    });
+
+    it('refuses --branch on another stage, without a value, and with an unknown argument', () => {
+      const root = e2eProject();
+      write(root, 'pipeline/unit.sh', 'exit 0\n');
+      const other = runPipeline(root, ['run', 'unit', '--branch', 'feature-x']);
+      expect(other.status).toBe(2);
+      expect(other.stderr).toBe('run: --branch is for end-to-end only\n');
+      const missing = runPipeline(root, ['run', 'end-to-end', '--branch']);
+      expect(missing.status).toBe(2);
+      expect(missing.stderr).toBe('run: --branch needs a branch\n');
+      const unknown = runPipeline(root, ['run', 'end-to-end', '--nope']);
+      expect(unknown.status).toBe(2);
+      expect(unknown.stderr).toBe('run: unknown argument --nope\n');
+    });
+
+    it('prints the empty line and exits 0 when the script is absent', () => {
+      const root = repository();
+      fillBranchSlot(root);
+      commit(root, 'base');
+      const result = runPipeline(root, ['run', 'end-to-end', '--branch', 'feature-x']);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe('end-to-end: empty — no pipeline/end-to-end.sh\n');
+    });
+
+    it('lists the deployed run in the host command list', () => {
+      const root = repository();
+      const result = runPipeline(root, ['commands']);
+      expect(result.stdout).toContain('--event "$EVENT"');
+      expect(result.stdout).toContain('end-to-end-deployed="$END_TO_END_DEPLOYED"');
+      expect(result.stdout).toContain([
+        '# On a pull request whose plan says end-to-end-on=environment, in one job holding the environment: deploy, then test.',
+        'node .tropis/scripts/pipeline.mjs branch deploy "$BRANCH"',
+        'node .tropis/scripts/pipeline.mjs run end-to-end --branch "$BRANCH"',
+      ].join('\n'));
+    });
+  });
+
   it('names every stage, in order, with when to run each command', () => {
     const root = repository();
     const result = runPipeline(root, ['commands']);
@@ -2022,6 +2263,7 @@ describe('GitHub workflow', () => {
       'integration',
       'end-to-end',
       'branch-create',
+      'end-to-end-deployed',
       'gate',
       'deploy',
       'branch-remove',
@@ -2029,7 +2271,7 @@ describe('GitHub workflow', () => {
     for (const stage of ['sanity', 'unit', 'integration', 'end-to-end']) {
       expect([...jobs[stage].needs].sort()).toEqual(['framework', 'plan']);
     }
-    expect(jobs.gate.needs).toEqual(['plan', ...STAGES.slice(0, -1)]);
+    expect(jobs.gate.needs).toEqual(['plan', ...STAGES.slice(0, -1), 'end-to-end-deployed']);
     expect(jobs.host.needs).toBeUndefined();
     expect(String(jobs.host.if)).toContain("github.event.action != 'closed'");
     const hostRun = jobs.host.steps.find((step) => step.run);
@@ -2046,7 +2288,7 @@ describe('GitHub workflow', () => {
     expect(String(jobs.deploy.if)).toContain("needs.gate.outputs.deploy == 'run'");
     expect(String(jobs.deploy.if)).toContain("needs.branch-create.result != 'failure'");
     const group = "tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}";
-    for (const id of ['branch-create', 'deploy', 'branch-remove']) {
+    for (const id of ['branch-create', 'end-to-end-deployed', 'deploy', 'branch-remove']) {
       expect(jobs[id].concurrency.group).toBe(group);
       expect(jobs[id].concurrency['cancel-in-progress']).toBe(false);
       expect(JSON.stringify(jobs[id])).toContain('TROPIS_SECRETS');
@@ -2067,6 +2309,45 @@ describe('GitHub workflow', () => {
     expect(planRun).toContain('environment "$HEAD_REF" --no-check)');
     expect(planRun).toMatch(/else\n\s*environment=\$\(node \.tropis\/scripts\/pipeline\.mjs environment "\$HEAD_REF"\)\n/);
     expect(planRun).toContain('plan --closed >> "$GITHUB_OUTPUT"');
+  });
+
+  it('tests the pull request\'s own deployed commit in a job of its own, which the gate waits for', () => {
+    const text = readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8');
+    const jobs = YAML.parse(text).jobs;
+    const job = jobs['end-to-end-deployed'];
+    expect(job.needs).toEqual(['plan', 'framework', 'sanity', 'unit', 'integration', 'branch-create']);
+    const condition = String(job.if);
+    for (const part of [
+      '!cancelled()',
+      "end-to-end-on == 'environment'",
+      "needs.framework.result == 'success'",
+      'needs.sanity.result',
+      'needs.unit.result',
+      'needs.integration.result',
+      "needs.branch-create.result != 'failure'",
+    ]) expect(condition).toContain(part);
+    const commands = job.steps.filter((step) => step.run).map((step) => step.run);
+    expect(commands).toEqual([
+      'node .tropis/scripts/pipeline.mjs branch deploy "$HEAD_REF"',
+      'node .tropis/scripts/pipeline.mjs run end-to-end --branch "$HEAD_REF"',
+    ]);
+    const upload = job.steps.at(-1);
+    expect(upload.if).toBe('failure()');
+    expect(upload.uses).toBe('actions/upload-artifact@v7');
+    expect(upload.with).toEqual({
+      name: 'end-to-end-evidence',
+      path: 'end-to-end-evidence/',
+      'retention-days': 7,
+      'if-no-files-found': 'ignore',
+    });
+    expect(job.steps.indexOf(upload)).toBe(job.steps.length - 1);
+    expect(String(jobs['end-to-end'].if)).toContain("end-to-end-on != 'environment'");
+    expect(jobs['end-to-end'].needs).toEqual(['plan', 'framework']);
+    expect(jobs.plan.outputs['end-to-end-on']).toBe('${{ steps.plan.outputs.end-to-end-on }}');
+    const planRun = String(jobs.plan.steps.find((step) => step.id === 'plan').run);
+    expect(planRun).toContain('--event "$EVENT_NAME"');
+    const gateRun = String(jobs.gate.steps.find((step) => step.id === 'gate').run);
+    expect(gateRun).toContain('end-to-end-deployed=$END_TO_END_DEPLOYED');
   });
 
   it('runs every stage between framework and deploy on the commit it deploys to staging', () => {

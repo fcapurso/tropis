@@ -190,6 +190,18 @@ then the same with `branch deploy`. Create is safe to run again.
 Removing the environment when the pull request closes needs `closed` listed in
 the `pull_request` types of `.github/workflows/pipeline.yml`.
 
+When the branch slot is filled and `pipeline/end-to-end.sh` exists, a pull request's
+end-to-end stage tests that pull request's own code in its environment. It starts
+once sanity, unit and integration have passed or were empty and the environment
+exists, deploys the head commit with `deploy.sh`, and runs `end-to-end.sh` with
+`TROPIS_ENVIRONMENT` and `TROPIS_BRANCH` set, while no other run can deploy to that
+environment. The run then does not deploy the same commit again. If the stage fails,
+whatever it wrote to `end-to-end-evidence/` is kept as an artifact for 7 days. Run it
+locally against an environment with
+`node .tropis/scripts/pipeline.mjs run end-to-end --branch <branch>`. On a push to
+the main branch, and where either is missing, the end-to-end stage runs beside the
+others as before.
+
 A branch whose environment would be a permanent one is refused: `branch create`,
 `branch deploy` and `branch remove` stop before running any script in
 `pipeline/branch/`, so a pull request from a branch called `production` can neither

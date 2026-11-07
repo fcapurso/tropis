@@ -17,7 +17,7 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+- **Breaking, for a project with `pipeline/branch/` filled and a `pipeline/end-to-end.sh`:** on a pull request, the end-to-end stage now waits for the other stages, deploys the pull request's commit to its environment and tests it there, with `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH` set, and the run no longer deploys that commit again afterwards. If your end-to-end script ran without a deployed app, check it still does what you want; to keep evidence of a failure, write it to `end-to-end-evidence/`, which is kept for 7 days.
 
 ## [0.9.0] — 2026-11-06
 

@@ -3,7 +3,9 @@
  * The host-neutral pipeline a set-up project runs. Stages stay in one order.
  * The deploy gate runs on a push only when every earlier stage passed or was
  * empty. A pull request deploys to the branch's environment when the branch
- * slot is filled and the change is not prose and framework alone. `plan`
+ * slot is filled and the change is not prose and framework alone; where the
+ * slot is filled and the end-to-end stage runs, it deploys before that stage
+ * and the gate does not deploy again. `plan`
  * decides which stages run from the diff, and the block at the bottom runs
  * only when this file is the program.
  */
@@ -239,6 +241,33 @@ export function planStages(root, { base, head = 'HEAD', passed } = {}) {
 }
 
 /**
+ * Where the end-to-end stage runs: `environment` when a pull request has a
+ * filled branch slot and the stage is planned to run, so it tests the commit
+ * deployed to the branch's environment; otherwise `runner`, beside the other
+ * stages.
+ * @param {{ stages: Record<string, string>, branch: string, event: string }} input
+ * @returns {'environment' | 'runner'}
+ */
+export function endToEndOn({ stages, branch, event }) {
+  if (event === 'pull_request' && branch === 'filled' && stages['end-to-end'] === 'run') return 'environment';
+  return 'runner';
+}
+
+/**
+ * The results the gate decides on. On a pull request whose plan says
+ * `end-to-end-on=environment`, the `end-to-end-deployed` job's result stands in for the
+ * end-to-end stage's; otherwise the results are returned unchanged.
+ * @param {Record<string, string>} plan
+ * @param {Record<string, string>} results
+ * @param {string} event
+ * @returns {Record<string, string>}
+ */
+function stageResults(plan, results, event) {
+  if (event !== 'pull_request' || plan['end-to-end-on'] !== 'environment') return results;
+  return { ...results, 'end-to-end': results['end-to-end-deployed'] };
+}
+
+/**
  * Stages that block a deploy: a failure or a cancellation, or a stage that was
  * planned to run and finished as anything other than success. A stage GitHub
  * skipped because an earlier one failed is in that second group.
@@ -260,7 +289,10 @@ function stagesThatDidNotPass(plan, results) {
  * branch's environment holds it) skips, as does prose and framework alone; a filled branch slot
  * runs; otherwise the pull request skips. `branch` defaults to `empty`, so
  * a caller that does not know about the slot decides as before. A push
- * ignores the slot and uses the deploy's own planned value.
+ * ignores the slot and uses the deploy's own planned value. Where the plan
+ * says `end-to-end-on=environment` on a pull request, `results['end-to-end-deployed']` is the
+ * end-to-end stage's result, and a pull request that is not held skips: that
+ * job already deployed the commit.
  * @param {{
  *   plan: Record<string, string>,
  *   results: Record<string, string>,
@@ -269,9 +301,11 @@ function stagesThatDidNotPass(plan, results) {
  * }} input
  * @returns {'run' | 'held' | 'empty' | 'skipped'}
  */
-export function gateDecision({ plan, results, event, branch = 'empty' }) {
+export function gateDecision({ plan, results: rawResults, event, branch = 'empty' }) {
+  const results = stageResults(plan, rawResults, event);
   if (stagesThatDidNotPass(plan, results).length > 0) return 'held';
   if (event === 'pull_request') {
+    if (plan['end-to-end-on'] === 'environment') return 'skipped';
     if (plan.passed) return 'skipped';
     if (plan.deploy === 'skipped') return 'skipped';
     if (branch === 'filled') return 'run';
@@ -294,12 +328,16 @@ function plannedCell(stage, plan, results) {
   return 'not run — an earlier stage failed';
 }
 
-function deployCell(plan, results, event, branch = 'empty') {
-  const decision = gateDecision({ plan, results, event, branch });
+function deployCell(plan, rawResults, event, branch = 'empty') {
+  const results = stageResults(plan, rawResults, event);
+  const decision = gateDecision({ plan, results: rawResults, event, branch });
   if (decision === 'held') {
     return `held — ${stagesThatDidNotPass(plan, results).join(', ')} did not pass`;
   }
   if (event === 'pull_request') {
+    if (plan['end-to-end-on'] === 'environment') {
+      return "skipped — the end-to-end stage deployed this commit to the branch's environment";
+    }
     if (plan.passed) {
       return `skipped — the same code passed at \`${plan.passed.slice(0, 7)}\`, and the environment has it`;
     }
@@ -323,10 +361,11 @@ function deployCell(plan, results, event, branch = 'empty') {
  * }} input
  * @returns {string}
  */
-export function summaryTable({ plan, results, event, branch = 'empty' }) {
+export function summaryTable({ plan, results: rawResults, event, branch = 'empty' }) {
+  const results = stageResults(plan, rawResults, event);
   const rows = STAGES.map((stage) => {
     const cell = stage === 'deploy'
-      ? deployCell(plan, results, event, branch)
+      ? deployCell(plan, rawResults, event, branch)
       : plannedCell(stage, plan, results);
     return `| ${stage} | ${cell} |`;
   });
@@ -337,8 +376,13 @@ function parsePlanArgs(argv) {
   const opts = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg !== '--base' && arg !== '--head' && arg !== '--passed') return { error: `plan: unknown argument ${arg}` };
+    if (arg !== '--base' && arg !== '--head' && arg !== '--passed' && arg !== '--event') {
+      return { error: `plan: unknown argument ${arg}` };
+    }
     const value = argv[i + 1];
+    if (arg === '--event' && (value === undefined || value === '')) {
+      return { error: 'plan: --event needs push or pull_request' };
+    }
     if (value === undefined) return { error: `plan: ${arg} needs a revision` };
     opts[arg.slice(2)] = value;
     i += 1;
@@ -820,14 +864,66 @@ function runScript(root, script, env) {
   return ran.status ?? 1;
 }
 
-/** Exit status of one stage, run from the project root. */
-function runCommand(root, stage) {
+/**
+ * Exit status of one stage, run from the project root. `--branch <branch>`
+ * after `end-to-end` runs the stage as `branch deploy` runs its script, with
+ * `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH` set, and refuses as `branch` does
+ * when the slot is empty or partial, the branch's environment is permanent,
+ * or its name collides or cannot be made.
+ * @param {string} root
+ * @param {string | undefined} stage
+ * @param {string[]} [rest] arguments after the stage
+ * @returns {number}
+ */
+function runCommand(root, stage, rest = []) {
   if (!STAGES.includes(stage)) {
     process.stderr.write(`pipeline: unknown stage ${stage ?? ''}. Stages: ${STAGES.join(', ')}\n`);
     return 2;
   }
+  let branch;
+  for (let i = 0; i < rest.length; i += 1) {
+    if (rest[i] !== '--branch') {
+      process.stderr.write(`run: unknown argument ${rest[i]}\n`);
+      return 2;
+    }
+    if (stage !== 'end-to-end') {
+      process.stderr.write('run: --branch is for end-to-end only\n');
+      return 2;
+    }
+    branch = rest[i + 1];
+    if (branch === undefined || branch === '') {
+      process.stderr.write('run: --branch needs a branch\n');
+      return 2;
+    }
+    i += 1;
+  }
+  let environment;
+  if (branch !== undefined) {
+    const slot = branchSlot(root);
+    if (slot.error) {
+      process.stderr.write(`${slot.error}\n`);
+      return 1;
+    }
+    if (slot.slot === 'empty') {
+      process.stderr.write('run: --branch needs pipeline/branch/\n');
+      return 1;
+    }
+    const refusal = permanentRefusal(root, branch);
+    if (refusal) {
+      process.stderr.write(refusal);
+      return 1;
+    }
+    const resolved = resolveEnvironment(root, branch, { checkCollision: true });
+    if (resolved.message) process.stderr.write(resolved.message);
+    if (resolved.status) return resolved.status;
+    environment = resolved.name;
+  }
   const env = stageEnv();
   if (!env) return 1;
+  if (branch !== undefined) {
+    env.TROPIS_ENVIRONMENT = environment;
+    env.TROPIS_BRANCH = branch;
+  }
   const script = join(root, 'pipeline', `${stage}.sh`);
   if (stage === 'framework') {
     const tests = spawnSync('npm', ['--prefix', '.tropis', 'test'], { cwd: root, env, stdio: 'inherit' });
@@ -896,7 +992,9 @@ function readPlan(text) {
  * stderr. Exits 1 when it holds the deploy, so the gate job is the run's
  * required check: green means the run passed. A plan missing any stage means
  * the plan job did not finish; that is said on stderr and in the summary, no
- * `deploy=` line is printed, and it exits 1.
+ * `deploy=` line is printed, and it exits 1. On a pull request, a plan saying
+ * `end-to-end-on=environment` needs an `end-to-end-deployed=<result>` argument too, which
+ * stands in for the end-to-end result; without it the command exits 2.
  */
 function gateCommand({ event, summary, results, branch }) {
   const plan = readPlan(readFileSync(0, 'utf8'));
@@ -905,6 +1003,10 @@ function gateCommand({ event, summary, results, branch }) {
     process.stderr.write(line);
     if (summary) appendFileSync(summary, line);
     return 1;
+  }
+  if (event === 'pull_request' && plan['end-to-end-on'] === 'environment' && results['end-to-end-deployed'] === undefined) {
+    process.stderr.write('gate: missing result for end-to-end-deployed\n');
+    return 2;
   }
   const decision = gateDecision({ plan, results, event, branch });
   const table = summaryTable({ plan, results, event, branch });
@@ -1253,7 +1355,7 @@ function passedCommand(argv) {
 function commandList() {
   const lines = [
     '# Always. Prints whether each stage runs, is empty, or is skipped. --passed "$PASSED" when the next command printed a commit.',
-    'node .tropis/scripts/pipeline.mjs plan --base "$BASE" --head "$HEAD"',
+    'node .tropis/scripts/pipeline.mjs plan --base "$BASE" --head "$HEAD" --event "$EVENT"',
     '# On a push to a pull request, or to the main branch. Prints a commit whose code passed, or nothing.',
     'node .tropis/scripts/pipeline.mjs passed --branch "$HEAD_REF" --repository "$HEAD_REPO" --summary "$SUMMARY"',
     'node .tropis/scripts/pipeline.mjs passed --merged "$COMMIT" --summary "$SUMMARY"',
@@ -1270,11 +1372,14 @@ function commandList() {
     '# After the five stages. Reads the plan on stdin, one result per stage, and whether the slot is filled.',
     'node .tropis/scripts/pipeline.mjs gate --plan - --event "$EVENT" --branch "$SLOT" '
       + 'framework="$FRAMEWORK" sanity="$SANITY" unit="$UNIT" '
-      + 'integration="$INTEGRATION" end-to-end="$END_TO_END"',
+      + 'integration="$INTEGRATION" end-to-end="$END_TO_END" end-to-end-deployed="$END_TO_END_DEPLOYED"',
     '# When the gate prints deploy=run on a push. That deploys the shared environment.',
     'node .tropis/scripts/pipeline.mjs run deploy',
     '# When a pull request opens or reopens and the plan says branch=filled.',
     'node .tropis/scripts/pipeline.mjs branch create "$BRANCH"',
+    '# On a pull request whose plan says end-to-end-on=environment, in one job holding the environment: deploy, then test.',
+    'node .tropis/scripts/pipeline.mjs branch deploy "$BRANCH"',
+    'node .tropis/scripts/pipeline.mjs run end-to-end --branch "$BRANCH"',
     '# When the gate prints deploy=run for a pull request.',
     'node .tropis/scripts/pipeline.mjs branch deploy "$BRANCH"',
     '# When a pull request closes and the plan says branch=filled.',
@@ -1297,6 +1402,7 @@ function writePlan(outcome) {
   if (outcome.reason) process.stderr.write(`${outcome.reason}\n`);
   if (outcome.note) process.stderr.write(`${outcome.note}\n`);
   const lines = STAGES.map((stage) => `${stage}=${outcome.stages[stage]}`);
+  if (outcome.endToEndOn) lines.push(`end-to-end-on=${outcome.endToEndOn}`);
   if (outcome.passed) lines.push(`passed=${outcome.passed}`);
   if (outcome.branch) lines.push(`branch=${outcome.branch}`);
   process.stdout.write(`${lines.join('\n')}\n`);
@@ -1345,8 +1451,12 @@ if (ranDirectly) {
             process.stderr.write(`${slot.error}\n`);
             process.exitCode = 1;
           } else {
-            const outcome = planStages(root, parsed.opts);
+            const { event, ...planOpts } = parsed.opts;
+            const outcome = planStages(root, planOpts);
             outcome.branch = slot.slot;
+            if (event !== undefined && outcome.stages) {
+              outcome.endToEndOn = endToEndOn({ stages: outcome.stages, branch: slot.slot, event });
+            }
             writePlan(outcome);
           }
         }
@@ -1358,7 +1468,7 @@ if (ranDirectly) {
       process.stderr.write('pipeline: not a git repository\n');
       process.exitCode = 1;
     } else {
-      process.exitCode = runCommand(found, args[0]);
+      process.exitCode = runCommand(found, args[0], args.slice(1));
     }
   } else if (command === 'gate') {
     const parsed = parseGateArgs(args);
