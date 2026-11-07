@@ -358,3 +358,57 @@ The contradiction above: cases 1 to 9 and 10 to 13 cannot both hold with "other"
 
 ### Outstanding
 Reviewer to confirm the "project = hook's repository" rule is the intended meaning of "a project's main checkout", and that FW-074's wording is right.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session, git 2.43.0, Python 3.13.18, GNU bash 5.2.21, Node.js 22,
+Linux x86_64.
+
+- `bash scripts/check-blueprint.sh` on `305599e`: `Self-check passed: every guard caught
+  its defect, the clean baseline passed, and the framework repository's own guards
+  passed.`
+- Re-broken: `origin/main`'s `scripts/branch-in-worktree.sh` put back as a throwaway
+  commit, the self-check ended `Self-check FAILED: conformance or the clean baseline`,
+  its clean baseline failing exactly the seven new tests that need the new judgment
+  (`expands ~ from HOME`, `judges a directory that does not exist yet …`, `lets through a
+  branch made in another repository, and in a linked worktree`, and the four `refuses a
+  branch aimed at the main checkout from elsewhere`). The throwaway commit was dropped.
+  The cannot-tell cases passed against the old hook, as the plan said they would.
+- `git diff --stat origin/main...HEAD`: the files in the File Structure table only.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing. `first-adopter` is the
+pseudonym the repository uses.
+
+- **The plan was wrong, and the executor's resolution stands.** The plan's "other"
+  repository is a main checkout of its own, so "refuse in any main checkout the command
+  reaches" refused the very clone it meant to let through. The backlog item says "in a
+  project's main checkout", and the project is the repository the hook runs in: the
+  hook now refuses a named directory only when it is in the same repository (same git
+  common dir) and in its main checkout. That is what the backlog item meant; FW-074 says
+  so, and its *Rejected* records the reading the plan had.
+- The release note said a branch aimed at the main checkout "from elsewhere" is refused;
+  it is refused from the project's own worktrees only. The review corrected the line
+  (`305599e`), a mechanical fix.
+- The handover's diagnosis that two `fresh-clone` failures came from its hand staging
+  holds: the self-check runs that guard green on the same commit.
+
+### Outstanding disposition
+
+- The executor asked for confirmation of the "project = the hook's repository" rule:
+  confirmed above.
+- The move to `shipped`: done in this pull request.
+
+### Learnings routed
+
+Nothing new generalises: the plan's defect was a test fixture that did not model the
+case it named, a failure `.claude/rules/planning.md` already covers under *A table
+mapping acceptance criteria to tests is a claim too*.
+
+### Merged because
+
+Every acceptance criterion has a test against real git that fails on the old hook or
+pins its behaviour, and the self-check passes.
