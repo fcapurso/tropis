@@ -199,6 +199,10 @@
     "end-to-end-tests-the-deployed-pull-request",
     "branch-hook-judges-the-repository-the-command-acts-on"
   ],
-  "marks": {},
+  "marks": {
+    "branch-hook-judges-the-repository-the-command-acts-on": {
+      "state": "planning"
+    }
+  },
   "notes": {}
 }
