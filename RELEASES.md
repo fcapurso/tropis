@@ -17,8 +17,38 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-- **Breaking, for a project with `pipeline/branch/` filled and a `pipeline/end-to-end.sh`:** on a pull request, the end-to-end stage now waits for the other stages, deploys the pull request's commit to its environment and tests it there, with `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH` set, and the run no longer deploys that commit again afterwards. If your end-to-end script ran without a deployed app, check it still does what you want; to keep evidence of a failure, write it to `end-to-end-evidence/`, which is kept for 7 days.
-- The hook that refuses a branch in your main checkout now judges the repository the command acts on, after a leading `cd` or git's `-C`. A flush, or any session in your main checkout, can create a branch in another clone or in a worktree with an ordinary `git checkout -b`, and a branch aimed at your main checkout from one of its worktrees is now refused too.
+_Nothing yet._
+
+## [0.10.0] — 2026-11-07
+
+A pull request's end-to-end tests now run against that pull request's own code,
+deployed to its environment, so tests that need a running app can be a required
+check. And the hook that keeps branches out of your main checkout no longer gets in the
+way when you create a branch somewhere else from there.
+
+### What to do by hand
+
+**1. If your project fills `pipeline/branch/` and has a `pipeline/end-to-end.sh`, check
+your end-to-end script against a deployed app.** On a pull request, that script now
+runs only after the other stages have passed, against the pull request's commit freshly
+deployed to its environment, and the run no longer deploys that commit again
+afterwards. Open `pipeline/end-to-end.sh` and make sure it tests the environment it is
+given: `TROPIS_ENVIRONMENT` names it and `TROPIS_BRANCH` names the branch. If it ran
+without a deployed app until now, check it still does what you want. Anything it writes
+to `end-to-end-evidence/` is kept for 7 days when the stage fails. A project missing
+either of the two files has nothing to do: its pipeline runs as before.
+
+### What you can now do
+
+- **Make browser tests a required check on pull requests.** The end-to-end stage of a
+  pull request tests that pull request's code in its own environment, and nothing else
+  can deploy there while it runs; `.tropis/README.md` says how to run it locally.
+- **Create a branch in another clone or in a worktree from your main checkout** with an
+  ordinary `git checkout -b`, after a `cd` or with git's `-C`. A branch aimed at your
+  main checkout from one of its worktrees is now refused, as one made inside it already
+  was.
+
+Checked on staging: no — this project does not deploy to staging
 
 ## [0.9.0] — 2026-11-06
 
