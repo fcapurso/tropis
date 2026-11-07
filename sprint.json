@@ -3,7 +3,9 @@
   "budget": 5,
   "way": "session",
   "archive": true,
-  "archived": [],
+  "archived": [
+    "branch-hook-judges-the-repository-the-command-acts-on"
+  ],
   "entries": [
     {
       "id": "branch-hook-judges-the-repository-the-command-acts-on",
