@@ -329,3 +329,32 @@ run step 1 again on that commit, and push the branch.
 - **A refused branch's printed line is a worktree command.** It is quoted in the tests
   and in the hook already; the plan names it only as "the worktree line" outside its
   Repositories table, because the plan check refuses that command anywhere else.
+
+## Handover report
+
+### Task completion
+Tasks 1 to 4 done; Task 5 verification below. The backlog item was not touched.
+
+### Verification results
+Ran on git 2.43.0, Python 3.13.18, GNU bash 5.2.21, Linux x86_64.
+- `bash scripts/check-blueprint.sh` after the decision/notes commit: "Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed." Run again on the report commit (see the reviewer's re-run note under Outstanding if absent).
+- Block staged from an export of HEAD (package file, `framework-jest.config.js`, node_modules from `.tropis`, and `FRAMEWORK_ROOT` an install holding `scripts/*.sh|py` as `.tropis/hooks/`), `-t 'branch-in-worktree|fresh'`: new hook, 45 passed, 2 failed (both in `guards/fresh-clone.test.js`: "a script without its packages says to install them", "no framework script imports yaml except through load-yaml"). The same two fail with origin/main's hook put back, so they are an artefact of my hand-made staging, not of the change; the full self-check runs fresh-clone green.
+- Origin/main's hook put back in that staging: 9 failed, 38 passed. The 7 new cases that failed were the let-through, nonexistent-directory, `~`, and four refused-from-elsewhere cases; the 2 others are the staging artefacts above. The cannot-tell cases (plan 14 to 20) passed against the old hook, as the plan says.
+- `npm --prefix .tropis test`: 13 suites, 209 tests passed.
+
+### Scope
+`git diff --stat origin/main...HEAD`: RELEASES.md, framework/DECISIONS.md, guards/rule-delivery.test.js, scripts/branch-in-worktree.sh, plus this plan. All in the File Structure table. Worktree used: /home/user/tropis-branch-hook.
+
+### Judgment calls
+- Source named: none in particular.
+- Tests are grouped (cases 1 to 9 in two tests, 14 to 20 as a loop, 21 as one test) rather than one test each.
+- **The plan's cases contradict each other, and I resolved it.** Its "other" repository is a main checkout of its own, so the judgment "refuse in a repository whose git dir equals its common dir" refuses cases 1 to 7 and 21 (the first run showed this). Letting a flush's clone through requires a rule telling the project from another clone; the only available one is that the project is the repository the hook runs in. So: when the command names a directory, it is refused only if that directory is in the same repository (same git common dir) as the hook's, in its main checkout; another repository, or a hook outside any repository, is let through. Where the directory is unknown the old behaviour holds exactly.
+- Consequence for plan cases 10 to 13 and 21's second half, which ran the hook in `<other>`: they now run the hook in a linked worktree of main-checkout (the "elsewhere" is a worktree of the project), where they are refused with the `cd <top> && ` line. Run from an unrelated repository they are let through, by design.
+- FW-074's Decision and Rejected paragraphs were reworded to state this "project = the repository the hook runs in" rule.
+- Removed nothing from `command-at-position.py`; `)` and `(` handled in the inline program.
+
+### What the plan got wrong
+The contradiction above: cases 1 to 9 and 10 to 13 cannot both hold with "other" a plain main checkout and the hook run in either. Also its failing/passing counts for the red run are not reproducible given the grouping.
+
+### Outstanding
+Reviewer to confirm the "project = hook's repository" rule is the intended meaning of "a project's main checkout", and that FW-074's wording is right.
