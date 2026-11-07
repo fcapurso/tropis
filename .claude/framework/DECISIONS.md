@@ -929,6 +929,7 @@ those hosted elsewhere, where they are inert. Changing the stage order or the ga
 is breaking.
 
 **Amended 2026-11-01** — a stage may also be skipped because the same code already passed; FW-048.
+**Amended 2026-11-07** — a pull request's own environment may receive a deploy before every stage has passed; FW-074.
 
 ## FW-029: A branch's environment is named from the branch and lives as long as its pull request
 
@@ -2419,3 +2420,71 @@ have to be repeated on every project's own repository.
 `guards/dependency-overrides.test.js` that fails once Jest's own dependency catches up,
 which is when to remove it. A project on Node.js 18 sees the setup check refuse it and
 must upgrade Node.js before running its checks; the release notes say so.
+
+## FW-074: A pull request's end-to-end stage tests the commit deployed to its environment
+
+**Date:** 2026-11-07 · **Status:** Accepted; built by the backlog item
+end-to-end-tests-the-deployed-pull-request. Amends FW-028: only a pull request's own
+environment may receive a deploy before every stage has passed.
+
+**Decision:** On a pull request whose branch slot is filled and whose plan runs the
+end-to-end stage, that stage runs in its own job, `end-to-end-deployed`, after sanity,
+unit and integration passed or were empty and after the branch's environment exists.
+Holding the environment's concurrency group, it deploys the head commit with the
+slot's deploy and then runs `pipeline/end-to-end.sh` with `TROPIS_ENVIRONMENT` and
+`TROPIS_BRANCH`; on failure it uploads `end-to-end-evidence/` for 7 days. `plan
+--event` prints `end-to-end-on=environment` or `runner`, so which job runs is decided
+in the script, not the workflow. The gate takes that job's result as the stage's, still
+holds on its failure, and does not deploy the same commit again. On a push to the main
+branch, and where the slot is empty or the script absent, the stages run as before.
+
+**Evidence:** A project whose browser tests need a deployed app could not make them a
+required check on a pull request: the end-to-end stage ran beside the others, before
+the pull request's deploy, so it tested an older deploy or no environment at all.
+Raised by first-adopter's upstream flush.
+
+**Rejected:** Making the existing `end-to-end` job wait for the other stages on every
+run (it would slow every push to main and every project without a branch slot);
+deciding the job in workflow conditions alone (FW-028 rejected untestable conditions;
+the remaining condition only reads the plan and the needed jobs' results); deploying in
+one job and testing in another (the concurrency group is per job, so another run could
+deploy between them).
+
+**Consequences:** Breaking for a project with both a filled branch slot and
+`pipeline/end-to-end.sh`: its pull requests deploy before the end-to-end stage, and
+that script can now read the environment it tests. The required check is still the
+gate, which needs both end-to-end jobs.
+
+## FW-075: The branch hook judges the repository a command acts on
+
+**Date:** 2026-11-07 · **Status:** Accepted; built by the backlog item
+`branch-hook-judges-the-repository-the-command-acts-on`.
+
+**Decision:** The hook that refuses a branch in a main checkout works out the directory
+the command acts on — after a leading `cd` or `pushd` joined by `&&`, `;` or a newline,
+and git's `-C` — and judges the repository there. The project is the repository the hook
+runs in: a command aimed at another repository, such as a flush's clone of the framework,
+is let through, and one aimed at the project's own main checkout is refused. Where the
+hook cannot tell the directory, it judges the directory it runs in, as before. A
+directory that does not exist yet is judged by its nearest existing ancestor.
+
+**Evidence:** first-adopter's flush of 2026-11-07: a flush clones the framework into a
+temporary directory and creates its branch there, from a session in the project's main
+checkout. The hook judged the project, refused the branch, and printed a worktree command
+for the wrong repository, and the flush worked around it with git plumbing. Source: none
+in particular.
+
+**Rejected:** Telling a flush to create its branch with `git -C` and leaving the hook as
+it was: the hook did not read `-C` either. Running the command's `cd`s for real to find
+the directory: a hook must not act. Letting through every command that changes
+directory: a `cd` into the main checkout itself would then pass. Refusing any main
+checkout the command reaches, other clones included: a flush's clone is a main checkout
+of its own repository, and the hook cannot tell it from the project except by being
+run in the project.
+
+**Consequences:** Amends FW-040's "a command that `cd`s into a worktree before creating a
+branch is judged by where the hook runs": it is judged where it creates the branch, so a
+`cd` into a linked worktree or another repository passes, and one into the project's main
+checkout is refused with a worktree command that starts by changing to it. A `cd` joined
+by `||`, a pipe or `&`, a `cd` to a variable, `cd -` and a bare `cd` still leave the hook
+judging its own directory.

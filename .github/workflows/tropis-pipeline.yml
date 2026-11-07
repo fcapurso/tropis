@@ -20,6 +20,7 @@ jobs:
       unit: ${{ steps.plan.outputs.unit }}
       integration: ${{ steps.plan.outputs.integration }}
       end-to-end: ${{ steps.plan.outputs.end-to-end }}
+      end-to-end-on: ${{ steps.plan.outputs.end-to-end-on }}
       deploy: ${{ steps.plan.outputs.deploy }}
       lines: ${{ steps.plan.outputs.lines }}
       environment: ${{ steps.plan.outputs.environment }}
@@ -78,7 +79,7 @@ jobs:
             git fetch --no-tags --quiet origin "$passed" || true
             passed_args=(--passed "$passed")
           fi
-          lines=$(node .tropis/scripts/pipeline.mjs plan --base "$base" --head "$head" "${passed_args[@]}")
+          lines=$(node .tropis/scripts/pipeline.mjs plan --base "$base" --head "$head" --event "$EVENT_NAME" "${passed_args[@]}")
           branch=$(printf '%s\n' "$lines" | sed -n 's/^branch=//p')
           if [ -z "$branch" ]; then
             echo "plan: no branch line" >&2
@@ -154,7 +155,7 @@ jobs:
 
   end-to-end:
     needs: [plan, framework]
-    if: needs.plan.outputs.end-to-end == 'run'
+    if: ${{ needs.plan.outputs.end-to-end == 'run' && needs.plan.outputs.end-to-end-on != 'environment' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -186,11 +187,44 @@ jobs:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
 
+  # On a pull request with a filled branch slot, the end-to-end stage tests the
+  # pull request's own commit in its environment. It waits for the other stages
+  # and for the environment, then deploys and tests inside the environment's
+  # group, so no other run deploys over the environment while it is under test.
+  # The gate takes this job's result as the stage's and does not deploy again.
+  end-to-end-deployed:
+    needs: [plan, framework, sanity, unit, integration, branch-create]
+    if: ${{ !cancelled() && needs.plan.outputs.end-to-end-on == 'environment' && needs.framework.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.sanity.result) && contains(fromJSON('["success","skipped"]'), needs.unit.result) && contains(fromJSON('["success","skipped"]'), needs.integration.result) && needs.branch-create.result != 'failure' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node .tropis/scripts/pipeline.mjs branch deploy "$HEAD_REF"
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+      - run: node .tropis/scripts/pipeline.mjs run end-to-end --branch "$HEAD_REF"
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          TROPIS_SECRETS: ${{ toJSON(secrets) }}
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: end-to-end-evidence
+          path: end-to-end-evidence/
+          retention-days: 7
+          if-no-files-found: ignore
+
   # A condition with no status function is combined with success(), which is
   # false once an empty stage was skipped. always() runs the gate anyway.
   # A closed pull request removes the environment and runs no stage.
   gate:
-    needs: [plan, framework, sanity, unit, integration, end-to-end]
+    needs: [plan, framework, sanity, unit, integration, end-to-end, end-to-end-deployed]
     if: ${{ always() && github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     outputs:
@@ -209,13 +243,14 @@ jobs:
           UNIT: ${{ needs.unit.result }}
           INTEGRATION: ${{ needs.integration.result }}
           END_TO_END: ${{ needs.end-to-end.result }}
+          END_TO_END_DEPLOYED: ${{ needs.end-to-end-deployed.result }}
           PLAN_LINES: ${{ needs.plan.outputs.lines }}
         # The gate exits 1 when it holds the deploy, so this job is the run's required check.
         run: |
           decision=$(printf '%s\n' "$PLAN_LINES" | node .tropis/scripts/pipeline.mjs gate \
             --plan - --event "$EVENT_NAME" --branch "$BRANCH" --summary "$GITHUB_STEP_SUMMARY" \
             "framework=$FRAMEWORK" "sanity=$SANITY" "unit=$UNIT" \
-            "integration=$INTEGRATION" "end-to-end=$END_TO_END")
+            "integration=$INTEGRATION" "end-to-end=$END_TO_END" "end-to-end-deployed=$END_TO_END_DEPLOYED")
           echo "deploy=${decision#deploy=}" >> "$GITHUB_OUTPUT"
 
   # !cancelled() rather than always(), so a cancelled run does not deploy.
