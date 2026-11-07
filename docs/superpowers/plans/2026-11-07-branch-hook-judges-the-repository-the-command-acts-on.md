@@ -388,11 +388,16 @@ pseudonym the repository uses.
   reaches" refused the very clone it meant to let through. The backlog item says "in a
   project's main checkout", and the project is the repository the hook runs in: the
   hook now refuses a named directory only when it is in the same repository (same git
-  common dir) and in its main checkout. That is what the backlog item meant; FW-074 says
+  common dir) and in its main checkout. That is what the backlog item meant; the decision entry says
   so, and its *Rejected* records the reading the plan had.
 - The release note said a branch aimed at the main checkout "from elsewhere" is refused;
   it is refused from the project's own worktrees only. The review corrected the line
   (`305599e`), a mechanical fix.
+- **The decision entry is FW-075, not FW-074.** Another plan landed its own FW-074
+  while this one waited for the merge token; the rebase kept both entries and
+  renumbered this one, and kept both release-note lines (files every plan touches,
+  resolved mechanically). The plan and handover above keep the number they were written
+  with.
 - The handover's diagnosis that two `fresh-clone` failures came from its hand staging
   holds: the self-check runs that guard green on the same commit.
 
