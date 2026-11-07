@@ -207,5 +207,9 @@
       "state": "planning"
     }
   },
-  "notes": {}
+  "notes": {
+    "branch-hook-judges-the-repository-the-command-acts-on": [
+      "The project is the repository the hook runs in; a branch is refused only when the command's target directory is that repository's main checkout (FW-075, amending FW-040)."
+    ]
+  }
 }
