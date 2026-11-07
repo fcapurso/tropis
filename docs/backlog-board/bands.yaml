@@ -122,20 +122,6 @@ end-to-end-tests-the-deployed-pull-request:
   seen:
     status: idea
     blockers: []
-executor-never-interrupts-its-dispatcher:
-  band: A
-  value: 4
-  valueWhy: It silently held a sprint team member and two items behind it for about two
-    hours, with nothing in sprint status to show it; unattended sprints depend on it not
-    recurring.
-  effort: 2
-  effortWhy: A cause to confirm (a subagent's reminder firing into its parent, then the
-    interrupt) and a change to how an executor waits, in the dispatch brief or workflow.
-  verdict: "Do now: every cloud sprint dispatches executors as subagents, and the next
-    stall may happen with nobody looking."
-  seen:
-    status: shipped
-    blockers: []
 first-cloud-flush-is-tried:
   band: B
   value: 2
@@ -199,6 +185,21 @@ living-documents-stay-current:
     which documents count as living, and what refreshes each, are undecided.
     Shape it before anyone builds; finishing the arc does not lift it while that
     is open."
+  seen:
+    status: idea
+    blockers: []
+one-guard-recipe-names-framework-root:
+  band: B
+  value: 2
+  valueWhy: Saves an executor the detour through the self-check to learn why one guard
+    run alone fails, for the guards that run a shipped hook.
+  effort: 1
+  effortWhy: One sentence added to the recipe in AGENTS.md naming FRAMEWORK_ROOT and the
+    composed fixture.
+  verdict: "Worth doing, with no deadline: a cheap fix to a recipe that misleads the
+    executors who follow it for a hook-running guard."
+  evidence: "2026-11-07 — the AGENTS.md recipe for running one source guard alone does
+    not mention FRAMEWORK_ROOT; scripts/check-blueprint.sh:109 sets it for the guards."
   seen:
     status: idea
     blockers: []
@@ -322,19 +323,6 @@ setup-offers-to-create-the-repository:
   verdict: "Creating a remote repository is outward-facing and hard to undo, so
     whether setup should do it at all is the open question. Decide that before
     shaping; it depends on project-has-one-display-name for the suggested name."
-  seen:
-    status: idea
-    blockers: []
-test-tools-take-patched-glob:
-  band: B
-  value: 3
-  valueWhy: Every project inherits two moderate Dependabot alerts from the shipped
-    lockfile; none is exploitable, but each project has to look at them.
-  effort: 2
-  effortWhy: An override in templates/package.json and a regenerated lockfile, already
-    tried on a copy of this repository with the suite passing.
-  verdict: "Do next, in time for the next release. The developer has accepted dropping
-    Node.js 18, so shaping has no open question."
   seen:
     status: idea
     blockers: []
