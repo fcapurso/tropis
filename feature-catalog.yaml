@@ -7035,7 +7035,7 @@
 # 2026-11-07, raised by first-adopter's upstream flush, from its queue entry of 2026-11-07.
 - id: branch-hook-judges-the-repository-the-command-acts-on
   title: The branch hook refuses a branch only where the command makes it in a project's main checkout
-  status: idea
+  status: building
   value: A session that makes a branch in another repository's clone, as every flush
     does in its clone of the framework, does it with the command the flush gives, instead
     of being refused by a hook guarding a checkout the command never touches, and
@@ -7057,4 +7057,5 @@
   layer: product
   modules:
     - scripts/branch-in-worktree.sh
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-07-branch-hook-judges-the-repository-the-command-acts-on.md
