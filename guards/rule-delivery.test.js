@@ -828,6 +828,8 @@ describe('rule delivery', () => {
         expect(runBranchHook(command, dir)).toEqual(SILENT);
       });
 
+      // The hook runs in a linked worktree of the project: the project is the repository
+      // the hook runs in, so the main checkout is refused only from within it.
       const toMain = [
         (dir) => `cd '${dir}' && git checkout -b feature/x`,
         (dir) => `git -C '${dir}' switch -c feature/x`,
@@ -837,7 +839,8 @@ describe('rule delivery', () => {
       toMain.forEach((make, n) => {
         it(`refuses a branch aimed at the main checkout from elsewhere (${n + 1})`, () => {
           const { parent, dir } = checkout();
-          const other = otherRepo(parent);
+          const other = join(parent, 'linked');
+          git(dir, 'worktree', 'add', '-q', other, '-b', 'other');
           mkdirSync(join(dir, 'src'));
           const r = runBranchHook(make(dir), other);
           expect(r.status).toBe(2);
@@ -886,10 +889,12 @@ describe('rule delivery', () => {
 
       it('expands ~ from HOME', () => {
         const { parent, dir } = checkout();
-        const other = otherRepo(parent);
+        otherRepo(parent);
         const env = { ...process.env, HOME: parent };
         expect(runBranchHook('cd ~/other-repo && git checkout -b feature/x', dir, env)).toEqual(SILENT);
-        const r = runBranchHook('cd ~/main-checkout && git checkout -b feature/x', other, env);
+        const linked = join(parent, 'linked');
+        git(dir, 'worktree', 'add', '-q', linked, '-b', 'other');
+        const r = runBranchHook('cd ~/main-checkout && git checkout -b feature/x', linked, env);
         expect(r.status).toBe(2);
         expect(r.stderr).toContain(MAIN_REFUSAL);
       });

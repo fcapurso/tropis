@@ -169,9 +169,6 @@ while index < len(tokens):
         else:
             current = None
     index = end
-    # A cd before ||, |, & or ) may not have happened where the next command runs.
-    if index < len(tokens) and tokens[index] in ('||', '|', '&') and tokens[start:start + 1] in (['cd'], ['pushd'], ['popd']):
-        current = None
 PY
 ) || exit 0
 branch=$(printf '%s\n' "$parsed" | sed -n 1p)
@@ -188,6 +185,14 @@ while [ ! -d "$target" ] && [ "$target" != / ]; do target=$(dirname "$target"); 
 git_dir=$(git -C "$target" rev-parse --path-format=absolute --git-dir 2>/dev/null) || exit 0
 common_dir=$(git -C "$target" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
 [ "$git_dir" = "$common_dir" ] || exit 0
+
+# The project is the repository the hook runs in. A command that names another directory
+# is let through when that is in another repository — a flush's clone of the framework,
+# say — and refused only where it is this project's main checkout.
+if [ "$target" != "$PWD" ]; then
+  own_common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
+  [ "$own_common" = "$common_dir" ] || exit 0
+fi
 
 top=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null || echo "$target")
 folder=$(basename "$top")
