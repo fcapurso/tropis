@@ -4,7 +4,8 @@
   "way": "session",
   "archive": true,
   "archived": [
-    "branch-hook-judges-the-repository-the-command-acts-on"
+    "branch-hook-judges-the-repository-the-command-acts-on",
+    "end-to-end-tests-the-deployed-pull-request"
   ],
   "entries": [
     {
