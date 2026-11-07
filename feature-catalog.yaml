@@ -7031,3 +7031,30 @@
     - templates/github/tropis-pipeline.yml
     - scripts/pipeline.mjs
   refs: []
+
+# 2026-11-07, raised by first-adopter's upstream flush, from its queue entry of 2026-11-07.
+- id: branch-hook-judges-the-repository-the-command-acts-on
+  title: The branch hook refuses a branch only where the command makes it in a project's main checkout
+  status: idea
+  value: A session that makes a branch in another repository's clone, as every flush
+    does in its clone of the framework, does it with the command the flush gives, instead
+    of being refused by a hook guarding a checkout the command never touches, and
+    working around it with git plumbing. Today the hook judges the directory the shell
+    starts in, so from a project's main checkout it refuses that branch and prints a
+    worktree command for the wrong repository.
+  acceptanceCriteria:
+    - From a project's main checkout, a branch-creating command aimed at another
+      repository by a leading cd or by git -C (git checkout -b, git switch -c) is let
+      through, as a test shows against real git.
+    - The same commands aimed at the project's main checkout itself, by a leading cd
+      or git -C, are still refused, and aimed at one of its linked worktrees are let
+      through.
+    - Where the hook cannot tell which repository a command acts on, it judges the
+      directory it runs in, as today.
+    - A decision record amends FW-040's consequence for a command that changes
+      directory, to say the hook judges the repository the command acts on.
+  type: bug
+  layer: product
+  modules:
+    - scripts/branch-in-worktree.sh
+  refs: []
