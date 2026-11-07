@@ -18,7 +18,7 @@ For the full development history, see the git log.
 ## [Unreleased]
 
 - **Breaking, for a project with `pipeline/branch/` filled and a `pipeline/end-to-end.sh`:** on a pull request, the end-to-end stage now waits for the other stages, deploys the pull request's commit to its environment and tests it there, with `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH` set, and the run no longer deploys that commit again afterwards. If your end-to-end script ran without a deployed app, check it still does what you want; to keep evidence of a failure, write it to `end-to-end-evidence/`, which is kept for 7 days.
-- The hook that refuses a branch in your main checkout now judges the repository the command acts on, after a leading `cd` or git's `-C`. A flush, or any session in your main checkout, can create a branch in another clone or in a worktree with an ordinary `git checkout -b`, and a branch aimed at the main checkout from elsewhere is now refused too.
+- The hook that refuses a branch in your main checkout now judges the repository the command acts on, after a leading `cd` or git's `-C`. A flush, or any session in your main checkout, can create a branch in another clone or in a worktree with an ordinary `git checkout -b`, and a branch aimed at your main checkout from one of its worktrees is now refused too.
 
 ## [0.9.0] — 2026-11-06
 
