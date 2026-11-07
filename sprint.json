@@ -218,7 +218,8 @@
     "end-to-end-tests-the-deployed-pull-request": [
       "A new job, end-to-end-deployed, runs on pull requests rather than making the existing job wait, so pushes to main and projects without a branch slot are not slowed (FW-074, amending FW-028).",
       "pipeline.mjs plan --event decides which end-to-end job runs, keeping the decision testable.",
-      "Deploy and tests run in one job to hold the environment's concurrency group across both."
+      "Deploy and tests run in one job to hold the environment's concurrency group across both.",
+      "Marked breaking for projects with a filled branch slot and an end-to-end script; the release notes say what to check."
     ]
   }
 }
