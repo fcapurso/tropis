@@ -691,9 +691,9 @@ describe('rule delivery', () => {
       return { parent, dir };
     }
 
-    function runBranchHook(command, cwd) {
+    function runBranchHook(command, cwd, env = process.env) {
       const payload = JSON.stringify({ tool_name: 'Bash', tool_input: { command } });
-      const r = spawnSync('bash', [branchHook], { input: payload, cwd, encoding: 'utf8' });
+      const r = spawnSync('bash', [branchHook], { input: payload, cwd, env, encoding: 'utf8' });
       if (r.error) throw r.error;
       return { stdout: r.stdout, stderr: r.stderr, status: r.status };
     }
@@ -779,6 +779,120 @@ describe('rule delivery', () => {
       tmps.push(dir);
       const r = runBranchHook('git checkout -b feature/x', dir);
       expect(r).toEqual({ status: 0, stdout: '', stderr: '' });
+    });
+
+    /** A second repository, `other-repo`, with one commit, inside `parent`. */
+    function otherRepo(parent) {
+      const other = join(parent, 'other-repo');
+      mkdirSync(other);
+      git(other, 'init', '-q', '-b', 'main');
+      git(other, 'config', 'user.email', 'probe@example.test');
+      git(other, 'config', 'user.name', 'Probe');
+      writeFileSync(join(other, 'o.txt'), 'o\n');
+      git(other, 'add', '.');
+      git(other, 'commit', '-q', '-m', 'o');
+      return other;
+    }
+
+    const SILENT = { status: 0, stdout: '', stderr: '' };
+    const MAIN_REFUSAL = 'This is the main checkout of main-checkout.';
+
+    describe('judges the repository the command acts on', () => {
+      it('lets through a branch made in another repository, and in a linked worktree', () => {
+        const { parent, dir } = checkout();
+        const other = otherRepo(parent);
+        const linked = join(parent, 'linked');
+        git(dir, 'worktree', 'add', '-q', linked, '-b', 'other');
+        const commands = [
+          `cd '${other}' && git checkout -b feature/x`,
+          `cd '${other}' && git switch -c feature/x`,
+          `git -C '${other}' checkout -b feature/x`,
+          `git -C '${other}' switch -c feature/x`,
+          `cd '${other}'; git branch feature/x`,
+          `cd '${parent}' && git -C other-repo checkout -b feature/x`,
+          `git -C '${parent}' -C other-repo switch -c feature/x`,
+          `cd '${linked}' && git checkout -b feature/x`,
+          `git -C '${linked}' checkout -b feature/x`,
+        ];
+        for (const command of commands) {
+          expect({ command, ...runBranchHook(command, dir) }).toEqual({ command, ...SILENT });
+        }
+      });
+
+      it('judges a directory that does not exist yet by its nearest existing ancestor', () => {
+        const { parent, dir } = checkout();
+        const other = otherRepo(parent);
+        const scratch = mkdtempSync(join(tmpdir(), 'branch-hook-clone-'));
+        tmps.push(scratch);
+        const command = `git clone -q '${other}' '${scratch}/fresh' && cd '${scratch}/fresh' && git checkout -b feature/x`;
+        expect(runBranchHook(command, dir)).toEqual(SILENT);
+      });
+
+      const toMain = [
+        (dir) => `cd '${dir}' && git checkout -b feature/x`,
+        (dir) => `git -C '${dir}' switch -c feature/x`,
+        (dir) => `cd '${dir}/src' && git branch feature/x`,
+        (dir) => `cd '${dir}' && mkdir -p new && cd new && git checkout -b feature/x`,
+      ];
+      toMain.forEach((make, n) => {
+        it(`refuses a branch aimed at the main checkout from elsewhere (${n + 1})`, () => {
+          const { parent, dir } = checkout();
+          const other = otherRepo(parent);
+          mkdirSync(join(dir, 'src'));
+          const r = runBranchHook(make(dir), other);
+          expect(r.status).toBe(2);
+          expect(r.stdout).toBe('');
+          expect(r.stderr).toContain(MAIN_REFUSAL);
+          expect(r.stderr).toContain(`  cd ${dir} && git fetch origin && `);
+          const line = r.stderr.split('\n').find((l) => l.startsWith('  cd '));
+          const run = spawnSync('bash', ['-c', line.trim()], { cwd: other, encoding: 'utf8' });
+          expect(run.status).toBe(0);
+          const worktree = join(parent, 'main-checkout-x');
+          expect(existsSync(worktree)).toBe(true);
+          expect(git(worktree, 'rev-parse', 'HEAD')).toBe(git(dir, 'rev-parse', 'origin/main'));
+          git(dir, 'worktree', 'remove', '--force', worktree);
+        });
+      });
+
+      // Where the hook cannot tell which directory the command acts on, it judges its own,
+      // as before.
+      const cannotTell = [
+        ['a variable', () => 'cd "$OTHER" && git checkout -b feature/x'],
+        ['cd joined by ||', (o) => `cd '${o}' || git checkout -b feature/x`],
+        ['a cd left in a subshell', (o) => `(cd '${o}') ; git checkout -b feature/x`],
+        ['cd -', () => 'cd - && git checkout -b feature/x'],
+        ['--git-dir', (o) => `git --git-dir='${o}/.git' checkout -b feature/x`],
+        ['a cd in a pipeline', (o) => `cd '${o}' | cat; git checkout -b feature/x`],
+      ];
+      for (const [name, make] of cannotTell) {
+        it(`judges its own directory after ${name}`, () => {
+          const { parent, dir } = checkout();
+          const other = otherRepo(parent);
+          const r = runBranchHook(make(other), dir);
+          expect(r.status).toBe(2);
+          expect(r.stderr).toContain(MAIN_REFUSAL);
+          expect(r.stderr).not.toContain('  cd ');
+        });
+      }
+
+      it('judges its own directory after a bare cd, not HOME', () => {
+        const { parent, dir } = checkout();
+        const other = otherRepo(parent);
+        const r = runBranchHook('cd && git checkout -b feature/x', dir, { ...process.env, HOME: other });
+        expect(r.status).toBe(2);
+        expect(r.stderr).toContain(MAIN_REFUSAL);
+        expect(r.stderr).not.toContain('  cd ');
+      });
+
+      it('expands ~ from HOME', () => {
+        const { parent, dir } = checkout();
+        const other = otherRepo(parent);
+        const env = { ...process.env, HOME: parent };
+        expect(runBranchHook('cd ~/other-repo && git checkout -b feature/x', dir, env)).toEqual(SILENT);
+        const r = runBranchHook('cd ~/main-checkout && git checkout -b feature/x', other, env);
+        expect(r.status).toBe(2);
+        expect(r.stderr).toContain(MAIN_REFUSAL);
+      });
     });
 
     it('prints a command that bases the branch on origin/main, not on the checked-out branch', () => {
