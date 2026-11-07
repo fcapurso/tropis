@@ -38,6 +38,22 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
+branch-hook-judges-the-repository-the-command-acts-on:
+  band: B
+  value: 3
+  valueWhy: Every flush from a project makes a branch in its clone of the framework and
+    is refused today, so it works around the hook with git plumbing.
+  effort: 2
+  effortWhy: The hook resolves the repository from a leading cd or git -C before judging,
+    with tests against real git and an amendment to FW-040's consequences.
+  verdict: "Worth doing, with no deadline: a real defect on a route every flush takes,
+    with a workaround that holds meanwhile."
+  evidence: "2026-11-07 — scripts/branch-in-worktree.sh from main, run in this
+    repository's main checkout, exited 2 on cd <other> && git checkout -b, git -C <other>
+    switch -c and git -C <other> checkout -b (GNU bash 5.2.21, git 2.43.0, Linux x86_64)."
+  seen:
+    status: idea
+    blockers: []
 commands-reach-cursor:
   band: B
   value: 3
@@ -87,6 +103,22 @@ document-rule-reaches-a-new-document:
     tools like the others.
   verdict: Decide first whether a shipped rule should name folders that each project
     chooses for itself, before building it.
+  seen:
+    status: idea
+    blockers: []
+end-to-end-tests-the-deployed-pull-request:
+  band: C
+  value: 3
+  valueWhy: Lets a project make browser tests that need a deployed app a required check
+    on the pull request's own code.
+  effort: 3
+  effortWhy: The pipeline template's job order and concurrency change, the end-to-end job
+    deploys first, and a decision record amends FW-028.
+  verdict: "Decide first: whether a pull request's own environment may receive a deploy
+    before every stage has passed, which FW-028 forbids today."
+  evidence: "2026-11-07 — templates/github/tropis-pipeline.yml: end-to-end needs only plan
+    and framework, and deploy needs gate and branch-create, so the stage runs before the
+    pull request's deploy."
   seen:
     status: idea
     blockers: []
