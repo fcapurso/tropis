@@ -216,7 +216,8 @@
       "Force push after rebase was refused, so it merged from plan/branch-hook-judges-repository-2; the stale branch plan/branch-hook-judges-repository is left on GitHub for the developer to delete."
     ],
     "end-to-end-tests-the-deployed-pull-request": [
-      "A new job, end-to-end-deployed, runs on pull requests rather than making the existing job wait, so pushes to main and projects without a branch slot are not slowed (FW-074, amending FW-028)."
+      "A new job, end-to-end-deployed, runs on pull requests rather than making the existing job wait, so pushes to main and projects without a branch slot are not slowed (FW-074, amending FW-028).",
+      "pipeline.mjs plan --event decides which end-to-end job runs, keeping the decision testable."
     ]
   }
 }
