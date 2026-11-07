@@ -50,3 +50,8 @@ The format of an entry:
 - Clause: "Put what the fresh reviewer re-checks within its reach before starting it."
 - Outcome: skipped
 - Why: the trial is under review. Its replacement, a word budget per rule file with a tidy-up pass over the whole file (`rule-pruning-keeps-pace`), waits on the experiments recorded on `rule-is-measured-with-and-without`, and a one-clause run in the meantime would add little.
+
+## Since v0.9.0
+
+- Outcome: skipped
+- Why: no rule file grew since v0.9.0 — every file under `rules/` is unchanged — so there is no new clause to try.
