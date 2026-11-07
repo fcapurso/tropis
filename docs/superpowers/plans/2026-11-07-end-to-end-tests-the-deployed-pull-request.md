@@ -442,3 +442,78 @@ run step 1 again on that commit, and push the branch.
 - **Existing plan-output tests must not change**: without `--event` the plan prints
   exactly what it prints today. If one of them fails, the new line leaked; fix the code,
   not the test.
+
+## Handover report
+
+### Task completion
+
+Tasks 1 to 7 done. Task 1 (`endToEndOn`, `plan --event`, the `end-to-end-on=` line), Task 2
+(gate mapping, deploy decision and row text, missing-result error), Task 3
+(`run end-to-end --branch`), Task 4 (workflow job and gate wiring, with the *GitHub workflow*
+guard), Task 5 (`commandList`, module docstring), Task 6 (README paragraph, FW-074 and the
+FW-028 amendment line, release-notes line). `feature-catalog.yaml` untouched, no pull
+request opened, as instructed. Named source worked from: none beyond this repository's own
+`scripts/pipeline.mjs` and `guards/pipeline.test.js`; the YAML job is the plan's text.
+
+### Verification results
+
+Run with git 2.43, node v22, bash, on Linux x86_64 (Claude Code cloud session).
+
+- `guards/pipeline.test.js` alone, staged from an export of `HEAD` as `CLAUDE.md` describes
+  (`{"type":"module"}` package file, `templates/framework-jest.config.js` as `jest.config.js`,
+  `node_modules` linked to the installed `.tropis/node_modules`): `Tests: 162 passed, 162 total`
+  (it was 135 before this change; 27 added, none removed or weakened).
+- Re-breaks in the staged export only, each restored afterwards:
+  - `endToEndOn` always returns `'runner'`: `Tests: 2 failed, 160 passed` (`where the end-to-end
+    stage runs › is the environment only for a pull request with a filled slot and a planned
+    stage`, `… › prints end-to-end-on=environment for a pull request with a filled slot`).
+  - the `end-to-end-on === 'environment'` return removed from `gateDecision`: `Tests: 2 failed,
+    160 passed` (`the gate with the end-to-end stage in the environment › takes the deployed
+    result as the stage, and does not deploy again`, `… › decides through gateDecision the same
+    way`).
+  - `end-to-end-deployed` removed from the gate's `needs`: `Tests: 1 failed, 161 passed`
+    (`GitHub workflow › gives each stage its own job, and the four filled stages run side by
+    side`).
+  - restored: `Tests: 162 passed, 162 total`.
+- `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`, `Tests: 210 passed, 210 total`.
+- `YAML.parse` of `templates/github/tropis-pipeline.yml` with `.self-check/node_modules/yaml`:
+  `yaml ok`.
+- `bash scripts/check-blueprint.sh` on the implementation commit ended
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the
+  framework repository's own guards passed.` (re-run on the report's own commit: see the end of
+  this section.)
+
+### Scope
+
+`git diff --stat origin/main...HEAD` on the implementation commit: `RELEASES.md`,
+`framework/DECISIONS.md`, `guards/pipeline.test.js`, `scripts/pipeline.mjs`,
+`templates/README.md`, `templates/github/tropis-pipeline.yml` (6 files, 495 insertions, 22
+deletions), plus this plan file with the report. Every file is in the File Structure table;
+`feature-catalog.yaml` is not touched. Worktree used: `tropis-e2e-deployed`, a sibling of the
+main checkout, on `plan/end-to-end-tests-the-deployed-pull-request`; nothing was done in the
+main checkout.
+
+### Judgment calls
+
+- `planStages` is not given `event`: the CLI block removes it from the options before the call
+  and applies `endToEndOn` afterwards.
+- The result substitution (`stageResults`) takes the event and applies on a pull request only,
+  so on a push the deployed result is ignored, as Task 2's tests require. The missing-result
+  error (`gate: missing result for end-to-end-deployed`, exit 2) is raised in `gateCommand`
+  after the plan is read, again only for a pull request whose plan says `environment`.
+- `end-to-end`'s `if` is wrapped in `${{ }}` so the `!=` expression is unambiguous YAML.
+- `plan --event ''` is refused with the same message as a missing value.
+- The `run --branch` fixture tests use a script that exits 9 on wrong or unexpected values, so
+  the "neither without `--branch`" case also proves the values are not leaked.
+- The work was committed as one commit (the working commits were squashed before the self-check).
+
+### What the plan got wrong
+
+Nothing that blocked the work. Task 2 step 1 describes the helper as keyed on the plan alone,
+while its tests require the deployed result to be ignored on a push; the helper needed the
+event as well (found by the first test run).
+
+### Outstanding
+
+Nothing. The workflow itself was not run (the plan forbids it); the reviewer sees it only
+through the guard.
