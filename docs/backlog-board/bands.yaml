@@ -417,6 +417,21 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+test-rules-reach-whoever-edits-a-stage-script:
+  band: B
+  value: 2
+  valueWhy: Two clauses about stage scripts and scheduled workflows reach nobody who
+    edits those files; they still reach whoever writes the suite itself.
+  effort: 1
+  effortWhy: A wider area for the tests rule in the shipped areas file, the rules
+    regenerated, and a fresh-agent check from a stage script.
+  verdict: "Worth doing, with no deadline: small, and it closes the gap the learnings
+    rule added the same day describes."
+  evidence: "2026-11-14 — templates/rule-areas.json on main gives the tests rule test
+    files only; rules/tests.md names stage scripts and a scheduled workflow."
+  seen:
+    status: idea
+    blockers: []
 update-check-runs-the-projects-own-checks:
   band: B
   value: 4

@@ -7238,3 +7238,20 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-14, found absorbing first-adopter's flush of that day. Two clauses it added to
+# rules/tests.md name stage scripts and a scheduled workflow, and the rule it added to
+# rules/learnings.md says a rule's area covers every file the rule names. The tests area
+# in templates/rule-areas.json is test files only.
+- id: test-rules-reach-whoever-edits-a-stage-script
+  title: The test rules reach someone editing a pipeline stage script
+  status: idea
+  value: Someone filling or changing a pipeline stage is handed the test rules that
+    describe it, which level a test belongs at and where a suite keeps its record of
+    writes. Today the rule is delivered only for test files, so a session that edits a
+    stage script or a scheduled workflow never receives the clauses written about them.
+  acceptanceCriteria: []
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
