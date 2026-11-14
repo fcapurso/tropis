@@ -7125,3 +7125,27 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entries of
+# 2026-11-12 and 2026-11-14.
+- id: pipeline-starts-no-job-for-seconds-of-work
+  title: The pipeline starts no job that has only seconds of work
+  status: idea
+  value: A project on hosted runners stops paying a whole minute for each job that runs a
+    few seconds. GitHub bills every job rounded up to a minute, and the pipeline starts
+    several such jobs on every run. In first-adopter, 60 runs over two days billed 651
+    minutes, 169 of them on jobs that ran 20 seconds or less.
+  acceptanceCriteria:
+    - The host's gate is asked inside the plan job, and a red answer is as visible in the
+      run as it is today.
+    - A stage the plan already knows is skipped gets no job of its own, and the gate
+      still reports the right result for the run.
+    - The run a closing pull request starts is one job at most, the job that decides also
+      removing the environment.
+    - The stage order and what the gate means do not change.
+    - The decision record gives the number of jobs a prose-only run, a code run and a
+      closing run start, before and after.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
