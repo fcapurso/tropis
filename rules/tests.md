@@ -78,3 +78,10 @@ someone is writing a test.
   home or cache directory) at one the test creates and removes, and draw names at
   random. (Incident:
   `.tropis/rules/incidents/tests.md#six-hook-cases-that-inherited-an-earlier-runs-markers`)
+- **A suite that writes to shared services keeps its record of what it wrote off the
+  runner.** A cancelled GitHub Actions job's scripts never hear the cancel: the runner
+  signals only the step's entry process and kills the rest ten seconds later, so a stage
+  script under a wrapper runs no trap and no teardown. Where a pipeline cancels
+  superseded runs, the record of what a suite wrote must live somewhere the next run can
+  read, and be swept by the next run of the same environment and when the pull request
+  closes.
