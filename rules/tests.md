@@ -78,3 +78,29 @@ someone is writing a test.
   home or cache directory) at one the test creates and removes, and draw names at
   random. (Incident:
   `.tropis/rules/incidents/tests.md#six-hook-cases-that-inherited-an-earlier-runs-markers`)
+
+## Which level a test belongs at
+
+The pipeline gives each kind of automated check a stage, and five principles say what
+goes in which.
+
+- **Test each boundary once, in the cheapest place that can see it.**
+- **Check your own changes on pull requests, and only where a change can break
+  something.**
+- **Check outside services for changes on a schedule that alerts and never blocks a
+  merge.**
+- **Make no paid calls.** Most rendering and document services have a free test mode.
+- **Deterministic or not at all.**
+
+Five levels follow, each with its place. Code: the unit stage, each test beside the
+module it tests. Output compared with approved results: the integration stage. Journeys
+through the deployed product: the end-to-end stage. A watch for changes in outside
+services: a scheduled workflow of the project's own, outside the pipeline. What only a
+person can judge: by hand, recorded in the verification log.
+
+A test that reaches a real outside service sits in one top-level folder named for its
+kind. A folder with a general name that holds only one kind suggests the others belong
+there too.
+
+Derived from first-adopter's fix history: no break came from a vendor changing on its
+own, and the largest groups were its own changes showing only past a mocked boundary.
