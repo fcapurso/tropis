@@ -34,7 +34,9 @@ a-sessions-prose-lands-as-one-pull-request:
   effortWhy: A workflow clause with its fresh-agent check, a rebase route in the
     auto-merge script, and rebase updating while waiting on a pull request.
   verdict: "Decide first: should the workflow have a second way to land, by rebase on
-    the developer's word, beside one pull request per change under the merge token?"
+    the developer's word, beside one pull request per change under the merge token?
+    Decide once the two pipeline entries that make a prose pull request cheaper have
+    shipped, from what such pull requests still cost over a week."
   evidence: "2026-11-14 — scripts/auto-merge.mjs on main sets a squash merge only, on
     both of its routes (lines 60 and 70)."
   seen:
@@ -42,9 +44,9 @@ a-sessions-prose-lands-as-one-pull-request:
     blockers: []
 absorb-flush-runs-in-a-cloud-session:
   band: B
-  value: 2
-  valueWhy: Only the maintainer runs it, and a sitting can finish today by swapping in
-    the session's GitHub tools by hand.
+  value: 3
+  valueWhy: Only the maintainer runs it, but flushes now arrive about weekly, and each
+    cloud sitting finishes only by swapping in REST calls by hand.
   effort: 2
   effortWhy: The command's GitHub steps rewritten for a session where gh cannot write;
     the listing script already takes its listing as JSON and needs no change.
@@ -52,7 +54,9 @@ absorb-flush-runs-in-a-cloud-session:
   verdict: "Worth doing, with no deadline: the hand workaround works but depends on the
     agent improvising each GitHub step."
   evidence: "2026-11-05 — the first cloud sitting stopped at gh auth status and finished
-    through the session's GitHub tools, as the entry describes."
+    through the session's GitHub tools, as the entry describes. 2026-11-14 — a second
+    cloud sitting replaced every gh pr step with a REST call, opened its first pull
+    request without the merge token, and could not delete a branch."
   seen:
     status: idea
     blockers: []
