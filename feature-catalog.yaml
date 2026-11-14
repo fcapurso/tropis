@@ -7060,3 +7060,25 @@
     - scripts/branch-in-worktree.sh
   refs:
     - docs/superpowers/plans/2026-11-07-branch-hook-judges-the-repository-the-command-acts-on.md
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-12.
+# The cause was read from the script's code, not reproduced. first-adopter met it once,
+# on 2026-11-11, and checked the merge commit by hand.
+- id: main-status-knows-a-merged-pull-request-from-a-failed-update
+  title: Waiting on a pull request never reports one that merged as not merged
+  status: idea
+  value: An agent waiting for its pull request is told it merged when it did. Today, when
+    the host merges the pull request between the script reading it as behind and asking
+    for its branch to be updated, and the repository deletes the head branch, the update
+    fails and the script reports that the pull request did not merge. An agent told to
+    stop on that answer parks work that shipped.
+  acceptanceCriteria:
+    - On an error from the update-branch call, the script reads the pull request again,
+      and when it has merged goes on to wait for the main branch as after any merge.
+    - When the pull request is still open, the script stops as today and gives the
+      reason.
+    - A test covers a pull request that merges between the read and the update.
+  type: bug
+  layer: product
+  modules: []
+  refs: []
