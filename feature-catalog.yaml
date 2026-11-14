@@ -7084,3 +7084,25 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-11.
+# Checked on 2026-11-11 with python3 on Linux x86_64. first-adopter fixed the same thing
+# in a matcher of its own.
+- id: command-matcher-sees-past-a-wrapper-named-by-path
+  title: A hook still sees a command behind a wrapper given by its path or with options
+  status: idea
+  value: A hook built on the shared command matcher speaks when the command it watches
+    runs behind a wrapper named by its path, such as /usr/bin/env, or a wrapper with
+    options of its own, such as sudo -g wheel. Today the matcher skips a wrapper only by
+    its bare name, so the hook is silent there and nothing says so.
+  acceptanceCriteria:
+    - A command behind a wrapper named by its path is matched as it is behind the
+      wrapper's bare name, as a test shows.
+    - A wrapper's own options and their arguments are skipped, so a command behind
+      sudo -g wheel is matched as the command itself.
+    - A path whose last part is not a known wrapper is not skipped.
+    - Every case the matcher's tests cover today still passes.
+  type: bug
+  layer: product
+  modules: []
+  refs: []
