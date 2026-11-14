@@ -10,6 +10,36 @@
 # Both are the board going stale; neither fails the build, because banding is a judgment
 # and a new idea should not turn the suite red until somebody has formed one.
 
+a-prose-pull-request-gets-no-environment:
+  band: B
+  value: 3
+  valueWhy: Under a gated main branch every backlog edit, claim and plan is a pull
+    request, and each one pays two jobs for an environment nothing is deployed to.
+  effort: 2
+  effortWhy: The plan job gains one output and two job conditions read it; the case of
+    a pull request that gains code later needs the environment made at first deploy.
+  verdict: "Worth doing, with no deadline: a steady cost on the commonest kind of pull
+    request, and nothing breaks meanwhile."
+  evidence: "2026-11-14 — templates/github/tropis-pipeline.yml on main: branch-create
+    (line 175) and branch-remove (line 282) look only at the event and the branch slot."
+  seen:
+    status: idea
+    blockers: []
+a-sessions-prose-lands-as-one-pull-request:
+  band: C
+  value: 3
+  valueWhy: A sitting of several prose steps pays one set of runs and one wait where
+    it pays one per step today.
+  effort: 4
+  effortWhy: A workflow clause with its fresh-agent check, a rebase route in the
+    auto-merge script, and rebase updating while waiting on a pull request.
+  verdict: "Decide first: should the workflow have a second way to land, by rebase on
+    the developer's word, beside one pull request per change under the merge token?"
+  evidence: "2026-11-14 — scripts/auto-merge.mjs on main sets a squash merge only, on
+    both of its routes (lines 60 and 70)."
+  seen:
+    status: idea
+    blockers: []
 absorb-flush-runs-in-a-cloud-session:
   band: B
   value: 2
@@ -38,19 +68,19 @@ adopt-into-a-project-with-its-own-framework:
   seen:
     status: idea
     blockers: []
-branch-hook-judges-the-repository-the-command-acts-on:
+command-matcher-sees-past-a-wrapper-named-by-path:
   band: B
   value: 3
-  valueWhy: Every flush from a project makes a branch in its clone of the framework and
-    is refused today, so it works around the hook with git plumbing.
+  valueWhy: A hook that stays silent behind /usr/bin/env says nothing about it, so
+    the guard it gives is thinner than it reads.
   effort: 2
-  effortWhy: The hook resolves the repository from a leading cd or git -C before judging,
-    with tests against real git and an amendment to FW-040's consequences.
-  verdict: "Worth doing, with no deadline: a real defect on a route every flush takes,
-    with a workaround that holds meanwhile."
-  evidence: "2026-11-07 — scripts/branch-in-worktree.sh from main, run in this
-    repository's main checkout, exited 2 on cd <other> && git checkout -b, git -C <other>
-    switch -c and git -C <other> checkout -b (GNU bash 5.2.21, git 2.43.0, Linux x86_64)."
+  effortWhy: The wrapper test compares the last part of a path, and each wrapper's
+    options that take an argument are listed, with tests.
+  verdict: "Worth doing, with no deadline: a real gap in a shared guard, met only by a
+    command written in an unusual way."
+  evidence: "2026-11-14 — scripts/command-at-position.py from main, watching git commit:
+    no match behind /usr/bin/env, /usr/bin/sudo or sudo -g wheel; a match behind sudo -u
+    root and env -i (Python 3.13.18, Linux x86_64)."
   seen:
     status: idea
     blockers: []
@@ -106,23 +136,6 @@ document-rule-reaches-a-new-document:
   seen:
     status: idea
     blockers: []
-end-to-end-tests-the-deployed-pull-request:
-  band: B
-  value: 3
-  valueWhy: Lets a project make browser tests that need a deployed app a required check
-    on the pull request's own code.
-  effort: 3
-  effortWhy: The pipeline template's job order and concurrency change, the end-to-end job
-    deploys first, and a decision record amends FW-028.
-  verdict: "Do next: the developer decided on 2026-11-07 that a pull request's own
-    environment may receive a deploy before every stage has passed, as an exception to
-    FW-028 that staging and production do not get."
-  evidence: "2026-11-07 — templates/github/tropis-pipeline.yml: end-to-end needs only plan
-    and framework, and deploy needs gate and branch-create, so the stage runs before the
-    pull request's deploy."
-  seen:
-    status: idea
-    blockers: []
 first-cloud-flush-is-tried:
   band: B
   value: 2
@@ -160,6 +173,37 @@ framework-installs-as-a-package:
   seen:
     status: idea
     blockers: []
+integration-stage-keeps-its-evidence:
+  band: B
+  value: 2
+  valueWhy: A failed integration run is judged from its log alone today; only projects
+    whose stage writes files lose anything.
+  effort: 1
+  effortWhy: One upload step on failure in the integration job, as the deployed
+    end-to-end job has, and a line where a project fills the stage.
+  verdict: "Worth doing, with no deadline: small, and it copies what the end-to-end job
+    already does."
+  evidence: "2026-11-14 — templates/github/tropis-pipeline.yml on main: the integration
+    job (lines 143 to 154) has no upload step; end-to-end-deployed uploads on failure
+    (line 215)."
+  seen:
+    status: idea
+    blockers: []
+isolation-reads-the-plan-from-the-base-it-isolates-from:
+  band: B
+  value: 3
+  valueWhy: A cloud session that outlives a claim cannot isolate for the plan it is
+    meant to run, and the workflow tells it to leave its checkout where it is.
+  effort: 2
+  effortWhy: The helper falls back to reading the plan from the fetched base, with three
+    cases tested against real git.
+  verdict: "Worth doing, with no deadline: it stops a cloud session at the first step
+    of a plan, and reading the plan by hand from the base gets past it."
+  evidence: "2026-11-14 — scripts/isolate-for-plan.mjs on main reads the plan from the
+    working tree only (line 36) and exits saying it cannot read it."
+  seen:
+    status: idea
+    blockers: []
 launch-grants-case-passes-on-rerun:
   band: B
   value: 3
@@ -186,6 +230,35 @@ living-documents-stay-current:
     which documents count as living, and what refreshes each, are undecided.
     Shape it before anyone builds; finishing the arc does not lift it while that
     is open."
+  seen:
+    status: idea
+    blockers: []
+main-status-knows-a-merged-pull-request-from-a-failed-update:
+  band: B
+  value: 3
+  valueWhy: An agent told its pull request did not merge parks work that shipped; the
+    window is narrow and first-adopter met it once.
+  effort: 2
+  effortWhy: One more read of the pull request on an update error, and a test for a
+    merge between the read and the update.
+  verdict: "Worth doing, with no deadline: a wrong answer from the command every merge
+    waits on, though rarely."
+  evidence: "2026-11-14 — scripts/main-status.mjs on main stops on any error from the
+    update-branch call without reading the pull request again (lines 189 to 193). Not
+    reproduced."
+  seen:
+    status: idea
+    blockers: []
+one-end-to-end-spec-runs-on-a-deployed-environment:
+  band: B
+  value: 2
+  valueWhy: It shortens chasing one failing spec on the host, for projects that deploy
+    an environment per pull request.
+  effort: 3
+  effortWhy: A new workflow a person starts, sharing the environment's name and
+    concurrency group with the pipeline, and a way to tell the stage which spec.
+  verdict: "Worth doing, with no deadline: a convenience for one kind of debugging,
+    with a whole pipeline run as the route meanwhile."
   seen:
     status: idea
     blockers: []
@@ -221,6 +294,23 @@ pipeline-bills-no-job-that-decides-nothing:
     only decides; no shipped workflow turns on an npm cache."
   seen:
     status: shaped
+    blockers: []
+pipeline-starts-no-job-for-seconds-of-work:
+  band: B
+  value: 3
+  valueWhy: Every run of every project on hosted runners pays a minute each for jobs of
+    a few seconds; first-adopter measured about a quarter of its minutes there.
+  effort: 4
+  effortWhy: The pipeline's job graph changes, the host check and skipped stages
+    folding into the plan job, while the gate must keep meaning what it means.
+  verdict: "Worth doing, with no deadline: a steady cost, against a change to the
+    workflow every project runs."
+  evidence: "2026-11-14 — templates/github/tropis-pipeline.yml on main: plan, host and
+    gate are jobs of their own, and a closing run starts plan and then branch-remove.
+    On a push to main the code stages are already skipped when the code passed
+    (scripts/pipeline.mjs, applyPassed)."
+  seen:
+    status: idea
     blockers: []
 plan-folder-names-no-plugin:
   band: C
