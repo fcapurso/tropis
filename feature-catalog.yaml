@@ -7106,3 +7106,22 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-11.
+- id: isolation-reads-the-plan-from-the-base-it-isolates-from
+  title: A plan claimed after a cloud session started can still be isolated there
+  status: idea
+  value: A session whose only checkout stays on a branch it must leave alone can isolate
+    for a plan that reached the main branch after the session started. Today the
+    isolation helper reads the plan from the working tree it runs in, where that plan is
+    absent, and stops saying it cannot read it.
+  acceptanceCriteria:
+    - When the working tree lacks the plan, the helper fetches and reads it from the base
+      it isolates from, and isolates as usual.
+    - When the working tree holds the plan, nothing changes.
+    - When neither has the plan, the helper stops and names both places it looked.
+    - A test covers the three cases against real git.
+  type: bug
+  layer: product
+  modules: []
+  refs: []
