@@ -7060,3 +7060,27 @@
     - scripts/branch-in-worktree.sh
   refs:
     - docs/superpowers/plans/2026-11-07-branch-hook-judges-the-repository-the-command-acts-on.md
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-09.
+# first-adopter starts its version from a scratch branch named after the branch; how the
+# workflow learns the branch is left to the design.
+- id: one-end-to-end-spec-runs-on-a-deployed-environment
+  title: One end-to-end spec runs against a pull request's environment without a pipeline run
+  status: idea
+  value: Someone chasing one failing end-to-end spec checks a fix in minutes against the
+    environment the pull request already has, with nothing deployed and no other stage
+    run. Today the only way to run that stage on the host is a whole pipeline run.
+  acceptanceCriteria:
+    - A workflow a person starts runs the end-to-end stage for one named spec against the
+      environment of a named branch's pull request. It deploys nothing and runs no other
+      stage.
+    - It names the environment as the pipeline does and joins that environment's
+      concurrency group, so it never runs beside the pipeline's own end-to-end job.
+    - The project's end-to-end stage is told which spec was chosen, and a stage that
+      ignores it runs its whole suite.
+    - It leaves nothing behind on the host, whether the spec passes or fails.
+    - Asked for a branch with no environment, it stops and says so.
+  type: feature
+  layer: product
+  modules: []
+  refs: []
