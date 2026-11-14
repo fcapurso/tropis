@@ -7171,3 +7171,31 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-13.
+- id: a-sessions-prose-lands-as-one-pull-request
+  title: A session's prose changes land as one pull request
+  status: idea
+  value: A sitting of several small prose steps (a backlog edit, a board refresh, a plan
+    file) costs one set of pipeline runs and one wait for the main branch, not one of
+    each per step. On a gated main branch each pull request starts runs on opening, on
+    closing and on the push to main, about 14 billed minutes in first-adopter.
+  acceptanceCriteria:
+    - The workflow says a session's prose steps collect on one branch in a worktree of
+      its own, one commit and one push per step, where prose is what the pipeline's plan
+      command says runs the framework stage alone.
+    - The pull request opens on the developer's word and merges by rebase, so the main
+      branch keeps one commit per step.
+    - A turn that ends with steps not landed names the branch and each commit on it, and
+      a dispatch first says the plan is not on the main branch.
+    - A step that is not prose moves to a branch of its own by cherry-pick, never through
+      the stash.
+    - A session delivering a backlog item with nobody to give the word does not batch.
+    - The auto-merge script can set a rebase merge on both of its routes.
+    - Waiting on a pull request set to merge by rebase brings its branch up to date by
+      rebasing it, not by merging the base in.
+    - The fresh-agent check of the workflow clause is recorded.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
