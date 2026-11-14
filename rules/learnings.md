@@ -112,3 +112,11 @@ is the backlog item for the fix and `<name>` a test name with no full stop. Its 
 is a call to `temporary` from `.tropis/scripts/rule-claims.js` with that name, inside the
 block, whose function expects the defect to still be there; it goes red once the fix
 lands, and says which paragraph to delete.
+
+## A rule's area covers every file the rule names
+
+A rule delivered by path never reaches an agent editing a file its area leaves out,
+however exactly the rule describes that file. When a rule names a file or a folder,
+check that its area covers it. In first-adopter a rule described a pipeline stage script
+and a browser suite but was delivered only for the workflow files; widening its area made
+a fresh-agent probe receive it.
