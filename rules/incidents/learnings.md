@@ -18,3 +18,9 @@ the defect which once took the entire rule layer to zero.
 That the codebase competes with a rule, and wins unless the rule names the exception,
 was verified by a fresh-agent check in the project this came from, on a rule requiring
 an in-flight state for every backend call.
+
+## A rule delivered only for the workflow files
+
+In first-adopter a rule described a pipeline stage script and a browser suite but was
+delivered only for the workflow files; widening its area made a fresh-agent probe
+receive it.
