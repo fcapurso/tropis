@@ -7220,3 +7220,21 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-13.
+- id: integration-stage-keeps-its-evidence
+  title: What a failed integration stage produced can be downloaded
+  status: idea
+  value: Someone judging a failed integration run opens what the stage produced, where
+    today it is lost with the runner. A stage script cannot upload it itself, and the
+    end-to-end job already keeps its own evidence on failure.
+  acceptanceCriteria:
+    - When the integration job fails, what the stage left in its evidence folder is
+      uploaded as an artifact, as the deployed end-to-end job does for its own.
+    - A run that leaves no such folder uploads nothing and fails nothing.
+    - The folder's name and how long the artifact is kept are written where a project
+      fills the stage.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
