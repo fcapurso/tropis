@@ -7199,3 +7199,24 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-13.
+- id: a-prose-pull-request-gets-no-environment
+  title: A pull request of prose alone starts no job to create or remove an environment
+  status: idea
+  value: A project with environments per branch stops paying a job to create an
+    environment, and another to remove it, for every pull request the gate will never
+    deploy. Under a gated main branch every backlog edit, claim and plan is such a pull
+    request.
+  acceptanceCriteria:
+    - The plan job says whether the pull request is prose, and for one neither the job
+      that creates the environment nor the one that removes it starts.
+    - A pull request that later gains other changes gets its environment when it is first
+      deployed, once the host says it is still open.
+    - Closing a pull request that never had an environment removes nothing and fails
+      nothing.
+    - A test covers a pull request that starts as prose and gains code.
+  type: improvement
+  layer: product
+  modules: []
+  refs: []
