@@ -681,11 +681,13 @@ never fires, and a run that met every content criterion proves nothing about the
 So take away from the probe every route to the same effect that the clause does not
 watch. A list of allowed tools does not do it: it spares the probe a permission prompt
 and takes nothing away. In Claude Code, deny the others with `--disallowedTools` (the
-shell among them), or name the whole set with `--tools`. Then check the calls: a run
-that did the work through a route the clause does not watch is inconclusive, never a
-pass, and is run again with that route removed. Found in a probe of a hook on file
-writes, whose agent was given the file tools as allowed and wrote both files through
-the shell.
+shell among them), or name the whole set with `--tools`. Put the prompt before these
+options, or pass it on stdin: each takes a list, so a prompt after one is read as one
+more tool name and the run stops for want of a prompt. Measured with Claude Code 2.1.322
+on Linux x86_64. Then check the calls: a run that did the work through a route the
+clause does not watch is inconclusive, never a pass, and is run again with that route
+removed. Found in a probe of a hook on file writes, whose agent was given the file tools
+as allowed and wrote both files through the shell.
 
 **A probe on someone's own machine is not given only the repository.** The agent tool
 also loads that person's own instructions, the ones that apply to every project. When
