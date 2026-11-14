@@ -6799,6 +6799,13 @@
 # 2026-11-05, cloud-session-gh-routes answered: keep gh, through gh api, with the ccr
 # routes where GraphQL is refused; per item in
 # docs/superpowers/specs/2026-11-05-cloud-session-gh-routes-finding.md, Recommendations.
+# 2026-11-14, a second cloud sitting, absorbing first-adopter's flush of that day in
+# three pull requests. gh auth status failed while gh api read and wrote pull requests.
+# gh pr list, pr create, pr checks --watch, pr merge and pr close were each replaced by
+# hand with a REST call, and the wait for checks with a subscription to the pull request.
+# The command names the merge token nowhere, so the first group's pull request opened
+# without it. Deleting a branch was refused on both routes, by git push and by the REST
+# call. The developer gave the two criteria below.
 - id: absorb-flush-runs-in-a-cloud-session
   title: The maintainer can absorb a flush from a cloud session
   status: idea
@@ -6806,7 +6813,12 @@
     with the same listing, decisions and group pull requests as from their own computer,
     instead of the command stopping at its preflight and the sitting depending on an
     agent improvising the GitHub steps.
-  acceptanceCriteria: []
+  acceptanceCriteria:
+    - The command takes the merge token before a group's pull request opens and releases
+      it once the main branch has reported after the merge, as the workflow asks of every
+      pull request.
+    - Where the session cannot delete a branch, the command says so and prints one
+      command the maintainer runs to delete the branches it lists.
   type: bug
   layer: framework
   modules: []
@@ -7173,6 +7185,14 @@
   refs: []
 
 # 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-13.
+# 2026-11-14, the developer, on when and how to decide this. Not before
+# a-prose-pull-request-gets-no-environment and pipeline-starts-no-job-for-seconds-of-work
+# have shipped: they make each prose pull request cheaper without changing how anything
+# lands, and this entry is worth only what they leave. Then count, over a week of
+# ordinary work, the billed minutes and the waits for the main branch that prose pull
+# requests still cost. If what is left is small, drop this entry with that figure as the
+# reason. If it is not, shape it, and settle first whether the repository allows rebase
+# merges for every pull request or only for these.
 - id: a-sessions-prose-lands-as-one-pull-request
   title: A session's prose changes land as one pull request
   status: idea
