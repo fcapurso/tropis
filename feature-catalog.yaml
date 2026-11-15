@@ -7275,3 +7275,32 @@
   layer: product
   modules: []
   refs: []
+
+# 2026-11-15, raised by the developer after absorbing first-adopter's flush of
+# 2026-11-14. Its entry pipeline-starts-no-job-for-seconds-of-work said that on a push to
+# the main branch of a commit that already passed, the integration and end-to-end jobs
+# start; that criterion was dropped on absorbing, because the plan already skips the code
+# stages there. The skip shipped in v0.8.0, and first-adopter took v0.10.0 on 2026-11-07,
+# before its queue entries of 2026-11-12 and 2026-11-14, so an old release is not the
+# cause. In this repository the skip worked on 2026-11-14: run 43641176644 on the main
+# branch printed "the code passed at ffd3010, so the stages are skipped" and started
+# neither job. Two leads, neither traced. The lookup found no green run for the merged
+# pull request's head on those merges. Or the cause is in what first-adopter has and this
+# repository does not, an environment per pull request, where the end-to-end stage runs
+# in the end-to-end-deployed job, whose condition reads end-to-end-on and not the stage's
+# planned value. The answer is in first-adopter: the plan job's passed and plan lines on
+# one such run of 2026-11-12 to 2026-11-14, and which job it was that ran. Asked there in
+# a comment on its pull request 295.
+- id: why-code-stages-ran-on-main-for-a-passed-commit
+  title: Find out why code stages ran on the main branch for a commit that had already passed
+  status: idea
+  value: Before anyone plans a fix, we know whether a project on a current release can
+    still pay for integration and end-to-end runs on the main branch for code its pull
+    request already passed, and what causes it. first-adopter reported it on v0.10.0,
+    where the plan is meant to skip those stages, and nothing in a green run says they
+    ran needlessly.
+  acceptanceCriteria: []
+  type: spike
+  layer: product
+  modules: []
+  refs: []
