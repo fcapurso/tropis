@@ -17,6 +17,16 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.11.0] — 2026-11-15
+
+Your pipeline does less work for the same checks: a merge whose code already
+passed is not tested again, a pull request of prose alone starts no environment,
+and each run starts fewer jobs and installs packages from a cache. Before taking
+it, your pipeline workflows must grant one new permission, or the pipeline will
+not start.
+
 ### What to do by hand
 
 **1. Let your pipeline read its own runs.** In a private repository the pipeline
@@ -55,6 +65,12 @@ If a run does otherwise, write what you saw to the upstream queue and flush it.
   closing one removes nothing; a pull request that gains code gets its environment on
   that push. A closed pull request whose head commit GitHub cannot serve still removes
   its environment (FW-079). A pull request force-pushed from code back to prose alone keeps its environment when it closes: remove it with `node .tropis/scripts/pipeline.mjs branch remove <branch>`.
+- **Your agents know which level a test belongs at.** The tests rule now says which
+  pipeline stage each kind of check goes in, that a check against an outside service
+  runs on a schedule that alerts and never blocks a merge, and that such tests sit in
+  one top-level folder named for their kind.
+
+Checked on staging: no — this project does not deploy to staging
 
 ## [0.10.0] — 2026-11-07
 
