@@ -28,14 +28,33 @@ the `permissions` block it prints to that job, keeping any permission your own s
 and deploy scripts use. When it says every workflow grants what it reads, there is
 nothing to do.
 
+**2. Watch the first runs after taking this release.** This release changes which
+jobs your pipeline starts, and those changes were checked by tests, not yet by a run
+in a project. Watch four runs: the update's own pull request, the push to the main
+branch when it merges, a pull request of prose alone, and a pull request closing.
+Look for these:
+
+- No run's summary warns that the pipeline could not ask whether the code had passed.
+- On the main branch, after a merge whose code passed on its pull request, the plan
+  job says the stages are skipped and none of them runs.
+- A pull request of prose alone starts no job to create an environment, and closing
+  it removes nothing.
+- A job that installs packages restores them from the cache on its second run.
+- Where your main branch is not gated, the run is red at the plan job and the stages,
+  the gate and the deploy still run.
+
+If a run does otherwise, write what you saw to the upstream queue and flush it.
+
 ### What you can now do
 
+- In a private repository, a merge whose code already passed on its pull request no longer runs the stages again on the main branch, and a push of prose alone to a pull request runs the framework checks alone. Both were meant to work since v0.8.0 and were refused there by the host with nothing to say so. When the pipeline cannot ask, the run's summary now warns and names the permission that is missing (FW-077).
+- Each pipeline job that installs packages restores them from an npm cache keyed on your lock files, so a run with unchanged lock files no longer installs from scratch in every job. A project with no lock file runs as before.
 - On a gated main branch, a session can collect its prose steps — backlog edits, board refreshes, plans, claims — on one branch and land them through one pull request merged by rebase, so a sitting costs one set of pipeline runs and `main` still keeps one commit per step. `node .tropis/scripts/auto-merge.mjs <N> --rebase` sets that merge and refuses a pull request that is not prose; `main-status.mjs --pull-request` stops such a pull request when it falls behind and says to rebase it.
 - A pipeline run starts fewer jobs, each billed at least a minute on GitHub. The check that your main branch is gated is now the last step of the plan job, and still turns the run red when it fails; a closing pull request starts one job, which removes the branch's environment if there is one. The jobs that deploy to an environment now take turns per branch rather than per environment name.
 - A pull request of prose alone no longer starts a job to create its environment, and
   closing one removes nothing; a pull request that gains code gets its environment on
   that push. A closed pull request whose head commit GitHub cannot serve still removes
-  its environment (FW-079).
+  its environment (FW-079). A pull request force-pushed from code back to prose alone keeps its environment when it closes: remove it with `node .tropis/scripts/pipeline.mjs branch remove <branch>`.
 
 ## [0.10.0] — 2026-11-07
 
