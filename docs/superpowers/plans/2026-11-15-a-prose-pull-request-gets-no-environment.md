@@ -24,6 +24,8 @@ executor writes the JavaScript and its tests against `scripts/pipeline.mjs` and
 request, moves the backlog item to `shipped` and merges. Stop after Task 6; do not open a
 pull request, write a review record, edit `feature-catalog.yaml` or merge.
 
+**Merges after:** pipeline-starts-no-job-for-seconds-of-work, a-sessions-prose-lands-as-one-pull-request, passed-check-can-ask-the-host, stage-jobs-restore-npm-from-a-cache
+
 **No fresh-agent check is owed:** nothing under `framework/`'s workflow, `rules/` or
 `commands/` changes. `templates/README.md` is the operator guide a project installs as
 `.tropis/README.md`, and the decision record gains an entry.
