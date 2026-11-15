@@ -2280,6 +2280,8 @@ exit 99
     expect(runsFromRepository([mine(1, HEAD, 'fork/app'), mine(2)], 'acme/app').map((run) => run.id)).toEqual([2]);
     expect(firstGreenRun([mine(1), mine(2)], (run) => ({ jobs: run.id === 2 ? GREEN : CLOSED })).run.id).toBe(2);
     expect(firstGreenRun([mine(1)], () => ({ error: 'boom' }))).toEqual({ error: 'boom' });
+    expect(firstGreenRun([mine(1)], () => ({ error: 'refused', permission: 'actions: read' })))
+      .toEqual({ error: 'refused', permission: 'actions: read' });
   });
 });
 

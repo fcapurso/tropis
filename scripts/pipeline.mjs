@@ -1254,13 +1254,13 @@ export function runsFromRepository(runs, repository) {
 
 /**
  * The first run, newest first, with a green gate. `jobsOf(run)` returns
- * `{ jobs }` or `{ error }`; an error ends the search.
- * @returns {{ run?: object, error?: string }}
+ * `{ jobs }` or `{ error, permission? }`; an error ends the search, carrying the permission.
+ * @returns {{ run?: object, error?: string, permission?: string }}
  */
 export function firstGreenRun(runs, jobsOf) {
   for (const run of runs) {
     const answer = jobsOf(run);
-    if (answer.error) return { error: answer.error };
+    if (answer.error) return { error: answer.error, permission: answer.permission };
     if (gateIsGreen(answer.jobs)) return { run };
   }
   return {};
