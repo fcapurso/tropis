@@ -7201,7 +7201,7 @@
 # that way.
 - id: a-sessions-prose-lands-as-one-pull-request
   title: A session's prose changes land as one pull request
-  status: shaped
+  status: building
   value: A sitting of several small prose steps (a backlog edit, a board refresh, a plan
     file) costs one set of pipeline runs and one wait for the main branch, not one of
     each per step. On a gated main branch each pull request starts runs on opening, on
@@ -7224,7 +7224,8 @@
   type: improvement
   layer: product
   modules: []
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-15-a-sessions-prose-lands-as-one-pull-request.md
 
 # 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-13.
 - id: a-prose-pull-request-gets-no-environment
