@@ -2488,3 +2488,46 @@ branch is judged by where the hook runs": it is judged where it creates the bran
 checkout is refused with a worktree command that starts by changing to it. A `cd` joined
 by `||`, a pipe or `&`, a `cd` to a variable, `cd -` and a bare `cd` still leave the hook
 judging its own directory.
+
+## FW-076: A session's prose lands as one pull request, merged by rebase
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+`a-sessions-prose-lands-as-one-pull-request`.
+
+**Decision:** On a gated main branch, a session collects its prose steps on one branch
+of its own, one commit and one push per step, and lands them through one pull request,
+opened on the developer's word, that merges by rebase so the main branch keeps one
+commit per step. Prose is what `pipeline.mjs plan` says: the framework stage runs and
+every other stage is skipped. `auto-merge.mjs <N> --rebase` sets the rebase merge on
+both its routes and refuses a pull request that is not prose, asking the same function
+the plan command uses. `main-status.mjs --pull-request` does not bring a rebase-merge
+pull request up to date: it stops with exit 4 and the session rebases and runs it again.
+A session with nobody to give the word, such as a sprint's team member, does not batch.
+
+**Evidence:** first-adopter, where each pull request costs a run on opening, one on
+merging and one on the push to its main branch, about 14 billed minutes, and a sitting
+of small prose steps paid that once per step; it has worked this way under a rule of its
+own since 2026-11-13. The cloud session's auto-merge route accepted `merge_method`
+`rebase` there, and after a rebase merge of one commit `merge_commit_sha` named the
+commit its main branch moved to (Claude Code 2.1.323, Linux x86_64). In this repository, a rebase merge of two commits through the same route named the
+later of them as merge_commit_sha, and the push run was found on it (2026-11-15, Claude
+Code 2.1.325, Linux x86_64).
+Source: first-adopter's rule, restated; no text copied.
+
+**Rejected:** Waiting until the two backlog items that make a prose pull request
+cheaper had shipped, and measuring a week: first-adopter's use already answers whether a
+second way to land is worth having. Squash-merging the batch: it would fold several
+steps into one commit and one message, and a step could no longer be reverted alone.
+Letting `main-status.mjs` rebase and push the branch itself: it makes no local git
+change and pushes nothing, and a rebase can conflict, which is the session's to
+resolve. Bringing it up to date with the host's update-branch, as for a squash: that
+merges the base in, and a rebase merge would carry the merge commit onto `main`, which
+nobody has measured. Refusing a rebase only by convention: nothing would stop a code
+change landing as several unreviewed commits.
+
+**Consequences:** Two ways to land on a gated main branch, told apart by what the pull
+request holds: a plan, and anything that is not prose, as one squash commit; a session's
+prose batch as its commits. The maintainer's flushed groups keep their own rebase merge,
+which `absorb-flush` runs with `gh pr merge --rebase` and which never passes through
+`auto-merge.mjs`. A plan still in a batch is not on `main`, so a dispatch waits for the
+batch to land.
