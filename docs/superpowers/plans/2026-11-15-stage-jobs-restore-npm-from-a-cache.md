@@ -342,3 +342,55 @@ discarded after:
 3. `git push -u origin plan/stage-jobs-restore-npm-from-a-cache`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+Tools: git 2.43.0, node v22.23.4, Linux x86_64. No named source was worked from; the
+change and guard are written from the plan's text against this repository's own names.
+
+### Task completion
+
+- Task 0: worktree clean, `npm --prefix .tropis ci` done, self-check passed at the start.
+- Task 1: guard and its comment paragraph appended, committed; red as expected.
+- Task 2: cache turned on in eight `tropis-pipeline.yml` jobs, two `tropis-staging.yml`
+  jobs and `checks`; three comments added; guard green; both red checks failed as named.
+- Task 3: item set to `shipped` with modules, refs and evidence comment; its block
+  removed from `bands.yaml`. The board's `index.html` was not rebuilt by a hook, so it is
+  not in the diff.
+- Task 4: verification below.
+
+### Verification results
+
+- Guard before the change (staged `HEAD` export): `Tests:       1 failed, 3 passed, 4 total`;
+  first diff lines: `"cache": "${{ hashFiles('**/package-lock.json', ...) ... }}"` expected,
+  `"cache": undefined` received, `"where": "tropis-pipeline.yml sanity"`.
+- Guard after: `Tests:       4 passed, 4 total`.
+- `guards/pipeline.test.js -t "GitHub workflow"`: `Tests:       157 skipped, 5 passed, 162 total`.
+- Red check 1 (no `cache:` in staging `deploy`): failure names `"where": "tropis-staging.yml deploy"`.
+- Red check 2 (`cache: npm` in `gate`): failure names `"job": "gate"`, `Tests:       1 failed, 3 passed, 4 total`.
+- `npm --prefix .tropis test`: `Tests:       211 passed, 211 total`.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD` (before this report): six files, 125 insertions,
+  14 deletions, all in *File Structure*.
+
+### Scope
+
+Only files in *File Structure*; nothing under `.claude/`, `.tropis/` or `.github/`.
+
+### Judgment calls
+
+None beyond the plan. The edits to the workflows were applied by a script that replaced
+the setup-node step per job, skipping `plan`, `host` and `gate`.
+
+### What the plan got wrong
+
+Nothing found. The pipeline template has eleven setup-node steps, eight after leaving out
+`plan`, `host` and `gate`, as the plan said.
+
+### Outstanding
+
+The change has no screen, so there is no developer check. That a run restores from the
+cache, that an empty `cache` skips caching, that `!` excludes in `hashFiles` and
+`cache-dependency-path`, and that `hashFiles` is empty when nothing matches, are observed
+on the first pipeline run after a release carrying this is installed. A release-note line
+is the developer's at `/release`.
