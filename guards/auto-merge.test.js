@@ -92,7 +92,7 @@ describe('auto-merge', () => {
     // A real history, so the prose check runs the real planStages: a base commit and two
     // branches from it, one changing only a framework path and one changing code.
     git(repo, 'config', 'user.name', 'Test');
-    git(repo, 'config', 'user.email', 'test@example.invalid');
+    git(repo, 'config', 'user.email', 'test@example.com');
     writeFileSync(join(repo, 'README.md'), 'base\n');
     git(repo, 'add', '.');
     git(repo, 'commit', '-q', '-m', 'base');
