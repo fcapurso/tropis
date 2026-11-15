@@ -5,7 +5,10 @@
  * empty. A pull request deploys to the branch's environment when the branch
  * slot is filled and the change is not prose and framework alone; where the
  * slot is filled and the end-to-end stage runs, it deploys before that stage
- * and the gate does not deploy again. `plan`
+ * and the gate does not deploy again. A pull request of prose and framework
+ * files alone, counting every commit on it, gets no environment: the plan says
+ * `prose=yes` and `create=skipped`, and one that later gains other changes is
+ * created on the first push that carries them. `plan`
  * decides which stages run from the diff, and the block at the bottom runs
  * only when this file is the program.
  */
@@ -158,6 +161,45 @@ export function matchesProse(path, proseText) {
 export function isProseAndFramework(paths, proseText) {
   return paths.length > 0
     && paths.every((path) => matchesFramework(path) || matchesProse(path, proseText));
+}
+
+/**
+ * Whether a pull request touches prose and framework files alone. The files
+ * are those of the net diff `base...head` and of every commit in
+ * `base..head`, so a pull request that added code and took it out again is
+ * not prose: it had an environment. A merge commit lists no files of its own,
+ * which is wanted. `null` when either revision does not resolve or git fails.
+ * @param {string} root
+ * @param {{ base: string, head: string }} revisions
+ * @returns {boolean | null}
+ */
+export function pullRequestProse(root, { base, head }) {
+  for (const revision of [base, head]) {
+    if (!revision || /^0+$/.test(revision)) return null;
+    const resolved = git(root, ['rev-parse', '--verify', '--quiet', `${revision}^{commit}`]);
+    if (resolved.status !== 0) return null;
+  }
+  const net = git(root, ['diff', '--name-only', '--no-renames', `${base}...${head}`]);
+  const each = git(root, ['log', '--format=', '--name-only', '--no-renames', `${base}..${head}`]);
+  if (net.status !== 0 || each.status !== 0) return null;
+  const paths = [...new Set(`${net.stdout}\n${each.stdout}`.split('\n').filter((line) => line !== ''))];
+  return isProseAndFramework(paths, readProse(root));
+}
+
+/**
+ * Whether a pull request event creates the branch's environment. `prose` and
+ * `proseBefore` are `pullRequestProse` answers for the head now and for the
+ * head before a push; `null` is unknown. A prose pull request creates none; a
+ * push creates it only when the pull request was prose (or cannot be told, as
+ * after a force push) before it, since otherwise the environment exists.
+ * @param {{ branch: string, action: string, prose: boolean | null, proseBefore?: boolean | null }} input
+ * @returns {'run' | 'skipped'}
+ */
+export function createDecision({ branch, action, prose, proseBefore = null }) {
+  if (branch !== 'filled' || prose === true) return 'skipped';
+  if (action === 'opened' || action === 'reopened') return 'run';
+  if (action === 'synchronize') return proseBefore === false ? 'skipped' : 'run';
+  return 'skipped';
 }
 
 function classify(root, proseOnly) {
@@ -376,16 +418,25 @@ function parsePlanArgs(argv) {
   const opts = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg !== '--base' && arg !== '--head' && arg !== '--passed' && arg !== '--event') {
+    if (!['--base', '--head', '--passed', '--event', '--action', '--before'].includes(arg)) {
       return { error: `plan: unknown argument ${arg}` };
     }
     const value = argv[i + 1];
+    if ((arg === '--action' || arg === '--before') && (value === undefined || value === '')) {
+      return { error: `plan: ${arg} needs a value` };
+    }
     if (arg === '--event' && (value === undefined || value === '')) {
       return { error: 'plan: --event needs push or pull_request' };
     }
     if (value === undefined) return { error: `plan: ${arg} needs a revision` };
     opts[arg.slice(2)] = value;
     i += 1;
+  }
+  if (opts.action !== undefined && opts.event !== 'pull_request') {
+    return { error: 'plan: --action needs --event pull_request' };
+  }
+  if (opts.before !== undefined && opts.action !== 'synchronize') {
+    return { error: 'plan: --before is for --action synchronize' };
   }
   return { opts };
 }
@@ -733,12 +784,15 @@ function environmentCommand(root, args) {
 }
 
 /**
- * Six skipped stage lines and the slot, without reading a diff. A partial
- * slot is the same error `plan` already gives.
+ * Six skipped stage lines and the slot. With `revisions` (the pull request's
+ * base and head) it also says whether the pull request was prose alone, which
+ * decides whether its environment is removed; a head that does not resolve is
+ * `prose=no`. A partial slot is the same error `plan` already gives.
  * @param {string} root
+ * @param {{ base: string, head: string }} [revisions]
  * @returns {number}
  */
-function closedPlan(root) {
+function closedPlan(root, revisions) {
   const slot = branchSlot(root);
   if (slot.error) {
     process.stderr.write(`${slot.error}\n`);
@@ -746,7 +800,9 @@ function closedPlan(root) {
   }
   const stages = {};
   for (const stage of STAGES) stages[stage] = 'skipped';
-  writePlan({ stages, branch: slot.slot });
+  const outcome = { stages, branch: slot.slot };
+  if (revisions) outcome.prose = pullRequestProse(root, revisions) === true;
+  writePlan(outcome);
   return 0;
 }
 
@@ -789,16 +845,40 @@ function permanentRefusal(root, branch) {
  * `TROPIS_ENVIRONMENT` and `TROPIS_BRANCH`. Remove does not check for a
  * colliding name: the environment may already exist to be deleted. All three
  * refuse a branch whose environment is permanent, before origin is listed or
- * any script runs. An empty slot prints one line and exits 0.
+ * any script runs. An empty slot prints one line and exits 0. `create
+ * <branch> --if-open <number>` first asks GitHub whether that pull request is
+ * still open and creates nothing, exiting 0, when it is not; when GitHub
+ * cannot say it exits 1.
  * @param {string} root
  * @param {string | undefined} action
  * @param {string | undefined} branch
+ * @param {string[]} [rest] arguments after the branch
  * @returns {number}
  */
-function branchCommand(root, action, branch) {
+function branchCommand(root, action, branch, rest = []) {
   if (!BRANCH_ACTIONS.includes(action)) {
     process.stderr.write('branch: action must be create, deploy or remove\n');
     return 2;
+  }
+  let openNumber;
+  if (rest.length > 0) {
+    if (rest[0] !== '--if-open') {
+      process.stderr.write(`branch: unknown argument ${rest[0]}\n`);
+      return 2;
+    }
+    if (action !== 'create') {
+      process.stderr.write('branch: --if-open is for create only\n');
+      return 2;
+    }
+    if (!/^[0-9]+$/.test(rest[1] ?? '')) {
+      process.stderr.write('branch: --if-open needs a pull request number\n');
+      return 2;
+    }
+    if (rest.length > 2) {
+      process.stderr.write(`branch: unknown argument ${rest[2]}\n`);
+      return 2;
+    }
+    openNumber = rest[1];
   }
   const slot = branchSlot(root);
   if (slot.error) {
@@ -817,6 +897,24 @@ function branchCommand(root, action, branch) {
   const resolved = resolveEnvironment(root, branch, { checkCollision: action !== 'remove' });
   if (resolved.message) process.stderr.write(resolved.message);
   if (resolved.status) return resolved.status;
+  if (openNumber !== undefined) {
+    const repository = process.env.GITHUB_REPOSITORY;
+    if (!repository) {
+      process.stderr.write('branch: --if-open needs GITHUB_REPOSITORY\n');
+      return 1;
+    }
+    const answer = askGitHub(['api', `repos/${repository}/pulls/${openNumber}`]);
+    const state = answer.value?.state;
+    if (answer.error || typeof state !== 'string') {
+      const why = answer.error ?? 'the answer has no state';
+      process.stderr.write(`branch: could not tell whether pull request #${openNumber} is open: ${why}\n`);
+      return 1;
+    }
+    if (state !== 'open') {
+      process.stdout.write(`branch: pull request #${openNumber} is ${state}, so its environment is not created\n`);
+      return 0;
+    }
+  }
   const env = stageEnv();
   if (!env) return 1;
   env.TROPIS_ENVIRONMENT = resolved.name;
@@ -1483,14 +1581,14 @@ function commandList() {
       + 'integration="$INTEGRATION" end-to-end="$END_TO_END" end-to-end-deployed="$END_TO_END_DEPLOYED"',
     '# When the gate prints deploy=run on a push. That deploys the shared environment.',
     'node .tropis/scripts/pipeline.mjs run deploy',
-    '# When a pull request opens or reopens and the plan says branch=filled.',
-    'node .tropis/scripts/pipeline.mjs branch create "$BRANCH"',
+    '# When the plan says create=run: a pull request that is not prose opens or reopens, or a push first gives it other changes.',
+    'node .tropis/scripts/pipeline.mjs branch create "$BRANCH" --if-open "$NUMBER"',
     '# On a pull request whose plan says end-to-end-on=environment, in one job holding the environment: deploy, then test.',
     'node .tropis/scripts/pipeline.mjs branch deploy "$BRANCH"',
     'node .tropis/scripts/pipeline.mjs run end-to-end --branch "$BRANCH"',
     '# When the gate prints deploy=run for a pull request.',
     'node .tropis/scripts/pipeline.mjs branch deploy "$BRANCH"',
-    '# When a pull request closes and the plan says branch=filled.',
+    '# When a pull request closes, the plan says branch=filled and it does not say prose=yes.',
     'node .tropis/scripts/pipeline.mjs branch remove "$BRANCH"',
     '# Deploy to staging. Started by hand for one commit on the main branch, never on a push.',
     '# Every stage first, as on a push with nothing skipped; then:',
@@ -1511,6 +1609,11 @@ function writePlan(outcome) {
   if (outcome.note) process.stderr.write(`${outcome.note}\n`);
   const lines = STAGES.map((stage) => `${stage}=${outcome.stages[stage]}`);
   if (outcome.endToEndOn) lines.push(`end-to-end-on=${outcome.endToEndOn}`);
+  if (outcome.prose !== undefined) lines.push(`prose=${outcome.prose ? 'yes' : 'no'}`);
+  if (outcome.create) lines.push(`create=${outcome.create}`);
+  if (outcome.prose === true && outcome.branch === 'filled') {
+    process.stderr.write('plan: only prose and framework files in this pull request, so no environment is created or removed\n');
+  }
   if (outcome.passed) lines.push(`passed=${outcome.passed}`);
   if (outcome.branch) lines.push(`branch=${outcome.branch}`);
   process.stdout.write(`${lines.join('\n')}\n`);
@@ -1531,8 +1634,10 @@ if (ranDirectly) {
     process.stdout.write(`${STAGES.join('\n')}\n`);
   } else if (command === 'plan') {
     if (args[0] === '--closed') {
-      if (args.length !== 1) {
-        process.stderr.write('plan: --closed takes no other arguments\n');
+      const withRevisions = args.length === 5 && args[1] === '--base' && args[3] === '--head'
+        && args[2] !== '' && args[4] !== '';
+      if (args.length !== 1 && !withRevisions) {
+        process.stderr.write('plan: --closed takes --base and --head together, and nothing else\n');
         process.exitCode = 2;
       } else {
         const root = projectRoot();
@@ -1540,7 +1645,7 @@ if (ranDirectly) {
           process.stderr.write('pipeline: not a git repository\n');
           process.exitCode = 1;
         } else {
-          process.exitCode = closedPlan(root);
+          process.exitCode = closedPlan(root, withRevisions ? { base: args[2], head: args[4] } : undefined);
         }
       }
     } else {
@@ -1559,11 +1664,19 @@ if (ranDirectly) {
             process.stderr.write(`${slot.error}\n`);
             process.exitCode = 1;
           } else {
-            const { event, ...planOpts } = parsed.opts;
+            const { event, action, before, ...planOpts } = parsed.opts;
             const outcome = planStages(root, planOpts);
             outcome.branch = slot.slot;
             if (event !== undefined && outcome.stages) {
               outcome.endToEndOn = endToEndOn({ stages: outcome.stages, branch: slot.slot, event });
+            }
+            if (action !== undefined && outcome.stages) {
+              const revisions = { base: planOpts.base, head: planOpts.head ?? 'HEAD' };
+              const prose = pullRequestProse(root, revisions);
+              const proseBefore = before === undefined ? null
+                : pullRequestProse(root, { base: revisions.base, head: before });
+              outcome.prose = prose === true;
+              outcome.create = createDecision({ branch: slot.slot, action, prose, proseBefore });
             }
             writePlan(outcome);
           }
@@ -1592,7 +1705,7 @@ if (ranDirectly) {
       process.stderr.write('pipeline: not a git repository\n');
       process.exitCode = 1;
     } else {
-      process.exitCode = branchCommand(root, args[0], args[1]);
+      process.exitCode = branchCommand(root, args[0], args[1], args.slice(2));
     }
   } else if (command === 'environment') {
     const root = projectRoot();

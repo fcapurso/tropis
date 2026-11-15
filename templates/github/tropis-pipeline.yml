@@ -38,6 +38,8 @@ jobs:
       lines: ${{ steps.plan.outputs.lines }}
       environment: ${{ steps.plan.outputs.environment }}
       branch: ${{ steps.plan.outputs.branch }}
+      prose: ${{ steps.plan.outputs.prose }}
+      create: ${{ steps.plan.outputs.create }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -84,7 +86,16 @@ jobs:
             git fetch --no-tags --quiet origin "$passed" || true
             passed_args=(--passed "$passed")
           fi
-          lines=$(node .tropis/scripts/pipeline.mjs plan --base "$base" --head "$head" --event "$EVENT_NAME" "${passed_args[@]}")
+          pr_args=()
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            pr_args=(--action "$ACTION")
+            if [ "$ACTION" = "synchronize" ]; then
+              # A force push can leave the old head unfetched; it then plans as unknown.
+              git fetch --no-tags --quiet origin "$PUSH_BEFORE" || true
+              pr_args+=(--before "$PUSH_BEFORE")
+            fi
+          fi
+          lines=$(node .tropis/scripts/pipeline.mjs plan --base "$base" --head "$head" --event "$EVENT_NAME" "${pr_args[@]}" "${passed_args[@]}")
           branch=$(printf '%s\n' "$lines" | sed -n 's/^branch=//p')
           if [ -z "$branch" ]; then
             echo "plan: no branch line" >&2
@@ -193,14 +204,17 @@ jobs:
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
 
-  # Opening a pull request creates the environment. It does not wait for the
-  # stages. One group per branch (the shared environment on a push), so the
-  # closing job can name it before anything has run: at most one of these jobs
-  # runs, a new pending job replaces an older pending one, and a running job is
-  # not cancelled. https://docs.github.com/en/actions/using-jobs/using-concurrency
+  # Opening or reopening a pull request that is not prose creates the environment,
+  # and so does the first push that gives a prose pull request other changes, once
+  # GitHub says the pull request is still open. A pull request of prose alone gets
+  # none. It does not wait for the stages. One group per branch (the shared
+  # environment on a push), so the closing job can name it before anything has
+  # run: at most one of these jobs runs, a new pending job replaces an older
+  # pending one, and a running job is not cancelled.
+  # https://docs.github.com/en/actions/using-jobs/using-concurrency
   branch-create:
     needs: plan
-    if: ${{ !cancelled() && github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened') && needs.plan.outputs.branch == 'filled' }}
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.plan.outputs.branch == 'filled' && needs.plan.outputs.create == 'run' }}
     runs-on: ubuntu-latest
     concurrency:
       group: tropis-env-${{ github.repository }}-${{ github.event.pull_request.head.ref || 'shared' }}
@@ -216,9 +230,11 @@ jobs:
             **/npm-shrinkwrap.json
             !.tropis/**
             !**/node_modules/**
-      - run: node .tropis/scripts/pipeline.mjs branch create "$HEAD_REF"
+      - run: node .tropis/scripts/pipeline.mjs branch create "$HEAD_REF" --if-open "$PR_NUMBER"
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
 
   # On a pull request with a filled branch slot, the end-to-end stage tests the
@@ -262,7 +278,7 @@ jobs:
 
   # A condition with no status function is combined with success(), which is
   # false once an empty stage was skipped. always() runs the gate anyway.
-  # A closed pull request removes the environment and runs no stage.
+  # A closed pull request runs no stage; branch-remove decides alone.
   gate:
     needs: [plan, framework, sanity, unit, integration, end-to-end, end-to-end-deployed]
     if: ${{ always() && github.event.action != 'closed' }}
@@ -324,7 +340,8 @@ jobs:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
 
   # A closed pull request starts this job alone. It decides whether the branch slot
-  # is filled and, if it is, removes the environment.
+  # is filled and whether the pull request was prose alone, and removes the
+  # environment only when the slot is filled and it was not.
   branch-remove:
     if: ${{ github.event.action == 'closed' }}
     runs-on: ubuntu-latest
@@ -333,6 +350,8 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
@@ -343,8 +362,15 @@ jobs:
             !.tropis/**
             !**/node_modules/**
       - id: plan
-        run: node .tropis/scripts/pipeline.mjs plan --closed >> "$GITHUB_OUTPUT"
-      - if: steps.plan.outputs.branch == 'filled'
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # The head branch may be deleted already; an unresolved head plans prose=no.
+          git fetch --no-tags --quiet origin "$PR_HEAD" || true
+          node .tropis/scripts/pipeline.mjs plan --closed --base "$PR_BASE" --head "$PR_HEAD" >> "$GITHUB_OUTPUT"
+      - if: steps.plan.outputs.branch == 'filled' && steps.plan.outputs.prose != 'yes'
         run: node .tropis/scripts/pipeline.mjs branch remove "$HEAD_REF"
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}

@@ -199,6 +199,14 @@ then the same with `branch deploy`. Create is safe to run again.
 Removing the environment when the pull request closes needs `closed` listed in
 the `pull_request` types of `.github/workflows/pipeline.yml`.
 
+A pull request whose files are all prose or framework, counting every commit on it
+and not only its net diff, gets no environment: no job creates one, and closing it
+removes nothing. The first push that gives it other changes creates the environment,
+once GitHub says the pull request is still open; that reads the pull request with the
+`pull-requests: read` the calling workflow grants. Where the pipeline cannot tell,
+because a commit it needs cannot be fetched, it creates and removes as before, which
+is why `create.sh` and `remove.sh` must succeed when run again.
+
 When the branch slot is filled and `pipeline/end-to-end.sh` exists, a pull request's
 end-to-end stage tests that pull request's own code in its environment. It starts
 once sanity, unit and integration have passed or were empty and the environment

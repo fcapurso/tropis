@@ -5,13 +5,14 @@
  * the order or how the gate decides is a breaking release.
  */
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import {
+  createDecision,
   endToEndOn,
   stagingSlot,
   stagingSummary,
@@ -22,6 +23,7 @@ import {
   isProseAndFramework,
   matchesProse,
   permissionGaps,
+  pullRequestProse,
   runsFromRepository,
   STAGES,
 } from '../scripts/pipeline.mjs';
@@ -1477,7 +1479,7 @@ describe('plan from a git repository', () => {
     const root = repository();
     const result = runPipeline(root, ['plan', '--closed', '--base', 'x']);
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain('--closed takes no other arguments');
+    expect(result.stderr).toContain('--closed takes --base and --head together, and nothing else');
   });
 
   it('does a full run when the diff lists no paths, and says why', () => {
@@ -1604,8 +1606,325 @@ describe('plan from a git repository', () => {
       const root = repository();
       const result = runPipeline(root, ['plan', '--closed', '--passed', 'x']);
       expect(result.status).toBe(2);
-      expect(result.stderr).toContain('--closed takes no other arguments');
+      expect(result.stderr).toContain('--closed takes --base and --head together, and nothing else');
     });
+  });
+});
+
+describe('a pull request of prose alone', () => {
+  const NOTE = 'plan: only prose and framework files in this pull request, so no environment is created or removed';
+
+  /** A filled slot, `docs/` as prose, and the base commit. */
+  function proseProject({ filled = true } = {}) {
+    const root = repository();
+    write(root, 'pipeline/prose.txt', 'docs/\n');
+    if (filled) fillBranchSlot(root);
+    return { root, base: commit(root, 'base') };
+  }
+
+  function planPr(root, base, head, action, before) {
+    const args = ['plan', '--base', base, '--head', head, '--event', 'pull_request', '--action', action];
+    if (before !== undefined) args.push('--before', before);
+    const result = runPipeline(root, args);
+    expect(result.status).toBe(0);
+    return { lines: result.stdout.split('\n').filter((line) => line !== ''), stderr: result.stderr };
+  }
+
+  describe('pullRequestProse', () => {
+    it('is true for prose and framework files, false for code, and null for a revision that does not resolve', () => {
+      const { root, base } = proseProject();
+      write(root, 'docs/a.md', 'a\n');
+      const prose = commit(root, 'docs');
+      write(root, 'src/a.js', 'a\n');
+      const code = commit(root, 'code');
+      expect(pullRequestProse(root, { base, head: prose })).toBe(true);
+      expect(pullRequestProse(root, { base, head: code })).toBe(false);
+      expect(pullRequestProse(root, { base, head: 'nope' })).toBeNull();
+      expect(pullRequestProse(root, { base: 'nope', head: code })).toBeNull();
+      expect(pullRequestProse(root, { base, head: '0'.repeat(40) })).toBeNull();
+    });
+
+    it('is false for no files at all', () => {
+      const { root, base } = proseProject();
+      expect(pullRequestProse(root, { base, head: base })).toBe(false);
+    });
+  });
+
+  describe('createDecision', () => {
+    const cases = [
+      ['an empty slot', { branch: 'empty', action: 'opened', prose: false }, 'skipped'],
+      ['prose, opened', { branch: 'filled', action: 'opened', prose: true }, 'skipped'],
+      ['prose, synchronize', { branch: 'filled', action: 'synchronize', prose: true, proseBefore: true }, 'skipped'],
+      ['code, opened', { branch: 'filled', action: 'opened', prose: false }, 'run'],
+      ['code, reopened', { branch: 'filled', action: 'reopened', prose: false }, 'run'],
+      ['unknown, opened', { branch: 'filled', action: 'opened', prose: null }, 'run'],
+      ['code, synchronize, prose before', { branch: 'filled', action: 'synchronize', prose: false, proseBefore: true }, 'run'],
+      ['code, synchronize, unknown before', { branch: 'filled', action: 'synchronize', prose: false, proseBefore: null }, 'run'],
+      ['code, synchronize, code before', { branch: 'filled', action: 'synchronize', prose: false, proseBefore: false }, 'skipped'],
+      ['code, any other action', { branch: 'filled', action: 'edited', prose: false }, 'skipped'],
+    ];
+    for (const [name, input, expected] of cases) {
+      it(`${name} is ${expected}`, () => {
+        expect(createDecision(input)).toBe(expected);
+      });
+    }
+  });
+
+  describe('plan --action', () => {
+    it('says prose=yes and create=skipped for prose alone, and why on stderr', () => {
+      const { root, base } = proseProject();
+      write(root, 'docs/a.md', 'a\n');
+      const head = commit(root, 'docs');
+      const { lines, stderr } = planPr(root, base, head, 'opened');
+      expect(lines).toEqual([
+        ...STAGES.map((stage) => `${stage}=${stage === 'framework' ? 'run' : 'skipped'}`),
+        'end-to-end-on=runner',
+        'prose=yes',
+        'create=skipped',
+        'branch=filled',
+      ]);
+      expect(stderr.trim()).toBe(NOTE);
+    });
+
+    it('says prose=no and create=run when code changed', () => {
+      const { root, base } = proseProject();
+      write(root, 'src/a.js', 'a\n');
+      const head = commit(root, 'code');
+      const { lines, stderr } = planPr(root, base, head, 'opened');
+      expect(lines).toContain('prose=no');
+      expect(lines).toContain('create=run');
+      expect(stderr).not.toContain(NOTE);
+    });
+
+    it('creates on the first push that gives a prose pull request code, and not on the next', () => {
+      const { root, base } = proseProject();
+      write(root, 'docs/a.md', 'a\n');
+      const prose = commit(root, 'docs');
+      write(root, 'src/a.js', 'a\n');
+      const code = commit(root, 'code');
+      write(root, 'src/b.js', 'b\n');
+      const more = commit(root, 'more code');
+      const first = planPr(root, base, code, 'synchronize', prose);
+      expect(first.lines).toContain('prose=no');
+      expect(first.lines).toContain('create=run');
+      const next = planPr(root, base, more, 'synchronize', code);
+      expect(next.lines).toContain('prose=no');
+      expect(next.lines).toContain('create=skipped');
+    });
+
+    it('is not prose when code was added and taken out again', () => {
+      const { root, base } = proseProject();
+      write(root, 'src/a.js', 'a\n');
+      commit(root, 'code');
+      git(root, 'rm', '-q', 'src/a.js');
+      write(root, 'docs/a.md', 'a\n');
+      const head = commit(root, 'revert, and a page');
+      expect(git(root, 'diff', '--name-only', `${base}...${head}`)).toBe('docs/a.md');
+      const { lines } = planPr(root, base, head, 'opened');
+      expect(lines).toContain('prose=no');
+      expect(lines).toContain('create=run');
+    });
+
+    it('creates when the head before the push does not resolve or is all zeros', () => {
+      const { root, base } = proseProject();
+      write(root, 'src/a.js', 'a\n');
+      const head = commit(root, 'code');
+      for (const before of ['not-a-revision', '0'.repeat(40)]) {
+        expect(planPr(root, base, head, 'synchronize', before).lines).toContain('create=run');
+      }
+    });
+
+    it('skips creating whatever the diff when the slot is empty, and writes no note', () => {
+      const { root, base } = proseProject({ filled: false });
+      write(root, 'docs/a.md', 'a\n');
+      const prose = commit(root, 'docs');
+      write(root, 'src/a.js', 'a\n');
+      const code = commit(root, 'code');
+      for (const head of [prose, code]) {
+        const { lines, stderr } = planPr(root, base, head, 'opened');
+        expect(lines).toContain('create=skipped');
+        expect(lines).toContain('branch=empty');
+        expect(stderr).not.toContain(NOTE);
+      }
+    });
+
+    it('prints no prose and no create line without --action', () => {
+      const { root, base } = proseProject();
+      write(root, 'docs/a.md', 'a\n');
+      const head = commit(root, 'docs');
+      const result = runPipeline(root, ['plan', '--base', base, '--head', head, '--event', 'pull_request']);
+      expect(result.status).toBe(0);
+      expect(result.stdout).not.toMatch(/^(prose|create)=/m);
+      expect(result.stderr).toBe('');
+    });
+
+    it('refuses the arguments it cannot use, each with status 2', () => {
+      const { root, base } = proseProject();
+      const cases = [
+        [['--base', base, '--action', 'opened'], 'plan: --action needs --event pull_request'],
+        [['--base', base, '--event', 'push', '--action', 'opened'], 'plan: --action needs --event pull_request'],
+        [['--base', base, '--event', 'pull_request', '--action', 'opened', '--before', base], 'plan: --before is for --action synchronize'],
+        [['--base', base, '--event', 'pull_request', '--action', ''], 'plan: --action needs a value'],
+        [['--base', base, '--event', 'pull_request', '--action'], 'plan: --action needs a value'],
+        [['--base', base, '--event', 'pull_request', '--action', 'synchronize', '--before', ''], 'plan: --before needs a value'],
+      ];
+      for (const [args, message] of cases) {
+        const result = runPipeline(root, ['plan', ...args]);
+        expect(result.status).toBe(2);
+        expect(result.stderr).toContain(message);
+      }
+    });
+  });
+
+  describe('plan --closed --base --head', () => {
+    const CLOSED = ['plan', '--closed'];
+
+    it('says prose=yes after the stages for a prose pull request, with the note', () => {
+      const { root, base } = proseProject();
+      write(root, 'docs/a.md', 'a\n');
+      const head = commit(root, 'docs');
+      const result = runPipeline(root, [...CLOSED, '--base', base, '--head', head]);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe(`${[...STAGES.map((stage) => `${stage}=skipped`), 'prose=yes', 'branch=filled'].join('\n')}\n`);
+      expect(result.stderr.trim()).toBe(NOTE);
+    });
+
+    it('says prose=no for a code pull request and for a head that does not resolve', () => {
+      const { root, base } = proseProject();
+      write(root, 'src/a.js', 'a\n');
+      const head = commit(root, 'code');
+      for (const revision of [head, 'not-a-revision']) {
+        const result = runPipeline(root, [...CLOSED, '--base', base, '--head', revision]);
+        expect(result.status).toBe(0);
+        expect(result.stdout).toContain('prose=no\nbranch=filled');
+        expect(result.stderr).toBe('');
+      }
+    });
+
+    it('prints what it always printed, with no prose line, without them', () => {
+      const { root } = proseProject();
+      const result = runPipeline(root, CLOSED);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe(`${[...STAGES.map((stage) => `${stage}=skipped`), 'branch=filled'].join('\n')}\n`);
+    });
+
+    it('refuses one of them alone, or anything else, with status 2', () => {
+      const { root, base } = proseProject();
+      for (const args of [['--base', base], ['--head', base], ['--head', base, '--base', base], ['--base', base, '--head', base, '--event', 'push']]) {
+        const result = runPipeline(root, [...CLOSED, ...args]);
+        expect(result.status).toBe(2);
+        expect(result.stderr).toContain('plan: --closed takes --base and --head together, and nothing else');
+      }
+    });
+  });
+});
+
+describe('branch create --if-open', () => {
+  /** A filled slot whose create.sh leaves a marker, and a stub gh answering for pull request 7. */
+  function project() {
+    const root = repository();
+    fillBranchSlot(root);
+    write(root, 'pipeline/branch/create.sh', 'touch "$PWD/created.marker"\n');
+    commit(root, 'base');
+    const bin = mkdtempSync(join(tmpdir(), 'tropis-gh-'));
+    temps.push(bin);
+    writeFileSync(join(bin, 'gh'), `#!/bin/sh
+echo "$*" >> "$STUB_LOG"
+if [ "$*" = "api repos/acme/app/pulls/7" ]; then
+  if [ -n "$STUB_ERR" ]; then echo "$STUB_ERR" >&2; fi
+  printf '%s' "$STUB_PULL"
+  exit "\${STUB_EXIT:-0}"
+fi
+echo "stub gh: unexpected call: $*" >&2
+exit 99
+`);
+    chmodSync(join(bin, 'gh'), 0o755);
+    const log = join(bin, 'calls.log');
+    writeFileSync(log, '');
+    return { root, bin, log, marker: join(root, 'created.marker') };
+  }
+
+  function create(p, args, { state = 'open', exit = '0', err = '', repository: repo = 'acme/app', pull } = {}) {
+    const env = {
+      PATH: `${p.bin}:${process.env.PATH}`,
+      GH_TOKEN: 'stub',
+      STUB_LOG: p.log,
+      STUB_PULL: pull ?? JSON.stringify({ state }),
+      STUB_EXIT: exit,
+      STUB_ERR: err,
+    };
+    env.GITHUB_REPOSITORY = repo;
+    return runPipeline(p.root, ['branch', ...args], { env });
+  }
+
+  it('runs create.sh when the pull request is open', () => {
+    const p = project();
+    const result = create(p, ['create', 'feature/x', '--if-open', '7']);
+    expect(result.status).toBe(0);
+    expect(existsSync(p.marker)).toBe(true);
+    expect(readFileSync(p.log, 'utf8')).toBe('api repos/acme/app/pulls/7\n');
+  });
+
+  it('creates nothing and exits 0 when the pull request is closed, saying so', () => {
+    const p = project();
+    const result = create(p, ['create', 'feature/x', '--if-open', '7'], { state: 'closed' });
+    expect(result.status).toBe(0);
+    expect(existsSync(p.marker)).toBe(false);
+    expect(result.stdout).toBe('branch: pull request #7 is closed, so its environment is not created\n');
+  });
+
+  it('exits 1 saying why when GitHub cannot be asked, or the answer has no state', () => {
+    const p = project();
+    const failed = create(p, ['create', 'feature/x', '--if-open', '7'], { exit: '1', err: 'HTTP 502' });
+    expect(failed.status).toBe(1);
+    expect(failed.stderr).toContain('branch: could not tell whether pull request #7 is open:');
+    expect(failed.stderr).toContain('HTTP 502');
+    const stateless = create(p, ['create', 'feature/x', '--if-open', '7'], { pull: '{}' });
+    expect(stateless.status).toBe(1);
+    expect(stateless.stderr).toContain('could not tell whether pull request #7 is open');
+    expect(existsSync(p.marker)).toBe(false);
+  });
+
+  it('exits 1 without asking GitHub when GITHUB_REPOSITORY is unset', () => {
+    const p = project();
+    const result = create(p, ['create', 'feature/x', '--if-open', '7'], { repository: '' });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('branch: --if-open needs GITHUB_REPOSITORY');
+    expect(existsSync(p.marker)).toBe(false);
+    expect(readFileSync(p.log, 'utf8')).toBe('');
+  });
+
+  it('refuses --if-open with another action, with no number, or with a bad one, status 2', () => {
+    const p = project();
+    const cases = [
+      [['deploy', 'feature/x', '--if-open', '7'], 'branch: --if-open is for create only'],
+      [['create', 'feature/x', '--if-open'], 'branch: --if-open needs a pull request number'],
+      [['create', 'feature/x', '--if-open', 'abc'], 'branch: --if-open needs a pull request number'],
+      [['create', 'feature/x', '--if-open', '7', 'extra'], 'branch: unknown argument extra'],
+      [['create', 'feature/x', '--other'], 'branch: unknown argument --other'],
+    ];
+    for (const [args, message] of cases) {
+      const result = create(p, args);
+      expect(result.status).toBe(2);
+      expect(result.stderr).toContain(message);
+    }
+    expect(existsSync(p.marker)).toBe(false);
+  });
+
+  it('does not ask GitHub without --if-open', () => {
+    const p = project();
+    const result = create(p, ['create', 'feature/x']);
+    expect(result.status).toBe(0);
+    expect(existsSync(p.marker)).toBe(true);
+    expect(readFileSync(p.log, 'utf8')).toBe('');
+  });
+
+  it('still prints one line and exits 0 for an empty slot', () => {
+    const root = repository();
+    commit(root, 'base');
+    const result = runPipeline(root, ['branch', 'create', 'feature/x', '--if-open', '7']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('branch: empty — no pipeline/branch/\n');
   });
 });
 
@@ -1901,6 +2220,9 @@ describe('run, gate and commands', () => {
     }
     expect(result.stdout).toContain('npm --prefix .tropis ci');
     expect(result.stdout).toContain('deploy=run');
+    expect(result.stdout).toContain('branch create "$BRANCH" --if-open "$NUMBER"');
+    expect(result.stdout).toContain('# When the plan says create=run:');
+    expect(result.stdout).toContain('# When a pull request closes, the plan says branch=filled and it does not say prose=yes.');
     for (const action of ['create', 'deploy', 'remove']) {
       const command = `node .tropis/scripts/pipeline.mjs branch ${action}`;
       const at = result.stdout.indexOf(command);
@@ -2445,6 +2767,19 @@ describe('GitHub workflow', () => {
     expect(planRun).not.toContain('--no-check');
     expect(planRun).not.toContain('for script in');
     expect(planRun).toContain('environment=$(node .tropis/scripts/pipeline.mjs environment "$HEAD_REF")');
+    expect(planRun).toContain('--action "$ACTION"');
+    expect(planRun).toContain('--before "$PUSH_BEFORE"');
+    expect(planRun).toContain('pr_args=()');
+    expect(planRun).toContain('"${pr_args[@]}"');
+    expect(jobs.plan.outputs.prose).toBe('${{ steps.plan.outputs.prose }}');
+    expect(jobs.plan.outputs.create).toBe('${{ steps.plan.outputs.create }}');
+    const create = String(jobs['branch-create'].if);
+    expect(create).toContain("needs.plan.outputs.create == 'run'");
+    expect(create).not.toContain("github.event.action == 'opened'");
+    const createStep = jobs['branch-create'].steps.find((step) => step.run);
+    expect(createStep.run).toBe('node .tropis/scripts/pipeline.mjs branch create "$HEAD_REF" --if-open "$PR_NUMBER"');
+    expect(createStep.env.PR_NUMBER).toBe('${{ github.event.pull_request.number }}');
+    expect(createStep.env.GH_TOKEN).toBe('${{ github.token }}');
   });
 
   it('starts only branch-remove on a closing pull request, and it decides and removes on its own', () => {
@@ -2453,9 +2788,15 @@ describe('GitHub workflow', () => {
     expect(remove.needs).toBeUndefined();
     expect(remove.if).toBe("${{ github.event.action == 'closed' }}");
     const planStep = remove.steps.find((step) => step.id === 'plan');
-    expect(planStep.run).toBe('node .tropis/scripts/pipeline.mjs plan --closed >> "$GITHUB_OUTPUT"');
+    expect(planStep.run).toContain('git fetch --no-tags --quiet origin "$PR_HEAD" || true');
+    expect(planStep.run).toContain('plan --closed --base "$PR_BASE" --head "$PR_HEAD" >> "$GITHUB_OUTPUT"');
+    expect(planStep.env).toEqual({
+      PR_BASE: '${{ github.event.pull_request.base.sha }}',
+      PR_HEAD: '${{ github.event.pull_request.head.sha }}',
+    });
+    expect(remove.steps[0].with['fetch-depth']).toBe(0);
     const removeStep = remove.steps.find((step) => String(step.run).includes('branch remove'));
-    expect(removeStep.if).toBe("steps.plan.outputs.branch == 'filled'");
+    expect(removeStep.if).toBe("steps.plan.outputs.branch == 'filled' && steps.plan.outputs.prose != 'yes'");
     expect(removeStep.run).toBe('node .tropis/scripts/pipeline.mjs branch remove "$HEAD_REF"');
     expect(remove.steps.indexOf(planStep)).toBeLessThan(remove.steps.indexOf(removeStep));
     // A job runs after a skipped one under !cancelled(), so each job but branch-remove

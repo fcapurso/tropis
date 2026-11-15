@@ -373,3 +373,146 @@ run step 1 again on that commit, and push the branch.
 - **`git log base..head` on a merge commit lists no files** by default. That is wanted:
   a merge from the main branch brings the main branch's files, which are not the pull
   request's. Do not add `-m` or `--first-parent`.
+
+## Handover report
+
+### Task completion
+
+Tasks 1 to 5 done as decided; Task 6 run (steps 1 to 5) and this report written. No task
+skipped. Task 4's test is the existing *names every stage, in order, with when to run each
+command* test, extended with three assertions on the create and remove lines. The command
+list shows no closed-plan line, so none was added.
+
+### Verification results
+
+Run by git 2.43.0 and node v22 on Linux x86_64, on the commit that carries this report.
+
+- `bash scripts/check-blueprint.sh`, run once on the implementation commit (before the
+  documents and this report) and again on the last commit (below): the verdict line on the
+  first was `Self-check passed: every guard caught its defect, the clean baseline passed,
+  and the framework repository's own guards passed.`
+- `guards/pipeline.test.js` alone, staged from an export of `HEAD` as `CLAUDE.md` says:
+  `Tests: 193 passed, 193 total`.
+- Re-breaks in the staged export only (each restored afterwards, suite back to 193 passed):
+  - `createDecision` returning `skipped` for `synchronize`: 4 failed, among them
+    `plan --action › creates on the first push that gives a prose pull request code, and not on the next`.
+  - `--if-open` with the state check disabled: 1 failed,
+    `branch create --if-open › creates nothing and exits 0 when the pull request is closed, saying so`.
+  - `needs.plan.outputs.prose != 'yes'` removed from `branch-remove`: 1 failed,
+    `GitHub workflow › gives each stage its own job, and the four filled stages run side by side`.
+  - `pullRequestProse` reading the net diff only: **the first run passed 193 of 193**, so
+    the add-then-delete test could not fail (see *What the plan got wrong*). After the test
+    was changed, the same break gives 1 failed,
+    `plan --action › is not prose when code was added and taken out again`.
+- `npm --prefix .tropis test`: `Tests: 215 passed, 215 total` (13 suites).
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: `RELEASES.md`,
+`framework/DECISIONS.md`, `guards/pipeline.test.js`, `scripts/pipeline.mjs`,
+`templates/README.md`, `templates/github/tropis-pipeline.yml` (6 files, 544 insertions,
+28 deletions), plus this plan. Every file is in the File Structure table;
+`feature-catalog.yaml` untouched. Worktree used: `../tropis-prose-env` (checkout `tropis`).
+
+### Judgment calls
+
+- Two existing assertions on `--closed takes no other arguments` now assert the new
+  message the plan decided (`--closed takes --base and --head together, and nothing else`).
+- `plan --closed` with `--base`/`--head` is accepted only in that order; `--head` first is
+  refused as a bad argument list.
+- `--base` missing with `--action` gives `prose=no` (unknown) and, where the slot is
+  filled, `create=run` on opened or reopened.
+- `branch` checks `--if-open`'s arguments before the slot, so a bad argument exits 2 even
+  with an empty slot; a valid one on an empty slot still prints its one line and exits 0.
+- Source worked from: none in particular; written against this repository's own code.
+
+### What the plan got wrong
+
+The add-then-delete test as the plan described it (net diff prose only) could not fail:
+a net diff with no files is already `prose=no` through `isProseAndFramework`, so reading
+the net diff alone passed it. The test now ends the pull request with a page, giving a net
+diff of prose alone, and fails when the per-commit files are dropped.
+
+### Outstanding
+
+Nothing the executor could not do. The workflow was not run (it cannot be here); the
+guard reads the template as YAML only.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session, git 2.43 and node v22 on Linux x86_64, on the branch after
+the two review fixes below:
+
+- `bash scripts/check-blueprint.sh`:
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `guards/pipeline.test.js` alone, staged from an export of `HEAD`:
+  `Tests: 193 passed, 193 total`.
+- Re-breaks in that export: `createDecision` returning `skipped` for `synchronize` gave
+  `4 failed, 189 passed`; `pullRequestProse` reading the net diff only gave
+  `1 failed, 192 passed` (the corrected add-then-delete test). Restored: 193 passed.
+- `npm --prefix .tropis test`: `Tests: 215 passed, 215 total`.
+- `git diff --stat origin/main...HEAD`: the six files of the File Structure table and
+  this plan; `feature-catalog.yaml` joins them with this record.
+
+The handover's diagnosis of the plan's add-then-delete test holds: a pull request whose
+net diff lists no files is already not prose through `isProseAndFramework`, so the test
+as the plan wrote it could not fail; the re-break above fails the corrected test.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing (the one adopter named
+is `first-adopter`).
+
+Two mechanical fixes, made on the branch by the reviewer: the comment above
+`branch-create` in the workflow template had a line past the file's width, reflowed; and
+FW-076's status line read "nor closing it always remove it", now "and closing one no
+longer always removes it". Nothing else.
+
+### Acceptance criteria
+
+1. The plan says whether the pull request is prose, and for one neither job starts:
+   *plan --action › says prose=yes and create=skipped for prose alone*, *plan --closed
+   --base --head › says prose=yes …*, and the *GitHub workflow* assertions on
+   `branch-create` (`create == 'run'`) and `branch-remove` (`prose != 'yes'`).
+2. A pull request that gains other changes gets its environment, once the host says it
+   is open: *creates on the first push that gives a prose pull request code, and not on
+   the next*, and *branch create --if-open › runs create.sh when the pull request is
+   open* / *creates nothing and exits 0 when the pull request is closed*.
+3. Closing one that never had an environment removes nothing and fails nothing: the
+   closed plan's `prose=yes` test and the `branch-remove` condition; no job starts, so
+   nothing can fail.
+4. A test covers a pull request that starts as prose and gains code: criterion 2's
+   first test.
+
+After the plans this one merges after shipped, the rebase conflicted in the workflow
+template, its guard, the decision record and the release notes. FW-078 had moved the
+closing pull request's work into `branch-remove`, which starts alone and runs
+`plan --closed` itself. The specifying session resolved it: that job now checks out
+with `fetch-depth: 0`, fetches the head, plans with `--base`/`--head`, and skips the
+remove step when `prose=yes`; the plan step lost its closed branch; the entry became
+FW-079 and amends FW-078 too; the release line joined the new notes. A fresh agent
+(Claude Code subagent, Opus, Linux x86_64) reviewed the resolution read-only and found
+no defect; its wording findings were applied (FW-079 says why `branch-create` declares
+no permissions, the FW-078 amendment line, the gate comment, and a note above the
+backlog item that FW-078 narrows criterion 1: the closing job starts, and removes
+nothing). Re-run after it: self-check passed; `guards/pipeline.test.js` 210 passed;
+dropping `prose != 'yes'` from the remove step gave 1 failed, 209 passed.
+
+### Outstanding disposition
+
+The handover lists nothing outstanding. The workflow is checked as YAML only, as for
+every pipeline change; its first real run in a project with a filled branch slot is the
+live check, and nothing here needs a person to look.
+
+### Learnings routed
+
+The plan's check that could not fail is the kind `.claude/rules/planning.md` already
+names (*A check states what it prints when it passes and what it prints when it fails*);
+nothing new to route.
+
+### Merged because
+
+Every criterion has a test that goes red when its behaviour is removed, and the
+self-check passes.
