@@ -1717,8 +1717,9 @@ describe('a pull request of prose alone', () => {
       write(root, 'src/a.js', 'a\n');
       commit(root, 'code');
       git(root, 'rm', '-q', 'src/a.js');
-      const head = commit(root, 'revert');
-      expect(git(root, 'diff', '--name-only', `${base}...${head}`)).toBe('');
+      write(root, 'docs/a.md', 'a\n');
+      const head = commit(root, 'revert, and a page');
+      expect(git(root, 'diff', '--name-only', `${base}...${head}`)).toBe('docs/a.md');
       const { lines } = planPr(root, base, head, 'opened');
       expect(lines).toContain('prose=no');
       expect(lines).toContain('create=run');
