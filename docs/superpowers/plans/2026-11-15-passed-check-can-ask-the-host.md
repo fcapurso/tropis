@@ -468,7 +468,7 @@ Public exposure: the diff was read for private material, and none was found. fir
 ### Outstanding disposition
 
 - **The item ships with criterion 5 pending.** The criterion says itself that it can be run only in a private repository after the release, and nothing here can show it. Holding the item in `building` until then would hold the merge of the three sprint plans that touch the same template until the next release and a check in another repository. The pending entry keeps it visible; a fail there becomes a new backlog item.
-- The release is breaking: a project whose caller withholds a permission gets a pipeline that fails at startup until it grants it. The notes' by-hand step says so, and FW-076 records it.
+- The release is breaking: a project whose caller withholds a permission gets a pipeline that fails at startup until it grants it. The notes' by-hand step says so, and FW-077 records it (FW-076 was taken by a-sessions-prose-lands-as-one-pull-request, which merged first; the conflicts in `RELEASES.md` and `framework/DECISIONS.md` were resolved mechanically, keeping both).
 
 ### Learnings routed
 
