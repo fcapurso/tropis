@@ -55,3 +55,12 @@ The format of an entry:
 
 - Outcome: skipped
 - Why: no rule file grew since v0.9.0 — every file under `rules/` is unchanged — so there is no new clause to try.
+
+## Since v0.10.0
+
+- Rule file: `rules/tests.md`
+- Clause: "A test that reaches a real outside service sits in one top-level folder named for its kind."
+- Task: add a minimal script that reads three fields from an invented vendor's public forecast endpoint, a unit test for its parsing, and the automated test that says when the vendor changes that response's shape, deciding where each file goes and how the vendor test runs, with no shell.
+- What the agent did: it read `.claude/rules/tests.md`, delivered without the clause, and wrote `scripts/acme-weather.test.mjs` for the unit test and the vendor check as `scripts/acme-weather.watch.mjs`, beside the module, named so the unit stage's pattern misses it, with a comment added to `pipeline/unit.sh` saying so and a scheduled workflow to run it; no top-level folder for the kind. That is what the clause exists to prevent. A first run did not count: the clone still held the clause in the source `rules/tests.md`, the agent found it with Grep, quoted it and made `vendor-watch/`; the clause was then removed there too and the run repeated.
+- Outcome: kept
+- Ran on: Claude Code 2.1.325 on Claude Opus 5.5, Linux x86_64, in a cloud session
