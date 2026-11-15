@@ -223,6 +223,10 @@
     "passed-check-can-ask-the-host",
     "stage-jobs-restore-npm-from-a-cache"
   ],
-  "marks": {},
+  "marks": {
+    "passed-check-can-ask-the-host": {
+      "state": "planning"
+    }
+  },
   "notes": {}
 }
