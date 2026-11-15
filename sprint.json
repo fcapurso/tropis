@@ -275,7 +275,8 @@
       "The workflow was checked only as YAML - its first run in a project with an environment per branch is the live test"
     ],
     "pipeline-starts-no-job-for-seconds-of-work": [
-      "The host check is the last step of the plan job and fails that job outright; that later jobs still receive a failed job's outputs rests on one user report, and if it does not hold an ungated project's gate fails on its first run"
+      "The host check is the last step of the plan job and fails that job outright; that later jobs still receive a failed job's outputs rests on one user report, and if it does not hold an ungated project's gate fails on its first run",
+      "A closing pull request starts one job that decides and removes; jobs touching an environment take turns per branch name; the gate stays a job of its own; jobs per run fall by one in each case, recorded in FW-078"
     ]
   }
 }
