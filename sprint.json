@@ -229,6 +229,9 @@
     },
     "a-prose-pull-request-gets-no-environment": {
       "state": "planning"
+    },
+    "pipeline-starts-no-job-for-seconds-of-work": {
+      "state": "planning"
     }
   },
   "notes": {}
