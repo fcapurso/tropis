@@ -465,3 +465,19 @@ update-names-a-changed-closed-skeleton:
   seen:
     status: idea
     blockers: []
+why-code-stages-ran-on-main-for-a-passed-commit:
+  band: B
+  value: 3
+  valueWhy: If the skip fails for some merges, every project pays for stages it does not
+    need there, and a green run hides it.
+  effort: 1
+  effortWhy: Reading the plan job of one run in first-adopter, and tracing one job's
+    condition in the shipped workflow.
+  verdict: "Worth doing, with no deadline: a short question whose answer says whether
+    there is a defect to fix. It needs one run's log from first-adopter."
+  evidence: "2026-11-15 — the skip is in every release from v0.8.0; in this repository
+    run 43641176644 on main skipped unit, integration and end-to-end for a commit whose
+    pull request had passed."
+  seen:
+    status: idea
+    blockers: []
