@@ -667,3 +667,84 @@ behind), so the worktree was created with the table's command directly.
 - The fresh-agent check on `framework/workflow.md`, `commands/dispatch.md` and
   `commands/refresh-board.md`, which the plan gives to the specifying session.
 - No pull request, review record or merge, as instructed.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session in Claude Code 2.1.325, Node 22.23.4, git 2.43.0, on Linux
+x86_64.
+
+- `bash scripts/check-blueprint.sh` on the handover's commit `472dab3`: `Self-check
+  passed: every guard caught its defect, the clean baseline passed, and the framework
+  repository's own guards passed.`
+- The two guards alone, staged in an export of `HEAD` as `CLAUDE.md` says:
+  `Tests: 75 passed, 75 total`. With `origin/main`'s `scripts/auto-merge.mjs` and
+  `scripts/main-status.mjs` put back: `Tests: 17 failed, 58 passed, 75 total`. The red
+  cases outside the usage table were the six `--rebase, for a pull request of prose
+  alone` cases and `stops a rebase-merge pull request that is behind, without updating
+  it`, matching the handover.
+- The handover's diagnosis that the four new usage rows fail before the change: true. The
+  usage assertion added in Task 1 step 7 fails every row against the old usage. The plan
+  was wrong, not the executor.
+- Task 6's measurement, read from the claim's merge myself before dispatch: pull request
+  #308 merged two commits by rebase; `merge_commit_sha` was `91da5c4`, the later commit
+  and the one `main` moved to, and `main-status.mjs --pull-request 308` found the push run
+  on it and reported green. `git log --merges a464046..origin/main` printed nothing.
+- Fresh-agent check of the workflow clause, run by me as its author: `claude -p` on the
+  Large tier's pick, Claude Opus 5.5 (Claude Code 2.1.325, Linux x86_64), in a throwaway
+  copy of this branch with the new workflow, commands and scripts installed in place of
+  the last release, `origin` a local bare repository, no personal instructions on the
+  machine, agent and web tools denied, output as `stream-json` so each call shows. The
+  task was invented and the prompt said it would be discarded: two backlog ideas and one
+  edit to a script, landed as the workflow says, stopping where the developer's word is
+  needed. Its calls: `git worktree add ../tropis-prose-invented-widget -b
+  prose/2026-11-15-invented-widget origin/main`. One commit per idea, each followed by
+  `pipeline.mjs plan --base "$(git merge-base origin/main HEAD)" --head HEAD` and a
+  push. After the script edit's commit, the plan command, then a worktree from
+  `origin/main` on a branch of its own, `git -C <it> cherry-pick <commit>`, and
+  `git reset -q --hard HEAD~1` in the batch. `git stash list` was read once and the
+  stash never used. It opened no pull request, and its last message named the branch and
+  both commit subjects and said it waits for the word to open the pull request by rebase.
+  It found what the clause intended. Not exercised: the dispatch paragraph and the
+  refresh-board sentence. Both are pinned by the test below.
+
+### Found
+
+Public exposure: the diff was read for private material. first-adopter is named only by
+its pseudonym, with no internals and no pull request numbers of its own; the throwaway
+identity is `test@example.com`. Nothing else.
+
+- **Fixed in review, mechanical:** six of the eight acceptance criteria say what the
+  workflow tells a session, and nothing automated pinned that wording, so the backlog
+  item would have shipped on prose alone. I added `the workflow tells a session how its
+  prose lands` to `guards/auto-merge.test.js`, a file already in the File Structure
+  table. It asserts eleven statements in `framework/workflow.md` and
+  `commands/dispatch.md`, and goes red when one is broken (checked by removing
+  ``Never `git stash` ``: one failure). The developer's testing is the check on this fix.
+- Otherwise the code matches the plan case by case. The executor's two extra refusals (a
+  read that is not JSON, one naming no commit) are sound.
+
+### Outstanding disposition
+
+- The fresh-agent check: run, above.
+- Pull request, review record and merge: done by this session.
+- No user-visible screen: there are no manual checks for the developer to run (handovers
+  3 and 4 do not apply).
+
+### Learnings routed
+
+- The plan said new refusal rows "may pass before the change" while also adding an
+  assertion that fails every row before the change. That is the planning rule's existing
+  clause, *A check states what it prints when it passes and what it prints when it
+  fails*, already broken once. Not routed again: one more instance adds nothing to
+  that rule.
+- A git export of this repository leaves out `.claude/`, `.tropis/`, `CLAUDE.md` and the
+  backlog (`.gitattributes` export-ignore). A probe of the installed workflow therefore
+  copies the tracked files instead. I built the probe that way. Not routed: the probe
+  write-ups already in this repository build their copy this way.
+
+### Merged because
+
+Every check re-ran green, both new behaviours go red without the change, and the probe
+did what the clause intended.
