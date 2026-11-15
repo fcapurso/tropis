@@ -249,7 +249,8 @@
       "Prose is decided by the pipeline's own plan function on the pull request's base and head read from the host, with no fetch",
       "Flushed groups keep their rebase - absorb-flush merges by itself and never calls auto-merge.mjs",
       "Measured by landing its own claim by rebase with two commits - the host names the later commit, and the wait found the push run on it",
-      "Executor was a Sonnet subagent; the fresh-agent check was run by the author on Opus 5.5 and did not exercise the dispatch and refresh-board wording"
+      "Executor was a Sonnet subagent; the fresh-agent check was run by the author on Opus 5.5 and did not exercise the dispatch and refresh-board wording",
+      "One fix made in review and declared - a test that pins the workflow statements six criteria rest on; decision recorded as FW-076"
     ],
     "stage-jobs-restore-npm-from-a-cache": [
       "Narrowed criterion 1 - the plan, host and gate jobs install nothing and leave the cache off, so the first job does not save an empty cache the stages would then restore",
