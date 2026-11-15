@@ -99,8 +99,8 @@ jobs:
           } >> "$GITHUB_OUTPUT"
       # Whether the main branch is gated by the host, or the project has said why not.
       # Last, so the outputs above are written first. A red answer fails this job and
-      # the run, as the host job did, and the jobs below still run: each reads the
-      # plan's outputs under !cancelled().
+      # the run, and the jobs below still run and decide as they would otherwise: each
+      # reads the plan's outputs under !cancelled().
       - name: host
         if: ${{ !cancelled() }}
         run: node .tropis/scripts/pipeline.mjs host --summary "$GITHUB_STEP_SUMMARY"

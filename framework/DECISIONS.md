@@ -2581,8 +2581,8 @@ pipeline-starts-no-job-for-seconds-of-work. Amends FW-028 and FW-037.
 **Decision:** The host's gate is asked by the last step of the plan job, not a job of
 its own. The step runs after the plan's outputs are written, even when planning
 failed, and a red answer fails the plan job and so the run, as the host job did.
-Every job that needs the plan reads its outputs under `!cancelled()`, so a red host
-holds no stage and no deploy. A closing pull request starts one job, which decides
+Every job that needs the plan reads its outputs under `!cancelled()`, so with a red
+host the stages, the gate and the deploy still run and decide as they would otherwise. A closing pull request starts one job, which decides
 whether the branch slot is filled and removes the environment if it is; the plan job
 does not run. The jobs that touch an environment share one concurrency group per
 head branch, `shared` on a push, because the closing job has no plan to name the
