@@ -392,3 +392,49 @@ Use the next free number if FW-076 is taken when you rebase.
   changes only when a release is installed. Granting more in this repository's caller
   than the installed template declares is harmless.
 
+
+## Handover report
+
+### Task completion
+
+Tasks 1 to 5 done as written; Task 6 verification run. The warning, `permissionGaps`,
+`permissionsCommand` and the `commandList` lines are in `scripts/pipeline.mjs`; the
+template and caller grants are in place and `.github/workflows/pipeline.yml` equals the
+caller template; FW-076 is appended and FW-048 amended; the operator guide sentence and
+the by-hand release step are written.
+
+### Verification results
+
+- Scope: `git diff --stat origin/main...HEAD` lists only files in *File Structure*
+  (less the backlog and verification log).
+- `guards/pipeline.test.js` from a staged export of HEAD: 177 passed, 177 total. With the
+  warning write reverted in the staged copy, 2 of the new assertions failed; restored.
+- `bash scripts/check-blueprint.sh`: passed.
+- `npm --prefix .tropis test`: 13 suites, 213 tests passed.
+- `permissions` against this repository's caller, run from a scratch copy of the source
+  scripts with the installed `yaml`: printed the all-grant line, exit 0.
+- Tools: node v22, git 2.43, Linux x86_64.
+
+### Scope
+
+Only files listed in the plan changed.
+
+### Judgment calls
+
+- Tasks 1 to 3 went into one commit, since they share one test file; the decision and
+  documents are a second commit.
+- `permissionsCommand` is async (it imports `load-yaml.mjs` dynamically) and the CLI block
+  awaits it at top level; argument errors are checked before `projectRoot()`.
+- A job body that is `null` counts as stating nothing.
+- Source named: none in particular.
+
+### What the plan got wrong
+
+- Step 5 cannot run `node scripts/pipeline.mjs permissions` from the worktree as written:
+  `scripts/` has no `node_modules`, so `load-yaml.mjs` stops with "packages are not
+  installed". It was run from a scratch copy with `.tropis`'s modules linked instead.
+
+### Outstanding
+
+Manual check, the backlog move, the pull request and the merge belong to the specifying
+session.
