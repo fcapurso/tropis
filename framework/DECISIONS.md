@@ -2629,7 +2629,7 @@ project that owns its pipeline keeps its copy and changes nothing.
 
 **Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
 a-prose-pull-request-gets-no-environment. Amends FW-029: opening a pull request no
-longer always creates its environment, nor closing it always remove it.
+longer always creates its environment, and closing one no longer always removes it.
 
 **Decision:** A pull request is prose when every file it touches is prose or framework,
 the files being those of its net diff and of every commit on it, so a pull request that
