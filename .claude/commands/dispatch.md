@@ -5,6 +5,11 @@ description: Print the thin kick-off prompt for a plan
 From the project root, run `npm --prefix .tropis run dispatch -- <plan-path>` and paste
 what it prints into a **new** session.
 
+The executor starts from `origin/main`. If the plan, or its claim, is still a step in
+this session's batch of prose (workflow.md, *Branching*), say that it is not on the main
+branch yet and ask the developer for the word to land the batch; dispatch once it has
+landed.
+
 If it exits non-zero, the plan is not dispatchable, and stderr names each problem — a
 missing heading, a header field that reads empty, no checkout anyone may edit, or
 isolation that is not a sibling worktree. Fix the plan. Do not write a prompt by hand instead.

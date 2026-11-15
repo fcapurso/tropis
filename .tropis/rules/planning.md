@@ -456,3 +456,9 @@ Five sections:
 **Why this exists.** Every step of this framework whose output is committed happens
 reliably; every step whose output is not, does not. (Incident:
 `.tropis/rules/incidents/planning.md#ten-pull-requests-with-no-review`)
+
+## A plan that needs a run on the host rebases first
+
+A pull request in merge conflict starts no run on GitHub, so a push to it cancels
+nothing and checks nothing. A plan that has to observe a run, a cancellation or anything
+else, says to rebase before pushing.

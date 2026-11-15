@@ -14,6 +14,8 @@ on:
         type: string
         default: '22'
 
+# npm cache: as in tropis-pipeline.yml, keyed on the project's lock files, and only
+# when one exists.
 jobs:
   framework:
     uses: ./.github/workflows/tropis-framework-checks.yml
@@ -38,6 +40,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs run ${{ matrix.stage }}
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
@@ -56,6 +64,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs staging deploy --summary "$GITHUB_STEP_SUMMARY"
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
