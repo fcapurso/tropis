@@ -31,6 +31,7 @@ nothing to do.
 ### What you can now do
 
 - On a gated main branch, a session can collect its prose steps — backlog edits, board refreshes, plans, claims — on one branch and land them through one pull request merged by rebase, so a sitting costs one set of pipeline runs and `main` still keeps one commit per step. `node .tropis/scripts/auto-merge.mjs <N> --rebase` sets that merge and refuses a pull request that is not prose; `main-status.mjs --pull-request` stops such a pull request when it falls behind and says to rebase it.
+- A pipeline run starts fewer jobs, each billed at least a minute on GitHub. The check that your main branch is gated is now the last step of the plan job, and still turns the run red when it fails; a closing pull request starts one job, which removes the branch's environment if there is one. The jobs that deploy to an environment now take turns per branch rather than per environment name.
 
 ## [0.10.0] — 2026-11-07
 

@@ -2390,7 +2390,6 @@ describe('GitHub workflow', () => {
     const jobs = pipelineDoc.jobs;
     expect(Object.keys(jobs)).toEqual([
       'plan',
-      'host',
       'framework',
       'sanity',
       'unit',
@@ -2406,13 +2405,18 @@ describe('GitHub workflow', () => {
       expect([...jobs[stage].needs].sort()).toEqual(['framework', 'plan']);
     }
     expect(jobs.gate.needs).toEqual(['plan', ...STAGES.slice(0, -1), 'end-to-end-deployed']);
-    expect(jobs.host.needs).toBeUndefined();
-    expect(String(jobs.host.if)).toContain("github.event.action != 'closed'");
-    const hostRun = jobs.host.steps.find((step) => step.run);
-    expect(hostRun.run).toBe('node .tropis/scripts/pipeline.mjs host --summary "$GITHUB_STEP_SUMMARY"');
-    expect(hostRun.env.GH_TOKEN).toBe('${{ github.token }}');
-    expect([].concat(jobs.gate.needs)).not.toContain('host');
-    expect([].concat(jobs.deploy.needs)).not.toContain('host');
+    const hostStep = jobs.plan.steps.at(-1);
+    expect(hostStep.name).toBe('host');
+    expect(String(hostStep.if)).toContain('!cancelled()');
+    expect(hostStep.run).toBe('node .tropis/scripts/pipeline.mjs host --summary "$GITHUB_STEP_SUMMARY"');
+    expect(hostStep.env.GH_TOKEN).toBe('${{ github.token }}');
+    expect(hostStep['continue-on-error']).toBeUndefined();
+    expect(jobs.plan.steps.findIndex((step) => step.id === 'plan'))
+      .toBeLessThan(jobs.plan.steps.indexOf(hostStep));
+    expect(String(jobs.plan.if)).toContain("github.event.action != 'closed'");
+    for (const [id, job] of Object.entries(jobs)) {
+      if (id !== 'plan') expect(JSON.stringify(job)).not.toContain('pipeline.mjs host');
+    }
     expect(String(jobs.gate.if)).toContain('always()');
     expect(String(jobs.gate.if)).toContain("github.event.action != 'closed'");
     expect(String(jobs.framework.if)).toContain("github.event.action != 'closed'");
@@ -2421,7 +2425,7 @@ describe('GitHub workflow', () => {
     expect(String(jobs.deploy.if)).not.toContain('always()');
     expect(String(jobs.deploy.if)).toContain("needs.gate.outputs.deploy == 'run'");
     expect(String(jobs.deploy.if)).toContain("needs.branch-create.result != 'failure'");
-    const group = "tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}";
+    const group = "tropis-env-${{ github.repository }}-${{ github.event.pull_request.head.ref || 'shared' }}";
     for (const id of ['branch-create', 'end-to-end-deployed', 'deploy', 'branch-remove']) {
       expect(jobs[id].concurrency.group).toBe(group);
       expect(jobs[id].concurrency['cancel-in-progress']).toBe(false);
@@ -2437,25 +2441,63 @@ describe('GitHub workflow', () => {
       expect(text).toContain(`run ${stage}`);
     }
     const planRun = String(jobs.plan.steps.find((step) => step.id === 'plan').run);
-    expect(planRun).toContain('plan --closed');
-    expect(planRun).toContain('--no-check');
+    expect(planRun).not.toContain('--closed');
+    expect(planRun).not.toContain('--no-check');
     expect(planRun).not.toContain('for script in');
-    expect(planRun).toContain('environment "$HEAD_REF" --no-check)');
-    expect(planRun).toMatch(/else\n\s*environment=\$\(node \.tropis\/scripts\/pipeline\.mjs environment "\$HEAD_REF"\)\n/);
-    expect(planRun).toContain('plan --closed >> "$GITHUB_OUTPUT"');
+    expect(planRun).toContain('environment=$(node .tropis/scripts/pipeline.mjs environment "$HEAD_REF")');
+  });
+
+  it('starts only branch-remove on a closing pull request, and it decides and removes on its own', () => {
+    const jobs = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8')).jobs;
+    const remove = jobs['branch-remove'];
+    expect(remove.needs).toBeUndefined();
+    expect(remove.if).toBe("${{ github.event.action == 'closed' }}");
+    const planStep = remove.steps.find((step) => step.id === 'plan');
+    expect(planStep.run).toBe('node .tropis/scripts/pipeline.mjs plan --closed >> "$GITHUB_OUTPUT"');
+    const removeStep = remove.steps.find((step) => String(step.run).includes('branch remove'));
+    expect(removeStep.if).toBe("steps.plan.outputs.branch == 'filled'");
+    expect(removeStep.run).toBe('node .tropis/scripts/pipeline.mjs branch remove "$HEAD_REF"');
+    expect(remove.steps.indexOf(planStep)).toBeLessThan(remove.steps.indexOf(removeStep));
+    // A job runs after a skipped one under !cancelled(), so each job but branch-remove
+    // must carry a condition that is false when the plan job did not run.
+    const falseWithoutPlan = [
+      "github.event.action != 'closed'",
+      "needs.framework.result == 'success'",
+      "needs.gate.outputs.deploy == 'run'",
+    ];
+    for (const [id, job] of Object.entries(jobs)) {
+      if (id === 'branch-remove') continue;
+      const condition = String(job.if ?? '');
+      const held = falseWithoutPlan.some((part) => condition.includes(part))
+        || /needs\.plan\.outputs\.[\w-]+ == '[^']+'/.test(condition);
+      expect([id, held]).toEqual([id, true]);
+    }
+  });
+
+  it('reads the plan under !cancelled(), and starts no job for a stage the plan does not run', () => {
+    const jobs = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8')).jobs;
+    for (const [id, job] of Object.entries(jobs)) {
+      if (![].concat(job.needs ?? []).includes('plan')) continue;
+      const condition = String(job.if ?? '');
+      expect([id, condition.includes('!cancelled()') || condition.includes('always()')]).toEqual([id, true]);
+    }
+    for (const stage of ['sanity', 'unit', 'integration', 'end-to-end']) {
+      const condition = String(jobs[stage].if);
+      expect(condition).toContain("needs.framework.result == 'success'");
+      expect(condition).toContain(`needs.plan.outputs.${stage} == 'run'`);
+    }
   });
 
   it('declares token permissions only on the jobs that ask GitHub, and the caller grants them', () => {
     const template = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8'));
     expect(template.permissions).toBeUndefined();
     expect(template.jobs.plan.permissions).toEqual({ actions: 'read', contents: 'read', 'pull-requests': 'read' });
-    expect(template.jobs.host.permissions).toEqual({ contents: 'read' });
     for (const [id, job] of Object.entries(template.jobs)) {
-      if (id !== 'plan' && id !== 'host') expect([id, job.permissions]).toEqual([id, undefined]);
+      if (id !== 'plan') expect([id, job.permissions]).toEqual([id, undefined]);
     }
     const text = readFileSync(join(blueprint, 'templates/pipeline-caller.yml'), 'utf8');
     const granted = YAML.parse(text).jobs.pipeline.permissions;
-    for (const id of ['plan', 'host']) {
+    for (const id of ['plan']) {
       for (const [name, level] of Object.entries(template.jobs[id].permissions)) {
         expect([id, name, ['read', 'write'].includes(granted[name]) && (level === 'read' || granted[name] === 'write')])
           .toEqual([id, name, true]);
