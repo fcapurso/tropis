@@ -394,3 +394,49 @@ cache, that an empty `cache` skips caching, that `!` excludes in `hashFiles` and
 `cache-dependency-path`, and that `hashFiles` is empty when nothing matches, are observed
 on the first pipeline run after a release carrying this is installed. A release-note line
 is the developer's at `/release`.
+
+## Review record
+
+### Checks re-run
+
+By the specifying session, git 2.43.0 and node v22.23.4 on Linux x86_64, in a stage
+built from the branch's `HEAD` as *Traps* says:
+
+- `guards/framework-checks-workflow.test.js`: `Tests:       4 passed, 4 total`.
+- Planted defect, not one of the executor's two: the `cache:` line deleted from the
+  pipeline's `branch-remove` job. The guard failed, `Tests:       1 failed, 3 passed, 4 total`,
+  naming `"where": "tropis-pipeline.yml branch-remove"`.
+- The three templates parse with the `yaml` package after the change.
+- The diff read line by line against *The change*: eight pipeline jobs, two staging jobs
+  and `checks` carry exactly the given text; `plan`, `host` and `gate` are untouched.
+- The full self-check is left to this repository's required check, which runs
+  `bash scripts/check-blueprint.sh` (`.github/workflows/ci.yml`) on the rebased commit
+  before anything merges; the executor's run on its own commit passed.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found.
+
+Nothing else. The handover's *Scope* does not name the worktree path; it was
+`../tropis-npm-cache`, made by `isolate-for-plan.sh`.
+
+### Outstanding disposition
+
+- The restore on a real run, and the three `@actions/glob` and `setup-node` behaviours
+  the plan could not verify from a document: no new backlog item. They are recorded on
+  the shipped item's comment in `feature-catalog.yaml`, and nothing can show them before
+  a release carrying this is installed, since this repository's CI runs the installed
+  copies. A run that shows otherwise is a bug against this item.
+- A release-note line: the developer's at `/release`.
+
+### Learnings routed
+
+None generalises. The one reusable point, that a job installing nothing must not share a
+cache key with the jobs that install, is written where the next editor of these steps
+reads it: the comment above `jobs:` in `templates/github/tropis-pipeline.yml`.
+
+### Merged because
+
+Every job that installs or runs the project's commands now carries the cache exactly as
+planned, the guard holds it and goes red when a job loses it or a no-install job gains it,
+and nothing else changed.
