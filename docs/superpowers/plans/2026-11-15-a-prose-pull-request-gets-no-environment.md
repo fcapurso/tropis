@@ -373,3 +373,67 @@ run step 1 again on that commit, and push the branch.
 - **`git log base..head` on a merge commit lists no files** by default. That is wanted:
   a merge from the main branch brings the main branch's files, which are not the pull
   request's. Do not add `-m` or `--first-parent`.
+
+## Handover report
+
+### Task completion
+
+Tasks 1 to 5 done as decided; Task 6 run (steps 1 to 5) and this report written. No task
+skipped. Task 4's test is the existing *names every stage, in order, with when to run each
+command* test, extended with three assertions on the create and remove lines. The command
+list shows no closed-plan line, so none was added.
+
+### Verification results
+
+Run by git 2.43.0 and node v22 on Linux x86_64, on the commit that carries this report.
+
+- `bash scripts/check-blueprint.sh`, run once on the implementation commit (before the
+  documents and this report) and again on the last commit (below): the verdict line on the
+  first was `Self-check passed: every guard caught its defect, the clean baseline passed,
+  and the framework repository's own guards passed.`
+- `guards/pipeline.test.js` alone, staged from an export of `HEAD` as `CLAUDE.md` says:
+  `Tests: 193 passed, 193 total`.
+- Re-breaks in the staged export only (each restored afterwards, suite back to 193 passed):
+  - `createDecision` returning `skipped` for `synchronize`: 4 failed, among them
+    `plan --action › creates on the first push that gives a prose pull request code, and not on the next`.
+  - `--if-open` with the state check disabled: 1 failed,
+    `branch create --if-open › creates nothing and exits 0 when the pull request is closed, saying so`.
+  - `needs.plan.outputs.prose != 'yes'` removed from `branch-remove`: 1 failed,
+    `GitHub workflow › gives each stage its own job, and the four filled stages run side by side`.
+  - `pullRequestProse` reading the net diff only: **the first run passed 193 of 193**, so
+    the add-then-delete test could not fail (see *What the plan got wrong*). After the test
+    was changed, the same break gives 1 failed,
+    `plan --action › is not prose when code was added and taken out again`.
+- `npm --prefix .tropis test`: `Tests: 215 passed, 215 total` (13 suites).
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report: `RELEASES.md`,
+`framework/DECISIONS.md`, `guards/pipeline.test.js`, `scripts/pipeline.mjs`,
+`templates/README.md`, `templates/github/tropis-pipeline.yml` (6 files, 544 insertions,
+28 deletions), plus this plan. Every file is in the File Structure table;
+`feature-catalog.yaml` untouched. Worktree used: `../tropis-prose-env` (checkout `tropis`).
+
+### Judgment calls
+
+- Two existing assertions on `--closed takes no other arguments` now assert the new
+  message the plan decided (`--closed takes --base and --head together, and nothing else`).
+- `plan --closed` with `--base`/`--head` is accepted only in that order; `--head` first is
+  refused as a bad argument list.
+- `--base` missing with `--action` gives `prose=no` (unknown) and, where the slot is
+  filled, `create=run` on opened or reopened.
+- `branch` checks `--if-open`'s arguments before the slot, so a bad argument exits 2 even
+  with an empty slot; a valid one on an empty slot still prints its one line and exits 0.
+- Source worked from: none in particular; written against this repository's own code.
+
+### What the plan got wrong
+
+The add-then-delete test as the plan described it (net diff prose only) could not fail:
+a net diff with no files is already `prose=no` through `isProseAndFramework`, so reading
+the net diff alone passed it. The test now ends the pull request with a page, giving a net
+diff of prose alone, and fails when the per-commit files are dropped.
+
+### Outstanding
+
+Nothing the executor could not do. The workflow was not run (it cannot be here); the
+guard reads the template as YAML only.
