@@ -11,6 +11,11 @@ on:
         type: string
         default: '22'
 
+# npm cache: a job that installs packages, or runs the project's commands that may,
+# restores ~/.npm keyed on the project's lock files, and only when one exists, so a
+# project without one runs as before. plan, host and gate install nothing and leave it
+# off: every job keyed on the same lock files shares one key, and plan runs first, so
+# its empty cache would be the one every stage restored.
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -123,6 +128,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs run sanity
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
@@ -136,6 +147,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs run unit
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
@@ -149,6 +166,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs run integration
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
@@ -162,6 +185,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs run end-to-end
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
@@ -182,6 +211,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs branch create "$HEAD_REF"
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
@@ -204,6 +239,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs branch deploy "$HEAD_REF"
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
@@ -267,6 +308,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - if: github.event_name == 'pull_request'
         run: node .tropis/scripts/pipeline.mjs branch deploy "$HEAD_REF"
         env:
@@ -289,6 +336,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          cache: ${{ hashFiles('**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**') != '' && 'npm' || '' }}
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            !.tropis/**
+            !**/node_modules/**
       - run: node .tropis/scripts/pipeline.mjs branch remove "$HEAD_REF"
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}

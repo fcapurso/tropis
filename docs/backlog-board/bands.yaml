@@ -420,19 +420,6 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
-stage-jobs-restore-npm-from-a-cache:
-  band: B
-  value: 2
-  valueWhy: Every job of every run installs from scratch; the wait always shortens, the
-    bill only where the install carried a job past a minute.
-  effort: 1
-  effortWhy: One setting on each job that sets up Node, in three workflow templates.
-  verdict: "Worth doing, with no deadline: small, and the criteria were already shaped
-    in the backlog item it was split from."
-  evidence: "2026-11-15 — no file under templates/github/ turns on an npm cache."
-  seen:
-    status: shaped
-    blockers: []
 test-rules-reach-whoever-edits-a-stage-script:
   band: B
   value: 2

@@ -342,3 +342,101 @@ discarded after:
 3. `git push -u origin plan/stage-jobs-restore-npm-from-a-cache`. **Do not open a pull
    request**, write a review record, set auto-merge or merge. Leave the worktree in
    place.
+
+## Handover report
+
+Tools: git 2.43.0, node v22.23.4, Linux x86_64. No named source was worked from; the
+change and guard are written from the plan's text against this repository's own names.
+
+### Task completion
+
+- Task 0: worktree clean, `npm --prefix .tropis ci` done, self-check passed at the start.
+- Task 1: guard and its comment paragraph appended, committed; red as expected.
+- Task 2: cache turned on in eight `tropis-pipeline.yml` jobs, two `tropis-staging.yml`
+  jobs and `checks`; three comments added; guard green; both red checks failed as named.
+- Task 3: item set to `shipped` with modules, refs and evidence comment; its block
+  removed from `bands.yaml`. The board's `index.html` was not rebuilt by a hook, so it is
+  not in the diff.
+- Task 4: verification below.
+
+### Verification results
+
+- Guard before the change (staged `HEAD` export): `Tests:       1 failed, 3 passed, 4 total`;
+  first diff lines: `"cache": "${{ hashFiles('**/package-lock.json', ...) ... }}"` expected,
+  `"cache": undefined` received, `"where": "tropis-pipeline.yml sanity"`.
+- Guard after: `Tests:       4 passed, 4 total`.
+- `guards/pipeline.test.js -t "GitHub workflow"`: `Tests:       157 skipped, 5 passed, 162 total`.
+- Red check 1 (no `cache:` in staging `deploy`): failure names `"where": "tropis-staging.yml deploy"`.
+- Red check 2 (`cache: npm` in `gate`): failure names `"job": "gate"`, `Tests:       1 failed, 3 passed, 4 total`.
+- `npm --prefix .tropis test`: `Tests:       211 passed, 211 total`.
+- `bash scripts/check-blueprint.sh`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `git diff --stat origin/main...HEAD` (before this report): six files, 125 insertions,
+  14 deletions, all in *File Structure*.
+
+### Scope
+
+Only files in *File Structure*; nothing under `.claude/`, `.tropis/` or `.github/`.
+
+### Judgment calls
+
+None beyond the plan. The edits to the workflows were applied by a script that replaced
+the setup-node step per job, skipping `plan`, `host` and `gate`.
+
+### What the plan got wrong
+
+Nothing found. The pipeline template has eleven setup-node steps, eight after leaving out
+`plan`, `host` and `gate`, as the plan said.
+
+### Outstanding
+
+The change has no screen, so there is no developer check. That a run restores from the
+cache, that an empty `cache` skips caching, that `!` excludes in `hashFiles` and
+`cache-dependency-path`, and that `hashFiles` is empty when nothing matches, are observed
+on the first pipeline run after a release carrying this is installed. A release-note line
+is the developer's at `/release`.
+
+## Review record
+
+### Checks re-run
+
+By the specifying session, git 2.43.0 and node v22.23.4 on Linux x86_64, in a stage
+built from the branch's `HEAD` as *Traps* says:
+
+- `guards/framework-checks-workflow.test.js`: `Tests:       4 passed, 4 total`.
+- Planted defect, not one of the executor's two: the `cache:` line deleted from the
+  pipeline's `branch-remove` job. The guard failed, `Tests:       1 failed, 3 passed, 4 total`,
+  naming `"where": "tropis-pipeline.yml branch-remove"`.
+- The three templates parse with the `yaml` package after the change.
+- The diff read line by line against *The change*: eight pipeline jobs, two staging jobs
+  and `checks` carry exactly the given text; `plan`, `host` and `gate` are untouched.
+- The full self-check is left to this repository's required check, which runs
+  `bash scripts/check-blueprint.sh` (`.github/workflows/ci.yml`) on the rebased commit
+  before anything merges; the executor's run on its own commit passed.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing found.
+
+Nothing else. The handover's *Scope* does not name the worktree path; it was
+`../tropis-npm-cache`, made by `isolate-for-plan.sh`.
+
+### Outstanding disposition
+
+- The restore on a real run, and the three `@actions/glob` and `setup-node` behaviours
+  the plan could not verify from a document: no new backlog item. They are recorded on
+  the shipped item's comment in `feature-catalog.yaml`, and nothing can show them before
+  a release carrying this is installed, since this repository's CI runs the installed
+  copies. A run that shows otherwise is a bug against this item.
+- A release-note line: the developer's at `/release`.
+
+### Learnings routed
+
+None generalises. The one reusable point, that a job installing nothing must not share a
+cache key with the jobs that install, is written where the next editor of these steps
+reads it: the comment above `jobs:` in `templates/github/tropis-pipeline.yml`.
+
+### Merged because
+
+Every job that installs or runs the project's commands now carries the cache exactly as
+planned, the guard holds it and goes red when a job loses it or a no-install job gains it,
+and nothing else changed.
