@@ -7201,7 +7201,7 @@
 # that way.
 - id: a-sessions-prose-lands-as-one-pull-request
   title: A session's prose changes land as one pull request
-  status: idea
+  status: shaped
   value: A sitting of several small prose steps (a backlog edit, a board refresh, a plan
     file) costs one set of pipeline runs and one wait for the main branch, not one of
     each per step. On a gated main branch each pull request starts runs on opening, on
