@@ -395,3 +395,109 @@ run step 1 again on that commit, and push the branch.
   `passed-check-can-ask-the-host` edit this template too. If `origin/main` moved when you
   rebase, keep both sides' changes; a conflict outside `RELEASES.md` and
   `framework/DECISIONS.md` is reported in the handover.
+
+## Handover report
+
+### Task completion
+
+- **Task 1 — the workflow:** done. `plan` skips a closing run and ends with a `host`
+  step under `!cancelled()`; the `host` job and its comment are gone; `framework`,
+  `sanity`, `unit`, `integration`, `end-to-end` and `branch-create` read the plan under
+  `!cancelled()` with the conditions the plan gives; the four environment jobs group on
+  `github.event.pull_request.head.ref || 'shared'`; `branch-remove` decides and removes
+  on its own. `ACTION` stays in the `plan` step's `env` (the `synchronize` test reads it).
+- **Task 2 — the guard:** done. The first *GitHub workflow* test follows the template
+  and asserts the host step; two new tests: *starts only branch-remove on a closing pull
+  request, and it decides and removes on its own* and *reads the plan under
+  !cancelled(), and starts no job for a stage the plan does not run*. The ruleset test
+  is untouched.
+- **Task 3 — the decision record:** done. FW-076 appended (no FW-076 on `origin/main`);
+  FW-028 and FW-037 carry an amendment line.
+- **Task 4 — the prose:** done in `framework/workflow.md`, `templates/README.md` (both
+  sentences), `commands/bootstrap.md` and `RELEASES.md` (replacing `_Nothing yet._`).
+- **Task 5 — verification:** done, below. `feature-catalog.yaml` not touched.
+
+### Verification results
+
+All run with git 2.43.0, node v22.23.4, npm 10.9.9, Jest 30.5.2, on Linux x86_64, from
+the worktree `../tropis-no-seconds-jobs`.
+
+1. `bash scripts/check-blueprint.sh` on the implementation commit: last line
+   `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+   Re-run on the commit carrying this report: see *Outstanding* for its result line.
+2. `guards/pipeline.test.js` alone, staged as `CLAUDE.md` says (export of `HEAD`,
+   `{"type":"module"}` package file, `templates/framework-jest.config.js` as
+   `jest.config.js`, `node_modules` linked to `.self-check/node_modules`):
+   `Tests:       164 passed, 164 total`.
+3. Re-breaks, each in the staged export only, run with `-t 'GitHub workflow'`, then
+   restored (`cmp` against the saved template: identical; full guard again
+   `164 passed, 164 total`):
+   - `host:` job put back, running `pipeline.mjs host`: fails *gives each stage its own
+     job, and the four filled stages run side by side* and *starts only branch-remove on
+     a closing pull request, and it decides and removes on its own*.
+   - `continue-on-error: true` on the plan job's `host` step: fails *gives each stage its
+     own job, and the four filled stages run side by side*.
+   - `!cancelled() && ` removed from `unit`'s `if`: fails *reads the plan under
+     !cancelled(), and starts no job for a stage the plan does not run*.
+   - `needs: plan` given back to `branch-remove`: fails *starts only branch-remove on a
+     closing pull request, and it decides and removes on its own* and *reads the plan
+     under !cancelled(), and starts no job for a stage the plan does not run*.
+   - `github.event.action != 'closed'` removed from `plan`'s `if`: fails *gives each
+     stage its own job, and the four filled stages run side by side* and *starts only
+     branch-remove on a closing pull request, and it decides and removes on its own*.
+4. `npm --prefix .tropis test`: `Test Suites: 13 passed, 13 total`,
+   `Tests:       214 passed, 214 total`.
+5. `grep -n "host" templates/github/tropis-pipeline.yml` prints the new step's lines and
+   comments, the new comment above `framework`, and one pre-existing comment in the plan
+   step (`plan falls back if the host cannot serve the commit`); no `  host:` job line.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` before this report:
+
+```
+ RELEASES.md                          |  2 +-
+ commands/bootstrap.md                |  2 +-
+ framework/DECISIONS.md               | 51 ++++++++++++++++++++++++++
+ framework/workflow.md                |  2 +-
+ guards/pipeline.test.js              | 71 +++++++++++++++++++++++++++++-------
+ templates/README.md                  |  4 +-
+ templates/github/tropis-pipeline.yml | 70 +++++++++++++++++------------------
+ 7 files changed, 146 insertions(+), 56 deletions(-)
+```
+
+Every file is in the File Structure table; this report adds the plan file, also listed.
+`feature-catalog.yaml` is untouched, as the plan says. Worktree used:
+`../tropis-no-seconds-jobs`, branch `plan/pipeline-starts-no-job-for-seconds-of-work`,
+created by the dispatching session from `origin/main` at `2c07ddd`. Since then
+`origin/main` moved to `809d0fd`, a backlog claim touching only `feature-catalog.yaml`
+and another plan file; the branch was not rebased, since nothing overlaps.
+
+### Judgment calls
+
+- The `host` step follows the `plan` step with no blank line between them, as steps
+  in this template are written.
+- FW-037's amendment line went after its last paragraph, the *Amended 2026-10-31*
+  paragraph, before the `---` that precedes FW-038 (see below).
+- The guard names the offending job in a failure by comparing `[id, held]` to
+  `[id, true]` in its loops, so a failing loop says which job broke it.
+- The closing-run loop treats a job with no `if` as failing (`String(job.if ?? '')`),
+  so a job added later without a condition is held to it.
+- Code written against this repository's own names; no outside source was used beyond
+  the template and guard already in the repository.
+
+### What the plan got wrong
+
+- Task 3 calls the last paragraph before `## FW-038` FW-037's *Consequences*; it is an
+  *Amended 2026-10-31* paragraph, after which the line was placed.
+- Task 1's check says `grep -n "host"` prints only the new step's lines and comment; it
+  also prints the new comment above `framework` (which Task 1 itself adds) and one
+  pre-existing comment line in the plan step. Harmless.
+
+### Outstanding
+
+- The fresh-agent check `framework/workflow.md` owes, the move to `shipped`, the rebase
+  onto `origin/main` and the merge are the specifying session's.
+- Nothing here runs GitHub Actions: whether a failed job's outputs reach the jobs after
+  it remains as FW-076 states it.
+- Self-check on the commit carrying this report: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
