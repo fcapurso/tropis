@@ -273,6 +273,9 @@
       "When the pipeline cannot tell, it creates and removes the environment as before; branch-create declares no permissions, so the project's create script keeps its token",
       "Executor was a Sonnet subagent; it corrected a test the plan asked for that could not fail; two wording fixes in review, and conflicts with four sibling plans resolved and checked by a fresh reviewer",
       "The workflow was checked only as YAML - its first run in a project with an environment per branch is the live test"
+    ],
+    "pipeline-starts-no-job-for-seconds-of-work": [
+      "The host check is the last step of the plan job and fails that job outright; that later jobs still receive a failed job's outputs rests on one user report, and if it does not hold an ungated project's gate fails on its first run"
     ]
   }
 }
