@@ -263,7 +263,8 @@
       "Cause confirmed - a run of this repository showed its token without actions read and the lookup still working, so a public repository is spared and a private one is not",
       "The next release is breaking - a project whose calling workflow withholds a permission has a pipeline that does not start until it grants it; the release notes open with a required by-hand step, pipeline.mjs permissions",
       "Only the jobs that ask the host declare permissions, so a project's own stage scripts keep what their token had",
-      "Shipped with the last criterion's manual check pending in the verification log, so the three other plans on the same file were not held until a release; a failed check becomes a new backlog item"
+      "Shipped with the last criterion's manual check pending in the verification log, so the three other plans on the same file were not held until a release; a failed check becomes a new backlog item",
+      "Executor was a Sonnet subagent; one mechanical defect fixed in review and declared - a refusal on one of the lookup's requests gave no warning; decision recorded as FW-077, amending FW-048"
     ]
   }
 }
