@@ -269,7 +269,8 @@
     ],
     "a-prose-pull-request-gets-no-environment": [
       "Criterion 1 is partly met - for a prose pull request no job creates an environment, but on closing the one removal job that pipeline-starts-no-job-for-seconds-of-work introduced still starts and removes nothing; recorded in FW-079, amending FW-078",
-      "A pull request is prose only when every commit on it touches prose or framework files alone; one force-pushed from code back to prose keeps its environment when closed, cleared by hand with branch remove"
+      "A pull request is prose only when every commit on it touches prose or framework files alone; one force-pushed from code back to prose keeps its environment when closed, cleared by hand with branch remove",
+      "When the pipeline cannot tell, it creates and removes the environment as before; branch-create declares no permissions, so the project's create script keeps its token"
     ]
   }
 }
