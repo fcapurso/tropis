@@ -3,7 +3,9 @@
   "budget": 13,
   "way": "session",
   "archive": true,
-  "archived": [],
+  "archived": [
+    "stage-jobs-restore-npm-from-a-cache"
+  ],
   "entries": [
     {
       "id": "passed-check-can-ask-the-host",
