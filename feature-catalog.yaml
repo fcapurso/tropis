@@ -7144,9 +7144,11 @@
 
 # 2026-11-14, raised by first-adopter's upstream flush, from its queue entries of
 # 2026-11-12 and 2026-11-14.
+# 2026-11-15, shaped and claimed in the sprint on CI minutes. The second criterion
+# already holds - a job the plan skips starts no runner - and the plan's guard keeps it.
 - id: pipeline-starts-no-job-for-seconds-of-work
   title: The pipeline starts no job that has only seconds of work
-  status: idea
+  status: building
   value: A project on hosted runners stops paying a whole minute for each job that runs a
     few seconds. GitHub bills every job rounded up to a minute, and the pipeline starts
     several such jobs on every run. In first-adopter, 60 runs over two days billed 651
@@ -7163,8 +7165,11 @@
       closing run start, before and after.
   type: improvement
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - templates/github/tropis-pipeline.yml
+    - guards/pipeline.test.js
+  refs:
+    - docs/superpowers/plans/2026-11-15-pipeline-starts-no-job-for-seconds-of-work.md
 
 # 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-12.
 # The cause was read from the script's code, not reproduced. first-adopter met it once,
