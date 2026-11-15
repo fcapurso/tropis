@@ -247,7 +247,8 @@
     "stage-jobs-restore-npm-from-a-cache": [
       "Narrowed criterion 1 - the plan, host and gate jobs install nothing and leave the cache off, so the first job does not save an empty cache the stages would then restore",
       "Executor ran as a subagent on Sonnet - the Small pick dispatch named runs in Cursor, which a cloud session cannot start",
-      "Parent review, not self-merge; no decision record, the reasons are in comments in the workflow file"
+      "Parent review, not self-merge; no decision record, the reasons are in comments in the workflow file",
+      "Not yet seen on a real run - to confirm on the first pipeline run after a release carrying it is installed, with three behaviours of the cache settings that could not be checked against the host's documentation"
     ]
   }
 }
