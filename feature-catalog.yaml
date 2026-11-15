@@ -7353,16 +7353,22 @@
 
 # 2026-11-15, split by the developer from pipeline-bills-no-job-that-decides-nothing,
 # whose two criteria on the cache these are, unchanged.
+# 2026-11-15, shaped for its plan: criterion 1 narrowed to the jobs that install or run
+# the project's commands. Planning, the host check and the gate install nothing, and
+# planning runs first, so a cache it saved under the shared key would be empty and every
+# stage would restore that.
 - id: stage-jobs-restore-npm-from-a-cache
   title: A pipeline job restores its npm packages from a cache
-  status: shaped
+  status: building
   value: A project stops waiting, in every job of every run, for dependencies to install
     from scratch. Each stage job installs its own, so each pays the full install time
     every time, and a job billed by the minute pays for it where the install carries it
     past a minute.
   acceptanceCriteria:
-    - Every Tropis workflow job that sets up Node turns on its npm cache, keyed on the lock
-      files it installs from, and a run with an unchanged lock file restores from the cache.
+    - Every Tropis workflow job that installs packages or runs the project's own commands
+      turns on its npm cache, keyed on the lock files it installs from, and a run with an
+      unchanged lock file restores from the cache. Planning, the host check and the gate
+      install nothing and leave it off.
     - A job with no lock file to key on runs as today, without failing.
   type: improvement
   layer: product
@@ -7370,4 +7376,5 @@
     - templates/github/tropis-pipeline.yml
     - templates/github/tropis-staging.yml
     - templates/github/tropis-framework-checks.yml
-  refs: []
+  refs:
+    - docs/superpowers/plans/2026-11-15-stage-jobs-restore-npm-from-a-cache.md
