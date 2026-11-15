@@ -7346,7 +7346,7 @@
 # where the lookup asks for repos/<repository>/actions/runs/<run id>.
 - id: passed-check-can-ask-the-host
   title: The check for code that already passed works in a private repository
-  status: building
+  status: shipped
   value: A project in a private repository stops paying to test again, on the main
     branch and on a prose push to a pull request, code that already passed. Today the
     pipeline's token may not read the runs the check asks the host about, so the check

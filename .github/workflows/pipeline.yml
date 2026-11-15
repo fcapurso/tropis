@@ -14,5 +14,13 @@ on:
 
 jobs:
   pipeline:
+    # What the pipeline's token may do. The pipeline reads its own runs and pull
+    # requests to skip code that already passed. A stage or deploy script that needs
+    # more, such as packages: read or id-token: write, adds it here: a job that lists
+    # permissions has only those.
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     uses: ./.github/workflows/tropis-pipeline.yml
     secrets: inherit

@@ -31,6 +31,23 @@ recorded through `/manual-check`. Newest first.
 
 ## Entries
 
+### 2026-11-15 — The check for code that already passed works in a private repository (Setup)
+
+- **Change:** `plan/passed-check-can-ask-the-host` at `f882acb`, reaching a project only in the release after 0.10.0. Runs in a private GitHub repository set up with Tropis, after it takes that release with `/update`. Nothing in this repository can show it: this repository is public, and reading runs of a public repository needs no permission.
+- **Pre-conditions:** a private repository on GitHub whose repository setting gives workflows read-only token permissions, on the new release, with a filled stage (for example `pipeline/unit.sh`) and the ruleset applied. `/update` has run its by-hand step 1.
+
+| # | Step | Expected |
+|---|---|---|
+| 1 | In the project, run `node .tropis/scripts/pipeline.mjs permissions` | `permissions: every workflow that calls the pipeline grants what it reads`, exit 0. If it names a workflow instead, add the block it prints to that job and run it again |
+| 2 | Open a pull request that changes code, and let its run go green | The plan job's summary has no `[!WARNING]` alert; the stages run |
+| 3 | Push a commit to the same pull request that changes only a file listed in `pipeline/prose.txt` | The plan job's summary reads `passed: run <id> passed at <commit>`, and sanity, unit, integration and end-to-end are skipped |
+| 4 | Merge the pull request and open the run on the main branch | The plan job's summary reads `passed: pull request #<n> passed at <commit>`, and the four code stages are skipped |
+| 5 | In the job that calls the pipeline, temporarily remove `actions: read` from its `permissions`, push it on a branch and open a pull request | The run fails at startup, saying the plan job requests `actions: read` but is allowed none. Put the line back and close the pull request |
+
+- **Result:** pending
+- **Notes:** to be run by the developer after the project takes the release. Step 5 confirms the release's own claim that a caller withholding the permission stops the run, rather than letting it run and skip nothing.
+- **Closes:** `passed-check-can-ask-the-host` — "The developer confirms it in a private repository after that project takes the release, by a manual check - nothing in this repository can show it."
+
 ### 2026-10-31 — The backlog board tells dropped work from shelved work (Setup)
 
 - **Change:** `plan/work-that-will-not-be-done-reads-as-closed` at `ef79a26`. The page is built by that branch's `build-backlog-board.mjs`, `next-work.js`, `board-bands.js` and `backlog-board.html`, staged under a scratch `.tropis/` with the branch's `feature-catalog.yaml` and this repository's `docs/backlog-board/bands.yaml`, and opened in a browser as a local file. This stands in for a scratch project from `set-up-project.sh`: the page is built by the same four files the setup copies, and this repository's catalog is the one with arcs, dropped and shelved entries to show. `npm --prefix .tropis run board` here would build with the installed release and show none of it.

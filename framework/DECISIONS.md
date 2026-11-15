@@ -1567,6 +1567,8 @@ requests, or nothing is skipped and the plan job's summary says so. Framework ch
 on every run. Whether the skip is sound on a real project can be shown only by real runs
 after a release is installed.
 
+**Amended 2026-11-15** — the lookup's jobs state the permissions they need, and a refused lookup warns; FW-077.
+
 ## FW-049: The merge token is a ref outside branches and tags, taken through the API
 
 **Date:** 2026-11-02 · **Status:** Accepted.
@@ -2531,3 +2533,37 @@ prose batch as its commits. The maintainer's flushed groups keep their own rebas
 which `absorb-flush` runs with `gh pr merge --rebase` and which never passes through
 `auto-merge.mjs`. A plan still in a batch is not on `main`, so a dispatch waits for the
 batch to land.
+
+## FW-077: The pipeline's own jobs state their token's permissions, and the caller grants them
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+`passed-check-can-ask-the-host`. Amends FW-048.
+
+**Decision:** Only the pipeline's jobs that ask GitHub declare permissions, at job level:
+`plan` declares `actions: read`, `contents: read` and `pull-requests: read`, and `host`
+declares `contents: read`. No template has a workflow-level block, and no job that runs
+the project's stage or deploy scripts has one, since a job that lists permissions has
+only those and only the project knows what its scripts need. The caller template grants
+the three on its `pipeline` job, because a called workflow's token is bounded by its
+caller. When a lookup of `passed` is refused, the `passed:` line is unchanged and the
+summary gains a warning alert naming the permission the request needs (`actions: read`,
+or `pull-requests: read` for the pull request of a commit); the same text goes to the
+job log. A new command, `pipeline.mjs permissions`, reads the workflows that call the
+pipeline and says which withholds a permission and what to add. The release notes carry
+the step as a required one by hand.
+
+**Context:** The check for code that already passed (FW-048) asks the host for runs. In a
+private repository the token's default does not include reading Actions, so first-adopter's
+check was refused on every run for days and nothing was skipped, with a green run saying so
+only in one summary line. This repository was spared only because it is public, where
+reading runs needs no permission.
+
+**Rejected:** A workflow-level block (it would take from the stage and deploy jobs what the
+project's scripts need). Declaring nothing and telling projects to change their
+repository's default token (it widens every workflow's token, and nothing checks it).
+Failing the run when the lookup is refused (FW-048 keeps the lookup from ever failing a
+run).
+
+**Consequences:** A project whose caller withholds a permission the template's jobs
+declare gets a run that fails at startup until it grants it, which makes the release
+breaking. Source: none in particular.
