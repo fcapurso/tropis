@@ -245,7 +245,8 @@
   "notes": {
     "a-sessions-prose-lands-as-one-pull-request": [
       "Developer, 2026-11-15: built now; rebase merge for prose batches only, enforced in the auto-merge script; a rebase-merge pull request that falls behind stops the wait, and the session rebases",
-      "Command line is auto-merge.mjs <N> --rebase, refused together with --subject or --body"
+      "Command line is auto-merge.mjs <N> --rebase, refused together with --subject or --body",
+      "Prose is decided by the pipeline's own plan function on the pull request's base and head read from the host, with no fetch"
     ],
     "stage-jobs-restore-npm-from-a-cache": [
       "Narrowed criterion 1 - the plan, host and gate jobs install nothing and leave the cache off, so the first job does not save an empty cache the stages would then restore",
