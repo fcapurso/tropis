@@ -7371,9 +7371,14 @@
 # the project's commands. Planning, the host check and the gate install nothing, and
 # planning runs first, so a cache it saved under the shared key would be empty and every
 # stage would restore that.
+# Shipped by docs/superpowers/plans/2026-11-15-stage-jobs-restore-npm-from-a-cache.md.
+# Criterion 1, configuration: guards/framework-checks-workflow.test.js, the npm cache cases.
+# Criterion 1, the restore, and criterion 2 on a real run: observed on the first pipeline
+# run after a release carrying this is installed here - a stage job's log names the key
+# it restored, and a job with no lock file shows no cache step.
 - id: stage-jobs-restore-npm-from-a-cache
   title: A pipeline job restores its npm packages from a cache
-  status: building
+  status: shipped
   value: A project stops waiting, in every job of every run, for dependencies to install
     from scratch. Each stage job installs its own, so each pays the full install time
     every time, and a job billed by the minute pays for it where the install carries it
@@ -7390,5 +7395,6 @@
     - templates/github/tropis-pipeline.yml
     - templates/github/tropis-staging.yml
     - templates/github/tropis-framework-checks.yml
+    - guards/framework-checks-workflow.test.js
   refs:
     - docs/superpowers/plans/2026-11-15-stage-jobs-restore-npm-from-a-cache.md
