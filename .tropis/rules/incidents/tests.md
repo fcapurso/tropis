@@ -32,3 +32,9 @@ once-per-session markers in the shared temporary folder were never removed; a ru
 drew an earlier run's process id found its markers, and the hook stayed silent. Run
 twice in a new process-id namespace, so jest had the same process id both times, the
 second run failed the same six cases.
+
+## A fix history with no break from a vendor
+
+The levels were derived from first-adopter's fix history: no break came from a vendor
+changing on its own, and the largest groups were its own changes showing only past a
+mocked boundary.

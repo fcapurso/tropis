@@ -10,7 +10,9 @@
  * at the timeout. With --pull-request <number> it waits for a pull request set to merge
  * itself, bringing its branch up to date whenever it falls behind, then waits for the run
  * on the merge commit as --wait does; it exits 4 naming why when the pull request did not
- * merge: a conflict, a failed check, auto-merge off, the pull request closed, or a blocked
+ * merge: a conflict, a failed check, auto-merge off, the pull request closed, a pull
+ * request set to merge by rebase that fell behind (never updated here: the session
+ * rebases and pushes the branch and runs this again), or a blocked
  * pull request whose pipeline runs have all finished while a check the base branch's rules
  * require has no check run (nothing will start it). Where it cannot ask — origin not on
  * GitHub, no gh, gh failing — it prints that it could not tell and why, and exits 0.
@@ -146,7 +148,10 @@ export async function waitForRun(root, sha, {
 /**
  * Waits for a pull request set to merge itself to merge, then for the push run on its
  * merge commit. While it waits, a branch behind its base is brought up to date through
- * GitHub's update-branch endpoint, once per head commit. A blocked pull request whose
+ * GitHub's update-branch endpoint, once per head commit, but only when the pull request
+ * is set to merge other than by rebase: update-branch merges the base in, and a rebase
+ * merge would then carry that merge commit onto the base, so a rebase-merge pull request
+ * that is behind stops with exit 4. A blocked pull request whose
  * pipeline runs on the head have all finished, while a check the base branch's rules
  * require has no check run, stops with exit 4: nothing will start that check. The rules
  * are asked once, and an answer that cannot be read means no required check. Reads only,
@@ -185,6 +190,9 @@ export async function seeThrough(root, number, {
     const failed = (checks.value?.check_runs ?? []).find((check) => RED.has(check.conclusion));
     if (failed) return stopped(`the check ${failed.name} failed on ${short(head)}. Run: ${failed.html_url}`);
     if (pull.mergeable_state === 'dirty') return stopped(`it conflicts with ${base}.`);
+    if (pull.mergeable_state === 'behind' && pull.auto_merge?.merge_method === 'rebase') {
+      return stopped(`it is behind ${base} and set to merge by rebase, which this does not update: rebase the branch on ${base}, push it with --force-with-lease, and run this again.`);
+    }
     if (pull.mergeable_state === 'behind' && !updated.has(head)) {
       const update = askGh(root, ['api', '-X', 'PUT', `repos/{owner}/{repo}/pulls/${number}/update-branch`,
         '-f', `expected_head_sha=${head}`], options);

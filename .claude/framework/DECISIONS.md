@@ -930,6 +930,7 @@ is breaking.
 
 **Amended 2026-11-01** — a stage may also be skipped because the same code already passed; FW-048.
 **Amended 2026-11-07** — a pull request's own environment may receive a deploy before every stage has passed; FW-074.
+**Amended 2026-11-15** — the host's gate is asked inside the plan job, and a closing run starts one job; FW-078.
 
 ## FW-029: A branch's environment is named from the branch and lives as long as its pull request
 
@@ -958,6 +959,8 @@ cost an environment nobody asked for.
 
 **Consequences:** A project's existing pipeline.yml needs closed added by hand
 to remove environments. The gate decides as before unless the slot is filled.
+
+**Amended 2026-11-15** — a prose pull request gets no environment, and one that gains code gets it on that push; FW-079.
 
 ## FW-030: A release is rehearsed on a candidate, and the tag sits one commit above it
 
@@ -1220,6 +1223,8 @@ gives the pipeline's own token, so on the first gated run here the job failed on
 branch that was gated. The job now fails on auto-merge only when GitHub says it is off;
 a missing answer is reported and not checked. The Evidence above was read
 unauthenticated, which returns the field.
+
+**Amended 2026-11-15** — the plan job's last step asks the host, in place of the host job; FW-078.
 
 ---
 
@@ -1566,6 +1571,8 @@ stage).
 requests, or nothing is skipped and the plan job's summary says so. Framework checks run
 on every run. Whether the skip is sound on a real project can be shown only by real runs
 after a release is installed.
+
+**Amended 2026-11-15** — the lookup's jobs state the permissions they need, and a refused lookup warns; FW-077.
 
 ## FW-049: The merge token is a ref outside branches and tags, taken through the API
 
@@ -2488,3 +2495,178 @@ branch is judged by where the hook runs": it is judged where it creates the bran
 checkout is refused with a worktree command that starts by changing to it. A `cd` joined
 by `||`, a pipe or `&`, a `cd` to a variable, `cd -` and a bare `cd` still leave the hook
 judging its own directory.
+
+## FW-076: A session's prose lands as one pull request, merged by rebase
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+`a-sessions-prose-lands-as-one-pull-request`.
+
+**Decision:** On a gated main branch, a session collects its prose steps on one branch
+of its own, one commit and one push per step, and lands them through one pull request,
+opened on the developer's word, that merges by rebase so the main branch keeps one
+commit per step. Prose is what `pipeline.mjs plan` says: the framework stage runs and
+every other stage is skipped. `auto-merge.mjs <N> --rebase` sets the rebase merge on
+both its routes and refuses a pull request that is not prose, asking the same function
+the plan command uses. `main-status.mjs --pull-request` does not bring a rebase-merge
+pull request up to date: it stops with exit 4 and the session rebases and runs it again.
+A session with nobody to give the word, such as a sprint's team member, does not batch.
+
+**Evidence:** first-adopter, where each pull request costs a run on opening, one on
+merging and one on the push to its main branch, about 14 billed minutes, and a sitting
+of small prose steps paid that once per step; it has worked this way under a rule of its
+own since 2026-11-13. The cloud session's auto-merge route accepted `merge_method`
+`rebase` there, and after a rebase merge of one commit `merge_commit_sha` named the
+commit its main branch moved to (Claude Code 2.1.323, Linux x86_64). In this repository, a rebase merge of two commits through the same route named the
+later of them as merge_commit_sha, and the push run was found on it (2026-11-15, Claude
+Code 2.1.325, Linux x86_64).
+Source: first-adopter's rule, restated; no text copied.
+
+**Rejected:** Waiting until the two backlog items that make a prose pull request
+cheaper had shipped, and measuring a week: first-adopter's use already answers whether a
+second way to land is worth having. Squash-merging the batch: it would fold several
+steps into one commit and one message, and a step could no longer be reverted alone.
+Letting `main-status.mjs` rebase and push the branch itself: it makes no local git
+change and pushes nothing, and a rebase can conflict, which is the session's to
+resolve. Bringing it up to date with the host's update-branch, as for a squash: that
+merges the base in, and a rebase merge would carry the merge commit onto `main`, which
+nobody has measured. Refusing a rebase only by convention: nothing would stop a code
+change landing as several unreviewed commits.
+
+**Consequences:** Two ways to land on a gated main branch, told apart by what the pull
+request holds: a plan, and anything that is not prose, as one squash commit; a session's
+prose batch as its commits. The maintainer's flushed groups keep their own rebase merge,
+which `absorb-flush` runs with `gh pr merge --rebase` and which never passes through
+`auto-merge.mjs`. A plan still in a batch is not on `main`, so a dispatch waits for the
+batch to land.
+
+## FW-077: The pipeline's own jobs state their token's permissions, and the caller grants them
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+`passed-check-can-ask-the-host`. Amends FW-048.
+
+**Decision:** Only the pipeline's jobs that ask GitHub declare permissions, at job level:
+`plan` declares `actions: read`, `contents: read` and `pull-requests: read`, and `host`
+declares `contents: read`. No template has a workflow-level block, and no job that runs
+the project's stage or deploy scripts has one, since a job that lists permissions has
+only those and only the project knows what its scripts need. The caller template grants
+the three on its `pipeline` job, because a called workflow's token is bounded by its
+caller. When a lookup of `passed` is refused, the `passed:` line is unchanged and the
+summary gains a warning alert naming the permission the request needs (`actions: read`,
+or `pull-requests: read` for the pull request of a commit); the same text goes to the
+job log. A new command, `pipeline.mjs permissions`, reads the workflows that call the
+pipeline and says which withholds a permission and what to add. The release notes carry
+the step as a required one by hand.
+
+**Context:** The check for code that already passed (FW-048) asks the host for runs. In a
+private repository the token's default does not include reading Actions, so first-adopter's
+check was refused on every run for days and nothing was skipped, with a green run saying so
+only in one summary line. This repository was spared only because it is public, where
+reading runs needs no permission.
+
+**Rejected:** A workflow-level block (it would take from the stage and deploy jobs what the
+project's scripts need). Declaring nothing and telling projects to change their
+repository's default token (it widens every workflow's token, and nothing checks it).
+Failing the run when the lookup is refused (FW-048 keeps the lookup from ever failing a
+run).
+
+**Consequences:** A project whose caller withholds a permission the template's jobs
+declare gets a run that fails at startup until it grants it, which makes the release
+breaking. Source: none in particular.
+
+**Amended 2026-11-15** — the host job is gone; its step runs under the plan job's permissions, which include `contents: read`; FW-078.
+
+## FW-078: The pipeline starts no job only to decide, except the gate
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+pipeline-starts-no-job-for-seconds-of-work. Amends FW-028 and FW-037.
+
+**Decision:** The host's gate is asked by the last step of the plan job, not a job of
+its own. The step runs after the plan's outputs are written, even when planning
+failed, and a red answer fails the plan job and so the run, as the host job did.
+Every job that needs the plan reads its outputs under `!cancelled()`, so with a red
+host the stages, the gate and the deploy still run and decide as they would otherwise. A closing pull request starts one job, which decides
+whether the branch slot is filled and removes the environment if it is; the plan job
+does not run. The jobs that touch an environment share one concurrency group per
+head branch, `shared` on a push, because the closing job has no plan to name the
+environment before it starts. The gate stays a job of its own: the shipped ruleset
+requires the check `pipeline / gate`. A stage the plan says is empty or skipped
+already started no job, and still does not. The host step runs under the plan job's
+token permissions, which FW-077 states and which include the `contents: read` the host
+job had.
+
+**Evidence:** GitHub bills each job rounded up to a minute. In first-adopter, 60 runs
+over two days billed 651 minutes, 169 of them on jobs that ran 20 seconds or less.
+Jobs a run starts, before and after, for a project that fills all five stages and no
+branch slot (a stage the plan skips or finds empty starts none either way):
+
+| Run | Before | After |
+|---|---|---|
+| A push to a pull request changing only prose and framework files | 4 — plan, host, framework, gate | 3 — plan, framework, gate |
+| A push to a pull request changing code | 8 — plan, host, framework, sanity, unit, integration, end-to-end, gate | 7 — the same without host |
+| A push to the main branch changing code | 9 — the eight above and deploy | 8 — the same without host |
+| A closing pull request, branch slot filled | 2 — plan, branch-remove | 1 — branch-remove |
+| A closing pull request, branch slot empty | 1 — plan | 1 — branch-remove |
+
+Counted from the template's conditions, not from runs. Whether GitHub hands a failed
+job's outputs to the jobs after it was not read in its documentation; actions/runner
+issue 2598 (2023) shows a failed job's output reaching a job that ran under
+`always()`.
+
+**Rejected:** Folding the gate into the deploy job (the ruleset requires the gate by
+name, and the deploy job is skipped on most runs). Letting the host step continue on
+error (the run would be green with the host red, which the backlog item forbids).
+Keeping the concurrency group on the environment's name (only the plan computes it,
+and the closing job would need the plan job to know it).
+
+**Consequences:** If a failed job's outputs ever stop reaching the jobs after it, a
+run whose host is red runs no stage and its gate fails: the fault shows, and holds
+merges, rather than passing. Two branches whose environment names collide no longer
+share a concurrency group; a collision already fails the plan of the open one, so
+only the removal of a closed branch's environment can overlap a deploy to it. A
+project that owns its pipeline keeps its copy and changes nothing.
+
+**Amended 2026-11-15** — the closing job also decides whether the pull request was prose alone, and removes nothing for one; FW-079.
+
+## FW-079: A pull request of prose alone gets no environment
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+a-prose-pull-request-gets-no-environment. Amends FW-029: opening a pull request no
+longer always creates its environment, and closing one no longer always removes it.
+Amends FW-078: its closing job also decides whether the pull request was prose.
+
+**Decision:** A pull request is prose when every file it touches is prose or framework,
+the files being those of its net diff and of every commit on it, so a pull request that
+added code and took it out again is not prose. With a filled branch slot, `plan --action
+<name>` (on a pull request event, with `--before <sha>` on `synchronize`) prints
+`prose=yes|no` and `create=run|skipped`. A prose pull request starts no job to create
+its environment. Opening or reopening one that is not prose creates it; a push creates it
+only when the pull request was prose before that push or cannot be told, as after a force
+push, since otherwise the environment exists. Wherever the answer is unknown the plan says
+`prose=no`, which is what it did before. `plan --closed --base --head` prints `prose=` as
+well, and the one job a closing pull request starts (FW-078) removes no environment for
+a prose pull request. `branch create
+<branch> --if-open <number>` asks GitHub whether the pull request is still open and
+creates nothing, exiting 0, when it is not; when GitHub cannot say it exits 1.
+
+**Evidence:** Under a gated main branch every backlog edit, claim and plan is a pull
+request, and with a filled slot each paid a job to create an environment and another to
+remove it, none ever deployed. Raised by first-adopter's upstream flush. Source: none in
+particular.
+
+**Rejected:** Deciding prose from the net diff alone: a pull request that added and
+reverted code would leak its environment. Asking GitHub at close whether the environment
+was ever created: the pipeline has no record of it, and `remove.sh` already succeeds on an
+absent one. Telling the developer to close and reopen a pull request that gains code: the
+criterion this item replaced.
+
+**Consequences:** A closing pull request still starts FW-078's one job, which now
+fetches the pull request's history to decide; for a prose pull request it removes
+nothing. Not breaking: a project's prose pull requests stop creating and
+removing environments, which only saves jobs, and nothing a project wrote changes. A
+closed pull request whose head commit GitHub cannot serve still removes its environment.
+A pull request force-pushed from code to prose alone keeps its environment when closed;
+`branch remove <branch>` run by hand removes it.
+
+`branch-create` asks GitHub but declares no permissions, because it runs `create.sh`;
+it reads the pull request with the `pull-requests: read` the caller grants for `plan`
+(FW-077), and a caller that withholds it fails the job, saying why.

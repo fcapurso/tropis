@@ -137,11 +137,63 @@ when the framework half exists to serve the application half. Full rule:
   reports the main branch green.** Auto-merge does not update a branch, and the host
   requires one up to date with `main`, so a pull request that falls behind sits
   unmerged with nobody told. The command brings it up to date and keeps waiting, and
-  stops, naming the pull request, when it conflicts, a check fails, or auto-merge is
-  off. Dispatch's move of a backlog item to `building` is such a change: the
+  stops, naming the pull request, when it conflicts, a check fails, auto-merge is
+  off, or a pull request set to merge by rebase falls behind. Dispatch's move of a backlog item to `building` is such a change: the
   dispatching session lands it through its pull request and waits until it has merged
   before the executor starts. Before that pull request opens, the overlap check runs on
   the plan (*Plans that touch the same files*).
+- **A session's prose lands as one pull request.** On a gated main branch each pull
+  request starts the pipeline when it opens, again when it merges, and on the push to
+  `main`. So a session that makes several prose steps in one sitting — a backlog edit,
+  a board refresh, a plan file, a claim — collects them on one branch and lands them
+  together, and the main branch still keeps one commit per step.
+  - **Prose is what the pipeline says it is.** A step is prose when
+    `node .tropis/scripts/pipeline.mjs plan --base "$(git merge-base origin/main HEAD)" --head HEAD`,
+    run on the batch, prints `framework=run` and `skipped` for every other stage.
+    Nothing else decides it. A change under `.claude/`, `.tropis/` or the project's
+    tooling that the pipeline counts as framework is prose here too, and a step touching
+    rules, rule additions, framework documents or commands still owes its fresh-agent
+    check, written in that step's own commit body.
+  - **A batch is one session's.** The first prose step of a sitting starts it, on a
+    branch `prose/<yyyy-mm-dd>-<slug>` in a worktree `../<repo>-prose-<slug>`, from
+    `origin/main` like any branch. A session adds only to the batch it started itself,
+    never to a branch another session or an earlier one started.
+  - **One commit per step, with its own message, pushed when the step is done.** The
+    message says what the step makes true, as a squash message would: it is the commit
+    the main branch will keep.
+  - **A step that is not prose leaves the batch.** After committing a step, run the
+    plan command above. When it runs any other stage, cherry-pick that commit onto a
+    branch of its own from `origin/main`, in a worktree of its own, then
+    `git reset --hard HEAD~1` in the batch's worktree, and land the step as a plan or a
+    change of its own. Never `git stash`: the stash is shared by every worktree of the
+    repository, so another session can take it.
+  - **The pull request opens on the developer's word.** Until then the steps wait on the
+    branch. Ask when the sitting's prose is done, or as soon as something needs a step
+    on `main`. Then land it as the gated bullet above says, with two differences. Set it
+    to merge itself by rebase, `node .tropis/scripts/auto-merge.mjs <N> --rebase`, which
+    refuses a pull request that is not prose; the pull request's title and description
+    then say only what the batch holds, because no squash commit is written from them.
+    And when `main-status.mjs --pull-request <N>` stops because the branch is behind,
+    run `git fetch origin && git rebase origin/main` in the batch's worktree, push with
+    `--force-with-lease`, and run it again.
+  - **A claim in the batch is checked again before it lands.** It was overlap-checked
+    against `main` as it stood when the step was made. Before the pull request opens,
+    run `node .tropis/scripts/plan-overlap.mjs --claim <plan>` again for each claim in
+    the batch, and commit any `Merges after` line it writes as one more step.
+  - **Whatever needs a step on `main` waits for the batch to land.** A dispatch is one:
+    its executor starts from `origin/main`, where a plan still in the batch is not.
+    Before a dispatch, say that the plan is not on the main branch yet, and ask for the
+    word to land the batch.
+  - **A turn that ends with steps not landed says so.** It names the batch's branch and
+    the subject of each commit on it.
+  - **After it lands, check that it landed as steps.** Note `origin/main` before the
+    merge. Afterwards `git log --merges <before>..origin/main` prints nothing, and each
+    step's subject appears once in `git log --format=%s <before>..origin/main`. Commits
+    other pull requests landed meanwhile appear there too and are not a fault. Then
+    remove the worktree and delete the branch, as *Merge and clean up* does.
+  - **A session with nobody to give the word does not batch.** A team member a sprint
+    started lands each step through a pull request of its own, as the gated bullet
+    above says.
 - **Where it is not gated, what may go directly to `main` is what cannot change how an
   agent behaves**: the
   backlog, generated documentation, plan and spec files, the release notes and version
@@ -162,7 +214,7 @@ when the framework half exists to serve the application half. Full rule:
   commit on a pull request already carrying the workflow started a run in seven seconds,
   and the same change as its own pull request started none in 201.
 - **Say whether anything enforces this.** Tropis's pipeline asks the host on every run,
-  and its `host` job fails until the main branch requires a pull request and a passing
+  and the `host` step that ends its plan job fails the run until the main branch requires a pull request and a passing
   check and auto-merge is not turned off, or `.tropis/project.json` records `"ungated"` with the
   reason, which every run then repeats in its summary. Where the project records a
   reason, also write in its own `AGENTS.md` that nothing refuses a push to `main` or a
@@ -397,7 +449,11 @@ branch is deleted beforehand, as above, and the remote one by the repository set
 `node .tropis/scripts/main-status.mjs --pull-request <N>`, in place of the code block's
 last line. It waits until the pull request has merged, bringing its branch
 up to date whenever `main` moves under it, then waits for the run the merge started on
-`main`, on the merge commit itself rather than on `HEAD`. Its exits are those of
+`main`, on the merge commit itself rather than on `HEAD`. A pull request set to merge by
+rebase — a session's prose batch, *Branching* — is never brought up to date that way,
+because the host's update merges `main` into the branch, and a rebase would carry that
+merge commit onto `main`: the command stops with exit 4 instead, and the session rebases
+and pushes the branch and runs it again. Its exits are those of
 `--wait` below, plus 4 when the pull request did not merge. Its line then names why:
 a conflict, a failed check, auto-merge off, the pull request closed, or a pipeline that
 finished without a check the main branch requires. On 4, fix what it names, set
@@ -467,6 +523,8 @@ time. A group is many things, so its pull request keeps one commit per contribut
 each with its contributor as author, and lands by rebase rather than squash: history
 shows each contribution, and each can be reverted alone. A plan for one backlog item
 still lands as one squash-merge.
+A session's batch of prose steps lands by rebase too, for the same reason, in every
+project (*Branching*, *A session's prose lands as one pull request*).
 
 Parallel branches share a base, so `main` moves under them as siblings land. Before each
 merge:
@@ -512,7 +570,8 @@ session the developer started by hand — runs the whole of this document, in th
 1. Shape the backlog item (`/feature`) and write its plan.
 2. Claim it: run the overlap check on the plan (*Plans that touch the same files*), then
    land the plan, the shaping and the move to `building` through one pull request, under
-   the merge token.
+   the merge token. A team member a sprint started lands it as its own pull request: it
+   has nobody to give the word a batch waits for.
 3. Dispatch an executor on the model the plan's tier calls for — a subagent or session
    where the tool can start one, otherwise yourself — and review its branch.
 4. Merge as *Merging* says: wait for what the plan merges after, take the token, rebase,
@@ -681,11 +740,13 @@ never fires, and a run that met every content criterion proves nothing about the
 So take away from the probe every route to the same effect that the clause does not
 watch. A list of allowed tools does not do it: it spares the probe a permission prompt
 and takes nothing away. In Claude Code, deny the others with `--disallowedTools` (the
-shell among them), or name the whole set with `--tools`. Then check the calls: a run
-that did the work through a route the clause does not watch is inconclusive, never a
-pass, and is run again with that route removed. Found in a probe of a hook on file
-writes, whose agent was given the file tools as allowed and wrote both files through
-the shell.
+shell among them), or name the whole set with `--tools`. Put the prompt before these
+options, or pass it on stdin: each takes a list, so a prompt after one is read as one
+more tool name and the run stops for want of a prompt. Measured with Claude Code 2.1.322
+on Linux x86_64. Then check the calls: a run that did the work through a route the
+clause does not watch is inconclusive, never a pass, and is run again with that route
+removed. Found in a probe of a hook on file writes, whose agent was given the file tools
+as allowed and wrote both files through the shell.
 
 **A probe on someone's own machine is not given only the repository.** The agent tool
 also loads that person's own instructions, the ones that apply to every project. When

@@ -84,7 +84,7 @@ default commit message to *Pull request title and description*. The developer ru
 never run it yourself. A private repository on GitHub's free plan cannot have rulesets.
 If the developer will not or cannot apply it, or the host is not GitHub, ask why, and
 write their reason into `.tropis/project.json` as `"ungated": "<reason>"`, keeping any key already there. Until
-one of the two is done, the pipeline's `host` job fails on every run, by design.
+one of the two is done, the `host` step at the end of the pipeline's plan job fails every run, by design.
 
 **Any other host.** Show the output of `node .tropis/scripts/pipeline.mjs commands`
 and say that those are the commands to put in that host's CI.

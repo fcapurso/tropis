@@ -78,3 +78,34 @@ someone is writing a test.
   home or cache directory) at one the test creates and removes, and draw names at
   random. (Incident:
   `.tropis/rules/incidents/tests.md#six-hook-cases-that-inherited-an-earlier-runs-markers`)
+- **A suite that writes to shared services keeps its record of what it wrote off the
+  runner.** A cancelled GitHub Actions job's scripts never hear the cancel: the runner
+  signals only the step's entry process and kills the rest ten seconds later, so a stage
+  script under a wrapper runs no trap and no teardown. Where a pipeline cancels
+  superseded runs, the record of what a suite wrote must live somewhere the next run can
+  read, and be swept by the next run of the same environment and when the pull request
+  closes.
+
+## Which level a test belongs at
+
+The pipeline gives each kind of automated check a stage, and five principles say what
+goes in which.
+
+- **Test each boundary once, in the cheapest place that can see it.**
+- **Check your own changes on pull requests, and only where a change can break
+  something.**
+- **Check outside services for changes on a schedule that alerts and never blocks a
+  merge.**
+- **Make no paid calls.**
+- **Deterministic or not at all.**
+
+Five levels follow, each with its place. Code: the unit stage, each test beside the
+module it tests. Output compared with approved results: the integration stage. Journeys
+through the deployed product: the end-to-end stage. A watch for changes in outside
+services: a scheduled workflow of the project's own, outside the pipeline. What only a
+person can judge: by hand, recorded in the verification log.
+
+A test that reaches a real outside service sits in one top-level folder named for its
+kind. A folder with a general name that holds only one kind suggests the others belong
+there too. (Incident:
+`.tropis/rules/incidents/tests.md#a-fix-history-with-no-break-from-a-vendor`)
