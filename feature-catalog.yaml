@@ -1563,6 +1563,13 @@
 - id: rule-pruning-keeps-pace
   title: Rule files are trimmed as fast as they grow
   status: idea
+  # Learnt from the rule trial before v0.11.0 (docs/rule-trials.md, Since v0.10.0): a
+  # run that deletes a clause in a scratch copy of this repository must delete it from
+  # the source rules/ as well as from the installed rule files. The first run deleted it
+  # only from the installed copy; the agent searched, found the clause in rules/tests.md,
+  # quoted it and followed it, so the run measured nothing. Whatever replaces the trial,
+  # and any with-and-without measurement in this repository, removes the text from every
+  # copy the agent can search, and reads the calls for a search that found it anyway.
   value: Every sentence in a rule file is read by every session working in its area, and
     the files only grow, while the trial before each release removes at most one sentence
     on one run's evidence. Here each rule file gets a word budget a release cannot
@@ -7410,3 +7417,21 @@
     - guards/framework-checks-workflow.test.js
   refs:
     - docs/superpowers/plans/2026-11-15-stage-jobs-restore-npm-from-a-cache.md
+# Found taking v0.11.0 on 2026-11-15: the helper returned that release's step 2 as
+# "Watch four runs… Look for these:" without the five bullets that follow it.
+# releaseSteps in scripts/update.mjs splits the by-hand section into paragraphs at blank
+# lines and keeps only those that start like a numbered step, so the list, set off by a
+# blank line, is neither a step nor unread.
+- id: update-shows-each-step-whole
+  title: /update shows every by-hand step whole, lists included
+  status: idea
+  value: Someone taking a release sees each step it asks them to do by hand in full
+    before they say yes, as the release notes wrote it. Today a step whose instructions
+    continue in a list after a blank line is shown cut off at that line, with nothing
+    to say that anything is missing, so a careful step loses exactly the part that says
+    what to do.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
