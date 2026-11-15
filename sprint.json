@@ -226,6 +226,9 @@
   "marks": {
     "passed-check-can-ask-the-host": {
       "state": "planning"
+    },
+    "a-prose-pull-request-gets-no-environment": {
+      "state": "planning"
     }
   },
   "notes": {}
