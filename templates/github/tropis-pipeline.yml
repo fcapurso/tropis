@@ -278,7 +278,7 @@ jobs:
 
   # A condition with no status function is combined with success(), which is
   # false once an empty stage was skipped. always() runs the gate anyway.
-  # A closed pull request removes the environment and runs no stage.
+  # A closed pull request runs no stage; branch-remove decides alone.
   gate:
     needs: [plan, framework, sanity, unit, integration, end-to-end, end-to-end-deployed]
     if: ${{ always() && github.event.action != 'closed' }}

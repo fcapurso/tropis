@@ -486,6 +486,20 @@ longer always removes it". Nothing else.
 4. A test covers a pull request that starts as prose and gains code: criterion 2's
    first test.
 
+After the plans this one merges after shipped, the rebase conflicted in the workflow
+template, its guard, the decision record and the release notes. FW-078 had moved the
+closing pull request's work into `branch-remove`, which starts alone and runs
+`plan --closed` itself. The specifying session resolved it: that job now checks out
+with `fetch-depth: 0`, fetches the head, plans with `--base`/`--head`, and skips the
+remove step when `prose=yes`; the plan step lost its closed branch; the entry became
+FW-079 and amends FW-078 too; the release line joined the new notes. A fresh agent
+(Claude Code subagent, Opus, Linux x86_64) reviewed the resolution read-only and found
+no defect; its wording findings were applied (FW-079 says why `branch-create` declares
+no permissions, the FW-078 amendment line, the gate comment, and a note above the
+backlog item that FW-078 narrows criterion 1: the closing job starts, and removes
+nothing). Re-run after it: self-check passed; `guards/pipeline.test.js` 210 passed;
+dropping `prose != 'yes'` from the remove step gave 1 failed, 209 passed.
+
 ### Outstanding disposition
 
 The handover lists nothing outstanding. The workflow is checked as YAML only, as for

@@ -2625,11 +2625,14 @@ share a concurrency group; a collision already fails the plan of the open one, s
 only the removal of a closed branch's environment can overlap a deploy to it. A
 project that owns its pipeline keeps its copy and changes nothing.
 
+**Amended 2026-11-15** — the closing job also decides whether the pull request was prose alone, and removes nothing for one; FW-079.
+
 ## FW-079: A pull request of prose alone gets no environment
 
 **Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
 a-prose-pull-request-gets-no-environment. Amends FW-029: opening a pull request no
 longer always creates its environment, and closing one no longer always removes it.
+Amends FW-078: its closing job also decides whether the pull request was prose.
 
 **Decision:** A pull request is prose when every file it touches is prose or framework,
 the files being those of its net diff and of every commit on it, so a pull request that
@@ -2663,3 +2666,7 @@ removing environments, which only saves jobs, and nothing a project wrote change
 closed pull request whose head commit GitHub cannot serve still removes its environment.
 A pull request force-pushed from code to prose alone keeps its environment when closed;
 `branch remove <branch>` run by hand removes it.
+
+`branch-create` asks GitHub but declares no permissions, because it runs `create.sh`;
+it reads the pull request with the `pull-requests: read` the caller grants for `plan`
+(FW-077), and a caller that withholds it fails the job, saying why.
