@@ -17,7 +17,7 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
-_Nothing yet._
+- On a gated main branch, a session can collect its prose steps — backlog edits, board refreshes, plans, claims — on one branch and land them through one pull request merged by rebase, so a sitting costs one set of pipeline runs and `main` still keeps one commit per step. `node .tropis/scripts/auto-merge.mjs <N> --rebase` sets that merge and refuses a pull request that is not prose; `main-status.mjs --pull-request` stops such a pull request when it falls behind and says to rebase it.
 
 ## [0.10.0] — 2026-11-07
 
