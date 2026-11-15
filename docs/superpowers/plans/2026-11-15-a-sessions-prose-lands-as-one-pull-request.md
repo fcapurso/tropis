@@ -581,3 +581,89 @@ run step 1 again on that commit, and push the branch.
   `framework/` or `commands/` on your plan branch may make `framework-commit-check.sh`
   say the body must carry a fresh-agent check: say in that commit's body that the
   specifying session runs it at review, as this plan says.
+
+## Handover report
+
+### Task completion
+
+Tasks 1-8 done in order. Task 1 (`auto-merge.mjs --rebase`, tests first), Task 2
+(`main-status.mjs` stops a behind rebase-merge pull request), Task 3 (workflow, 3a-3e),
+Task 4 (dispatch, refresh-board, operator guide), Task 5 (FW-076), Task 6 (measurement
+recorded), Task 7 (release note), Task 8 (verification, this report). The backlog item was
+not touched, as the plan says.
+
+### Verification results
+
+Tool and platform for every check: Node v22.23.4, git 2.43.0, gh 2.89.0 (2026-03-26),
+Claude Code 2.1.325, on Linux x86_64.
+
+- **Task 6, the claim's rebase merge.** The claim landed as pull request #308 (found with
+  `gh api 'repos/{owner}/{repo}/commits/<claim sha>/pulls' --jq '.[0].number'`).
+  `gh api 'repos/{owner}/{repo}/pulls/308' --jq '[.merged, .merge_commit_sha] | @tsv'`
+  printed `true	91da5c4459577126702dd415d19f0973e776c766`, which is the later commit
+  (`backlog: claim a-sessions-prose-lands-as-one-pull-request`); the shape commit is
+  `78a6e89`. `gh run list --workflow pipeline.yml --commit 91da5c4… --event push --json
+  status,conclusion,headSha` printed
+  `[{"conclusion":"success","headSha":"91da5c4…","status":"completed"}]`: the push run
+  was found on it. Nothing to stop for; FW-076 records the sentence.
+- **Step 2, the two guards alone, staged as CLAUDE.md says:** `Test Suites: 2 passed, 2
+  total; Tests: 75 passed, 75 total` (auto-merge 24, main-status 51).
+- **Step 3, `origin/main`'s two scripts put back in that export:** `Tests: 17 failed, 58
+  passed, 75 total`. Failing: auto-merge's six `--rebase, for a pull request of prose
+  alone` cases (sets by gh; sets through the cloud route; not prose; head not in the
+  repository; base not in the repository; pull request cannot be read) and main-status's
+  `stops a rebase-merge pull request that is behind, without updating it`, plus ten of
+  the usage-table rows (see *What the plan got wrong*).
+- **Step 4, `npm --prefix .tropis test`:** `Test Suites: 13 passed, 13 total; Tests: 212
+  passed, 212 total`.
+- **Step 5:** `grep -c 'auto-merge.mjs <N> --rebase' framework/workflow.md` prints `1`;
+  `grep -c 'gh pr merge <N> --auto --squash' framework/workflow.md` prints `2`, as on
+  `origin/main`.
+- **Step 1, the self-check,** on the commit before this report (`test(auto-merge): use an
+  allowlisted example address…`): `Self-check passed: every guard caught its defect, the
+  clean baseline passed, and the framework repository's own guards passed.` It is run
+  again on the report's commit, which changes only this plan file; the result is in the
+  reply that hands the branch over.
+
+### Scope
+
+`git diff --stat origin/main...HEAD` (before this report): 10 files, 347 insertions, 24
+deletions: `RELEASES.md`, `commands/dispatch.md`, `commands/refresh-board.md`,
+`framework/DECISIONS.md`, `framework/workflow.md`, `guards/auto-merge.test.js`,
+`guards/main-status.test.js`, `scripts/auto-merge.mjs`, `scripts/main-status.mjs`,
+`templates/README.md`. Every one is in the File Structure table; plus this plan file.
+`feature-catalog.yaml` untouched. Worktree used: `../tropis-prose-batches` (a sibling of
+the main checkout), created with the command in the Repositories table. The helper
+`isolate-for-plan.sh` could not read the plan from the main checkout (detached and
+behind), so the worktree was created with the table's command directly.
+
+### Judgment calls
+
+- `auto-merge.mjs` also refuses with a line of its own when the pull request read is not
+  JSON or names no base or head commit (the plan specified only a failed read).
+- A full run (`reason` not null) is refused as not prose; its line lists every stage that
+  is not skipped, which is then all of them but `framework`.
+- Throwaway repository's identity is `test@example.com`: `example.invalid` tripped
+  `guards/private-material.test.js` on the first self-check, fixed in its own commit.
+- The stub's pull-request path match is a shell `case` on the path after `pulls/`
+  being all digits, so `pulls/17/ccr/auto_merge` is never taken for the read.
+- Work from: no named source; written against this repository's own scripts and guards.
+- The commits of the framework edits say the specifying session runs the fresh-agent
+  check at review; none was run here.
+
+### What the plan got wrong
+
+- Task 1 says the four new refused command lines may pass before the change. They do not:
+  step 7 of Task 1 adds the assertion that the usage contains
+  `auto-merge.mjs <number> --rebase`, which `origin/main`'s usage lacks, so every row of
+  the table (the old ones too) fails against the old script. Against the new script all
+  pass.
+- Task 8 step 3 expects Task 1's "cases 1-5" to be named; the file has the five as six
+  cases (the head and base missing commits are two rows of one `it.each`).
+- Nothing else found wrong.
+
+### Outstanding
+
+- The fresh-agent check on `framework/workflow.md`, `commands/dispatch.md` and
+  `commands/refresh-board.md`, which the plan gives to the specifying session.
+- No pull request, review record or merge, as instructed.
