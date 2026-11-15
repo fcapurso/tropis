@@ -960,6 +960,8 @@ cost an environment nobody asked for.
 **Consequences:** A project's existing pipeline.yml needs closed added by hand
 to remove environments. The gate decides as before unless the slot is filled.
 
+**Amended 2026-11-15** — a prose pull request gets no environment, and one that gains code gets it on that push; FW-079.
+
 ## FW-030: A release is rehearsed on a candidate, and the tag sits one commit above it
 
 **Date:** 2026-10-26 · **Status:** Accepted
@@ -2622,3 +2624,42 @@ merges, rather than passing. Two branches whose environment names collide no lon
 share a concurrency group; a collision already fails the plan of the open one, so
 only the removal of a closed branch's environment can overlap a deploy to it. A
 project that owns its pipeline keeps its copy and changes nothing.
+
+## FW-079: A pull request of prose alone gets no environment
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+a-prose-pull-request-gets-no-environment. Amends FW-029: opening a pull request no
+longer always creates its environment, nor closing it always remove it.
+
+**Decision:** A pull request is prose when every file it touches is prose or framework,
+the files being those of its net diff and of every commit on it, so a pull request that
+added code and took it out again is not prose. With a filled branch slot, `plan --action
+<name>` (on a pull request event, with `--before <sha>` on `synchronize`) prints
+`prose=yes|no` and `create=run|skipped`. A prose pull request starts no job to create
+its environment. Opening or reopening one that is not prose creates it; a push creates it
+only when the pull request was prose before that push or cannot be told, as after a force
+push, since otherwise the environment exists. Wherever the answer is unknown the plan says
+`prose=no`, which is what it did before. `plan --closed --base --head` prints `prose=` as
+well, and the one job a closing pull request starts (FW-078) removes no environment for
+a prose pull request. `branch create
+<branch> --if-open <number>` asks GitHub whether the pull request is still open and
+creates nothing, exiting 0, when it is not; when GitHub cannot say it exits 1.
+
+**Evidence:** Under a gated main branch every backlog edit, claim and plan is a pull
+request, and with a filled slot each paid a job to create an environment and another to
+remove it, none ever deployed. Raised by first-adopter's upstream flush. Source: none in
+particular.
+
+**Rejected:** Deciding prose from the net diff alone: a pull request that added and
+reverted code would leak its environment. Asking GitHub at close whether the environment
+was ever created: the pipeline has no record of it, and `remove.sh` already succeeds on an
+absent one. Telling the developer to close and reopen a pull request that gains code: the
+criterion this item replaced.
+
+**Consequences:** A closing pull request still starts FW-078's one job, which now
+fetches the pull request's history to decide; for a prose pull request it removes
+nothing. Not breaking: a project's prose pull requests stop creating and
+removing environments, which only saves jobs, and nothing a project wrote changes. A
+closed pull request whose head commit GitHub cannot serve still removes its environment.
+A pull request force-pushed from code to prose alone keeps its environment when closed;
+`branch remove <branch>` run by hand removes it.
