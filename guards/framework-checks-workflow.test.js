@@ -33,7 +33,7 @@ describe('the framework checks workflow', () => {
 
 const workflows = ['tropis-pipeline.yml', 'tropis-staging.yml', 'tropis-framework-checks.yml'];
 const parse = (name) => YAML.parse(readFileSync(resolve(here, '../templates/github', name), 'utf8'));
-const NO_INSTALL = ['plan', 'host', 'gate'];
+const NO_INSTALL = ['plan', 'gate'];
 const PROJECT_LOCKS = ['**/package-lock.json', '**/npm-shrinkwrap.json', '!.tropis/**', '!**/node_modules/**'];
 const FRAMEWORK_LOCKS = ['.tropis/package-lock.json'];
 const cacheOf = (patterns) =>

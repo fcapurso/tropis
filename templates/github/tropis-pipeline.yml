@@ -13,11 +13,12 @@ on:
 
 # npm cache: a job that installs packages, or runs the project's commands that may,
 # restores ~/.npm keyed on the project's lock files, and only when one exists, so a
-# project without one runs as before. plan, host and gate install nothing and leave it
+# project without one runs as before. plan and gate install nothing and leave it
 # off: every job keyed on the same lock files shares one key, and plan runs first, so
 # its empty cache would be the one every stage restored.
 jobs:
   plan:
+    if: ${{ github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     # The check for code that already passed reads this repository's runs and the pull
     # request a commit merged from. In a private repository that needs these grants,
@@ -58,16 +59,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            if [ "$ACTION" = "closed" ]; then
-              environment=$(node .tropis/scripts/pipeline.mjs environment "$HEAD_REF" --no-check)
-            else
-              environment=$(node .tropis/scripts/pipeline.mjs environment "$HEAD_REF")
-            fi
+            environment=$(node .tropis/scripts/pipeline.mjs environment "$HEAD_REF")
             echo "environment=$environment" >> "$GITHUB_OUTPUT"
-          fi
-          if [ "$ACTION" = "closed" ]; then
-            node .tropis/scripts/pipeline.mjs plan --closed >> "$GITHUB_OUTPUT"
-            exit 0
           fi
           if [ "$EVENT_NAME" = "pull_request" ]; then
             base="$PR_BASE"
@@ -104,33 +97,29 @@ jobs:
             echo "PLAN_EOF"
             printf '%s\n' "$lines"
           } >> "$GITHUB_OUTPUT"
-
-  # Whether the main branch is gated by the host, or the project has said why not.
-  # Its own job: a red answer shows on every run without holding a stage or a deploy.
-  host:
-    if: ${{ github.event.action != 'closed' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ inputs.node-version }}
-      - run: node .tropis/scripts/pipeline.mjs host --summary "$GITHUB_STEP_SUMMARY"
+      # Whether the main branch is gated by the host, or the project has said why not.
+      # Last, so the outputs above are written first. A red answer fails this job and
+      # the run, and the jobs below still run and decide as they would otherwise: each
+      # reads the plan's outputs under !cancelled().
+      - name: host
+        if: ${{ !cancelled() }}
+        run: node .tropis/scripts/pipeline.mjs host --summary "$GITHUB_STEP_SUMMARY"
         env:
           GH_TOKEN: ${{ github.token }}
 
+  # The plan job fails when the host is not gated, after writing its outputs, so
+  # every job that needs it reads those outputs under !cancelled(). branch= is
+  # written only when planning succeeded.
   framework:
     needs: plan
-    if: ${{ github.event.action != 'closed' }}
+    if: ${{ !cancelled() && github.event.action != 'closed' && needs.plan.outputs.branch != '' }}
     uses: ./.github/workflows/tropis-framework-checks.yml
     with:
       node-version: ${{ inputs.node-version }}
 
   sanity:
     needs: [plan, framework]
-    if: needs.plan.outputs.sanity == 'run'
+    if: ${{ !cancelled() && needs.framework.result == 'success' && needs.plan.outputs.sanity == 'run' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -149,7 +138,7 @@ jobs:
 
   unit:
     needs: [plan, framework]
-    if: needs.plan.outputs.unit == 'run'
+    if: ${{ !cancelled() && needs.framework.result == 'success' && needs.plan.outputs.unit == 'run' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -168,7 +157,7 @@ jobs:
 
   integration:
     needs: [plan, framework]
-    if: needs.plan.outputs.integration == 'run'
+    if: ${{ !cancelled() && needs.framework.result == 'success' && needs.plan.outputs.integration == 'run' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -187,7 +176,7 @@ jobs:
 
   end-to-end:
     needs: [plan, framework]
-    if: ${{ needs.plan.outputs.end-to-end == 'run' && needs.plan.outputs.end-to-end-on != 'environment' }}
+    if: ${{ !cancelled() && needs.framework.result == 'success' && needs.plan.outputs.end-to-end == 'run' && needs.plan.outputs.end-to-end-on != 'environment' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -205,15 +194,16 @@ jobs:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
 
   # Opening a pull request creates the environment. It does not wait for the
-  # stages. One group per environment: at most one of these jobs runs, a new
-  # pending job replaces an older pending one, and a running job is not
-  # cancelled. https://docs.github.com/en/actions/using-jobs/using-concurrency
+  # stages. One group per branch (the shared environment on a push), so the
+  # closing job can name it before anything has run: at most one of these jobs
+  # runs, a new pending job replaces an older pending one, and a running job is
+  # not cancelled. https://docs.github.com/en/actions/using-jobs/using-concurrency
   branch-create:
     needs: plan
-    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened') && needs.plan.outputs.branch == 'filled' }}
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened') && needs.plan.outputs.branch == 'filled' }}
     runs-on: ubuntu-latest
     concurrency:
-      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      group: tropis-env-${{ github.repository }}-${{ github.event.pull_request.head.ref || 'shared' }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -241,7 +231,7 @@ jobs:
     if: ${{ !cancelled() && needs.plan.outputs.end-to-end-on == 'environment' && needs.framework.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.sanity.result) && contains(fromJSON('["success","skipped"]'), needs.unit.result) && contains(fromJSON('["success","skipped"]'), needs.integration.result) && needs.branch-create.result != 'failure' }}
     runs-on: ubuntu-latest
     concurrency:
-      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      group: tropis-env-${{ github.repository }}-${{ github.event.pull_request.head.ref || 'shared' }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -310,7 +300,7 @@ jobs:
     if: ${{ !cancelled() && needs.gate.outputs.deploy == 'run' && needs.branch-create.result != 'failure' }}
     runs-on: ubuntu-latest
     concurrency:
-      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      group: tropis-env-${{ github.repository }}-${{ github.event.pull_request.head.ref || 'shared' }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -333,12 +323,13 @@ jobs:
         env:
           TROPIS_SECRETS: ${{ toJSON(secrets) }}
 
+  # A closed pull request starts this job alone. It decides whether the branch slot
+  # is filled and, if it is, removes the environment.
   branch-remove:
-    needs: plan
-    if: ${{ github.event.action == 'closed' && needs.plan.outputs.branch == 'filled' }}
+    if: ${{ github.event.action == 'closed' }}
     runs-on: ubuntu-latest
     concurrency:
-      group: tropis-env-${{ github.repository }}-${{ needs.plan.outputs.environment || 'shared' }}
+      group: tropis-env-${{ github.repository }}-${{ github.event.pull_request.head.ref || 'shared' }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -351,7 +342,10 @@ jobs:
             **/npm-shrinkwrap.json
             !.tropis/**
             !**/node_modules/**
-      - run: node .tropis/scripts/pipeline.mjs branch remove "$HEAD_REF"
+      - id: plan
+        run: node .tropis/scripts/pipeline.mjs plan --closed >> "$GITHUB_OUTPUT"
+      - if: steps.plan.outputs.branch == 'filled'
+        run: node .tropis/scripts/pipeline.mjs branch remove "$HEAD_REF"
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           TROPIS_SECRETS: ${{ toJSON(secrets) }}

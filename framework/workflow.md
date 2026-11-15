@@ -214,7 +214,7 @@ when the framework half exists to serve the application half. Full rule:
   commit on a pull request already carrying the workflow started a run in seven seconds,
   and the same change as its own pull request started none in 201.
 - **Say whether anything enforces this.** Tropis's pipeline asks the host on every run,
-  and its `host` job fails until the main branch requires a pull request and a passing
+  and the `host` step that ends its plan job fails the run until the main branch requires a pull request and a passing
   check and auto-merge is not turned off, or `.tropis/project.json` records `"ungated"` with the
   reason, which every run then repeats in its summary. Where the project records a
   reason, also write in its own `AGENTS.md` that nothing refuses a push to `main` or a

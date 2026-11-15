@@ -930,6 +930,7 @@ is breaking.
 
 **Amended 2026-11-01** — a stage may also be skipped because the same code already passed; FW-048.
 **Amended 2026-11-07** — a pull request's own environment may receive a deploy before every stage has passed; FW-074.
+**Amended 2026-11-15** — the host's gate is asked inside the plan job, and a closing run starts one job; FW-078.
 
 ## FW-029: A branch's environment is named from the branch and lives as long as its pull request
 
@@ -1220,6 +1221,8 @@ gives the pipeline's own token, so on the first gated run here the job failed on
 branch that was gated. The job now fails on auto-merge only when GitHub says it is off;
 a missing answer is reported and not checked. The Evidence above was read
 unauthenticated, which returns the field.
+
+**Amended 2026-11-15** — the plan job's last step asks the host, in place of the host job; FW-078.
 
 ---
 
@@ -2567,3 +2570,55 @@ run).
 **Consequences:** A project whose caller withholds a permission the template's jobs
 declare gets a run that fails at startup until it grants it, which makes the release
 breaking. Source: none in particular.
+
+**Amended 2026-11-15** — the host job is gone; its step runs under the plan job's permissions, which include `contents: read`; FW-078.
+
+## FW-078: The pipeline starts no job only to decide, except the gate
+
+**Date:** 2026-11-15 · **Status:** Accepted; built by the backlog item
+pipeline-starts-no-job-for-seconds-of-work. Amends FW-028 and FW-037.
+
+**Decision:** The host's gate is asked by the last step of the plan job, not a job of
+its own. The step runs after the plan's outputs are written, even when planning
+failed, and a red answer fails the plan job and so the run, as the host job did.
+Every job that needs the plan reads its outputs under `!cancelled()`, so with a red
+host the stages, the gate and the deploy still run and decide as they would otherwise. A closing pull request starts one job, which decides
+whether the branch slot is filled and removes the environment if it is; the plan job
+does not run. The jobs that touch an environment share one concurrency group per
+head branch, `shared` on a push, because the closing job has no plan to name the
+environment before it starts. The gate stays a job of its own: the shipped ruleset
+requires the check `pipeline / gate`. A stage the plan says is empty or skipped
+already started no job, and still does not. The host step runs under the plan job's
+token permissions, which FW-077 states and which include the `contents: read` the host
+job had.
+
+**Evidence:** GitHub bills each job rounded up to a minute. In first-adopter, 60 runs
+over two days billed 651 minutes, 169 of them on jobs that ran 20 seconds or less.
+Jobs a run starts, before and after, for a project that fills all five stages and no
+branch slot (a stage the plan skips or finds empty starts none either way):
+
+| Run | Before | After |
+|---|---|---|
+| A push to a pull request changing only prose and framework files | 4 — plan, host, framework, gate | 3 — plan, framework, gate |
+| A push to a pull request changing code | 8 — plan, host, framework, sanity, unit, integration, end-to-end, gate | 7 — the same without host |
+| A push to the main branch changing code | 9 — the eight above and deploy | 8 — the same without host |
+| A closing pull request, branch slot filled | 2 — plan, branch-remove | 1 — branch-remove |
+| A closing pull request, branch slot empty | 1 — plan | 1 — branch-remove |
+
+Counted from the template's conditions, not from runs. Whether GitHub hands a failed
+job's outputs to the jobs after it was not read in its documentation; actions/runner
+issue 2598 (2023) shows a failed job's output reaching a job that ran under
+`always()`.
+
+**Rejected:** Folding the gate into the deploy job (the ruleset requires the gate by
+name, and the deploy job is skipped on most runs). Letting the host step continue on
+error (the run would be green with the host red, which the backlog item forbids).
+Keeping the concurrency group on the environment's name (only the plan computes it,
+and the closing job would need the plan job to know it).
+
+**Consequences:** If a failed job's outputs ever stop reaching the jobs after it, a
+run whose host is red runs no stage and its gate fails: the fault shows, and holds
+merges, rather than passing. Two branches whose environment names collide no longer
+share a concurrency group; a collision already fails the plan of the open one, so
+only the removal of a closed branch's environment can overlap a deploy to it. A
+project that owns its pipeline keeps its copy and changes nothing.
