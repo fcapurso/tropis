@@ -17,6 +17,19 @@ For the full development history, see the git log.
 
 ## [Unreleased]
 
+### What to do by hand
+
+**1. Let your pipeline read its own runs.** In a private repository the pipeline
+could not tell that a pull request's code had already passed, so every merge ran
+every stage again, and from this release the pipeline does not start at all until
+the workflow that calls it grants what it reads. Run
+`node .tropis/scripts/pipeline.mjs permissions` and, for each workflow it names, add
+the `permissions` block it prints to that job, keeping any permission your own stage
+and deploy scripts use. When it says every workflow grants what it reads, there is
+nothing to do.
+
+### What you can now do
+
 - On a gated main branch, a session can collect its prose steps — backlog edits, board refreshes, plans, claims — on one branch and land them through one pull request merged by rebase, so a sitting costs one set of pipeline runs and `main` still keeps one commit per step. `node .tropis/scripts/auto-merge.mjs <N> --rebase` sets that merge and refuses a pull request that is not prose; `main-status.mjs --pull-request` stops such a pull request when it falls behind and says to rebase it.
 
 ## [0.10.0] — 2026-11-07
