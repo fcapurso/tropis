@@ -268,3 +268,30 @@ describe('auto-merge', () => {
     });
   });
 });
+
+// The backlog item a-sessions-prose-lands-as-one-pull-request is shipped on these
+// statements: each one is what an acceptance criterion says the workflow tells a session.
+// Joined on whitespace, since the source wraps its lines.
+describe('the workflow tells a session how its prose lands', () => {
+  const read = (path) => readFileSync(join(resolve(here, '..'), path), 'utf8').replace(/\s+/g, ' ');
+  const workflow = read('framework/workflow.md');
+
+  it.each([
+    ['the batch, one commit and one push per step', '**One commit per step, with its own message, pushed when the step is done.**'],
+    ['its worktree of its own', 'on a branch `prose/<yyyy-mm-dd>-<slug>` in a worktree `../<repo>-prose-<slug>`'],
+    ['prose as the pipeline plan says', 'prints `framework=run` and `skipped` for every other stage. Nothing else decides it.'],
+    ['the developer\'s word', '**The pull request opens on the developer\'s word.**'],
+    ['the rebase merge', 'Set it to merge itself by rebase, `node .tropis/scripts/auto-merge.mjs <N> --rebase`'],
+    ['a turn that ends with steps not landed', 'It names the batch\'s branch and the subject of each commit on it.'],
+    ['a dispatch first', 'Before a dispatch, say that the plan is not on the main branch yet'],
+    ['a step that is not prose, by cherry-pick', 'cherry-pick that commit onto a branch of its own from `origin/main`'],
+    ['never the stash', 'Never `git stash`'],
+    ['nobody to give the word', '**A session with nobody to give the word does not batch.**'],
+  ])('says %s', (_, statement) => {
+    expect(workflow).toContain(statement);
+  });
+
+  it('has dispatch land a plan still in the batch first', () => {
+    expect(read('commands/dispatch.md')).toContain('say that it is not on the main branch yet and ask the developer for the word to land the batch');
+  });
+});
