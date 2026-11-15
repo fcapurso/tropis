@@ -7332,7 +7332,7 @@
 # where the lookup asks for repos/<repository>/actions/runs/<run id>.
 - id: passed-check-can-ask-the-host
   title: The check for code that already passed works in a private repository
-  status: idea
+  status: building
   value: A project in a private repository stops paying to test again, on the main
     branch and on a prose push to a pull request, code that already passed. Today the
     pipeline's token may not read the runs the check asks the host about, so the check
@@ -7349,8 +7349,12 @@
       release, by a manual check - nothing in this repository can show it.
   type: bug
   layer: product
-  modules: []
-  refs: []
+  modules:
+    - scripts/pipeline.mjs
+    - templates/github/tropis-pipeline.yml
+    - templates/pipeline-caller.yml
+  refs:
+    - docs/superpowers/plans/2026-11-15-passed-check-can-ask-the-host.md
 
 # 2026-11-15, split by the developer from pipeline-bills-no-job-that-decides-nothing,
 # whose two criteria on the cache these are, unchanged.
