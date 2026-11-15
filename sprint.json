@@ -277,7 +277,8 @@
     "pipeline-starts-no-job-for-seconds-of-work": [
       "The host check is the last step of the plan job and fails that job outright; that later jobs still receive a failed job's outputs rests on one user report, and if it does not hold an ungated project's gate fails on its first run",
       "A closing pull request starts one job that decides and removes; jobs touching an environment take turns per branch name; the gate stays a job of its own; jobs per run fall by one in each case, recorded in FW-078",
-      "Skipped stages already started no job; a guard now keeps it so"
+      "Skipped stages already started no job; a guard now keeps it so",
+      "Executor was a Claude Code subagent on the Large pick; fixes in review were wording, rebase conflicts and one entry in a sibling's npm cache test outside the plan's file list"
     ]
   }
 }
