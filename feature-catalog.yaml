@@ -4282,15 +4282,16 @@
     - rules/harness-scripts.md
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-24.
+# 2026-11-15, the developer: the criterion that kept a prose pull request from getting a
+# branch environment is removed, with its sentence in the value.
+# a-prose-pull-request-gets-no-environment does that work, and gives a pull request that
+# later gains code its environment without closing and reopening it.
 - id: project-settings-are-listed-and-held-once
   title: A project's settings are listed in one place, and one list decides what counts as prose everywhere
   status: shaped
   value: An operator can see every file they own to tailor Tropis, and the two lists that
     decide whether a change needs a pull request can no longer disagree - which today
-    leads to a commit warned about wrongly, or a pull request skipped wrongly. A pull
-    request of prose and framework files also stops creating a branch environment it can
-    never deploy to, which costs minutes and holds one of the hosting platform's limited
-    environments for nothing.
+    leads to a commit warned about wrongly, or a pull request skipped wrongly.
   acceptanceCriteria:
     - The operator guide has a section listing each file a project owns to tailor Tropis,
       what reads it, and its format.
@@ -4305,10 +4306,6 @@
       may still go straight to main, though a check reads them, so the pipeline still runs
       for them. The list says how such a file is told apart from prose, and the operator
       guide says why.
-    - branch-create runs only when the plan says the pull request carries more than prose
-      and framework files, judged by that same list. The operator guide states the
-      trade-off - a pull request that later gains code has no environment, and closing and
-      reopening it creates one.
     - A guard shows the hook and the pipeline give the same answer for the same path, and
       covers a prose-only and a code-carrying pull request.
   type: feature
@@ -4380,7 +4377,14 @@
     - scripts/check-conformance.sh
   refs: []
 # 2026-10-29, raised by first-adopter's upstream flush, from its queue entry of 2026-10-29.
+# 2026-11-15, the developer: split. Its first three criteria, folding the jobs that only
+# decide, are pipeline-starts-no-job-for-seconds-of-work, which keeps the gate a job of
+# its own because the shipped ruleset requires a check named pipeline / gate. Its last
+# two, the npm cache, are stage-jobs-restore-npm-from-a-cache.
 - id: pipeline-bills-no-job-that-decides-nothing
+  supersededBy:
+    - pipeline-starts-no-job-for-seconds-of-work
+    - stage-jobs-restore-npm-from-a-cache
   title: The pipeline spends no minutes on overhead
   status: shaped
   value: GitHub bills each job by the minute, rounded up, so a job doing seconds of
@@ -7185,14 +7189,16 @@
   refs: []
 
 # 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-13.
-# 2026-11-14, the developer, on when and how to decide this. Not before
-# a-prose-pull-request-gets-no-environment and pipeline-starts-no-job-for-seconds-of-work
-# have shipped: they make each prose pull request cheaper without changing how anything
-# lands, and this entry is worth only what they leave. Then count, over a week of
-# ordinary work, the billed minutes and the waits for the main branch that prose pull
-# requests still cost. If what is left is small, drop this entry with that figure as the
-# reason. If it is not, shape it, and settle first whether the repository allows rebase
-# merges for every pull request or only for these.
+# 2026-11-15, the developer, replacing the note of 2026-11-14 that said to wait for the
+# two entries that make a prose pull request cheaper and then measure a week. Built now:
+# first-adopter already works this way under a rule of its own, written to be deleted
+# once a release carries it, so the question of a second way to land is answered by use.
+# Decided the same day. A rebase merge is for these batches only, and the auto-merge
+# script refuses it for a pull request that is not prose, leaving the maintainer's
+# flushed groups their rebase. When the main branch moves under a pull request set to
+# merge by rebase, the wait stops and tells the session to rebase and run it again; it
+# makes no local git change and pushes nothing. The seventh criterion below is read
+# that way.
 - id: a-sessions-prose-lands-as-one-pull-request
   title: A session's prose changes land as one pull request
   status: idea
@@ -7291,7 +7297,20 @@
 # planned value. The answer is in first-adopter: the plan job's passed and plan lines on
 # one such run of 2026-11-12 to 2026-11-14, and which job it was that ran. Asked there in
 # a comment on its pull request 295.
+# 2026-11-15, answered before anyone started it, from what an agent in first-adopter read
+# off its runs that day; neither lead above was the cause. The lookup that asks the host
+# whether the code already passed was refused there on every run of three days, on the
+# main branch and on pull requests alike (HTTP 403, Resource not accessible by
+# integration), and the plan then says nothing is skipped while the run stays green. On
+# each merge of code a green run existed for exactly the pull request's head and the two
+# trees were identical, so only the refusal stood in the way. The workflow there is the
+# release's template unchanged. No shipped workflow declares the permissions of its
+# token, and reading a run needs actions read, which a repository whose token is
+# read-only by default does not give. Not measured - that this repository is spared
+# because it is public. passed-check-can-ask-the-host is the fix.
 - id: why-code-stages-ran-on-main-for-a-passed-commit
+  supersededBy:
+    - passed-check-can-ask-the-host
   title: Find out why code stages ran on the main branch for a commit that had already passed
   status: idea
   value: Before anyone plans a fix, we know whether a project on a current release can
@@ -7303,4 +7322,52 @@
   type: spike
   layer: product
   modules: []
+  refs: []
+
+# 2026-11-15, raised by the developer from the answer to
+# why-code-stages-ran-on-main-for-a-passed-commit. In first-adopter, on v0.10.0, the skip pipeline-does-not-redo-green-work shipped never took
+# effect - in three days, 13 merges of code each ran the sanity, unit, integration and
+# end-to-end jobs again on the main branch. The refusal is read at scripts/pipeline.mjs,
+# where the lookup asks for repos/<repository>/actions/runs/<run id>.
+- id: passed-check-can-ask-the-host
+  title: The check for code that already passed works in a private repository
+  status: idea
+  value: A project in a private repository stops paying to test again, on the main
+    branch and on a prose push to a pull request, code that already passed. Today the
+    pipeline's token may not read the runs the check asks the host about, so the check
+    is refused, nothing is skipped, and the run is green with nothing to say so.
+  acceptanceCriteria:
+    - The pipeline's workflows declare the permissions their token needs, reading
+      Actions among them, and the workflow a project calls them from grants them.
+    - When the check cannot ask the host, the run's summary says so as a warning and
+      names the permission that is missing.
+    - Taking the release, a project whose own calling workflow withholds that permission
+      is told so and what to add.
+    - A guard covers the declared permissions and the warning.
+    - The developer confirms it in a private repository after that project takes the
+      release, by a manual check - nothing in this repository can show it.
+  type: bug
+  layer: product
+  modules: []
+  refs: []
+
+# 2026-11-15, split by the developer from pipeline-bills-no-job-that-decides-nothing,
+# whose two criteria on the cache these are, unchanged.
+- id: stage-jobs-restore-npm-from-a-cache
+  title: A pipeline job restores its npm packages from a cache
+  status: shaped
+  value: A project stops waiting, in every job of every run, for dependencies to install
+    from scratch. Each stage job installs its own, so each pays the full install time
+    every time, and a job billed by the minute pays for it where the install carries it
+    past a minute.
+  acceptanceCriteria:
+    - Every Tropis workflow job that sets up Node turns on its npm cache, keyed on the lock
+      files it installs from, and a run with an unchanged lock file restores from the cache.
+    - A job with no lock file to key on runs as today, without failing.
+  type: improvement
+  layer: product
+  modules:
+    - templates/github/tropis-pipeline.yml
+    - templates/github/tropis-staging.yml
+    - templates/github/tropis-framework-checks.yml
   refs: []
