@@ -438,3 +438,42 @@ Only files listed in the plan changed.
 
 Manual check, the backlog move, the pull request and the merge belong to the specifying
 session.
+
+## Review record
+
+### Checks re-run
+
+All by the specifying session in a Claude Code cloud session, git 2.43, Node.js 22, Linux x86_64.
+
+- `bash scripts/check-blueprint.sh` on `f882acb`: `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `npm --prefix .tropis test`: `Tests: 213 passed, 213 total`.
+- `git diff --stat origin/main...HEAD`: the files in the File Structure table only; `feature-catalog.yaml` and `docs/verification-log.md` added by this review.
+- This repository's own token was read off its run 43641176644 on the main branch (job log, *GITHUB_TOKEN Permissions*): Contents, Metadata and Packages read, no Actions, and the lookup answered. So the repository is spared only because it is public, as the backlog item suspected.
+
+### Found
+
+Public exposure: the diff was read for private material, and none was found. first-adopter is named only by pseudonym, and none of its run ids, pull request numbers or files are quoted.
+
+- **Fixed by the reviewer, mechanical:** `firstGreenRun` rebuilt an error as `{ error }` and dropped the permission, so a token refused only on a run's jobs would have printed no warning. It now carries `permission`, and an assertion in *passed* covers it (`f882acb`). The developer's check below exercises the warning path only indirectly.
+- The plan's verification step 5 could not run as written: `scripts/` has no `node_modules`, so `permissions` cannot load `yaml` from the source folder. The executor ran it from a scratch copy; the guard's test of the command against the caller template covers the same claim.
+
+### Acceptance criteria
+
+1. Workflows declare the permissions, Actions among them, and the caller grants them: *GitHub workflow* asserts `plan` and `host` declare exactly theirs, no other job and no top level does, the caller template grants every permission a template job declares, and `.github/workflows/pipeline.yml` equals the caller template. Automated.
+2. A run that cannot ask the host warns in its summary naming the permission: the *passed* tests for a refused run lookup (`actions: read`), a refused pull request lookup (`pull-requests: read`), and no alert for a wrong shape, a missing variable or a green lookup. Automated.
+3. Taking the release, a project whose caller withholds it is told so and what to add: `RELEASES.md`'s by-hand step 1, which `/update` performs as a required step, runs `pipeline.mjs permissions`; the *permissions* tests cover its findings and the block it prints. Automated for the command; the step is in the notes.
+4. A guard covers the declared permissions and the warning: criteria 1 and 2.
+5. The developer confirms it in a private repository after it takes the release: `docs/verification-log.md`, entry of 2026-11-15, **pending**.
+
+### Outstanding disposition
+
+- **The item ships with criterion 5 pending.** The criterion says itself that it can be run only in a private repository after the release, and nothing here can show it. Holding the item in `building` until then would hold the merge of the three sprint plans that touch the same template until the next release and a check in another repository. The pending entry keeps it visible; a fail there becomes a new backlog item.
+- The release is breaking: a project whose caller withholds a permission gets a pipeline that fails at startup until it grants it. The notes' by-hand step says so, and FW-076 records it.
+
+### Learnings routed
+
+No durable change. The plan named a command its executor could not run from the source folder; it was specific to a command that loads a package, and the executor said so. A plan carrying `## Handover report` at its claim fails the installed backlog guard, which named the plan, so it cannot slip through.
+
+### Merged because
+
+The design is implemented as planned, plus one mechanical fix declared above. Every new test fails on what it guards, the self-check passes, and the pipeline changes for a project only in the two jobs that ask GitHub and in the caller it is given.
