@@ -4,7 +4,8 @@
   "way": "session",
   "archive": true,
   "archived": [
-    "stage-jobs-restore-npm-from-a-cache"
+    "stage-jobs-restore-npm-from-a-cache",
+    "a-sessions-prose-lands-as-one-pull-request"
   ],
   "entries": [
     {
