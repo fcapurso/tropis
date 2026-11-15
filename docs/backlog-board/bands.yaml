@@ -26,17 +26,17 @@ a-prose-pull-request-gets-no-environment:
     status: idea
     blockers: []
 a-sessions-prose-lands-as-one-pull-request:
-  band: C
+  band: B
   value: 3
   valueWhy: A sitting of several prose steps pays one set of runs and one wait where
     it pays one per step today.
   effort: 4
   effortWhy: A workflow clause with its fresh-agent check, a rebase route in the
     auto-merge script, and rebase updating while waiting on a pull request.
-  verdict: "Decide first: should the workflow have a second way to land, by rebase on
-    the developer's word, beside one pull request per change under the merge token?
-    Decide once the two pipeline entries that make a prose pull request cheaper have
-    shipped, from what such pull requests still cost over a week."
+  verdict: "Worth doing, with no deadline: first-adopter already works this way under
+    a rule of its own, and the developer settled the two open questions on 2026-11-15,
+    recorded above the backlog item. It saves only where a person is there to give the
+    word; a session delivering alone does not batch."
   evidence: "2026-11-14 — scripts/auto-merge.mjs on main sets a squash merge only, on
     both of its routes (lines 60 and 70)."
   seen:
@@ -281,23 +281,22 @@ one-guard-recipe-names-framework-root:
   seen:
     status: idea
     blockers: []
-pipeline-bills-no-job-that-decides-nothing:
-  band: C
-  value: 2
-  valueWhy: Saves minutes for private projects; this repository is public and pays
-    nothing.
-  effort: 3
-  effortWhy: Folding the deciding jobs into others and adding a cache.
-  verdict: "Moved to decide-first: the shipped ruleset now requires a check named
-    pipeline / gate, so folding the gate into the deploy job, as the first criterion
-    asks, would leave every pull request waiting on a check that never runs. Decide
-    whether the gate stays a job of its own, and whether the new host job is folded
-    in its place."
-  evidence: "2026-10-31 — templates/github/main-branch-ruleset.json:29 requires
-    pipeline / gate; templates/github/tropis-pipeline.yml:80 adds a host job that
-    only decides; no shipped workflow turns on an npm cache."
+passed-check-can-ask-the-host:
+  band: A
+  value: 4
+  valueWhy: A skip every project was told it has never took effect in first-adopter,
+    where each merge of code paid for four stages again, and a green run hid it.
+  effort: 2
+  effortWhy: Permissions declared in three workflow templates and the calling one, a
+    warning in the run's summary, a line at update and a guard.
+  verdict: "Do now: a shipped saving that does not work where the token cannot read
+    runs, with nothing to say so. Its last criterion waits for a check in a private
+    repository."
+  evidence: "2026-11-15 — no file under templates/github/ has a permissions block;
+    scripts/pipeline.mjs:1299 asks for the run and line 1294 answers a refusal with
+    nothing is skipped."
   seen:
-    status: shaped
+    status: idea
     blockers: []
 pipeline-starts-no-job-for-seconds-of-work:
   band: B
@@ -421,6 +420,19 @@ setup-offers-to-create-the-repository:
   seen:
     status: idea
     blockers: []
+stage-jobs-restore-npm-from-a-cache:
+  band: B
+  value: 2
+  valueWhy: Every job of every run installs from scratch; the wait always shortens, the
+    bill only where the install carried a job past a minute.
+  effort: 1
+  effortWhy: One setting on each job that sets up Node, in three workflow templates.
+  verdict: "Worth doing, with no deadline: small, and the criteria were already shaped
+    in the backlog item it was split from."
+  evidence: "2026-11-15 — no file under templates/github/ turns on an npm cache."
+  seen:
+    status: shaped
+    blockers: []
 test-rules-reach-whoever-edits-a-stage-script:
   band: B
   value: 2
@@ -462,22 +474,6 @@ update-names-a-changed-closed-skeleton:
     a line in /update's report.
   verdict: "Leave it until the closed-source skeleton changes in a release; until then
     there is nothing for an update to say."
-  seen:
-    status: idea
-    blockers: []
-why-code-stages-ran-on-main-for-a-passed-commit:
-  band: B
-  value: 3
-  valueWhy: If the skip fails for some merges, every project pays for stages it does not
-    need there, and a green run hides it.
-  effort: 1
-  effortWhy: Reading the plan job of one run in first-adopter, and tracing one job's
-    condition in the shipped workflow.
-  verdict: "Worth doing, with no deadline: a short question whose answer says whether
-    there is a defect to fix. It needs one run's log from first-adopter."
-  evidence: "2026-11-15 — the skip is in every release from v0.8.0; in this repository
-    run 43641176644 on main skipped unit, integration and end-to-end for a commit whose
-    pull request had passed."
   seen:
     status: idea
     blockers: []
