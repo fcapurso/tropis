@@ -232,6 +232,9 @@
     },
     "pipeline-starts-no-job-for-seconds-of-work": {
       "state": "planning"
+    },
+    "stage-jobs-restore-npm-from-a-cache": {
+      "state": "planning"
     }
   },
   "notes": {}
