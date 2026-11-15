@@ -79,7 +79,9 @@ worktree, and creates it either way, and the workflow's merge sequence ends with
 started and exits non-zero when it fails. On a gated main branch,
 `node .tropis/scripts/main-status.mjs --pull-request <N>` does the same for a pull
 request set to merge itself. It waits until it has merged, bringing its branch up to
-date when `main` moves, and says why when it did not merge. Run
+date when `main` moves, and says why when it did not merge. A pull request set to merge
+by rebase is not brought up to date that way: it stops and says to rebase the branch and
+run it again. Run
 `node .tropis/scripts/main-status.mjs` for the line alone. Each asks GitHub through `gh`, for push runs of
 `.github/workflows/pipeline.yml`; where it cannot — no `gh`, not signed in, an origin that
 is not on GitHub — it says it could not tell, and why.
@@ -89,6 +91,10 @@ request to merge itself as a squash, with that subject and body: through
 `gh pr merge --auto`, or, in a Claude Code cloud session, which refuses `gh` GitHub's
 GraphQL interface, through that session's own route. It prints one line and exits
 non-zero, saying why, when the pull request was not set.
+`node .tropis/scripts/auto-merge.mjs <N> --rebase` sets it to merge by
+rebase instead, keeping each of its commits on `main`, and refuses unless the pull
+request is prose by the pipeline's own plan: a session's batch of prose steps lands this
+way (`.claude/framework/workflow.md`, *Branching*).
 
 When two plans are built at once, `node .tropis/scripts/plan-overlap.mjs --claim <plan>`
 runs as a backlog item moves to `building`: where the plan shares a file with a plan

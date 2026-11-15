@@ -307,6 +307,32 @@ describe('main branch status', () => {
       ]);
     });
 
+    it('stops a rebase-merge pull request that is behind, without updating it', () => {
+      pulls(pull({ mergeable_state: 'behind', auto_merge: { merge_method: 'rebase' } }));
+      const r = cli('--pull-request', '7', ...settles);
+      expect(r.status).toBe(4);
+      expect(r.stdout).toBe('Pull request #7: did not merge — it is behind main and set to merge by rebase, '
+        + 'which this does not update: rebase the branch on main, push it with --force-with-lease, and run this again.\n');
+      expect(updates()).toEqual([]);
+    });
+
+    it('still updates a squash-merge pull request that is behind', () => {
+      pulls(pull({ mergeable_state: 'behind', auto_merge: { merge_method: 'squash' } }),
+        pull({ mergeable_state: 'clean' }), MERGED);
+      const r = cli('--pull-request', '7', ...settles);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe(GREEN);
+      expect(updates()).toHaveLength(1);
+    });
+
+    it('waits on a rebase-merge pull request that is clean, and reports green as any other', () => {
+      pulls(pull({ mergeable_state: 'clean', auto_merge: { merge_method: 'rebase' } }), MERGED);
+      const r = cli('--pull-request', '7', ...settles);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe(GREEN);
+      expect(updates()).toEqual([]);
+    });
+
     it('never asks twice to update the same head', () => {
       pulls(pull({ mergeable_state: 'behind' }), pull({ mergeable_state: 'behind' }), MERGED);
       const r = cli('--pull-request', '7', ...settles);
