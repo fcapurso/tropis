@@ -437,3 +437,68 @@ diff of prose alone, and fails when the per-commit files are dropped.
 
 Nothing the executor could not do. The workflow was not run (it cannot be here); the
 guard reads the template as YAML only.
+
+## Review record
+
+### Checks re-run
+
+Run by the specifying session, git 2.43 and node v22 on Linux x86_64, on the branch after
+the two review fixes below:
+
+- `bash scripts/check-blueprint.sh`:
+  `Self-check passed: every guard caught its defect, the clean baseline passed, and the framework repository's own guards passed.`
+- `guards/pipeline.test.js` alone, staged from an export of `HEAD`:
+  `Tests: 193 passed, 193 total`.
+- Re-breaks in that export: `createDecision` returning `skipped` for `synchronize` gave
+  `4 failed, 189 passed`; `pullRequestProse` reading the net diff only gave
+  `1 failed, 192 passed` (the corrected add-then-delete test). Restored: 193 passed.
+- `npm --prefix .tropis test`: `Tests: 215 passed, 215 total`.
+- `git diff --stat origin/main...HEAD`: the six files of the File Structure table and
+  this plan; `feature-catalog.yaml` joins them with this record.
+
+The handover's diagnosis of the plan's add-then-delete test holds: a pull request whose
+net diff lists no files is already not prose through `isProseAndFramework`, so the test
+as the plan wrote it could not fail; the re-break above fails the corrected test.
+
+### Found
+
+Public exposure: the diff was read for private material; nothing (the one adopter named
+is `first-adopter`).
+
+Two mechanical fixes, made on the branch by the reviewer: the comment above
+`branch-create` in the workflow template had a line past the file's width, reflowed; and
+FW-076's status line read "nor closing it always remove it", now "and closing one no
+longer always removes it". Nothing else.
+
+### Acceptance criteria
+
+1. The plan says whether the pull request is prose, and for one neither job starts:
+   *plan --action › says prose=yes and create=skipped for prose alone*, *plan --closed
+   --base --head › says prose=yes …*, and the *GitHub workflow* assertions on
+   `branch-create` (`create == 'run'`) and `branch-remove` (`prose != 'yes'`).
+2. A pull request that gains other changes gets its environment, once the host says it
+   is open: *creates on the first push that gives a prose pull request code, and not on
+   the next*, and *branch create --if-open › runs create.sh when the pull request is
+   open* / *creates nothing and exits 0 when the pull request is closed*.
+3. Closing one that never had an environment removes nothing and fails nothing: the
+   closed plan's `prose=yes` test and the `branch-remove` condition; no job starts, so
+   nothing can fail.
+4. A test covers a pull request that starts as prose and gains code: criterion 2's
+   first test.
+
+### Outstanding disposition
+
+The handover lists nothing outstanding. The workflow is checked as YAML only, as for
+every pipeline change; its first real run in a project with a filled branch slot is the
+live check, and nothing here needs a person to look.
+
+### Learnings routed
+
+The plan's check that could not fail is the kind `.claude/rules/planning.md` already
+names (*A check states what it prints when it passes and what it prints when it fails*);
+nothing new to route.
+
+### Merged because
+
+Every criterion has a test that goes red when its behaviour is removed, and the
+self-check passes.

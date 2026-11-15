@@ -7243,7 +7243,7 @@
 # 2026-11-14, raised by first-adopter's upstream flush, from its queue entry of 2026-11-13.
 - id: a-prose-pull-request-gets-no-environment
   title: A pull request of prose alone starts no job to create or remove an environment
-  status: building
+  status: shipped
   value: A project with environments per branch stops paying a job to create an
     environment, and another to remove it, for every pull request the gate will never
     deploy. Under a gated main branch every backlog edit, claim and plan is such a pull
