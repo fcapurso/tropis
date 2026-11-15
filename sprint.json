@@ -5,7 +5,8 @@
   "archive": true,
   "archived": [
     "stage-jobs-restore-npm-from-a-cache",
-    "a-sessions-prose-lands-as-one-pull-request"
+    "a-sessions-prose-lands-as-one-pull-request",
+    "passed-check-can-ask-the-host"
   ],
   "entries": [
     {
