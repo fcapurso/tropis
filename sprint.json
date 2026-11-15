@@ -240,5 +240,9 @@
       "state": "planning"
     }
   },
-  "notes": {}
+  "notes": {
+    "a-sessions-prose-lands-as-one-pull-request": [
+      "Developer, 2026-11-15: built now; rebase merge for prose batches only, enforced in the auto-merge script; a rebase-merge pull request that falls behind stops the wait, and the session rebases"
+    ]
+  }
 }
