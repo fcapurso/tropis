@@ -21,6 +21,7 @@ import {
   gateIsGreen,
   isProseAndFramework,
   matchesProse,
+  permissionGaps,
   runsFromRepository,
   STAGES,
 } from '../scripts/pipeline.mjs';
@@ -2103,7 +2104,9 @@ case "$*" in
   "api repos/acme/app/actions/runs/"*"/jobs?per_page=100")
     id=\${2#repos/acme/app/actions/runs/}; id=\${id%%/*}
     eval "printf '%s' \\"\\$STUB_JOBS_$id\\""; exit 0 ;;
-  "api repos/acme/app/commits/"*"/pulls") printf '%s' "$STUB_PULLS"; exit 0 ;;
+  "api repos/acme/app/commits/"*"/pulls")
+    if [ -n "$STUB_FAIL_PULLS" ]; then echo "$STUB_FAIL_PULLS" >&2; exit 1; fi
+    printf '%s' "$STUB_PULLS"; exit 0 ;;
 esac
 echo "stub gh: unexpected call: $*" >&2
 exit 99
@@ -2130,6 +2133,7 @@ exit 99
         STUB_RUNS: JSON.stringify({ workflow_runs: runs }),
         STUB_PULLS: JSON.stringify(pulls),
         STUB_FAIL: '',
+        STUB_FAIL_PULLS: '',
         ...jobEnv,
         ...env,
       },
@@ -2197,7 +2201,37 @@ exit 99
     expect(result.stderr).toContain('passed: could not ask GitHub');
     expect(result.stderr).toContain('HTTP 403');
     expect(result.stderr).toContain('nothing is skipped');
-    expect(readFileSync(project.summary, 'utf8')).toContain('HTTP 403');
+    const summary = readFileSync(project.summary, 'utf8');
+    expect(summary).toContain('HTTP 403');
+    expect(summary).toContain('> [!WARNING]');
+    expect(summary).toContain('`actions: read`');
+    expect(summary).toContain('pipeline.mjs permissions');
+    expect(result.stderr).toContain('actions: read');
+  });
+
+  it('names pull-requests: read when only the pull request lookup is refused', () => {
+    const project = passedProject();
+    const result = passed(project, ['--merged', MERGED], { env: { STUB_FAIL_PULLS: 'HTTP 403: Resource not accessible by integration' } });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('');
+    const summary = readFileSync(project.summary, 'utf8');
+    expect(summary).toContain('> [!WARNING]');
+    expect(summary).toContain('`pull-requests: read`');
+    expect(summary).not.toContain('`actions: read`');
+    expect(result.stderr).toContain('pull-requests: read');
+  });
+
+  it('writes no warning for a wrong-shape answer, a missing variable, or a green lookup', () => {
+    const shape = passedProject();
+    passed(shape, BRANCH, { env: { STUB_RUNS: '{"total_count": 0}' } });
+    expect(readFileSync(shape.summary, 'utf8')).not.toContain('[!WARNING]');
+    const missing = passedProject();
+    const result = passed(missing, BRANCH, { env: { GITHUB_RUN_ID: '' } });
+    expect(readFileSync(missing.summary, 'utf8')).not.toContain('[!WARNING]');
+    expect(result.stderr).not.toContain('could not ask GitHub, so nothing was skipped');
+    const green = passedProject();
+    passed(green, BRANCH, { runs: [mine(3)], jobs: { 3: GREEN } });
+    expect(readFileSync(green.summary, 'utf8')).not.toContain('[!WARNING]');
   });
 
   it('prints nothing for an answer of the wrong shape', () => {
@@ -2246,6 +2280,104 @@ exit 99
     expect(runsFromRepository([mine(1, HEAD, 'fork/app'), mine(2)], 'acme/app').map((run) => run.id)).toEqual([2]);
     expect(firstGreenRun([mine(1), mine(2)], (run) => ({ jobs: run.id === 2 ? GREEN : CLOSED })).run.id).toBe(2);
     expect(firstGreenRun([mine(1)], () => ({ error: 'boom' }))).toEqual({ error: 'boom' });
+  });
+});
+
+describe('permissions', () => {
+  const THREE = { actions: 'read', contents: 'read', 'pull-requests': 'read' };
+  const caller = (job = {}, workflow = {}) => ({
+    parsed: { name: 'P', on: 'push', ...workflow, jobs: { pipeline: { uses: './.github/workflows/tropis-pipeline.yml', ...job } } },
+    path: '.github/workflows/p.yml',
+  });
+  const gapsOf = (...workflows) => permissionGaps(workflows);
+
+  it('finds no gap where a job grants the three', () => {
+    expect(gapsOf(caller({ permissions: THREE })).gaps).toEqual([]);
+    expect(gapsOf(caller({ permissions: { actions: 'write', contents: 'write', 'pull-requests': 'write' } })).gaps).toEqual([]);
+  });
+
+  it('finds all three missing where none is stated', () => {
+    expect(gapsOf(caller()).gaps).toEqual([
+      { path: '.github/workflows/p.yml', job: 'pipeline', missing: ['actions', 'contents', 'pull-requests'], stated: false },
+    ]);
+  });
+
+  it('finds the one a job leaves out', () => {
+    const { gaps } = gapsOf(caller({ permissions: { contents: 'read', 'pull-requests': 'read' } }));
+    expect(gaps).toEqual([{ path: '.github/workflows/p.yml', job: 'pipeline', missing: ['actions'], stated: true }]);
+  });
+
+  it('takes the workflow-level grant unless the job states its own', () => {
+    expect(gapsOf(caller({}, { permissions: 'read-all' })).gaps).toEqual([]);
+    expect(gapsOf(caller({ permissions: {} }, { permissions: 'read-all' })).gaps[0].missing)
+      .toEqual(['actions', 'contents', 'pull-requests']);
+  });
+
+  it('counts a project-owned copy as the pipeline, and ignores other jobs', () => {
+    const own = { path: 'w.yml', parsed: { jobs: {
+      pipeline: { uses: './.github/workflows/project-pipeline.yml' },
+      other: { uses: './.github/workflows/other.yml' },
+      build: { 'runs-on': 'ubuntu-latest' },
+    } } };
+    const result = permissionGaps([own]);
+    expect(result.callers).toBe(1);
+    expect(result.gaps.map((gap) => gap.job)).toEqual(['pipeline']);
+  });
+
+  it('lists a file that did not parse', () => {
+    expect(permissionGaps([{ path: 'bad.yml', parsed: undefined }])).toEqual({ unreadable: ['bad.yml'], callers: 0, gaps: [] });
+  });
+
+  describe('the command', () => {
+    const run = (root, args = []) => runPipeline(root, ['permissions', ...args]);
+    const callerText = readFileSync(join(blueprint, 'templates/pipeline-caller.yml'), 'utf8');
+    const NO_PERMISSIONS = callerText.replace(/ {4}# What the pipeline's token[\s\S]*?pull-requests: read\n/, '');
+
+    it('says there is no caller when there is no workflow directory', () => {
+      const result = run(repository());
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe('permissions: no workflow in .github/workflows calls the pipeline\n');
+    });
+
+    it('is satisfied by the caller template', () => {
+      const root = repository();
+      write(root, '.github/workflows/pipeline.yml', callerText);
+      const result = run(root);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe('permissions: every workflow that calls the pipeline grants what it reads\n');
+    });
+
+    it('names the workflow, the job and what to add where none is stated', () => {
+      const root = repository();
+      write(root, '.github/workflows/pipeline.yml', NO_PERMISSIONS);
+      expect(NO_PERMISSIONS).not.toContain('permissions');
+      const result = run(root);
+      expect(result.status).toBe(1);
+      expect(result.stdout).toContain('permissions: .github/workflows/pipeline.yml, job pipeline, does not grant actions, contents, pull-requests.');
+      expect(result.stdout).toContain('lacks actions: read.');
+      expect(result.stdout).toContain('    permissions:\n      actions: read\n      contents: read\n      pull-requests: read\n');
+    });
+
+    it('reports a file that does not parse, without failing by itself', () => {
+      const root = repository();
+      write(root, '.github/workflows/pipeline.yml', callerText);
+      write(root, '.github/workflows/broken.yml', 'a: [\n');
+      const result = run(root);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('permissions: .github/workflows/broken.yml is not valid YAML, so it was not read\n');
+    });
+
+    it('takes no argument', () => {
+      const result = run(repository(), ['x']);
+      expect(result.status).toBe(2);
+      expect(result.stderr).toBe('permissions: takes no arguments\n');
+    });
+
+    it('is in the command list, ahead of the install', () => {
+      const out = runPipeline(repository(), ['commands']).stdout;
+      expect(out).toContain('node .tropis/scripts/pipeline.mjs permissions\n');
+      expect(out.indexOf('pipeline.mjs permissions')).toBeLessThan(out.indexOf('npm --prefix .tropis ci'));
+    });
   });
 });
 
@@ -2309,6 +2441,26 @@ describe('GitHub workflow', () => {
     expect(planRun).toContain('environment "$HEAD_REF" --no-check)');
     expect(planRun).toMatch(/else\n\s*environment=\$\(node \.tropis\/scripts\/pipeline\.mjs environment "\$HEAD_REF"\)\n/);
     expect(planRun).toContain('plan --closed >> "$GITHUB_OUTPUT"');
+  });
+
+  it('declares token permissions only on the jobs that ask GitHub, and the caller grants them', () => {
+    const template = YAML.parse(readFileSync(join(blueprint, 'templates/github/tropis-pipeline.yml'), 'utf8'));
+    expect(template.permissions).toBeUndefined();
+    expect(template.jobs.plan.permissions).toEqual({ actions: 'read', contents: 'read', 'pull-requests': 'read' });
+    expect(template.jobs.host.permissions).toEqual({ contents: 'read' });
+    for (const [id, job] of Object.entries(template.jobs)) {
+      if (id !== 'plan' && id !== 'host') expect([id, job.permissions]).toEqual([id, undefined]);
+    }
+    const text = readFileSync(join(blueprint, 'templates/pipeline-caller.yml'), 'utf8');
+    const granted = YAML.parse(text).jobs.pipeline.permissions;
+    for (const id of ['plan', 'host']) {
+      for (const [name, level] of Object.entries(template.jobs[id].permissions)) {
+        expect([id, name, ['read', 'write'].includes(granted[name]) && (level === 'read' || granted[name] === 'write')])
+          .toEqual([id, name, true]);
+      }
+    }
+    expect(permissionGaps([{ path: 'caller.yml', parsed: YAML.parse(text) }]).gaps).toEqual([]);
+    expect(readFileSync(join(blueprint, '.github/workflows/pipeline.yml'), 'utf8')).toBe(text);
   });
 
   it('tests the pull request\'s own deployed commit in a job of its own, which the gate waits for', () => {

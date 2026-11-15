@@ -19,6 +19,13 @@ on:
 jobs:
   plan:
     runs-on: ubuntu-latest
+    # The check for code that already passed reads this repository's runs and the pull
+    # request a commit merged from. In a private repository that needs these grants,
+    # and the workflow that calls this one must grant them too.
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     outputs:
       framework: ${{ steps.plan.outputs.framework }}
       sanity: ${{ steps.plan.outputs.sanity }}
@@ -103,6 +110,8 @@ jobs:
   host:
     if: ${{ github.event.action != 'closed' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

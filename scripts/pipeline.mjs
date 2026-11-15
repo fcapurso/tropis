@@ -1283,31 +1283,56 @@ function parsePassedArgs(argv) {
   return { opts };
 }
 
+const PASSED_ACTIONS = 'actions: read';
+const PASSED_PULLS = 'pull-requests: read';
+
+/**
+ * The warning for a lookup GitHub refused or could not answer. Names the token
+ * permission the request needs, which is what a private repository withholds by default.
+ */
+function passedWarning(permission) {
+  return 'The check for code that already passed could not ask GitHub, so nothing was skipped '
+    + `and every stage ran. The job's token needs \`${permission}\`: grant it in the workflow `
+    + 'that calls the pipeline, as `.tropis/templates/pipeline-caller.yml` does. '
+    + '`node .tropis/scripts/pipeline.mjs permissions` says what to add.';
+}
+
 /**
  * Asks GitHub for a commit whose code passed this workflow, for a pull
  * request branch or for the commit a pull request merged as. Never throws:
- * `{ commit }` or `{ line }` only, and `line` always says what was found or
- * why nothing was.
+ * `{ commit, line }` or `{ line }` only, and `line` always says what was found
+ * or why nothing was. When a request GitHub could not answer is the reason,
+ * `warning` also names the token permission that request needs.
+ * @returns {{ commit?: string, line: string, warning?: string }}
  */
 function findPassed(opts, env) {
   const nothing = (why) => ({ line: `passed: ${why}` });
-  const failed = (error) => nothing(`${error}; nothing is skipped`);
+  const failed = (error, permission) => {
+    const result = nothing(`${error}; nothing is skipped`);
+    if (permission) result.warning = passedWarning(permission);
+    return result;
+  };
   const repo = env.GITHUB_REPOSITORY;
   if (env.GITHUB_ACTIONS !== 'true') return nothing('not in GitHub Actions, so nothing is skipped');
   if (!repo) return nothing('GITHUB_REPOSITORY is not set; nothing is skipped');
   if (!env.GITHUB_RUN_ID) return nothing('GITHUB_RUN_ID is not set; nothing is skipped');
-  const own = askGitHub(['api', `repos/${repo}/actions/runs/${env.GITHUB_RUN_ID}`]);
-  if (own.error) return failed(own.error);
+  /** A request that could not be asked carries the permission it needs; a wrong shape does not. */
+  const ask = (path, permission) => {
+    const answer = askGitHub(['api', path]);
+    return answer.error ? { error: answer.error, permission } : answer;
+  };
+  const own = ask(`repos/${repo}/actions/runs/${env.GITHUB_RUN_ID}`, PASSED_ACTIONS);
+  if (own.error) return failed(own.error, own.permission);
   const workflow = own.value?.workflow_id;
   if (workflow === undefined) return failed('this run has no workflow_id');
   const listRuns = (query) => {
-    const answer = askGitHub(['api', `repos/${repo}/actions/workflows/${workflow}/runs?event=pull_request&${query}&per_page=10`]);
+    const answer = ask(`repos/${repo}/actions/workflows/${workflow}/runs?event=pull_request&${query}&per_page=10`, PASSED_ACTIONS);
     if (answer.error) return answer;
     if (!Array.isArray(answer.value?.workflow_runs)) return { error: 'the list of runs had an unexpected shape' };
     return { runs: answer.value.workflow_runs };
   };
   const jobsOf = (run) => {
-    const answer = askGitHub(['api', `repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`]);
+    const answer = ask(`repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`, PASSED_ACTIONS);
     if (answer.error) return answer;
     if (!Array.isArray(answer.value?.jobs)) return { error: 'the list of jobs had an unexpected shape' };
     return { jobs: answer.value.jobs };
@@ -1316,24 +1341,24 @@ function findPassed(opts, env) {
 
   if (opts.merged === undefined) {
     const listed = listRuns(`branch=${encodeURIComponent(opts.branch)}`);
-    if (listed.error) return failed(listed.error);
+    if (listed.error) return failed(listed.error, listed.permission);
     const found = firstGreenRun(runsFromRepository(listed.runs, opts.repository), jobsOf);
-    if (found.error) return failed(found.error);
+    if (found.error) return failed(found.error, found.permission);
     if (!found.run) return nothing('no green run of this pull request, so it is planned from the whole diff');
     return { commit: found.run.head_sha, line: `passed: run ${found.run.id} passed at ${short(found.run.head_sha)}` };
   }
 
-  const pulls = askGitHub(['api', `repos/${repo}/commits/${opts.merged}/pulls`]);
-  if (pulls.error) return failed(pulls.error);
+  const pulls = ask(`repos/${repo}/commits/${opts.merged}/pulls`, PASSED_PULLS);
+  if (pulls.error) return failed(pulls.error, pulls.permission);
   if (!Array.isArray(pulls.value)) return failed('the list of pull requests had an unexpected shape');
   const pull = pulls.value.find((candidate) => candidate.merge_commit_sha === opts.merged);
   if (!pull) return nothing(`${short(opts.merged)} was not merged from a pull request, so every stage runs`);
   const head = pull.head?.sha;
   if (!head) return failed('the pull request has no head commit');
   const listed = listRuns(`head_sha=${encodeURIComponent(head)}`);
-  if (listed.error) return failed(listed.error);
+  if (listed.error) return failed(listed.error, listed.permission);
   const found = firstGreenRun(listed.runs, jobsOf);
-  if (found.error) return failed(found.error);
+  if (found.error) return failed(found.error, found.permission);
   if (!found.run) return nothing(`pull request #${pull.number} has no green run at ${short(head)}, so every stage runs`);
   return { commit: head, line: `passed: pull request #${pull.number} passed at ${short(head)}` };
 }
@@ -1346,8 +1371,89 @@ function passedCommand(argv) {
   }
   const result = findPassed(parsed.opts, process.env);
   process.stderr.write(`${result.line}\n`);
-  if (parsed.opts.summary) appendFileSync(parsed.opts.summary, `${result.line}\n\n`);
+  if (result.warning) process.stderr.write(`${result.warning}\n`);
+  if (parsed.opts.summary) {
+    const alert = result.warning ? `> [!WARNING]\n> ${result.warning}\n\n` : '';
+    appendFileSync(parsed.opts.summary, `${result.line}\n\n${alert}`);
+  }
   if (result.commit) process.stdout.write(`${result.commit}\n`);
+  return 0;
+}
+
+const PIPELINE_PERMISSIONS = Object.freeze(['actions', 'contents', 'pull-requests']);
+
+/**
+ * Which jobs that call the pipeline withhold a permission its own jobs read with.
+ * A job's `permissions` replaces the workflow's; neither stated means the
+ * repository's default, which is reported as `stated: false`.
+ * @param {{ path: string, parsed: any }[]} workflows `parsed` is undefined for a file that did not parse
+ * @returns {{ unreadable: string[], callers: number, gaps: { path: string, job: string, missing: string[], stated: boolean }[] }}
+ */
+export function permissionGaps(workflows) {
+  const unreadable = [];
+  const gaps = [];
+  let callers = 0;
+  const grants = (block, name) => {
+    if (block === 'read-all' || block === 'write-all') return true;
+    if (block === null || typeof block !== 'object') return false;
+    return block[name] === 'read' || block[name] === 'write';
+  };
+  for (const { path, parsed } of workflows) {
+    if (parsed === undefined) {
+      unreadable.push(path);
+      continue;
+    }
+    const jobs = parsed && typeof parsed === 'object' ? parsed.jobs : undefined;
+    if (!jobs || typeof jobs !== 'object') continue;
+    for (const [job, body] of Object.entries(jobs)) {
+      const uses = body?.uses;
+      if (typeof uses !== 'string' || !/\/(tropis|project)-pipeline\.yml$/.test(uses)) continue;
+      callers += 1;
+      const stated = body !== null && Object.hasOwn(body, 'permissions') ? true : Object.hasOwn(parsed, 'permissions');
+      const block = Object.hasOwn(body, 'permissions') ? body.permissions : parsed.permissions;
+      const missing = PIPELINE_PERMISSIONS.filter((name) => !grants(block, name));
+      if (missing.length > 0) gaps.push({ path, job, missing, stated });
+    }
+  }
+  return { unreadable, callers, gaps };
+}
+
+/** `pipeline.mjs permissions`: says which workflow that calls the pipeline withholds a permission it reads with. */
+async function permissionsCommand(root, args) {
+  if (args.length > 0) {
+    process.stderr.write('permissions: takes no arguments\n');
+    return 2;
+  }
+  const directory = join(root, '.github', 'workflows');
+  const files = existsSync(directory)
+    ? readdirSync(directory).filter((name) => /\.ya?ml$/.test(name)).sort()
+    : [];
+  return permissionsReport(files.map((name) => ({ path: `.github/workflows/${name}`, text: readFileSync(join(directory, name), 'utf8') })));
+}
+
+async function permissionsReport(files) {
+  const { default: YAML } = await import('./load-yaml.mjs');
+  const workflows = files.map(({ path, text }) => {
+    try {
+      return { path, parsed: YAML.parse(text) };
+    } catch {
+      return { path, parsed: undefined };
+    }
+  });
+  const { unreadable, callers, gaps } = permissionGaps(workflows);
+  for (const path of unreadable) process.stdout.write(`permissions: ${path} is not valid YAML, so it was not read\n`);
+  for (const gap of gaps) {
+    const none = gap.stated
+      ? ''
+      : " It states no permissions, so its token has the repository's default, which in a private repository set to read-only lacks actions: read.";
+    process.stdout.write(`permissions: ${gap.path}, job ${gap.job}, does not grant ${gap.missing.join(', ')}.${none}\n`
+      + 'Add to that job, with every other permission its stage and deploy scripts need (a job that lists permissions has only those):\n'
+      + '    permissions:\n      actions: read\n      contents: read\n      pull-requests: read\n');
+  }
+  if (gaps.length > 0) return 1;
+  process.stdout.write(callers === 0
+    ? 'permissions: no workflow in .github/workflows calls the pipeline\n'
+    : 'permissions: every workflow that calls the pipeline grants what it reads\n');
   return 0;
 }
 
@@ -1359,6 +1465,8 @@ function commandList() {
     '# On a push to a pull request, or to the main branch. Prints a commit whose code passed, or nothing.',
     'node .tropis/scripts/pipeline.mjs passed --branch "$HEAD_REF" --repository "$HEAD_REPO" --summary "$SUMMARY"',
     'node .tropis/scripts/pipeline.mjs passed --merged "$COMMIT" --summary "$SUMMARY"',
+    '# After taking a release, on GitHub. Says which workflow calling the pipeline withholds a permission it needs.',
+    'node .tropis/scripts/pipeline.mjs permissions',
     '# Always, before the framework stage.',
     'npm --prefix .tropis ci',
     '# Always. Framework checks run even when the rest of the plan is skipped.',
@@ -1512,6 +1620,14 @@ if (ranDirectly) {
     }
   } else if (command === 'passed') {
     process.exitCode = passedCommand(args);
+  } else if (command === 'permissions') {
+    const root = args.length > 0 ? '' : projectRoot();
+    if (root === null) {
+      process.stderr.write('pipeline: not a git repository\n');
+      process.exitCode = 1;
+    } else {
+      process.exitCode = await permissionsCommand(root, args);
+    }
   } else if (command === 'commands') {
     process.stdout.write(commandList());
   } else if (command === 'staging') {
