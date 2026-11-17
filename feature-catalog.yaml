@@ -7435,3 +7435,20 @@
   layer: product
   modules: []
   refs: []
+# Found 2026-11-17 on the board after the v0.11.0 release: /refresh-readme judged every
+# section fine at the release's Stage 1b and committed nothing, so refreshedAt stayed at
+# 2026-11-06, and scripts/readme-freshness.js went on asking for a refresh over the five
+# backlog items that check had just read. commands/refresh-readme.md sets refreshedAt only
+# "on the last yes" after a rewrite.
+- id: readme-check-that-finds-nothing-is-recorded
+  title: A README check that finds nothing to change is recorded as a refresh
+  status: idea
+  value: The board's README notice asks for a refresh only when the README has not been
+    checked since something shipped. Today a check that finds the page up to date
+    changes nothing and records nothing, so the notice keeps asking about work that was
+    just read, and a reader learns to ignore it before the day it is right.
+  acceptanceCriteria: []
+  type: bug
+  layer: product
+  modules: []
+  refs: []
